@@ -1,3 +1,5 @@
-crewai==0.5.0
-llama_index==0.10.39
+llama_index==0.10.42
+numpy==1.26.4
+pydantic==2.7.2
 setuptools==70.0.0
+tenacity==8.3.0
