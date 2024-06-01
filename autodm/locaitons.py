@@ -170,3 +170,22 @@ class LocationStore(dict):
         locations = {k: Location(**v) for k, v in d.items()}
         current = locations[current_name]
         return cls(current=current, **locations)
+
+@retry(stop=stop_after_attempt(3))
+def setup_new_locations():
+    """
+    Initializes a starting region and city where the game starts.
+
+    Returns: 
+        LocationStore: A LocationStore object containing the starting region and city.
+    """
+    region = Location.generate(type="region")
+    locations = LocationStore(region, **{region.name: region})
+
+    city = locations.current.generate_child(type="city")
+    while city.type != "city":
+        city = locations.current.generate_child(type="city")
+    locations.add(city)
+    locations.set_current(city)
+
+    return locations
