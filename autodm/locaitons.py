@@ -125,6 +125,7 @@ Make sure the location has the following properties:
         assert (
             child.type in ALLOWED_CHILDREN[self.type]
         ), f"Child type {child.type} not in allowed children. Allowed children are {ALLOWED_CHILDREN[self.type]}"
+        child.parent_name = self.name
         return child
 
 
