@@ -1,8 +1,10 @@
 from llama_index.core.program import LLMTextCompletionProgram
 from pydantic import BaseModel, Field
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict, Union
 import json
 from tenacity import retry, stop_after_attempt
+import networkx as nx
+import matplotlib.pyplot as plt
 from .llm import get_llm
 
 LOCATION_TYPES = [
@@ -86,10 +88,13 @@ class Location(BaseModel):
         if "parent_name" not in kwargs and "type":
             kwargs["type"] = "region"
         kwgs = "\n".join([f"{k}: {v}" for k, v in kwargs.items()])
+        allowed_children_str = "\n".join(
+            [f"{k}: {v}" for k, v in ALLOWED_CHILDREN.items()]
+        )
         prompt = f"""Please create a location for a D&D campaign. \
 If a parent is passed, please make sure the properties align with the parent location and that the child is not larger than the parent. \
-For example, a child of a region should be a city, road, dungeon, or wilderness; \
-the child of a city should be a building or a road; and the child of a building should be a room. \
+If generating a child, please make sure it follows the allowed child types below:
+{allowed_children_str}
 Make sure the location has the following properties: 
 {kwgs}"""
 
@@ -117,6 +122,11 @@ Make sure the location has the following properties:
         Example:
             child_location = location.generate_child(storyline="You leave the tavern and enter a dark alleyway.")
         """
+        allowed_types_str = "Allowed location types: " + ", ".join(ALLOWED_CHILDREN[self.type])
+        if not storyline:
+            storyline = allowed_types_str
+        else:
+            storyline = f"{storyline}\n{allowed_types_str}"
         child = Location.generate(
             storyline=storyline,
             parent_name=self.name,
@@ -171,6 +181,59 @@ class LocationStore(dict):
         locations = {k: Location(**v) for k, v in d.items()}
         current = locations[current_name]
         return cls(current=current, **locations)
+    
+class LocationGraph:
+    def __init__(self):
+        self.graph = nx.Graph()
+
+    def set_current_location(self, location_name: str):
+        self.current_location = self[location_name]
+
+    def add_location(self, location: Location):
+        self.graph.add_node(location.name, **location.model_dump())
+        if location.parent_name:
+            self.graph.add_edge(location.parent_name, location.name)
+
+    def _node_to_location(self, node: Dict[str, Any]) -> Location:
+        return Location(**node)
+    
+    def _nodes_to_locations(self, nodes: List[Dict[str, Any]]) -> List[Location]:
+        return [self._node_to_location(node) for node in nodes]
+
+    def get_children(self, location_name: str):
+        nodes = list(self.graph.successors(location_name))
+        return self._nodes_to_locations(nodes)
+
+    def get_location(self, location_name: str) -> Optional[Dict[str, str]]:
+        if location_name in self.graph:
+            node = self.graph.nodes[location_name]
+            return self._node_to_location(node)
+        return None
+
+    def get_path(self, start_location: str, end_location: str):
+        try:
+            path = nx.shortest_path(self.graph, start_location, end_location)
+            return path
+        except nx.NetworkXNoPath:
+            return None
+        
+    def __getitem__(self, name):
+        return self._node_to_location(self.graph.nodes[name])
+    
+    def travel_plan(self, location_name: str) -> Union[str, List[Location]]:
+        if location_name not in self.graph:
+            return "The location name is unknown. Try creating the location first, then try again."
+        paths = self.get_path(self.current_location.name, location_name)
+        return f"To reach {location_name} from {paths[0]}, you must travel through the following locations: {','.join(paths[1:-1])}"
+        
+    def visualize(self):
+        plt.figure(figsize=(10, 8))
+        pos = nx.spring_layout(self.graph)
+        nx.draw(self.graph, pos, with_labels=True, node_size=3000, node_color='skyblue', font_size=10, font_weight='bold')
+        node_labels = {node: "\n\n" + data['type'] for node, data in self.graph.nodes(data=True)}
+        nx.draw_networkx_labels(self.graph, pos, labels=node_labels, font_size=8, font_color='red')
+        plt.title('Location Graph')
+        plt.show()
 
 @retry(stop=stop_after_attempt(3))
 def setup_new_locations():
