@@ -1,11 +1,14 @@
 from llama_index.core.program import LLMTextCompletionProgram
 from pydantic import BaseModel, Field
 from typing import Optional, List, Any, Dict, Union
+from pathlib import Path
 import json
 from tenacity import retry, stop_after_attempt
 import networkx as nx
 import matplotlib.pyplot as plt
 from .llm import get_llm
+
+LOCATION_SAVE_PATH = Path('~').expanduser() / '.autodm/location_graph.adjlist'
 
 LOCATION_TYPES = [
     "region",
@@ -189,6 +192,11 @@ class LocationGraph:
     def set_current_location(self, location_name: str):
         self.current_location = self[location_name]
 
+    def list_locations(self, type:Optional[str]=None) -> List[str]:
+        nodes = [self[i] for i in self.graph.nodes]
+        nodes = [node for node in nodes if node.type == type] if type else nodes
+        return [node.name for node in nodes]
+
     def add_location(self, location: Location):
         self.graph.add_node(location.name, **location.model_dump())
         if location.parent_name:
@@ -201,8 +209,16 @@ class LocationGraph:
         return [self._node_to_location(node) for node in nodes]
 
     def get_children(self, location_name: str):
-        nodes = list(self.graph.successors(location_name))
-        return self._nodes_to_locations(nodes)
+        nodes = self.graph.nodes
+        children = [node for node in nodes if self[node].parent_name == location_name]
+        return children
+    
+    def get_parent(self, location_name: str):
+        location = self[location_name].parent_name
+        if location is not None:
+            return location
+        else:
+            return "No parent location"
 
     def get_location(self, location_name: str) -> Optional[Dict[str, str]]:
         if location_name in self.graph:
@@ -235,6 +251,16 @@ class LocationGraph:
         plt.title('Location Graph')
         plt.show()
 
+    def save(self, path: Union[str, Path]=LOCATION_SAVE_PATH):
+        nx.write_adjlist(self.graph)
+
+    @classmethod
+    def load(cls, path: Union[Path, str]=LOCATION_SAVE_PATH):
+        graph = nx.read_adjlist("location_graph.adjlist", create_using=nx.DiGraph)
+        location_graph = cls()
+        location_graph.graph = graph
+        return location_graph
+
 @retry(stop=stop_after_attempt(3))
 def setup_new_locations():
     """
@@ -244,12 +270,10 @@ def setup_new_locations():
         LocationStore: A LocationStore object containing the starting region and city.
     """
     region = Location.generate(type="region")
-    locations = LocationStore(region, **{region.name: region})
-
-    city = locations.current.generate_child(type="city")
-    while city.type != "city":
-        city = locations.current.generate_child(type="city")
-    locations.add(city)
-    locations.set_current(city)
+    city = region.generate_child(type="city")
+    locations = LocationGraph()
+    locations.add_location(region)
+    locations.add_location(city)
+    locations.set_current_location(city.name)
 
     return locations
