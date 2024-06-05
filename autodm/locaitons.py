@@ -30,6 +30,8 @@ ALLOWED_CHILDREN = {
     "room": [],
 }
 
+class Config:
+    extra = "ignore"
 
 class Location(BaseModel):
     """
@@ -67,6 +69,9 @@ class Location(BaseModel):
         description="The description of the parent location of this location.",
     )
 
+    class Config(Config):
+        pass
+
     def __str__(self):
         return self.name
 
@@ -92,7 +97,7 @@ class Location(BaseModel):
             kwargs["type"] = "region"
         kwgs = "\n".join([f"{k}: {v}" for k, v in kwargs.items()])
         allowed_children_str = "\n".join(
-            [f"{k}: {v}" for k, v in ALLOWED_CHILDREN.items()]
+            [f"{k}: {', '.join(v)}" for k, v in ALLOWED_CHILDREN.items()]
         )
         prompt = f"""Please create a location for a D&D campaign. \
 If a parent is passed, please make sure the properties align with the parent location and that the child is not larger than the parent. \
@@ -225,6 +230,17 @@ class LocationGraph:
             node = self.graph.nodes[location_name]
             return self._node_to_location(node)
         return None
+    
+    def current_neighbors(self, num_skips=1):
+        neighbors = list(self.graph.neighbors(self.current_location.name))
+        while num_skips > 0:
+            for neighbor in neighbors:
+                _n = self.graph.neighbors(neighbor)
+                for n in _n:
+                    if n not in neighbors:
+                        neighbors.append(n)
+            num_skips -= 1
+        return neighbors
 
     def get_path(self, start_location: str, end_location: str):
         try:
@@ -235,6 +251,22 @@ class LocationGraph:
         
     def __getitem__(self, name):
         return self._node_to_location(self.graph.nodes[name])
+    
+    def __iter__(self):
+        for node in self.graph.nodes:
+            yield self._node_to_location(self.graph.nodes[node])
+
+    def __len__(self):
+        return len(self.graph.nodes)
+    
+    def __repr__(self):
+        s = ""
+        for loc in self:
+            s += f"{loc}\n"
+        return s
+
+    def __str__(self):
+        return self.__repr__()
     
     def travel_plan(self, location_name: str) -> Union[str, List[Location]]:
         if location_name not in self.graph:
@@ -262,14 +294,17 @@ class LocationGraph:
         return location_graph
 
 @retry(stop=stop_after_attempt(3))
-def setup_new_locations():
+def setup_new_locations(storyline=None):
     """
     Initializes a starting region and city where the game starts.
 
     Returns: 
         LocationStore: A LocationStore object containing the starting region and city.
     """
-    region = Location.generate(type="region")
+    if storyline is not None:
+        region = Location.generate(storyline=storyline, type="region")
+    else:
+        region = Location.generate(type="region")
     city = region.generate_child(type="city")
     locations = LocationGraph()
     locations.add_location(region)
