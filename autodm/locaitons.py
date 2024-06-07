@@ -306,6 +306,8 @@ def setup_new_locations(storyline=None):
     else:
         region = Location.generate(type="region")
     city = region.generate_child(type="city")
+    while city.type != "city":
+        city = region.generate_child(type="city")
     locations = LocationGraph()
     locations.add_location(region)
     locations.add_location(city)
