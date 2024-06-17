@@ -1,6 +1,7 @@
 from enum import Enum
 from pydantic import BaseModel, Field
 import numpy as np
+from typing import Union
 
 class DiceType(int, Enum):
     D4 = 4
@@ -19,7 +20,7 @@ class Dice(BaseModel):
         count (int): The number of dice to roll.
     """
 
-    type: DiceType = Field(DiceType.D20, title="Dice Type", description="The type of dice to roll")
+    dice_type: Union[DiceType, int] = Field(DiceType.D20, title="Dice Type", description="The type of dice to roll")
     count: int = Field(1, title="Dice Count", description="The number of dice to roll")
 
     def roll(self):
@@ -29,7 +30,7 @@ class Dice(BaseModel):
         Returns:
             int: The sum of the rolled values.
         """
-        return sum(np.random.randint(1, self.type.value + 1, self.count))
+        return sum(np.random.randint(1, self.dice_type + 1, self.count))
 
     def __str__(self):
         return f"{self.count}d{self.type.value}"

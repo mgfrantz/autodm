@@ -72,10 +72,10 @@ class AdventureLog:
 
     def search(self, query: str, top_k: int = 5):
         postprocessor = FixedRecencyPostprocessor(date_key='timestamp')
-        query_engine = self.index.as_query_engine(llm=get_llm(output_cls=str), similarity_top_k=top_k, node_postprocessors=[postprocessor])
+        query_engine = self.index.as_query_engine(llm=get_llm(), similarity_top_k=top_k, node_postprocessors=[postprocessor])
         return query_engine.query(query)
     
     def clear(self):
-        if input("Are you sure you want to clear the adventure log? (y/n): ").lower() == 'y':
-            self.storage_context.vector_store.client.drop_table(self.lance_table)
-            self.index = None
+        # if input("Are you sure you want to clear the adventure log? (y/n): ").lower() == 'y':
+        self.storage_context.vector_store.client.drop_table(self.lance_table)
+        self.index = None
