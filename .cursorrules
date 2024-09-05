@@ -1,0 +1,17 @@
+Purpose:
+Help build a clean, modular library that uses Ollama to power a dungeon master agent.
+The agent should be able to run in a local environment, and should not require internet access.
+It should be able to handle complex, open-ended scenarios for one or more players.
+It should also be able to handle player input, and should be able to provide feedback to the players.
+It should also handle all the NPCs, rules, items, bonuses, and other details of the game.
+
+Rules:
+- Use python
+- The library should be in the autodm directory
+- The library should be modular, and should be able to be used to power a dungeon master agent for D&D
+
+Code:
+- Use Ollama (llama3.1:8b) and llama-index or langchain to power the agent
+- The agent should always converse in markdown
+- Functions and classes should be well-documented in the docstrings
+- Always use type hints when possible
