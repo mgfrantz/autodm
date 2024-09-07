@@ -1,5 +1,6 @@
 from typing import List, Optional
 from enum import Enum
+from pydantic import BaseModel
 
 class SpellSchool(Enum):
     ABJURATION = "Abjuration"
@@ -11,53 +12,61 @@ class SpellSchool(Enum):
     NECROMANCY = "Necromancy"
     TRANSMUTATION = "Transmutation"
 
-class Spell:
-    def __init__(self, 
-                 name: str,
-                 base_level: int,
-                 school: SpellSchool,
-                 casting_time: str,
-                 range: str,
-                 components: str,
-                 duration: str,
-                 description: str,
-                 classes: List[str],
-                 ritual: bool = False):
-        self.name = name
-        self.base_level = base_level
-        self.level = 0  # Default to 0 when learned
-        self.school = school
-        self.casting_time = casting_time
-        self.range = range
-        self.components = components
-        self.duration = duration
-        self.description = description
-        self.classes = classes
-        self.ritual = ritual
+class Spell(BaseModel):
+    name: str
+    level: int
+    school: SpellSchool
+    casting_time: str
+    range: str
+    components: str
+    duration: str
+    description: str
+    classes: List[str] = []
+    ritual: bool = False
 
-    def __str__(self):
-        return f"{self.name} (Level {self.level}/{self.base_level} {self.school.value})"
+    def set_level(self, new_level: int):
+        self.level = new_level
 
-    def set_level(self, level: int):
-        """Set the spell's level, not exceeding its base level."""
-        self.level = min(level, self.base_level)
-
-# Example spells
 fireball = Spell(
     name="Fireball",
-    base_level=3,
+    level=3,
     school=SpellSchool.EVOCATION,
     casting_time="1 action",
     range="150 feet",
     components="V, S, M (a tiny ball of bat guano and sulfur)",
     duration="Instantaneous",
-    description="A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame...",
+    description="A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.",
     classes=["Sorcerer", "Wizard"]
 )
 
+magic_missile = Spell(
+    name="Magic Missile",
+    level=1,
+    school=SpellSchool.EVOCATION,
+    casting_time="1 action",
+    range="120 feet",
+    components="V, S",
+    duration="Instantaneous",
+    description="You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range.",
+    classes=["Sorcerer", "Wizard"]
+)
+
+shield = Spell(
+    name="Shield",
+    level=1,
+    school=SpellSchool.ABJURATION,
+    casting_time="1 reaction",
+    range="Self",
+    components="V, S",
+    duration="1 round",
+    description="An invisible barrier of magical force appears and protects you.",
+    classes=["Bard", "Cleric", "Druid", "Paladin", "Ranger"]
+)
+
+# Example spells
 cure_wounds = Spell(
     name="Cure Wounds",
-    base_level=1,
+    level=1,
     school=SpellSchool.EVOCATION,
     casting_time="1 action",
     range="Touch",
@@ -70,21 +79,9 @@ cure_wounds = Spell(
 
 # Additional common D&D spells
 
-magic_missile = Spell(
-    name="Magic Missile",
-    base_level=1,
-    school=SpellSchool.EVOCATION,
-    casting_time="1 action",
-    range="120 feet",
-    components="V, S",
-    duration="Instantaneous",
-    description="You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range...",
-    classes=["Sorcerer", "Wizard"]
-)
-
 healing_word = Spell(
     name="Healing Word",
-    base_level=1,
+    level=1,
     school=SpellSchool.EVOCATION,
     casting_time="1 bonus action",
     range="60 feet",
@@ -94,21 +91,9 @@ healing_word = Spell(
     classes=["Bard", "Cleric", "Druid"]
 )
 
-shield = Spell(
-    name="Shield",
-    base_level=1,
-    school=SpellSchool.ABJURATION,
-    casting_time="1 reaction",
-    range="Self",
-    components="V, S",
-    duration="1 round",
-    description="An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC...",
-    classes=["Sorcerer", "Wizard"]
-)
-
 bless = Spell(
     name="Bless",
-    base_level=1,
+    level=1,
     school=SpellSchool.ENCHANTMENT,
     casting_time="1 action",
     range="30 feet",
@@ -120,7 +105,7 @@ bless = Spell(
 
 detect_magic = Spell(
     name="Detect Magic",
-    base_level=1,
+    level=1,
     school=SpellSchool.DIVINATION,
     casting_time="1 action",
     range="Self",

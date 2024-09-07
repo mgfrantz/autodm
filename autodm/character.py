@@ -29,6 +29,11 @@ class Attributes(BaseModel):
     def __str__(self):
         return "\n".join([f"{attr.capitalize()}: {getattr(self, attr)} ({self.get_modifier(attr):+d})" for attr in self.__fields__])
 
+class Relationship(BaseModel):
+    target: str  # Name of the character this relationship is with
+    attitude: int = Field(0, ge=-100, le=100)  # -100 (hostile) to 100 (friendly)
+    description: str = ""
+
 class Character(BaseModel):
     name: str
     chr_class: str
@@ -46,6 +51,7 @@ class Character(BaseModel):
     current_hp: int = Field(...)  # Remove the default value and alias
     spells: List[Spell] = Field(default_factory=list)
     spell_slots: Dict[int, int] = Field(default_factory=lambda: {1: 2, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0})
+    relationships: Dict[str, Relationship] = Field(default_factory=dict)
 
     class Config:
         arbitrary_types_allowed = True
@@ -101,7 +107,7 @@ class Character(BaseModel):
     def add_spell(self, spell: Spell):
         """
         Add a spell to the character's spell list if they don't already know it.
-        Set the spell's level to the character's level, not exceeding the spell's base level.
+        The spell's level remains unchanged.
         
         Args:
         spell (Spell): The spell to add.
@@ -110,8 +116,7 @@ class Character(BaseModel):
         bool: True if the spell was added, False if the character already knew the spell.
         """
         if not any(existing_spell.name == spell.name for existing_spell in self.spells):
-            spell_copy = copy.deepcopy(spell)  # Create a copy of the spell
-            spell_copy.set_level(min(self.level, spell.base_level))
+            spell_copy = copy.deepcopy(spell)
             self.spells.append(spell_copy)
             return True
         return False
@@ -331,37 +336,86 @@ class Character(BaseModel):
         """Reset the character's movement at the start of their turn."""
         self.movement_remaining = self.movement_speed
 
-# Move this part inside the if __name__ == "__main__": block
+    def set_relationship(self, target_name: str, attitude: int, description: str = ""):
+        """Set or update a relationship with another character."""
+        self.relationships[target_name] = Relationship(
+            target=target_name,
+            attitude=attitude,
+            description=description
+        )
+
+    def get_relationship(self, target_name: str) -> Optional[Relationship]:
+        """Get the relationship with another character."""
+        return self.relationships.get(target_name)
+
+class Characters:
+    def __init__(self):
+        self.characters: Dict[str, Character] = {}
+
+    def add_character(self, character: Character):
+        """Add a character to the game."""
+        self.characters[character.name] = character
+
+    def get_character(self, name: str) -> Optional[Character]:
+        """Get a character by name."""
+        return self.characters.get(name)
+
+    def remove_character(self, name: str):
+        """Remove a character from the game."""
+        if name in self.characters:
+            del self.characters[name]
+
+    def set_relationship(self, character1_name: str, character2_name: str, attitude: int, description: str = ""):
+        """Set or update a relationship between two characters."""
+        char1 = self.get_character(character1_name)
+        char2 = self.get_character(character2_name)
+        
+        if char1 and char2:
+            char1.set_relationship(character2_name, attitude, description)
+            char2.set_relationship(character1_name, attitude, description)
+        else:
+            raise ValueError("One or both characters not found.")
+
+    def get_relationship(self, character1_name: str, character2_name: str) -> Optional[Relationship]:
+        """Get the relationship between two characters."""
+        char1 = self.get_character(character1_name)
+        if char1:
+            return char1.get_relationship(character2_name)
+        return None
+
+    def list_characters(self) -> List[str]:
+        """List all character names in the game."""
+        return list(self.characters.keys())
+
+# Example usage
 if __name__ == "__main__":
-    items = [
-        EquipmentItem(name="Leather Armor", item_type="armor", effects={"armor_class": 14}, quantity=1, weight=10.0),
-        EquipmentItem(name="Ring of Protection", item_type="ring", effects={"armor_class": 3}, quantity=1, weight=0.1),
-        EquipmentItem(name="Longsword", item_type="weapon", effects={"damage": "1d8+2"}, quantity=1, weight=3.0),
-    ]
+    # Create some characters
+    alice = Character.generate("Alice", chr_class="Wizard")
+    bob = Character.generate("Bob", chr_class="Fighter")
+    eve = Character.generate("Eve", chr_class="Rogue")
 
-    character = Character.generate("Elara Moonwhisper")
-    print(character)
-    print(f"Race: {character.chr_race}")
-    print(f"Class: {character.chr_class}")
-    print(f"Attributes: {character.attributes}")
-    print(f"Hit Dice: {character.hit_dice}")
-    print(f"Max HP: {character.max_hp}")
-    print(f"Armor Class: {character.armor_class}")
+    # Create a Characters instance
+    game_characters = Characters()
 
-    for item in items:
-        character.add_to_inventory(item)
+    # Add characters to the game
+    game_characters.add_character(alice)
+    game_characters.add_character(bob)
+    game_characters.add_character(eve)
 
-    character.equip_item(items[0])  # Leather Armor
-    print(f"After equipping leather armor - Armor Class: {character.armor_class}")
+    # Set relationships
+    game_characters.set_relationship("Alice", "Bob", 75, "Close friends and adventuring companions")
+    game_characters.set_relationship("Alice", "Eve", -30, "Distrusts Eve's motives")
+    game_characters.set_relationship("Bob", "Eve", 20, "Casual acquaintances")
 
-    character.equip_item(items[1])  # Ring of Protection
-    print(f"After equipng ring of protection - Armor Class: {character.armor_class}")
+    # Print relationships
+    for char_name in game_characters.list_characters():
+        character = game_characters.get_character(char_name)
+        print(f"\n{char_name}'s relationships:")
+        for rel_name, relationship in character.relationships.items():
+            print(f"  {rel_name}: Attitude {relationship.attitude}, {relationship.description}")
 
-    character.unequip_item("ring")
-    print(f"After unequipping ring of protection - Armor Class: {character.armor_class}")
-
-    character.unequip_item("armor")
-    print(f"After unequipping leather armor - Armor Class: {character.armor_class}")
-
-    print(character)
+    # Get a specific relationship
+    alice_bob_relationship = game_characters.get_relationship("Alice", "Bob")
+    if alice_bob_relationship:
+        print(f"\nAlice's relationship with Bob: {alice_bob_relationship.attitude}, {alice_bob_relationship.description}")
 
