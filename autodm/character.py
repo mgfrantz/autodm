@@ -2,6 +2,17 @@ from typing import List, Optional, Dict, Union, ClassVar
 from pydantic import BaseModel, Field
 import random
 from .items import Item, WeaponAttack, EquipmentItem
+from enum import Enum
+from .spells import Spell
+import copy
+
+class BattleState(Enum):
+    NOT_IN_BATTLE = 0
+    IN_BATTLE = 1
+
+class CharacterState(Enum):
+    ALIVE = 0
+    DEAD = 1
 
 class Attributes(BaseModel):
     strength: int = Field(10, ge=1, le=20)
@@ -20,7 +31,6 @@ class Attributes(BaseModel):
 
 class Character(BaseModel):
     name: str
-    player_name: str
     chr_class: str
     level: int
     chr_race: str
@@ -33,16 +43,33 @@ class Character(BaseModel):
     initiative: int
     speed: int
     max_hp: int
-    hp: int
-    hit_dice: str
+    current_hp: int = Field(...)  # Remove the default value and alias
+    spells: List[Spell] = Field(default_factory=list)
+    spell_slots: Dict[int, int] = Field(default_factory=lambda: {1: 2, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0})
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    @property
+    def hp(self) -> int:
+        return self.current_hp
+
+    @hp.setter
+    def hp(self, value: int) -> None:
+        self.current_hp = max(0, min(value, self.max_hp))
+        self.check_death()
+
     skills: Dict[str, int] = {}
-    spells: List[str] = []
-    equipped_items: Dict[str, Optional[EquipmentItem]] = Field(default_factory=lambda: {
-        "weapon": None,
-        "armor": None,
-        "accessory": None
+    equipped_items: Dict[str, List[Optional[EquipmentItem]]] = Field(default_factory=lambda: {
+        "weapon": [],
+        "armor": [],
+        "accessory": []
     })
     inventory: List[EquipmentItem] = Field(default_factory=list)
+    movement_speed: int = 30  # Default movement speed in feet
+    movement_remaining: int = 30  # Default movement remaining in feet
+    battle_state: BattleState = BattleState.NOT_IN_BATTLE  # Default battle state
+    character_state: CharacterState = CharacterState.ALIVE  # Default character state
 
     RACES: ClassVar[Dict[str, Dict[str, int]]] = {
         "Human": {"all": 1},
@@ -71,14 +98,43 @@ class Character(BaseModel):
         "Wizard": {"hit_dice": "1d6", "primary": "intelligence"}
     }
 
+    def add_spell(self, spell: Spell):
+        """
+        Add a spell to the character's spell list if they don't already know it.
+        Set the spell's level to the character's level, not exceeding the spell's base level.
+        
+        Args:
+        spell (Spell): The spell to add.
+        
+        Returns:
+        bool: True if the spell was added, False if the character already knew the spell.
+        """
+        if not any(existing_spell.name == spell.name for existing_spell in self.spells):
+            spell_copy = copy.deepcopy(spell)  # Create a copy of the spell
+            spell_copy.set_level(min(self.level, spell.base_level))
+            self.spells.append(spell_copy)
+            return True
+        return False
+
+    def can_cast_spell(self, spell: Spell) -> bool:
+        """Check if the character can cast the given spell."""
+        return self.spell_slots.get(spell.level, 0) > 0
+
+    def cast_spell(self, spell: Spell) -> None:
+        """Cast a spell, using up a spell slot."""
+        if self.can_cast_spell(spell):
+            self.spell_slots[spell.level] -= 1
+        else:
+            raise ValueError(f"Cannot cast {spell.name}: no available spell slots")
+
     @classmethod
-    def generate(cls, name: str, player_name: str) -> 'Character':
+    def generate(cls, name: str, **kwargs) -> 'Character':
         """
         Generate a new Character instance with random attributes, race, and class.
 
         Args:
         name (str): The character's name.
-        player_name (str): The player's name.
+        **kwargs: Additional arguments to pass to the Character constructor.
 
         Returns:
         Character: A new Character instance with randomly generated attributes.
@@ -95,8 +151,8 @@ class Character(BaseModel):
             charisma=roll_attribute()
         )
 
-        chr_race = random.choice(list(cls.RACES.keys()))
-        chr_class = random.choice(list(cls.CLASSES.keys()))
+        chr_race = kwargs.get('chr_race', random.choice(list(cls.RACES.keys())))
+        chr_class = kwargs.get('chr_class', random.choice(list(cls.CLASSES.keys())))
 
         # Apply racial modifiers
         race_mods = cls.RACES[chr_race]
@@ -112,54 +168,79 @@ class Character(BaseModel):
             else:
                 setattr(attributes, attr, getattr(attributes, attr) + mod)
 
-        level = 1
+        level = kwargs.get('level', 1)
         proficiency_bonus = 2
         armor_class = 10 + attributes.get_modifier('dexterity')
         initiative = attributes.get_modifier('dexterity')
-        speed = 30  # Default speed, can be adjusted based on race
+        speed = kwargs.get('speed', 30)  # Default speed, can be adjusted based on race
         hit_dice = cls.CLASSES[chr_class]["hit_dice"]
         max_hp = int(hit_dice.split('d')[1]) + attributes.get_modifier('constitution')
 
-        return cls(
-            name=name,
-            player_name=player_name,
-            chr_class=chr_class,
-            level=level,
-            chr_race=chr_race,
-            background=random.choice(["Acolyte", "Criminal", "Folk Hero", "Noble", "Sage", "Soldier"]),
-            alignment=random.choice(["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]),
-            experience_points=0,
-            attributes=attributes,
-            proficiency_bonus=proficiency_bonus,
-            armor_class=armor_class,
-            initiative=initiative,
-            speed=speed,
-            max_hp=max_hp,
-            hp=max_hp,
-            hit_dice=hit_dice,
-            skills={},  # Skills can be added based on class and background
-            spells=[]  # Spells can be added based on class and level
-        )
+        default_spells = []
+        if chr_class in ["Wizard", "Sorcerer"]:
+            from .spells import fireball
+            default_spells.append(fireball)
+        elif chr_class in ["Cleric", "Druid", "Paladin"]:
+            from .spells import cure_wounds
+            default_spells.append(cure_wounds)
+
+        # Set up spell slots based on class and level
+        spell_slots = {1: 2, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+        if chr_class in ["Wizard", "Sorcerer", "Bard", "Cleric", "Druid"]:
+            if level >= 3:
+                spell_slots[2] = 2
+            if level >= 5:
+                spell_slots[3] = 2
+
+        default_args = {
+            "name": name,
+            "chr_class": chr_class,
+            "level": level,
+            "chr_race": chr_race,
+            "background": random.choice(["Acolyte", "Criminal", "Folk Hero", "Noble", "Sage", "Soldier"]),
+            "alignment": random.choice(["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]),
+            "experience_points": 0,
+            "attributes": attributes,
+            "proficiency_bonus": proficiency_bonus,
+            "armor_class": armor_class,
+            "initiative": initiative,
+            "speed": speed,
+            "max_hp": max_hp,
+            "current_hp": max_hp,  # Set current_hp to max_hp initially
+            "hit_dice": hit_dice,
+            "skills": {},  # Skills can be added based on class and background
+            "spells": [],  # Start with an empty spell list
+            "spell_slots": spell_slots
+        }
+
+        # Update default_args with any additional kwargs
+        default_args.update(kwargs)
+
+        character = cls(**default_args)
+
+        # Add default spells using the new add_spell method
+        for spell in default_spells:
+            character.add_spell(spell)
+
+        return character
 
     def equip_item(self, item: EquipmentItem) -> None:
         """
         Equip an item to the character.
-
-        Args:
-            item (EquipmentItem): The item to equip.
-
-        Raises:
-            ValueError: If the item is not equippable.
         """
         if item.item_type.lower() in ['weapon', 'armor', 'shield', 'ring']:
             slot = item.item_type.lower()
             if slot == 'shield':
-                slot = 'armor'  # Shields go in the armor slot
-            self.equipped_items[slot] = item
+                slot = 'armor'
+            self.equipped_items[slot].append(item)
             print(f"Equipped: {item.name}")
             self.calculate_armor_class()
         else:
             raise ValueError(f"{item.name} is not equippable.")
+
+    def get_equipped_weapons(self) -> List[EquipmentItem]:
+        """Get a list of all equipped weapons."""
+        return [item for item in self.equipped_items['weapon'] if item is not None]
 
     def calculate_armor_class(self):
         """
@@ -169,19 +250,23 @@ class Character(BaseModel):
         base_ac = 10 + dex_modifier  # Start with base AC
 
         armor = self.equipped_items.get('armor')
-        if armor and 'armor_class' in armor.effects:
-            if isinstance(armor.effects['armor_class'], int):
-                base_ac = max(base_ac, armor.effects['armor_class'] + dex_modifier)
-            else:
-                # If it's a string (like "11 + Dex modifier"), we'll need to parse it
-                armor_base = int(armor.effects['armor_class'].split()[0])
-                base_ac = max(base_ac, armor_base + dex_modifier)
+        if armor:
+            for item in armor:
+                if 'armor_class' in item.effects:
+                    if isinstance(item.effects['armor_class'], int):
+                        base_ac = max(base_ac, item.effects['armor_class'] + dex_modifier)
+                    else:
+                        # If it's a string (like "11 + Dex modifier"), we'll need to parse it
+                        armor_base = int(item.effects['armor_class'].split()[0])
+                        base_ac = max(base_ac, armor_base + dex_modifier)
 
         # Add AC bonuses from other equipped items
         for item in self.equipped_items.values():
-            if item and item != armor and 'armor_class' in item.effects:
-                if isinstance(item.effects['armor_class'], int):
-                    base_ac += item.effects['armor_class']
+            if item:
+                for i in item:
+                    if i and 'armor_class' in i.effects:
+                        if isinstance(i.effects['armor_class'], int):
+                            base_ac += i.effects['armor_class']
 
         self.armor_class = base_ac
         print(f"Armor Class recalculated: {self.armor_class}")
@@ -196,7 +281,7 @@ class Character(BaseModel):
         item = self.equipped_items.get(item_type.lower())
         if item:
             # Remove the item from equipped items
-            self.equipped_items[item_type.lower()] = None
+            self.equipped_items[item_type.lower()] = []
             
             # Add the item back to inventory
             self.inventory.append(item)
@@ -217,13 +302,34 @@ class Character(BaseModel):
         """
         self.inventory.append(item)
 
+    @property
+    def hp(self) -> int:
+        return self.current_hp
+
+    @hp.setter
+    def hp(self, value: int) -> None:
+        self.current_hp = max(0, min(value, self.max_hp))
+        self.check_death()
+
+    def check_death(self) -> None:
+        """Check if the character has died and update their state accordingly."""
+        if self.current_hp <= 0:
+            self.current_hp = 0  # Ensure HP doesn't go below 0
+            self.character_state = CharacterState.DEAD
+            print(f"{self.name} has died!")
+
     def __str__(self):
-        equipped_items_str = ", ".join([f"{slot}: {item}" for slot, item in self.equipped_items.items() if item])
-        return (f"{self.name}, Level {self.level} {self.chr_race} {self.chr_class}\n"
+        status = "ALIVE" if self.character_state == CharacterState.ALIVE else "DEAD"
+        equipped_items_str = ", ".join([f"{slot}: {', '.join([item.name for item in items if item])}" for slot, items in self.equipped_items.items() if items])
+        return (f"{self.name}, Level {self.level} {self.chr_race} {self.chr_class} ({status})\n"
                 f"Attributes:\n{self.attributes}\n"
                 f"Armor Class: {self.armor_class}\n"
-                f"Hit Points: {self.hp}/{self.max_hp}\n"
+                f"Hit Points: {self.current_hp}/{self.max_hp}\n"
                 f"Equipped: {equipped_items_str}")
+
+    def reset_movement(self):
+        """Reset the character's movement at the start of their turn."""
+        self.movement_remaining = self.movement_speed
 
 # Move this part inside the if __name__ == "__main__": block
 if __name__ == "__main__":
@@ -233,7 +339,7 @@ if __name__ == "__main__":
         EquipmentItem(name="Longsword", item_type="weapon", effects={"damage": "1d8+2"}, quantity=1, weight=3.0),
     ]
 
-    character = Character.generate("Elara Moonwhisper", "Alice")
+    character = Character.generate("Elara Moonwhisper")
     print(character)
     print(f"Race: {character.chr_race}")
     print(f"Class: {character.chr_class}")
@@ -249,7 +355,7 @@ if __name__ == "__main__":
     print(f"After equipping leather armor - Armor Class: {character.armor_class}")
 
     character.equip_item(items[1])  # Ring of Protection
-    print(f"After equipping ring of protection - Armor Class: {character.armor_class}")
+    print(f"After equipng ring of protection - Armor Class: {character.armor_class}")
 
     character.unequip_item("ring")
     print(f"After unequipping ring of protection - Armor Class: {character.armor_class}")

@@ -37,6 +37,9 @@ class WeaponAttack(BaseModel):
     hit_bonus: int
     damage: str
 
+    class Config:
+        arbitrary_types_allowed = True
+
 class EquipmentItem(BaseModel):
     name: str
     quantity: int
