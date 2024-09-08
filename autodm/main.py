@@ -2,7 +2,7 @@ from .npc import NPC
 from .player_agent import PlayerAgent
 from .character import Character
 from .items import EquipmentItem
-from .spells import Spell, SpellSchool, fireball, magic_missile, shield  # Import Spell and SpellSchool
+from .spells import Spell, SpellSchool, fireball, magic_missile, shield, cure_wounds  # Import Spell and SpellSchool
 
 def main():
     # Create player character
@@ -19,6 +19,10 @@ def main():
     player_character.add_spell(fireball)
     player_character.add_spell(magic_missile)
     player_character.add_spell(shield)
+    player_character.add_spell(cure_wounds)
+
+    # Set up spell slots (adjust as needed)
+    player_character.spell_slots = {1: 4, 2: 3, 3: 2, 4: 1, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
 
     player_agent = PlayerAgent(player_character)
 
@@ -74,7 +78,9 @@ def describe_spell_effect(spell_name: str, target: str, caster_name: str) -> str
         "Magic Missile": f"Three glowing darts of magical force spring from {caster_name}'s hand, "
                          f"unerringly striking {target}.",
         "Shield": f"An invisible barrier of magical force appears around {caster_name}, "
-                  f"protecting them from attacks."
+                  f"protecting them from attacks.",
+        "Cure Wounds": f"{caster_name} touches {target}, and a surge of positive energy "
+                       f"washes over them, healing their wounds."
     }
     return spell_effects.get(spell_name, f"The {spell_name} spell is cast, affecting {target}.")
 

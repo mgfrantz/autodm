@@ -1,19 +1,19 @@
 from typing import List, Optional
-from llama_index.llms.ollama import Ollama
-from llama_index.core.tools import FunctionTool
+from llama_index.core.tools import BaseTool, FunctionTool
+from llama_index.core.agent import ReActAgent
 from .character import Character, Attributes
 from .actions import Action, AttackAction, CastSpellAction
 from .spells import Spell
 from pydantic import Field
+from .llm import get_llm, complete
 
 class PlayerAgent:
     character: Character
-    llm: Ollama
-    tools: List[FunctionTool]
+    tools: List[BaseTool]
+    agent: ReActAgent
 
     def __init__(self, character: Character):
         self.character = character
-        self.llm = Ollama(model="llama3.1")
         self.tools = [
             FunctionTool.from_defaults(fn=self.move, name="move"),
             FunctionTool.from_defaults(fn=self.attack, name="attack"),
@@ -31,67 +31,24 @@ class PlayerAgent:
             FunctionTool.from_defaults(fn=self.check_hp, name="check_hp"),
             FunctionTool.from_defaults(fn=self.check_skills, name="check_skills"),
         ]
+        self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
 
     def interpret_action(self, user_input: str) -> str:
-        # Direct mapping for specific queries
-        if user_input.lower() in ["what spells do i have?", "check spells"]:
-            return self.check_spells()
-        elif user_input.lower() in ["what weapons do i have?", "check weapons", "check equipment"]:
-            return self.check_equipment()
-        elif user_input.lower().startswith("i hit") or user_input.lower().startswith("i attack"):
-            return self.attack(user_input.split(maxsplit=2)[-1])
-        elif user_input.lower().startswith("i say") or user_input.lower().startswith("say"):
-            return self.say(user_input.split(maxsplit=1)[-1])
-        elif user_input.lower().startswith("cast") or "cast" in user_input.lower():
-            words = user_input.lower().split()
-            spell_name = next((word for word in words if word not in ["cast", "i", "spell", "on", "at"]), None)
-            target = next((word for word in reversed(words) if word not in ["cast", "i", "spell", "on", "at", spell_name]), None) if spell_name else None
-            return self.cast_spell(spell_name, target)
+        context = f"""
+You are an interpreter for {self.character.name}, a level {self.character.level} 
+{self.character.chr_race} {self.character.chr_class}. 
+Based on the user's input, determine the most appropriate action to take then take that action.
+For example, if the user wants tocast a spell, first check if the character knows the spell using the check_spells function.
+Then, if the spell is known, use the cast_spell function with the appropriate parameters.
+For other actions, use the appropriate function from the available tools.
+Respond with the result of the action taken.
+If you cannot determine the action to take, respond with "The narrator is confused by these strange words, can you try again?"
+If you do not call a functon, the action will not be taken.
 
-        # For more complex queries, use the LLM
-        context = (
-            f"You are an interpreter for {self.character.name}, a level {self.character.level} "
-            f"{self.character.chr_race} {self.character.chr_class}. "
-            f"Based on the user's input, determine the most appropriate action to take. "
-            f"Available actions are: move, attack, cast_spell, use_item, check_inventory, check_status, "
-            f"intimidate, persuade, deceive, say, check_spells, check_attributes, check_equipment, "
-            f"check_hp, check_skills. "
-            f"If the user is trying to speak or say something, use the 'say' action. "
-            f"If the user is trying to cast a spell, use the 'cast_spell' action. "
-            f"Respond with the action name followed by any necessary parameters.\n\n"
-            f"User input: {user_input}\n\n"
-            f"Action interpretation:"
-        )
-        interpretation = self.llm.complete(context).text.strip()
-        return self.execute_action(interpretation)
-
-    def execute_action(self, interpretation: str) -> str:
-        parts = interpretation.split(maxsplit=1)
-        action_name = parts[0].lower()
-        params = parts[1] if len(parts) > 1 else ""
-
-        action_map = {
-            "move": self.move,
-            "attack": self.attack,
-            "cast_spell": self.cast_spell,
-            "use_item": self.use_item,
-            "check_inventory": self.check_inventory,
-            "check_status": self.check_status,
-            "intimidate": self.intimidate,
-            "persuade": self.persuade,
-            "deceive": self.deceive,
-            "say": self.say,
-            "check_spells": self.check_spells,
-            "check_attributes": self.check_attributes,
-            "check_equipment": self.check_equipment,
-            "check_hp": self.check_hp,
-            "check_skills": self.check_skills,
-        }
-
-        if action_name in action_map:
-            return action_map[action_name](params)
-        else:
-            return f"Unknown action: {action_name}"
+User input: {user_input}
+"""
+        response = self.agent.chat(context)
+        return str(response)
 
     def move(self, direction: str) -> str:
         return f"{self.character.name} moves {direction}."
@@ -124,11 +81,11 @@ class PlayerAgent:
             return f"{self.character.name} doesn't have {item_name} in their inventory."
         return f"{self.character.name} uses {item_name}."
 
-    def check_inventory(self, params: str = "") -> str:
+    def check_inventory(self) -> str:
         inventory = ", ".join([item.name for item in self.character.inventory]) if self.character.inventory else "Empty"
         return f"{self.character.name}'s inventory: {inventory}"
 
-    def check_status(self, params: str = "") -> str:
+    def check_status(self) -> str:
         status = (
             f"{self.character.name}'s status:\n"
             f"HP: {self.character.current_hp}/{self.character.max_hp}\n"
@@ -155,14 +112,15 @@ class PlayerAgent:
     def say(self, message: str) -> str:
         return f"{self.character.name} says: '{message}'"
 
-    def check_spells(self, params: str = "") -> str:
+    def check_spells(self) -> str:
         spells = ", ".join([spell.name for spell in self.character.spells]) if self.character.spells else "No spells known"
-        return f"{self.character.name}'s known spells: {spells}"
+        spell_slots = ", ".join([f"Level {level}: {slots}" for level, slots in self.character.spell_slots.items() if slots > 0])
+        return f"{self.character.name}'s known spells: {spells}\nAvailable spell slots: {spell_slots}"
 
-    def check_attributes(self, params: str = "") -> str:
+    def check_attributes(self) -> str:
         return str(self.character.attributes)
 
-    def check_equipment(self, params: str = "") -> str:
+    def check_equipment(self) -> str:
         equipped_items = []
         for slot, items in self.character.equipped_items.items():
             for item in items:
@@ -171,11 +129,9 @@ class PlayerAgent:
         equipped_str = "\n".join(equipped_items) if equipped_items else "No items equipped"
         return f"{self.character.name}'s equipped items:\n{equipped_str}"
 
-    def check_hp(self, params: str = "") -> str:
+    def check_hp(self) -> str:
         return f"{self.character.name}'s HP: {self.character.current_hp}/{self.character.max_hp}"
 
-    def check_skills(self, params: str = "") -> str:
+    def check_skills(self) -> str:
         skills_str = "\n".join([f"{skill}: {modifier}" for skill, modifier in self.character.skills.items()]) if self.character.skills else "No skills"
         return f"{self.character.name}'s skills:\n{skills_str}"
-
-# Example usage remains the same

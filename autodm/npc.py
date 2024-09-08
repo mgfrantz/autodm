@@ -1,12 +1,11 @@
 from typing import Optional
-from llama_index.llms.ollama import Ollama
 from .character import Character, Attributes
+from .llm import get_llm, complete
 import random
 from pydantic import Field
 
 class NPC(Character):
     backstory: str = Field(default="")
-    llm: Optional[Ollama] = Field(default=None)
     
     def __init__(
         self,
@@ -16,7 +15,6 @@ class NPC(Character):
         chr_race: str,
         attributes: Attributes,
         backstory: str,
-        llm: Optional[Ollama] = None,
     ):
         super().__init__(
             name=name,
@@ -35,7 +33,6 @@ class NPC(Character):
             current_hp=10,
         )
         self.backstory = backstory
-        self.llm = llm or Ollama(model="llama3.1")
 
     @classmethod
     def generate(cls, name: str, chr_class: str, chr_race: str, level: int = 1):
@@ -48,11 +45,10 @@ class NPC(Character):
             charisma=random.randint(8, 18)
         )
         
-        llm = Ollama(model="llama3.1")
         backstory_prompt = f"Generate a brief backstory for {name}, a level {level} {chr_race} {chr_class}."
-        backstory = llm.complete(backstory_prompt).text
+        backstory = complete(backstory_prompt)
         
-        return cls(name, chr_class, level, chr_race, attributes, backstory, llm=llm)
+        return cls(name, chr_class, level, chr_race, attributes, backstory)
 
     def converse(self, message: str) -> str:
         context = (
@@ -63,8 +59,7 @@ class NPC(Character):
             f"Use {self.name} or appropriate pronouns instead of 'I' or 'me'. "
             f"Incorporate {self.name}'s race, class, and personality into the response."
         )
-        response = self.llm.complete(context).text
-        return response
+        return complete(context)
 
     def react_to_social_action(self, action: str, actor: str) -> str:
         context = (
@@ -75,8 +70,7 @@ class NPC(Character):
             f"Use {self.name} or appropriate pronouns instead of 'I' or 'me'. "
             f"Incorporate {self.name}'s race, class, and personality into the response."
         )
-        response = self.llm.complete(context).text
-        return response
+        return complete(context)
 
 # Interactive conversation loop
 def interactive_conversation(npc: NPC):
