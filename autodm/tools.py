@@ -2,11 +2,11 @@ import random
 import re
 from typing import Union, Tuple, List
 
-def roll_dice(dice_string: str) -> Tuple[int, List[int]]:
+def roll_dice(dice_string: str) -> List[int]:
     """
     Roll dice based on the input string (e.g., "3d6+2").
     
-    Returns a tuple containing the total and a list of individual rolls.
+    Returns a list of individual rolls.
     """
     dice_pattern = re.compile(r'(\d+)d(\d+)([+-]\d+)?')
     match = dice_pattern.match(dice_string)
@@ -19,9 +19,11 @@ def roll_dice(dice_string: str) -> Tuple[int, List[int]]:
     modifier = int(match.group(3) or 0)
     
     rolls = [random.randint(1, dice_type) for _ in range(num_dice)]
-    total = sum(rolls) + modifier
     
-    return total, rolls
+    if modifier != 0:
+        rolls.append(modifier)
+    
+    return rolls
 
 def apply_modifier(roll: int, modifier: int) -> int:
     """Apply a modifier to a roll."""

@@ -1,4 +1,8 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from llama_index.llms.ollama import Ollama
+from llama_index.llms.gemini import Gemini
 
 class LLMManager:
     _instance = None
@@ -6,8 +10,9 @@ class LLMManager:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(LLMManager, cls).__new__(cls)
-            # cls._instance.llm = Ollama(model="llama3.1")
-            cls._instance.llm = Ollama(model='hermes3')
+            cls._instance.llm = Ollama(model="llama3.1")
+            # cls._instance.llm = Ollama(model='hermes3')
+            # cls._instance.llm = Gemini(model='models/gemini-1.5-flash')
         return cls._instance
 
     @classmethod

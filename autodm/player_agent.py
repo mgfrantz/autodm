@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from llama_index.core.tools import BaseTool, FunctionTool
 from llama_index.core.agent import ReActAgent
 from .character import Character, Attributes
@@ -11,6 +11,8 @@ class PlayerAgent:
     character: Character
     tools: List[BaseTool]
     agent: ReActAgent
+    allies: Dict[str, Character] = Field(default_factory=dict)
+    enemies: Dict[str, Character] = Field(default_factory=dict)
 
     def __init__(self, character: Character):
         self.character = character
@@ -38,12 +40,12 @@ class PlayerAgent:
 You are an interpreter for {self.character.name}, a level {self.character.level} 
 {self.character.chr_race} {self.character.chr_class}. 
 Based on the user's input, determine the most appropriate action to take then take that action.
-For example, if the user wants tocast a spell, first check if the character knows the spell using the check_spells function.
+For example, if the user wants to cast a spell, first check if the character knows the spell using the check_spells function.
 Then, if the spell is known, use the cast_spell function with the appropriate parameters.
 For other actions, use the appropriate function from the available tools.
 Respond with the result of the action taken.
 If you cannot determine the action to take, respond with "The narrator is confused by these strange words, can you try again?"
-If you do not call a functon, the action will not be taken.
+If you do not call a function, the action will not be taken.
 
 User input: {user_input}
 """
@@ -135,3 +137,64 @@ User input: {user_input}
     def check_skills(self) -> str:
         skills_str = "\n".join([f"{skill}: {modifier}" for skill, modifier in self.character.skills.items()]) if self.character.skills else "No skills"
         return f"{self.character.name}'s skills:\n{skills_str}"
+
+    def add_character(self, name: str, relation: str, chr_class: str, chr_race: str, level: int = 1) -> str:
+        """
+        Add a new character as an ally or enemy.
+
+        Args:
+        name (str): The name of the character to add.
+        relation (str): The relation to the player character ('ally' or 'enemy').
+        chr_class (str): The class of the character.
+        chr_race (str): The race of the character.
+        level (int): The level of the character (default is 1).
+
+        Returns:
+        str: A message confirming the addition of the character.
+
+        Example:
+        >>> player_agent.add_character("Gandalf", "ally", "Wizard", "Human", 20)
+        "Gandalf, a level 20 Human Wizard, has been added as an ally."
+        """
+        new_character = Character.generate(name, chr_class=chr_class, chr_race=chr_race, level=level)
+        
+        if relation.lower() == 'ally':
+            self.allies[name] = new_character
+            return f"{name}, a level {level} {chr_race} {chr_class}, has been added as an ally."
+        elif relation.lower() == 'enemy':
+            self.enemies[name] = new_character
+            return f"{name}, a level {level} {chr_race} {chr_class}, has been added as an enemy."
+        else:
+            return f"Invalid relation '{relation}'. Please use 'ally' or 'enemy'."
+
+    def check_allies(self) -> str:
+        """
+        Check the list of allies.
+
+        Returns:
+        str: A string listing all allies or a message if there are no allies.
+
+        Example:
+        >>> player_agent.check_allies()
+        "Allies: Gandalf (level 20 Human Wizard), Aragorn (level 15 Human Ranger)"
+        """
+        if not self.allies:
+            return f"{self.character.name} has no allies at the moment."
+        ally_list = ", ".join([f"{name} (level {char.level} {char.chr_race} {char.chr_class})" for name, char in self.allies.items()])
+        return f"Allies: {ally_list}"
+
+    def check_enemies(self) -> str:
+        """
+        Check the list of enemies.
+
+        Returns:
+        str: A string listing all enemies or a message if there are no enemies.
+
+        Example:
+        >>> player_agent.check_enemies()
+        "Enemies: Sauron (level 30 Maiar Necromancer), Saruman (level 25 Human Wizard)"
+        """
+        if not self.enemies:
+            return f"{self.character.name} has no known enemies at the moment."
+        enemy_list = ", ".join([f"{name} (level {char.level} {char.chr_race} {char.chr_class})" for name, char in self.enemies.items()])
+        return f"Enemies: {enemy_list}"

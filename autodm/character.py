@@ -1,9 +1,9 @@
-from typing import List, Optional, Dict, Union, ClassVar
+from typing import List, Optional, Dict, Union, ClassVar, Tuple
 from pydantic import BaseModel, Field
 import random
 from .items import Item, WeaponAttack, EquipmentItem
 from enum import Enum
-from .spells import Spell
+from .spells import Spell, fireball, magic_missile, shield, cure_wounds  # Import specific spells
 import copy
 
 class BattleState(Enum):
@@ -183,10 +183,8 @@ class Character(BaseModel):
 
         default_spells = []
         if chr_class in ["Wizard", "Sorcerer"]:
-            from .spells import fireball
-            default_spells.append(fireball)
+            default_spells.extend([fireball, magic_missile, shield])
         elif chr_class in ["Cleric", "Druid", "Paladin"]:
-            from .spells import cure_wounds
             default_spells.append(cure_wounds)
 
         # Set up spell slots based on class and level
@@ -226,6 +224,10 @@ class Character(BaseModel):
         # Add default spells using the new add_spell method
         for spell in default_spells:
             character.add_spell(spell)
+
+        # Set up spell slots for a level 5 Wizard
+        if character.chr_class.lower() == "wizard" and character.level == 5:
+            character.spell_slots = {1: 4, 2: 3, 3: 2, 4: 1, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
 
         return character
 
