@@ -1,17 +1,23 @@
-from typing import List, Dict, Union, Tuple
-from .character import Character
-from .player_agent import PlayerAgent
+from typing import List, Dict, Union, Tuple, Literal, TYPE_CHECKING, Any
+from .character import Character, CharacterState
 from .npc import NPC
 from .tools import roll_dice
 from .llm import complete
+from .spells import Spell
 import random
+
+if TYPE_CHECKING:
+    from .player_agent import PlayerAgent
+    CharacterUnion = Union[PlayerAgent, NPC]
+else:
+    CharacterUnion = Union[Any, NPC]
 
 class BattleAgent:
     def __init__(self):
-        self.context = "You are a Dungeon Master narrating a battle. Describe the actions and their results vividly."
+        self.context = "You are a Dungeon Master narrating a battle. Describe the actions and their results vividly, taking into account whether the action succeeded or failed and how much damage was dealt."
 
     def narrate(self, action: str) -> str:
-        prompt = f"{self.context}\n\nAction: {action}\nNarration:"
+        prompt = f"{self.context}\n\nAction and Result: {action}\nNarration:"
         return complete(prompt)
 
     def check_rules(self, action: str, character: Character) -> bool:
@@ -19,16 +25,20 @@ class BattleAgent:
         return True
 
 class Battle:
-    def __init__(self, players: List[PlayerAgent], npcs: List[NPC]):
+    def __init__(self, players: List[Any], npcs: List[NPC]):
         self.players = players
         self.npcs = npcs
         self.battle_agent = BattleAgent()
-        self.initiative_order: List[Union[PlayerAgent, NPC]] = []
+        self.initiative_order: List[CharacterUnion] = []
         self.current_turn: int = 0
         self.is_battle_over: bool = False
         self.turn_ending_actions = {"attack", "cast", "use", "move", "dash", "disengage", "dodge", "help", "hide", "ready"}
 
     def start_battle(self):
+        for player in self.players:
+            player.set_battle(self)
+        for npc in self.npcs:
+            npc.set_battle(self)
         self.roll_initiative()
         self.run_battle()
 
@@ -43,14 +53,14 @@ class Battle:
             name = self.get_name(agent)
             print(f"{i}. {name}")
 
-    def get_initiative(self, agent: Union[PlayerAgent, NPC]) -> int:
-        if isinstance(agent, PlayerAgent):
+    def get_initiative(self, agent: CharacterUnion) -> int:
+        if hasattr(agent, 'character'):  # PlayerAgent
             return agent.character.initiative
         else:  # NPC
             return agent.initiative
 
-    def get_name(self, agent: Union[PlayerAgent, NPC]) -> str:
-        if isinstance(agent, PlayerAgent):
+    def get_name(self, agent: CharacterUnion) -> str:
+        if hasattr(agent, 'character'):  # PlayerAgent
             return agent.character.name
         else:  # NPC
             return agent.name
@@ -61,15 +71,24 @@ class Battle:
             
             print("\n" + "="*40)  # Clear separator between turns
             
-            if isinstance(current_agent, PlayerAgent):
-                self.player_turn(current_agent)
-            else:  # NPC's turn
-                self.npc_turn(current_agent)
+            if self.is_character_alive(current_agent):
+                if hasattr(current_agent, 'character'):  # PlayerAgent
+                    self.player_turn(current_agent)
+                else:  # NPC's turn
+                    self.npc_turn(current_agent)
+            else:
+                print(f"{self.get_name(current_agent)} is dead and cannot take any actions.")
 
             self.current_turn = (self.current_turn + 1) % len(self.initiative_order)
             self.check_battle_status()
 
-    def player_turn(self, player: PlayerAgent):
+    def is_character_alive(self, agent: CharacterUnion) -> bool:
+        if hasattr(agent, 'character'):  # PlayerAgent
+            return agent.character.character_state == CharacterState.ALIVE
+        else:  # NPC
+            return agent.character_state == CharacterState.ALIVE
+
+    def player_turn(self, player: Any):
         print(f"\n{player.character.name}'s turn!")
         while True:
             action = input(f"{player.character.name}, what would you like to do? ").strip()
@@ -82,19 +101,22 @@ class Battle:
             
             # Check if the action ends the turn
             if any(keyword in action.lower() for keyword in self.turn_ending_actions):
-                narration = self.battle_agent.narrate(response)
-                print(f"\nNarrator: {narration}")
                 target = self.get_target(action)
-                if target:
+                if target and self.is_character_alive(target):
                     success, damage = self.apply_action_effects(response, player.character, target)
-                    if success:
-                        print(f"The attack was successful! {self.get_name(target)} takes {damage} damage.")
-                    else:
-                        if damage > 0:
-                            print(f"{self.get_name(target)} saved against the effect but still takes {damage} damage.")
-                        else:
-                            print(f"The attack missed {self.get_name(target)}.")
+                    target_name = self.get_name(target)
+                    self.print_action_result(action, success, damage, target_name)
                     self.print_target_hp(target)
+                    
+                    # Generate narration after knowing the result
+                    target_hp = target.hp if isinstance(target, NPC) else target.character.hp
+                    target_max_hp = target.max_hp if isinstance(target, NPC) else target.character.max_hp
+                    narration = self.battle_agent.narrate(f"{response} - {'Success' if success else 'Failure'}, Damage: {damage}, Target HP: {target_hp}/{target_max_hp}")
+                    print(f"\nNarrator: {narration}")
+                    
+                    self.check_character_death(target)
+                else:
+                    print(f"Invalid target or target is already dead.")
                 print(f"{player.character.name}'s turn ends.")
                 return  # End the turn immediately after a turn-ending action
             elif "end turn" in action.lower():
@@ -106,32 +128,33 @@ class Battle:
 
     def npc_turn(self, npc: NPC):
         print(f"\n{npc.name}'s turn!")
-        action = self.npc_decide_action(npc)
-        response = npc.converse(action)
-        narration = self.battle_agent.narrate(response)
-        print(f"\nNarrator: {narration}")
-        target = self.get_random_target(npc)
-        if target:
-            success, damage = self.apply_action_effects(response, npc, target)
-            if success:
-                print(f"The attack was successful! {self.get_name(target)} takes {damage} damage.")
+        
+        action = npc.decide_action()
+        print(f"{npc.name} decides to: {action}")
+        
+        # Parse the action and execute it
+        if "attack" in action.lower():
+            target = self.get_random_target(npc)
+            if target:
+                response = f"{npc.name} attacks {self.get_name(target)}."
+                success, damage = self.apply_action_effects(response, npc, target)
+                target_name = self.get_name(target)
+                self.print_action_result(response, success, damage, target_name)
+                self.print_target_hp(target)
+                
+                narration = self.battle_agent.narrate(f"{response} - {'Success' if success else 'Failure'}, Damage: {damage}")
+                print(f"\nNarrator: {narration}")
+                
+                self.check_character_death(target)
             else:
-                if damage > 0:
-                    print(f"{self.get_name(target)} saved against the effect but still takes {damage} damage.")
-                else:
-                    print(f"The attack missed {self.get_name(target)}.")
-            self.print_target_hp(target)
+                print(f"{npc.name} has no valid targets and skips their turn.")
+        else:
+            # Handle other types of actions (spells, items, etc.)
+            print(f"{npc.name} performs the action: {action}")
+        
         print(f"{npc.name}'s turn ends.")
 
-    def npc_decide_action(self, npc: NPC) -> str:
-        # Simple AI: randomly choose between attacking and using an ability
-        if random.random() < 0.7:  # 70% chance to attack
-            target = self.get_random_target(npc)
-            return f"attack {self.get_name(target) if target else 'a random enemy'}"
-        else:
-            return "use a special ability"
-
-    def get_target(self, action: str) -> Union[PlayerAgent, NPC, None]:
+    def get_target(self, action: str) -> Union[Any, NPC, None]:
         words = action.lower().split()
         if "attack" in words or "cast" in words:
             target_name = words[-1]
@@ -140,19 +163,33 @@ class Battle:
                     return agent
         return None
 
-    def get_random_target(self, attacker: Union[PlayerAgent, NPC]) -> Union[PlayerAgent, NPC, None]:
-        possible_targets = self.players if isinstance(attacker, NPC) else self.npcs
-        return random.choice(possible_targets) if possible_targets else None
+    def get_living_targets(self, attacker: CharacterUnion) -> List[CharacterUnion]:
+        if isinstance(attacker, NPC):
+            return [player for player in self.players if self.is_character_alive(player)]
+        else:
+            return [npc for npc in self.npcs if self.is_character_alive(npc)]
 
-    def apply_action_effects(self, action: str, attacker: Union[Character, NPC], defender: Union[PlayerAgent, NPC]) -> Tuple[bool, int]:
+    def get_random_target(self, attacker: CharacterUnion) -> Union[CharacterUnion, None]:
+        living_targets = self.get_living_targets(attacker)
+        return random.choice(living_targets) if living_targets else None
+
+    def apply_action_effects(self, action: str, attacker: Union[Character, NPC], defender: CharacterUnion) -> Tuple[bool, int]:
         attacker_char = attacker if isinstance(attacker, Character) else attacker
-        defender_char = defender.character if isinstance(defender, PlayerAgent) else defender
+        defender_char = defender.character if hasattr(defender, 'character') else defender
 
         if "attacks" in action.lower():
             return self.resolve_weapon_attack(attacker_char, defender_char)
         elif "casts" in action.lower():
             spell_name = action.split("casts")[1].split()[0].lower()
-            return self.resolve_spell_attack(attacker_char, defender_char, spell_name)
+            spell = next((s for s in attacker_char.spells if s.name.lower() == spell_name), None)
+            if spell:
+                if spell.attack_type == "heal":
+                    return self.resolve_healing_spell(attacker_char, defender_char, spell)
+                elif spell.attack_type in ["ranged", "save"]:
+                    return self.resolve_spell_attack(attacker_char, defender_char, spell)
+                elif spell.attack_type == "none":
+                    return True, 0  # The spell was cast successfully but doesn't deal damage or heal
+            return False, 0
         else:
             # Other effects (implement as needed)
             return False, 0
@@ -162,11 +199,12 @@ class Battle:
         attack_bonus = attacker.attributes.get_modifier('strength') + attacker.proficiency_bonus
         total_attack = attack_roll + attack_bonus
 
-        if attack_roll == 20 or (attack_roll != 1 and total_attack >= defender.armor_class):
+        if attack_roll >= 20 or (attack_roll != 1 and total_attack >= defender.armor_class):
             # Critical hit on 20, otherwise hit if meets or exceeds AC
             weapon = attacker.get_equipped_weapons()[0] if attacker.get_equipped_weapons() else None
             damage_dice = weapon.effects['damage'] if weapon else "1d4"  # Unarmed strike damage
-            damage = sum(roll_dice(damage_dice)) + attacker.attributes.get_modifier('strength')
+            damage_roll = roll_dice(damage_dice)
+            damage = sum(damage_roll) + attacker.attributes.get_modifier('strength')
             if attack_roll == 20:
                 damage *= 2  # Double damage on critical hit
 
@@ -175,19 +213,14 @@ class Battle:
         else:
             return False, 0
 
-    def resolve_spell_attack(self, attacker: Character, defender: Character, spell_name: str) -> Tuple[bool, int]:
-        spell = next((s for s in attacker.spells if s.name.lower() == spell_name.lower()), None)
-        if not spell:
-            return False, 0
-
+    def resolve_spell_attack(self, attacker: Character, defender: Character, spell: Spell) -> Tuple[bool, int]:
         if spell.attack_type == "ranged":
             attack_roll = roll_dice("1d20")[0]
             attack_bonus = attacker.attributes.get_modifier('intelligence') + attacker.proficiency_bonus
             total_attack = attack_roll + attack_bonus
 
             if attack_roll == 20 or (attack_roll != 1 and total_attack >= defender.armor_class):
-                damage_roll = roll_dice(spell.damage)
-                damage = sum(damage_roll) if isinstance(damage_roll, list) else damage_roll
+                damage = self.calculate_spell_damage(spell, attacker)
                 if attack_roll == 20:
                     damage *= 2  # Double damage on critical hit
 
@@ -197,27 +230,50 @@ class Battle:
                 return False, 0
         elif spell.attack_type == "save":
             save_dc = 8 + attacker.attributes.get_modifier('intelligence') + attacker.proficiency_bonus
-            save_roll = roll_dice("1d20")[0] + defender.attributes.get_modifier(spell.save_attribute)
+            save_attribute = spell.save_attribute or "dexterity"  # Default to dexterity if not specified
+            save_roll = roll_dice("1d20")[0] + defender.attributes.get_modifier(save_attribute)
 
-            damage_roll = roll_dice(spell.damage)
-            damage = sum(damage_roll) if isinstance(damage_roll, list) else damage_roll
+            damage = self.calculate_spell_damage(spell, attacker)
+            
             if save_roll < save_dc:
                 defender.hp -= damage
-                return True, damage
+                return False, damage  # The target failed the save
             else:
                 half_damage = damage // 2
                 defender.hp -= half_damage
-                return False, half_damage  # Successful save, but still takes half damage
+                return True, half_damage  # The target succeeded the save, but still takes half damage
 
-    def print_target_hp(self, target: Union[PlayerAgent, NPC]):
-        if isinstance(target, PlayerAgent):
+        return False, 0  # Default case if the attack type is not handled
+
+    def calculate_spell_damage(self, spell: Spell, caster: Character) -> int:
+        if not spell.damage:
+            return 0
+        
+        damage_rolls = roll_dice(spell.damage)
+        total_damage = sum(damage_rolls)
+        
+        # Add spellcasting ability modifier for cantrips (level 0 spells)
+        if spell.level == 0:
+            total_damage += caster.attributes.get_modifier('intelligence')
+        
+        return total_damage
+
+    def resolve_healing_spell(self, caster: Character, target: Character, spell: Spell) -> Tuple[bool, int]:
+        if spell.damage:
+            healing = self.calculate_spell_damage(spell, caster)
+            target.hp = min(target.hp + healing, target.max_hp)
+            return True, healing
+        return False, 0
+
+    def print_target_hp(self, target: CharacterUnion):
+        if hasattr(target, 'character'):  # PlayerAgent
             print(f"{target.character.name}'s HP: {target.character.hp}/{target.character.max_hp}")
-        else:
+        else:  # NPC
             print(f"{target.name}'s HP: {target.hp}/{target.max_hp}")
 
     def check_battle_status(self):
-        players_alive = any(p.character.hp > 0 for p in self.players)
-        npcs_alive = any(npc.hp > 0 for npc in self.npcs)
+        players_alive = any(self.is_character_alive(p) for p in self.players)
+        npcs_alive = any(self.is_character_alive(npc) for npc in self.npcs)
 
         if not players_alive or not npcs_alive:
             self.is_battle_over = True
@@ -227,6 +283,90 @@ class Battle:
                 print("\nThe battle is over! The NPCs are victorious!")
             else:
                 print("\nThe battle is over! It's a draw!")
+
+    def print_action_result(self, action: str, success: bool, amount: int, target_name: str):
+        if "attacks" in action.lower():
+            weapon = action.split("with")[-1].strip() if "with" in action else "weapon"
+            if success:
+                print(f"Attack Result: The attack with {weapon} hits {target_name}!")
+                print(f"Damage: {target_name} takes {amount} damage.")
+            else:
+                print(f"Attack Result: The attack with {weapon} misses {target_name}.")
+        elif "casts" in action.lower():
+            spell_name = action.split("casts")[1].split()[0]
+            spell = next((s for s in self.get_current_character().spells if s.name.lower() == spell_name.lower()), None)
+            if spell:
+                if spell.attack_type == "heal":
+                    print(f"Spell Result: The {spell_name} spell successfully heals {target_name} for {amount} hit points!")
+                elif spell.attack_type == "none":
+                    print(f"Spell Result: The {spell_name} spell is cast successfully.")
+                elif spell.attack_type == "save":
+                    if success:
+                        print(f"Spell Result: {target_name} successfully saves against the {spell_name} spell.")
+                        print(f"Damage: Despite the save, {target_name} still takes {amount} damage (half damage).")
+                    else:
+                        print(f"Spell Result: {target_name} fails to save against the {spell_name} spell.")
+                        print(f"Damage: {target_name} takes full damage of {amount} points.")
+                elif spell.attack_type == "ranged":
+                    if success:
+                        print(f"Spell Result: The {spell_name} spell hits {target_name}!")
+                        print(f"Damage: {target_name} takes {amount} damage.")
+                    else:
+                        print(f"Spell Result: The {spell_name} spell misses {target_name}.")
+            else:
+                print(f"Spell Result: Unknown spell {spell_name}.")
+        else:
+            print(f"Action Result: {action}")
+
+        if amount > 0:
+            print(f"Total Damage/Healing: {amount}")
+
+    def get_current_character(self) -> Union[Character, NPC]:
+        current_agent = self.initiative_order[self.current_turn]
+        return current_agent.character if hasattr(current_agent, 'character') else current_agent
+
+    def check_character_death(self, character: CharacterUnion):
+        if hasattr(character, 'character'):  # PlayerAgent
+            if character.character.hp <= 0:
+                character.character.character_state = CharacterState.DEAD
+                print(f"{character.character.name} has died!")
+        else:  # NPC
+            if character.hp <= 0:
+                character.character_state = CharacterState.DEAD
+                print(f"{character.name} has died!")
+
+    def get_battle_state(self) -> Dict[str, List[Dict[str, Union[str, int, bool]]]]:
+        """
+        Get the current state of the battle.
+        
+        Returns:
+        Dict with keys 'allies' and 'enemies', each containing a list of character states.
+        """
+        def character_state(char: CharacterUnion) -> Dict[str, Union[str, int, bool]]:
+            if hasattr(char, 'character'):  # PlayerAgent
+                c = char.character
+                return {
+                    "name": c.name,
+                    "class": c.chr_class,
+                    "level": c.level,
+                    "hp": c.hp,
+                    "max_hp": c.max_hp,
+                    "is_alive": self.is_character_alive(char)
+                }
+            else:
+                return {
+                    "name": char.name,
+                    "class": char.chr_class,
+                    "level": char.level,
+                    "hp": char.hp,
+                    "max_hp": char.max_hp,
+                    "is_alive": self.is_character_alive(char)
+                }
+
+        return {
+            "allies": [character_state(player) for player in self.players],
+            "enemies": [character_state(npc) for npc in self.npcs]
+        }
 
 # Test scenario
 if __name__ == "__main__":

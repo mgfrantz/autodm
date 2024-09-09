@@ -1,12 +1,39 @@
-from typing import Optional
+from typing import Optional, Dict, TYPE_CHECKING, Any
 from .character import Character, Attributes
 from .llm import get_llm, complete
 import random
 from pydantic import Field
 
+if TYPE_CHECKING:
+    from .battle import Battle
+
 class NPC(Character):
     backstory: str = Field(default="")
-    
+    battle: Optional[Any] = Field(default=None)
+
+    def set_battle(self, battle: 'Battle'):
+        self.battle = battle
+
+    def get_battle_context(self) -> str:
+        if not self.battle:
+            return ""
+
+        battle_state = self.battle.get_battle_state()
+        
+        allies_info = "\n".join([f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP" for ally in battle_state['enemies']])  # NPCs are enemies of players
+        enemies_info = "\n".join([f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP" for enemy in battle_state['allies']])  # Players are enemies of NPCs
+        
+        return f"""
+You are currently in a battle.
+Your allies:
+{allies_info}
+
+Your enemies:
+{enemies_info}
+
+Consider the battle situation when making decisions.
+"""
+
     def __init__(
         self,
         name: str,
@@ -70,6 +97,27 @@ class NPC(Character):
             f"Use {self.name} or appropriate pronouns instead of 'I' or 'me'. "
             f"Incorporate {self.name}'s race, class, and personality into the response."
         )
+        return complete(context)
+
+    def decide_action(self) -> str:
+        battle_context = self.get_battle_context()
+        
+        context = f"""
+You are {self.name}, a level {self.level} {self.chr_race} {self.chr_class}.
+Backstory: {self.backstory}
+
+{battle_context}
+
+Decide on the most appropriate action to take in this battle situation. 
+Your options include:
+- Attack a specific enemy
+- Cast a spell (if you know any)
+- Use an item from your inventory
+- Move to a strategic position
+- Attempt to intimidate, persuade, or deceive an enemy
+
+Respond with a brief description of your chosen action.
+"""
         return complete(context)
 
 # Interactive conversation loop

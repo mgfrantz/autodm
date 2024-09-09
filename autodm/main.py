@@ -2,17 +2,31 @@ from .player_agent import PlayerAgent
 from .character import Character
 from .npc import NPC
 from .battle import Battle
-from .spells import fireball, magic_missile, shield, cure_wounds  # Import all necessary spells
+from .spells import fireball, magic_missile, cure_wounds  # Replace shield with cure_wounds
 from .items import EquipmentItem
 
 def equip_character(character):
-    """Equip a character with appropriate weapons and/or spells based on their class."""
+    """Equip a character with appropriate weapons and/or spells based on their class and level."""
     if character.chr_class.lower() == "wizard":
-        wand = EquipmentItem(name="Wand of the War Mage", item_type="weapon", effects={"damage": "1d6"}, quantity=1, weight=1.0)
+        wand = EquipmentItem(name="Wand of the War Mage", item_type="weapon", effects={"damage": "1d4"}, quantity=1, weight=1.0)
         character.equip_item(wand)
-        character.add_spell(fireball)
-        character.add_spell(magic_missile)
-        character.add_spell(shield)
+        
+        # Add spells based on character level
+        if character.level >= 1:
+            character.add_spell(magic_missile)  # 1st level spell
+            character.add_spell(cure_wounds)  # Replace shield with cure_wounds
+        if character.level >= 3:
+            character.add_spell(fireball)  # 3rd level spell
+        
+        # Set spell slots
+        character.spell_slots = {
+             1: 4 if character.level >= 1 else 0,
+             2: 2 if character.level >= 3 else 0,
+             3: 2 if character.level >= 5 else 0,
+             4: 1 if character.level >= 7 else 0,
+             5: 0, 6: 0, 7: 0, 8: 0, 9: 0
+        }
+    
     elif character.chr_class.lower() == "fighter":
         longsword = EquipmentItem(name="Longsword", item_type="weapon", effects={"damage": "1d8"}, quantity=1, weight=3.0)
         shield_item = EquipmentItem(name="Shield", item_type="armor", effects={"armor_class": 2}, quantity=1, weight=6.0)
@@ -33,7 +47,7 @@ def main():
     equip_character(aric)
     player1 = PlayerAgent(aric)
 
-    thorne = Character.generate("Thorne", chr_class="Fighter", chr_race="Dwarf", level=5)
+    thorne = Character.generate("Thorne", chr_class="Fighter", chr_race="Dwarf", level=3)
     equip_character(thorne)
     player2 = PlayerAgent(thorne)
 
@@ -50,6 +64,7 @@ def main():
     for player in [player1, player2]:
         print(f"- {player.character.name}, a level {player.character.level} {player.character.chr_race} {player.character.chr_class}")
         print(f"  Known spells: {', '.join([spell.name for spell in player.character.spells])}")
+        print(f"  Spell slots: {player.character.spell_slots}")
         print(f"  Equipped items: {', '.join([item.name for slot in player.character.equipped_items.values() for item in slot if item])}")
 
     print("\nEnemies:")

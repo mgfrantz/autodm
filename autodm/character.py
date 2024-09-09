@@ -50,7 +50,7 @@ class Character(BaseModel):
     max_hp: int
     current_hp: int = Field(...)  # Remove the default value and alias
     spells: List[Spell] = Field(default_factory=list)
-    spell_slots: Dict[int, int] = Field(default_factory=lambda: {1: 2, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0})
+    spell_slots: Dict[int, int] = Field(default_factory=lambda: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0})
     relationships: Dict[str, Relationship] = Field(default_factory=dict)
 
     class Config:
@@ -188,8 +188,10 @@ class Character(BaseModel):
             default_spells.append(cure_wounds)
 
         # Set up spell slots based on class and level
-        spell_slots = {1: 2, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+        spell_slots = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
         if chr_class in ["Wizard", "Sorcerer", "Bard", "Cleric", "Druid"]:
+            if level >= 1:
+                spell_slots[1] = 2
             if level >= 3:
                 spell_slots[2] = 2
             if level >= 5:
