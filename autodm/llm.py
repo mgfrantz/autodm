@@ -1,48 +1,45 @@
-from llama_index.llms.openai import OpenAI  # type: ignore
-from llama_index.llms.huggingface import HuggingFaceInferenceAPI  # type: ignore
+from dotenv import load_dotenv
+load_dotenv()
+
 from llama_index.llms.ollama import Ollama
-from llama_index.core.output_parsers import PydanticOutputParser  # type: ignore
-from llama_index.llms.gemini import Gemini # type: ignore
-import os
+from llama_index.llms.gemini import Gemini
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
-API_BASE = "http://localhost:1234/v1"
-API_KEY = "lm-studio"
-HF_MODEL = "meta-llama/Meta-Llama-3-70B-Instruct"
-# HF_MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1"
-# HF_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
-# HF_MODEL = "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO"
-# HF_MODEL = "HuggingFaceH4/zephyr-orpo-141b-A35b-v0.1"
-# HF_MODEL = "CohereForAI/c4ai-command-r-plus"
-GEMINI_MODEL = "gemini-1.5-flash-001"
+class LLMManager:
+    _instance = None
 
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(LLMManager, cls).__new__(cls)
+            
+            # Uncomment the model you want to use
+            # cls._instance.llm = Ollama(model="llama3.1")
+            # cls._instance.llm = Ollama(model='hermes3')
+            
+            # Gemini model with all safety settings set to BLOCK_NONE
+            cls._instance.llm = Gemini(
+                model='models/gemini-1.5-flash',
+                safety_settings={
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                }
+            )
+        return cls._instance
 
-def get_llm(output_cls=None, temperature=0.7, model_name=None):
-    """
-    Returns an instance of the OpenAI class for Language Model (LLM) API to call LM Studio.
+    @classmethod
+    def get_llm(cls):
+        return cls().llm
 
-    Parameters:
-        output_cls (optional): The output class for parsing the API response. If not provided, a default parser will be used.
+    @classmethod
+    def complete(cls, prompt: str) -> str:
+        return cls().llm.complete(prompt).text
 
-    Returns:
-        An instance of the OpenAI class for Language Model (LLM) API.
+llm_manager = LLMManager()
 
-    """
-    kwargs = {"temperature": temperature}
-    if output_cls is not None:
-        kwargs["output_parser"] = PydanticOutputParser(output_cls)
-    # return Ollama(
-    #     model='qwen2:7b', 
-    #     # request_timeout=120.0, 
-    #     **kwargs)
-    if os.environ.get("GOOGLE_API_KEY") is not None:
-        return Gemini(model="models/" + GEMINI_MODEL, **kwargs)
-    if os.environ.get("HF_TOKEN") is not None:
-        return HuggingFaceInferenceAPI(
-            model_name=HF_MODEL,
-            token=os.environ.get("HF_TOKEN"),
-            system_prompt="""You are a helpful assistant to a D&D dungeon master that is an expert at formatting jsons. Always return the correct json format without any additional data. Make sure all json fields are returned like this: {"key":"value"}""",
-            max_new_tokens=1024,
-            **kwargs,
-        )
-    else:
-        return OpenAI(api_base=API_BASE, api_key=API_KEY, **kwargs)
+def get_llm():
+    return llm_manager.get_llm()
+
+def complete(prompt: str) -> str:
+    return llm_manager.complete(prompt)
