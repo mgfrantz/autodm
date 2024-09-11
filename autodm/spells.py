@@ -41,7 +41,7 @@ fireball = Spell(
     description="A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.",
     attack_type="save",
     save_attribute="dexterity",
-    damage="8d6",
+    damage="1d6",  # Changed from "8d6" to "1d6"
     classes=["Sorcerer", "Wizard"]
 )
 

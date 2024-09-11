@@ -2,8 +2,8 @@ from .player_agent import PlayerAgent
 from .character import Character
 from .npc import NPC
 from .battle import Battle
-from .spells import fireball, magic_missile, cure_wounds  # Replace shield with cure_wounds
-from .items import EquipmentItem
+from .spells import fireball, magic_missile, cure_wounds
+from .items import EquipmentItem, healing_potion
 
 def equip_character(character):
     """Equip a character with appropriate weapons and/or spells based on their class and level."""
@@ -13,25 +13,24 @@ def equip_character(character):
         
         # Add spells based on character level
         if character.level >= 1:
-            character.add_spell(magic_missile)  # 1st level spell
-            character.add_spell(cure_wounds)  # Replace shield with cure_wounds
+            character.add_spell(magic_missile)
         if character.level >= 3:
-            character.add_spell(fireball)  # 3rd level spell
+            character.add_spell(fireball)
         
         # Set spell slots
         character.spell_slots = {
-             1: 4 if character.level >= 1 else 0,
-             2: 2 if character.level >= 3 else 0,
-             3: 2 if character.level >= 5 else 0,
-             4: 1 if character.level >= 7 else 0,
-             5: 0, 6: 0, 7: 0, 8: 0, 9: 0
+            1: 4 if character.level >= 1 else 0,
+            2: 2 if character.level >= 3 else 0,
+            3: 2 if character.level >= 5 else 0,
+            4: 1 if character.level >= 7 else 0,
+            5: 0, 6: 0, 7: 0, 8: 0, 9: 0
         }
     
     elif character.chr_class.lower() == "fighter":
         longsword = EquipmentItem(name="Longsword", item_type="weapon", effects={"damage": "1d8"}, quantity=1, weight=3.0)
-        shield_item = EquipmentItem(name="Shield", item_type="armor", effects={"armor_class": 2}, quantity=1, weight=6.0)
+        shield = EquipmentItem(name="Shield", item_type="armor", effects={"armor_class": 2}, quantity=1, weight=6.0)
         character.equip_item(longsword)
-        character.equip_item(shield_item)
+        character.equip_item(shield)
     elif character.chr_class.lower() == "barbarian":
         greataxe = EquipmentItem(name="Greataxe", item_type="weapon", effects={"damage": "1d12"}, quantity=1, weight=7.0)
         character.equip_item(greataxe)
@@ -40,6 +39,9 @@ def equip_character(character):
         dagger = EquipmentItem(name="Dagger", item_type="weapon", effects={"damage": "1d4"}, quantity=2, weight=1.0)
         character.equip_item(shortsword)
         character.equip_item(dagger)
+
+    # Add a healing potion to every character's inventory
+    character.add_to_inventory(healing_potion)
 
 def main():
     # Create player characters

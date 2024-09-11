@@ -25,12 +25,13 @@ class Item(BaseModel):
     """
     name: str
     description: str
-    item_type: str  # e.g., "weapon", "armor", "accessory"
+    item_type: str  # e.g., "weapon", "armor", "potion"
     equippable: bool = False
-    effects: Dict[str, int] = Field(default_factory=dict)
+    effects: Dict[str, Union[int, str]] = Field(default_factory=dict)
+    quantity: int = 1
 
     def __str__(self):
-        return f"{self.name} ({self.item_type})"
+        return f"{self.name} (x{self.quantity})"
 
 class WeaponAttack(BaseModel):
     name: str
@@ -51,3 +52,11 @@ class EquipmentItem(BaseModel):
 
     def __str__(self):
         return f"{self.name} (x{self.quantity})"
+
+# Add this at the end of the file
+healing_potion = Item(
+    name="Healing Potion",
+    description="A small vial of red liquid that restores 2 HP when consumed.",
+    item_type="potion",
+    effects={"heal": 2}
+)

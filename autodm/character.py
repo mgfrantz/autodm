@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 import random
 from .items import Item, WeaponAttack, EquipmentItem
 from enum import Enum
-from .spells import Spell, fireball, magic_missile, shield, cure_wounds  # Import specific spells
+from .spells import Spell, fireball, magic_missile, shield, cure_wounds
 import copy
 
 class BattleState(Enum):
@@ -34,6 +34,16 @@ class Relationship(BaseModel):
     attitude: int = Field(0, ge=-100, le=100)  # -100 (hostile) to 100 (friendly)
     description: str = ""
 
+class Position(BaseModel):
+    x: int = 0
+    y: int = 0
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def distance_to(self, other: 'Position') -> int:
+        return abs(self.x - other.x) + abs(self.y - other.y)
+
 class Character(BaseModel):
     name: str
     chr_class: str
@@ -52,6 +62,7 @@ class Character(BaseModel):
     spells: List[Spell] = Field(default_factory=list)
     spell_slots: Dict[int, int] = Field(default_factory=lambda: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0})
     relationships: Dict[str, Relationship] = Field(default_factory=dict)
+    position: Position = Field(default_factory=Position)
 
     class Config:
         arbitrary_types_allowed = True
@@ -65,7 +76,7 @@ class Character(BaseModel):
         self.current_hp = max(0, min(value, self.max_hp))
         self.check_death()
 
-    skills: Dict[str, int] = {}
+    skills: Dict[str, int] = Field(default_factory=dict)
     equipped_items: Dict[str, List[Optional[EquipmentItem]]] = Field(default_factory=lambda: {
         "weapon": [],
         "armor": [],
@@ -197,6 +208,36 @@ class Character(BaseModel):
             if level >= 5:
                 spell_slots[3] = 2
 
+        # Initialize skills based on class and background
+        skills = {
+            'acrobatics': 0, 'animal_handling': 0, 'arcana': 0, 'athletics': 0,
+            'deception': 0, 'history': 0, 'insight': 0, 'intimidation': 0,
+            'investigation': 0, 'medicine': 0, 'nature': 0, 'perception': 0,
+            'performance': 0, 'persuasion': 0, 'religion': 0, 'sleight_of_hand': 0,
+            'stealth': 0, 'survival': 0
+        }
+
+        # Add proficiency to skills based on class (simplified version)
+        class_skills = {
+            "Barbarian": ["animal_handling", "athletics", "intimidation", "nature", "perception", "survival"],
+            "Bard": ["acrobatics", "animal_handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight_of_hand", "stealth", "survival"],
+            "Cleric": ["history", "insight", "medicine", "persuasion", "religion"],
+            "Druid": ["arcana", "animal_handling", "insight", "medicine", "nature", "perception", "religion", "survival"],
+            "Fighter": ["acrobatics", "animal_handling", "athletics", "history", "insight", "intimidation", "perception", "survival"],
+            "Monk": ["acrobatics", "athletics", "history", "insight", "religion", "stealth"],
+            "Paladin": ["athletics", "insight", "intimidation", "medicine", "persuasion", "religion"],
+            "Ranger": ["animal_handling", "athletics", "insight", "investigation", "nature", "perception", "stealth", "survival"],
+            "Rogue": ["acrobatics", "athletics", "deception", "insight", "intimidation", "investigation", "perception", "performance", "persuasion", "sleight_of_hand", "stealth"],
+            "Sorcerer": ["arcana", "deception", "insight", "intimidation", "persuasion", "religion"],
+            "Warlock": ["arcana", "deception", "history", "intimidation", "investigation", "nature", "religion"],
+            "Wizard": ["arcana", "history", "insight", "investigation", "medicine", "religion"]
+        }
+
+        # Add proficiency to 2 random skills from the class list
+        proficient_skills = random.sample(class_skills[chr_class], 2)
+        for skill in proficient_skills:
+            skills[skill] = proficiency_bonus
+
         default_args = {
             "name": name,
             "chr_class": chr_class,
@@ -213,7 +254,7 @@ class Character(BaseModel):
             "max_hp": max_hp,
             "current_hp": max_hp,  # Set current_hp to max_hp initially
             "hit_dice": hit_dice,
-            "skills": {},  # Skills can be added based on class and background
+            "skills": skills,
             "spells": [],  # Start with an empty spell list
             "spell_slots": spell_slots
         }
@@ -351,6 +392,24 @@ class Character(BaseModel):
     def get_relationship(self, target_name: str) -> Optional[Relationship]:
         """Get the relationship with another character."""
         return self.relationships.get(target_name)
+
+    def get_skill_modifier(self, skill: str) -> int:
+        """Calculate the modifier for a given skill."""
+        ability = self.get_ability_for_skill(skill)
+        return self.skills.get(skill, 0) + self.attributes.get_modifier(ability)
+
+    def get_ability_for_skill(self, skill: str) -> str:
+        skill_ability_map = {
+            'athletics': 'strength',
+            'acrobatics': 'dexterity', 'sleight_of_hand': 'dexterity', 'stealth': 'dexterity',
+            'arcana': 'intelligence', 'history': 'intelligence', 'investigation': 'intelligence', 'nature': 'intelligence', 'religion': 'intelligence',
+            'animal_handling': 'wisdom', 'insight': 'wisdom', 'medicine': 'wisdom', 'perception': 'wisdom', 'survival': 'wisdom',
+            'deception': 'charisma', 'intimidation': 'charisma', 'performance': 'charisma', 'persuasion': 'charisma'
+        }
+        return skill_ability_map.get(skill.lower(), 'intelligence')  # Default to intelligence if skill not found
+
+    def move(self, new_position: Position):
+        self.position = new_position
 
 class Characters:
     def __init__(self):
