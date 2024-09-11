@@ -525,14 +525,8 @@ class Battle:
                 return True
         return False
 
-    def get_battle_state(self) -> Dict[str, List[Dict[str, Union[str, int, bool]]]]:
-        """
-        Get the current state of the battle.
-        
-        Returns:
-        Dict with keys 'allies' and 'enemies', each containing a list of character states.
-        """
-        def character_state(char: CharacterUnion) -> Dict[str, Union[str, int, bool]]:
+    def get_battle_state(self) -> Dict[str, List[Dict[str, Union[str, int, bool, Position]]]]:
+        def character_state(char: CharacterUnion) -> Dict[str, Union[str, int, bool, Position]]:
             if hasattr(char, 'character'):  # PlayerAgent
                 c = char.character
                 return {
@@ -561,10 +555,12 @@ class Battle:
         }
 
     def get_character_info(self, character: Union[Character, NPC]) -> Dict[str, Any]:
+        equipped_weapons = character.get_equipped_weapons()
+        weapon_name = equipped_weapons[0].name if equipped_weapons else "Unarmed"
         return {
             "class": character.chr_class,
             "race": character.chr_race,
-            "weapon": character.get_equipped_weapon().name if character.get_equipped_weapon() else "Unarmed",
+            "weapon": weapon_name,
             "armor": ", ".join([item.name for item in character.equipped_items.get('armor', []) if item]) or "No armor"
         }
 
@@ -622,9 +618,15 @@ class Battle:
 
         if 0 <= new_x < self.map_size[0] and 0 <= new_y < self.map_size[1]:
             if character.movement_remaining >= distance:
+                # Clear the old position
                 self.map[character.position.y][character.position.x] = ' . '
+                
+                # Update the character's position
                 character.position = Position(x=new_x, y=new_y)
+                
+                # Update the new position on the map
                 self.update_map_position(character)
+                
                 character.movement_remaining -= distance
                 return True, distance
             else:
@@ -680,9 +682,15 @@ class Battle:
             current_x, current_y = character.position.x, character.position.y
             distance = (abs(current_x - x) + abs(current_y - y)) * 5  # Each cell is 5 feet
             if distance <= character.movement_remaining:
+                # Clear the old position
                 self.map[current_y][current_x] = ' . '
+                
+                # Update the character's position
                 character.position = Position(x=x, y=y)
+                
+                # Update the new position on the map
                 self.update_map_position(character)
+                
                 character.movement_remaining -= distance
                 return True, f"{self.get_name(character)} moves to {coord}. Movement remaining: {character.movement_remaining} feet."
             else:

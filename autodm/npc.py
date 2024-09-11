@@ -23,11 +23,11 @@ class NPC(Character):
         battle_state = self.battle.get_battle_state()
         
         allies_info = "\n".join([
-            f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP, Position: ({ally.get('position', Position(0, 0)).x}, {ally.get('position', Position(0, 0)).y})"
+            f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP, Position: ({ally['position'].x}, {ally['position'].y})"
             for ally in battle_state['enemies']  # NPCs are enemies of players
         ])
         enemies_info = "\n".join([
-            f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP, Position: ({enemy.get('position', Position(0, 0)).x}, {enemy.get('position', Position(0, 0)).y})"
+            f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP, Position: ({enemy['position'].x}, {enemy['position'].y})"
             for enemy in battle_state['allies']  # Players are enemies of NPCs
         ])
         
@@ -64,9 +64,8 @@ Consider the battle situation and positions when making decisions.
         character.backstory = backstory
         return character
 
-    def get_equipped_weapon(self) -> Optional[EquipmentItem]:
-        weapons = self.get_equipped_weapons()
-        return weapons[0] if weapons else None
+    def get_equipped_weapons(self) -> List[EquipmentItem]:
+        return [item for item in self.equipped_items.get('weapon', []) if item]
 
     def decide_action(self) -> Dict[str, Any]:
         battle_context = self.get_battle_context()
