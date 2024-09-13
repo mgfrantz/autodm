@@ -3,8 +3,10 @@ from pydantic import BaseModel, Field
 import random
 from .items import Item, WeaponAttack, EquipmentItem
 from enum import Enum
-from .spells import Spell, fireball, magic_missile, shield, cure_wounds
 import copy
+from .llm import complete, complete_pydantic
+from .spells import Spell
+from .defined_spells import fireball, cure_wounds, magic_missile, shield
 
 class BattleState(Enum):
     NOT_IN_BATTLE = 0
@@ -63,6 +65,7 @@ class Character(BaseModel):
     spell_slots: Dict[int, int] = Field(default_factory=lambda: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0})
     relationships: Dict[str, Relationship] = Field(default_factory=dict)
     position: Position = Field(default_factory=Position)
+    backstory: str = ""
 
     class Config:
         arbitrary_types_allowed = True
@@ -144,7 +147,7 @@ class Character(BaseModel):
             raise ValueError(f"Cannot cast {spell.name}: no available spell slots")
 
     @classmethod
-    def generate(cls, name: str, **kwargs) -> 'Character':
+    def generate(cls, name: Optional[str] = None, **kwargs) -> 'Character':
         """
         Generate a new Character instance with random attributes, race, and class.
 
@@ -170,6 +173,12 @@ class Character(BaseModel):
         chr_race = kwargs.get('chr_race', random.choice(list(cls.RACES.keys())))
         chr_class = kwargs.get('chr_class', random.choice(list(cls.CLASSES.keys())))
 
+        class Name(BaseModel):
+            name: str
+
+        if name is None:
+            name = complete_pydantic(f"Generate a creative and on-character name for a D&D player with the race of {chr_race} and class of {chr_class}.", Name).name
+
         # Apply racial modifiers
         race_mods = cls.RACES[chr_race]
         for attr, mod in race_mods.items():
@@ -194,7 +203,9 @@ class Character(BaseModel):
 
         default_spells = []
         if chr_class in ["Wizard", "Sorcerer"]:
-            default_spells.extend([fireball, magic_missile, shield])
+            default_spells.append(magic_missile)
+            default_spells.append(shield)
+            default_spells.append(fireball)
         elif chr_class in ["Cleric", "Druid", "Paladin"]:
             default_spells.append(cure_wounds)
 
@@ -271,6 +282,10 @@ class Character(BaseModel):
         # Set up spell slots for a level 5 Wizard
         if character.chr_class.lower() == "wizard" and character.level == 5:
             character.spell_slots = {1: 4, 2: 3, 3: 2, 4: 1, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+
+        # Generate backstory
+        backstory_prompt = f"Generate a brief backstory for {character.name}, a level {character.level} {character.chr_race} {character.chr_class}. Consider their attributes: {character.attributes}"
+        character.backstory = complete(backstory_prompt)
 
         return character
 

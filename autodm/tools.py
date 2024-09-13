@@ -8,22 +8,8 @@ def roll_dice(dice_string: str) -> List[int]:
     
     Returns a list of individual rolls.
     """
-    dice_pattern = re.compile(r'(\d+)d(\d+)([+-]\d+)?')
-    match = dice_pattern.match(dice_string)
-    
-    if not match:
-        raise ValueError(f"Invalid dice string format: {dice_string}")
-    
-    num_dice = int(match.group(1))
-    dice_type = int(match.group(2))
-    modifier = int(match.group(3) or 0)
-    
-    rolls = [random.randint(1, dice_type) for _ in range(num_dice)]
-    
-    if modifier != 0:
-        rolls.append(modifier)
-    
-    return rolls
+    num_dice, dice_type = map(int, dice_string.split('d'))
+    return [random.randint(1, dice_type) for _ in range(num_dice)]
 
 def apply_modifier(roll: int, modifier: int) -> int:
     """Apply a modifier to a roll."""

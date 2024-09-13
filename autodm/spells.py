@@ -1,6 +1,8 @@
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 from enum import Enum
 from pydantic import BaseModel, Field
+from .tools import roll_dice
+from .llm import complete_pydantic
 
 class SpellSchool(Enum):
     ABJURATION = "Abjuration"
@@ -12,121 +14,189 @@ class SpellSchool(Enum):
     NECROMANCY = "Necromancy"
     TRANSMUTATION = "Transmutation"
 
+SaveAttributeTypes = Literal["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]
+AttackTypes = Literal["ranged", "save", "heal", "none"]
+
 class Spell(BaseModel):
-    name: str
-    level: int
-    school: SpellSchool
-    casting_time: str
-    range: str
-    components: str
-    duration: str
-    description: str
-    attack_type: Literal["ranged", "save", "heal", "none"]
-    save_attribute: Optional[Literal["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]] = None
-    damage: Optional[str] = None  # e.g., "3d6"
-    classes: List[str] = Field(default_factory=list)
-    ritual: bool = False
+    name: str = Field(..., description="The name of the spell. Ex: Magic Missile.")
+    level: int = Field(1, description="The level of the spell. Ex: 1.")
+    is_cantrip: bool = Field(False, description="Whether the spell is a cantrip. Ex: False.")
+    school: SpellSchool = Field(..., description="The school of the spell. Ex: Evocation.")
+    casting_time: int = Field(1, description="The casting time of the spell in actions. Ex: 1")
+    range: Union[int, Literal['touch']] = Field(..., description="The range of the spell in feet. Ex: 150.")
+    attack_type: Optional[AttackTypes] = Field(..., description="The type of attack to be done by the spell. Ex: ranged.")
+    save_attribute: Optional[SaveAttributeTypes] = Field(None, description="The attribute to be saved against the spell. Ex: strength.")
+    components: Optional[str] = Field(..., description="The components of the spell. Ex: V, S, M (a tiny ball of bat guano and sulfur).")
+    duration: str = Field(..., description="The duration of the spell. Ex: Instantaneous.")
+    description: str = Field(..., description="The description of the spell. Ex: A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.")
+    classes: List[str] = Field(default_factory=list, description="The classes that can use the spell. Ex: [Bard, Cleric, Paladin].")
+    ritual: bool = Field(default=False, description="Whether the spell is a ritual. Ex: False.")
 
     def set_level(self, new_level: int):
+        """
+        Set a new level for the spell.
+
+        Args:
+            new_level (int): The new level to set for the spell.
+
+        Raises:
+            ValueError: If the new_level is not between 0 and 9 (inclusive).
+        """
+        if not 0 <= new_level <= 9:
+            raise ValueError("Spell level must be between 0 and 9.")
         self.level = new_level
 
-fireball = Spell(
-    name="Fireball",
-    level=3,
-    school=SpellSchool.EVOCATION,
-    casting_time="1 action",
-    range="150 feet",
-    components="V, S, M (a tiny ball of bat guano and sulfur)",
-    duration="Instantaneous",
-    description="A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.",
-    attack_type="save",
-    save_attribute="dexterity",
-    damage="1d6",  # Changed from "8d6" to "1d6"
-    classes=["Sorcerer", "Wizard"]
-)
+    def learn(self, character):
+        """
+        Learn the spell.
 
-magic_missile = Spell(
-    name="Magic Missile",
-    level=1,
-    school=SpellSchool.EVOCATION,
-    casting_time="1 action",
-    range="120 feet",
-    components="V, S",
-    duration="Instantaneous",
-    description="You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range.",
-    attack_type="ranged",
-    damage="1d4",
-    classes=["Sorcerer", "Wizard"]
-)
+        Args:
+            character: The character learning the spell.
+        """
+        character.spells.append(self)
 
-shield = Spell(
-    name="Shield",
-    level=1,
-    school=SpellSchool.ABJURATION,
-    casting_time="1 reaction",
-    range="Self",
-    components="V, S",
-    duration="1 round",
-    description="An invisible barrier of magical force appears and protects you.",
-    attack_type="none",
-    classes=["Sorcerer", "Wizard"]
-)
+    def get_spellcasting_ability(self, character):
+        """
+        Get the spellcasting ability for the character.
 
-# Example spells
-cure_wounds = Spell(
-    name="Cure Wounds",
-    level=1,
-    school=SpellSchool.EVOCATION,
-    casting_time="1 action",
-    range="Touch",
-    components="V, S",
-    duration="Instantaneous",
-    description="A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier...",
-    attack_type="heal",
-    damage="1d4",
-    classes=["Bard", "Cleric", "Druid", "Paladin", "Ranger"]
-)
+        Args:
+            character: The character to get the spellcasting ability for.
 
+        Returns:
+            The spellcasting ability for the character.
+        """
+        class_ability_map = {
+            "Wizard": "intelligence",
+            "Sorcerer": "charisma",
+            "Cleric": "wisdom",
+            "Druid": "wisdom",
+            "Warlock": "charisma",
+            "Bard": "charisma",
+            "Paladin": "charisma",
+            "Ranger": "wisdom"
+        }
+        return class_ability_map.get(character.chr_class, "intelligence")
 
-# Additional common D&D spells
+    def cast(self, caster, target):
+        """
+        Cast the spell.
 
-healing_word = Spell(
-    name="Healing Word",
-    level=1,
-    school=SpellSchool.EVOCATION,
-    casting_time="1 bonus action",
-    range="60 feet",
-    components="V",
-    duration="Instantaneous",
-    description="A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier...",
-    attack_type="heal",
-    damage="1d4",
-    classes=["Bard", "Cleric", "Druid"]
-)
+        Args:
+            caster: The character casting the spell.
+            target: The target of the spell.
+        """
+        raise NotImplementedError("This method must be implemented by a subclass.")
+    
+    def __str__(self):
+        return f"{self.name} (Level {self.level} {self.school}), {self.description}"
 
-bless = Spell(
-    name="Bless",
-    level=1,
-    school=SpellSchool.ENCHANTMENT,
-    casting_time="1 action",
-    range="30 feet",
-    components="V, S, M (a sprinkling of holy water)",
-    duration="Concentration, up to 1 minute",
-    description="You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw.",
-    attack_type="none",
-    classes=["Cleric", "Paladin"]
-)
+class AttackSpell(Spell):
+    attack_type: Literal["ranged", "touch"] = Field(..., description="The type of attack to be done by the spell. Ex: ranged.")
+    save_attribute: Optional[SaveAttributeTypes] = Field(None, description="The attribute to be saved against the spell. Ex: strength.")
+    damage: Optional[str] = Field(None, description="The damage to be done by the spell. Ex: 1d6.")
 
-detect_magic = Spell(
-    name="Detect Magic",
-    level=1,
-    school=SpellSchool.DIVINATION,
-    casting_time="1 action",
-    range="Self",
-    components="V, S",
-    duration="Concentration, up to 10 minutes",
-    description="For the duration, you sense the presence of magic within 30 feet of you. If you sense magic in this way, you can use your action to see a faint aura around any visible creature or object in the area that bears magic...",
-    attack_type="none",
-    classes=["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Wizard"],
-    ritual=True
-)
+    def cast(self, caster, target):
+        # Get the arcana modifier
+        ability = self.get_spellcasting_ability(caster)
+        modifier = caster.attributes.get_modifier(ability)
+        # Roll the attack
+        attack_roll = sum(roll_dice('1d20')) + modifier
+        # Check if the attack hits
+        if attack_roll >= 10 or self.is_cantrip:  # Assuming a default AC of 10 for simplicity
+            # Calculate the damage
+            damage_rolls = roll_dice(self.damage)
+            damage = sum(damage_rolls)
+            # Apply the damage
+            target.hp = max(0, target.hp - damage)
+            return f"{caster.name} attacks with {self.name} and rolls a {attack_roll} (hit). {target.name} takes {damage} damage."
+        else:
+            return f"{caster.name} attacks with {self.name} and rolls a {attack_roll} (miss)."
+    
+    @classmethod
+    def generate(cls, message: Optional[str] = None):
+        """
+        Generate an attack spell using the LLM.
+
+        Args:
+            message (Optional[str]): The message to generate the spell.
+
+        Returns:
+            AttackSpell: The generated spell.
+        """
+        if message is None:
+            message = "Generate a spell for the attack type."
+        spell = complete_pydantic(message, AttackSpell)
+        return spell
+
+class HealingSpell(Spell):
+    healing_amount: str = Field('1d6', description="The amount of healing to be done by the spell. Ex: 1d8.")
+    attack_type: str = Field('heal', description="The type of attack to be done by the spell. Ex: heal.")
+
+    def cast(self, caster, target):
+        # Get the spellcasting ability modifier
+        spellcasting_ability = self.get_spellcasting_ability(caster)
+        spellcasting_modifier = caster.attributes.get_modifier(spellcasting_ability)
+        
+        # Roll for success
+        success_roll = sum(roll_dice('1d20')) + spellcasting_modifier
+        if success_roll >= 10 or self.is_cantrip:
+            # Roll the healing
+            healing_rolls = roll_dice(self.healing_amount)
+            healing_amount = sum(healing_rolls) + spellcasting_modifier
+            
+            # Apply the healing
+            old_hp = target.hp
+            target.hp = min(target.hp + healing_amount, target.max_hp)
+            actual_heal = target.hp - old_hp
+            
+            # Return the healing message
+            return f"{caster.name} heals {target.name} with {self.name} for {actual_heal} HP (rolled {healing_amount})."
+        else:
+            return f"{caster.name} fails to heal {target.name} with {self.name}."
+
+    @classmethod
+    def generate(cls, message: Optional[str] = None):
+        """
+        Generate a healing spell using the LLM.
+
+        Args:
+            message (Optional[str]): The message to generate the spell.
+
+        Returns:
+            HealingSpell: The generated spell.
+        """
+        if message is None:
+            message = "Generate a spell for healing."
+        spell = complete_pydantic(message, cls)
+        return spell
+
+if __name__ == "__main__":
+    from .character import Character
+    from .defined_spells import cure_wounds, fireball
+
+    # test casting a healing spell
+    character = Character.generate()
+    character.hp = character.max_hp - 5
+    print(character)
+    print(cure_wounds.cast(character, character))
+    print(character)
+
+    # test casting an attack spell
+    character = Character.generate()
+    print(character)
+    print(fireball.cast(character, character))
+    print(character)
+
+    # test generating a healing spell
+    try:
+        print("Generating a healing spell...")
+        print(HealingSpell.generate())
+    except Exception as e:
+        print(f"Unable to generate a healing spell: {str(e)}")
+
+    # test generating an attack spell
+    try:
+        print("Generating an attack spell...")
+        print(AttackSpell.generate())
+    except Exception as e:
+        print(f"Unable to generate an attack spell: {str(e)}")

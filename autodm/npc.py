@@ -1,208 +1,100 @@
-from typing import Optional, Dict, TYPE_CHECKING, Any, List
-from .character import Character, Attributes, Position
-from .llm import get_llm, complete
-from .items import EquipmentItem
-import random
-import json
+from .character_agent import Agent
+from .character import Character, Attributes
+from .llm import complete
 from pydantic import Field
+from typing import Union, Dict, Any
+import json
 
-if TYPE_CHECKING:
-    from .battle import Battle
+class NPC(Agent):
+    def __init__(self, character: Union[Character, None] = None):
+        if character is None:
+            character = Character.generate()
+        super().__init__(character, is_npc=True)
+        self.is_npc = True
 
-class NPC(Character):
-    backstory: str = Field(default="")
-    battle: Optional[Any] = Field(default=None)
-
-    def set_battle(self, battle: 'Battle'):
-        self.battle = battle
-
-    def get_battle_context(self) -> str:
-        if not self.battle:
-            return ""
-
-        battle_state = self.battle.get_battle_state()
-        
-        allies_info = "\n".join([
-            f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP, Position: ({ally['position'].x}, {ally['position'].y})"
-            for ally in battle_state['enemies']  # NPCs are enemies of players
-        ])
-        enemies_info = "\n".join([
-            f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP, Position: ({enemy['position'].x}, {enemy['position'].y})"
-            for enemy in battle_state['allies']  # Players are enemies of NPCs
-        ])
-        
-        return f"""
-Current battle situation:
-Your position: ({self.position.x}, {self.position.y})
-
-Your allies:
-{allies_info}
-
-Your enemies:
-{enemies_info}
-
-Map size: {self.battle.map_size[0]}x{self.battle.map_size[1]}
-
-Consider the battle situation and positions when making decisions.
-"""
-
-    @classmethod
-    def generate(cls, name: str, chr_class: str, chr_race: str, level: int = 1):
-        attributes = Attributes(
-            strength=random.randint(8, 18),
-            dexterity=random.randint(8, 18),
-            constitution=random.randint(8, 18),
-            intelligence=random.randint(8, 18),
-            wisdom=random.randint(8, 18),
-            charisma=random.randint(8, 18)
-        )
-        
-        backstory_prompt = f"Generate a brief backstory for {name}, a level {level} {chr_race} {chr_class}."
-        backstory = complete(backstory_prompt)
-        
-        character = super().generate(name, chr_class=chr_class, chr_race=chr_race, level=level)
-        character.backstory = backstory
-        return character
-
-    def get_equipped_weapons(self) -> List[EquipmentItem]:
-        return [item for item in self.equipped_items.get('weapon', []) if item]
-
-    def decide_action(self) -> Dict[str, Any]:
+    def handle_action(self) -> Dict[str, Any]:
         battle_context = self.get_battle_context()
         
         context = f"""
-You are {self.name}, a level {self.level} {self.chr_race} {self.chr_class}.
-Backstory: {self.backstory}
+You are {self.character.name}, a level {self.character.level} {self.character.chr_race} {self.character.chr_class}.
+Backstory: {self.character.backstory}
 
 {battle_context}
 
-Your equipped weapon: {self.get_equipped_weapon().name if self.get_equipped_weapon() else "None"}
-Your known spells: {', '.join([spell.name for spell in self.spells])}
+You have the ability to take an action or a movement.
+Decide on the most appropriate action or movement to take in the current situation. \
+Your movement range is {self.character.speed} feet. \
+Your current position is ({self.character.position.x}, {self.character.position.y}).
+You have {self.character.movement_remaining} feet of movement remaining.
+Your options for movement include:
+- Move to a specific coordinate (e.g., "move to A5")
+- Stay in your current position
 
-Decide on the most appropriate action to take in this battle situation. 
-Your options include:
-- Attack a specific enemy with your weapon (range: {self.get_equipped_weapon().effects.get('range', 5) if self.get_equipped_weapon() else 5} feet)
-- Cast a spell at a specific enemy (if you know any spells)
-- Use an item from your inventory
-- Move to a strategic position
-- Attempt to intimidate, persuade, or deceive an enemy
-
-Consider the positions of allies and enemies when making your decision.
-
-Respond with a JSON object containing the following fields:
-- action_type: The type of action (attack, cast_spell, use_item, move, skill_check)
-- target: The name of the target (if applicable)
-- spell_name: The name of the spell to cast (if casting a spell)
-- item_name: The name of the item to use (if using an item)
-- skill: The name of the skill to use (if performing a skill check)
-- description: A brief description of the action, including any strategic considerations based on positions
-
-Example:
-{{
-    "action_type": "attack",
-    "target": "Aric",
-    "description": "Zira moves closer to Aric and attacks him with her shortsword, taking advantage of her position near cover."
-}}
-"""
-        response = complete(context)
-        try:
-            action_dict = json.loads(response)
-            if 'target' not in action_dict and action_dict['action_type'] in ['attack', 'cast_spell']:
-                # If no target is specified for an attack or spell, choose a random enemy
-                random_enemy = self.battle.get_random_enemy(self)
-                action_dict['target'] = self.battle.get_name(random_enemy) if random_enemy else "Unknown"
-            return action_dict
-        except json.JSONDecodeError:
-            # If JSON parsing fails, return a default action with a random enemy target
-            random_enemy = self.battle.get_random_enemy(self)
-            target_name = self.battle.get_name(random_enemy) if random_enemy else "Unknown"
-            return {
-                "action_type": "attack",
-                "target": target_name,
-                "description": f"{self.name} attacks {target_name}, moving into a better position if necessary."
-            }
-
-    def decide_movement(self) -> Dict[str, Any]:
-        battle_context = self.get_battle_context()
-        
-        context = f"""
-You are {self.name}, a level {self.level} {self.chr_race} {self.chr_class}.
-Backstory: {self.backstory}
-
-{battle_context}
-
-Decide on the most appropriate movement to take in this battle situation. 
-Your movement speed is {self.speed} feet.
-Your current position is ({self.position.x}, {self.position.y}).
+"Battle state:"
+{self.battle.get_battle_state() if self.battle else "Not in battle"}
 
 Consider the following factors:
-- Proximity to enemies and allies
-- Tactical advantages (e.g., cover, high ground)
-- Your class abilities and fighting style
+- Proximity to enemies and allies (you will not be able to attack or cast spells on enemies that are out of range)
+- Your class abilities and fighting style.
 
-Respond with a JSON object containing the following fields:
-- direction: The direction to move (north, south, east, west, northeast, southeast, southwest, northwest)
-- distance: The distance to move in feet (should be less than or equal to your movement speed)
-- description: A brief description of the movement and its tactical purpose
-
-Example:
-{{
-    "direction": "northeast",
-    "distance": 20,
-    "description": "Zira moves 20 feet northeast to flank Aric and gain a tactical advantage."
-}}
+Please use the available functions to gather information and make a decision.
+Once you have taken an action or made a move, you should have enough information to respond without any more tools.
 """
-        response = complete(context)
+        response = self.agent.chat(context)
+        return response.text
+
+    # Delegate attribute access to the character object
+    def __getattr__(self, name):
+        return getattr(self.character, name)
+
+    def attack(self, target: str) -> str:
+        weapon = self.character.get_equipped_weapons()[0] if self.character.get_equipped_weapons() else None
+        weapon_name = weapon.name if weapon else "an unarmed strike"
+        return f"{self.character.name} attacks {target} with {weapon_name}."
+
+    def cast_spell(self, spell_name: str, target: str = "") -> str:
+        spell = next((s for s in self.character.spells if s.name.lower() == spell_name.lower()), None)
+        if not spell:
+            return f"{self.character.name} doesn't know the spell {spell_name}."
+        if not self.character.can_cast_spell(spell):
+            return f"{self.character.name} cannot cast {spell_name} at this time (no available spell slots)."
         try:
-            movement_dict = json.loads(response)
-            return movement_dict
-        except json.JSONDecodeError:
-            # If JSON parsing fails, return a default movement
-            return {
-                "direction": "north",
-                "distance": min(20, self.speed),
-                "description": f"{self.name} moves cautiously, seeking a better position."
-            }
+            self.character.cast_spell(spell)
+            if spell.name.lower() == "shield" or spell.range.lower() == "self":
+                return f"{self.character.name} casts {spell.name} on themselves."
+            elif target:
+                return f"{self.character.name} casts {spell.name} at {target}."
+            else:
+                return f"{self.character.name} casts {spell.name}."
+        except ValueError as e:
+            return str(e)
 
-    def converse(self, message: str) -> str:
-        context = (
-            f"You are narrating the actions and speech of {self.name}, a {self.chr_race} {self.chr_class}. "
-            f"Backstory: {self.backstory}\n\n"
-            f"Someone says to {self.name}: '{message}'\n\n"
-            f"Describe {self.name}'s response and actions in third person, as if narrating a story. "
-            f"Use {self.name} or appropriate pronouns instead of 'I' or 'me'. "
-            f"Incorporate {self.name}'s race, class, and personality into the response."
-        )
-        return complete(context)
-
-    def react_to_social_action(self, action: str, actor: str) -> str:
-        context = (
-            f"You are narrating the actions and speech of {self.name}, a {self.chr_race} {self.chr_class}. "
-            f"Backstory: {self.backstory}\n\n"
-            f"{actor} attempts to {action} {self.name}.\n\n"
-            f"Describe {self.name}'s reaction in third person, as if narrating a story. "
-            f"Use {self.name} or appropriate pronouns instead of 'I' or 'me'. "
-            f"Incorporate {self.name}'s race, class, and personality into the response."
-        )
-        return complete(context)
-
-# Interactive conversation loop
-def interactive_conversation(npc: NPC):
-    print(f"You are now interacting with {npc.name}, a level {npc.level} {npc.chr_race} {npc.chr_class}.")
-    print(f"Backstory: {npc.backstory}")
-    print(f"Attributes: {npc.attributes}")
-    print("\nType 'exit' to end the conversation.")
-    
-    while True:
-        user_input = input("\nYou: ").strip()
-        if user_input.lower() == 'exit':
-            print("Ending conversation. Goodbye!")
-            break
+    def use_item(self, item_name: str, target: str = "") -> str:
+        item = next((i for i in self.character.inventory if i.name.lower() == item_name.lower()), None)
+        if not item:
+            return f"{self.character.name} doesn't have {item_name} in their inventory."
         
-        response = npc.converse(user_input)
-        print(f"\nNarrator: {response}")
+        if item.item_type == "potion" and "heal" in item.effects:
+            target_char = self.battle.get_target(target) if target else self.character
+            if not target_char:
+                return f"Invalid target: {target}"
+            
+            heal_amount = item.effects["heal"]
+            old_hp = target_char.hp
+            target_char.hp += heal_amount
+            actual_heal = target_char.hp - old_hp
+            
+            self.character.inventory.remove(item)
+            
+            return f"{self.character.name} uses {item_name} on {target_char.name}. {target_char.name} heals for {actual_heal} HP."
+        
+        return f"{self.character.name} uses {item_name}."
 
-# Example usage
+    # Add other missing methods as needed
+
+# Test scenario (optional)
 if __name__ == "__main__":
     npc = NPC.generate("Groknak", "Barbarian", "Half-Orc", level=3)
-    interactive_conversation(npc)
+    print(f"Generated NPC: {npc.character.name}")
+    print(f"Backstory: {npc.backstory}")
+    print(f"Attributes: {npc.character.attributes}")

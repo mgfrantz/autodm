@@ -3,7 +3,10 @@ load_dotenv()
 
 from llama_index.llms.ollama import Ollama
 from llama_index.llms.gemini import Gemini
+from llama_index.core.program import LLMTextCompletionProgram
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from pydantic import BaseModel
+from llama_index.core.llms import LLM
 
 class LLMManager:
     _instance = None
@@ -32,14 +35,27 @@ class LLMManager:
     def get_llm(cls):
         return cls().llm
 
-    @classmethod
-    def complete(cls, prompt: str) -> str:
-        return cls().llm.complete(prompt).text
-
 llm_manager = LLMManager()
 
-def get_llm():
-    return llm_manager.get_llm()
+def get_llm() -> LLM:
+    return llm_manager.get_llm()  # Fixed: Return the LLM instance
 
 def complete(prompt: str) -> str:
-    return llm_manager.complete(prompt)
+    llm = get_llm()
+    response = llm.complete(prompt)
+    return response.text
+
+def complete_pydantic(prompt: str, schema: BaseModel) -> str:
+    prompt_template_str = f"""\
+Generate an example {schema.__name__}, following the structure defined by the Pydantic model.
+Use the following context as inspiration: {prompt}
+"""
+    program = LLMTextCompletionProgram.from_defaults(
+        output_cls=schema,
+        prompt_template_str=prompt_template_str,
+        llm=get_llm(),
+        verbose=True,
+    )
+    
+    response = program()
+    return response

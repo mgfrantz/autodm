@@ -2,7 +2,7 @@ from .player_agent import PlayerAgent
 from .character import Character
 from .npc import NPC
 from .battle import Battle
-from .spells import fireball, magic_missile, cure_wounds
+from .defined_spells import fireball, magic_missile, cure_wounds
 from .items import EquipmentItem, healing_potion
 
 def equip_character(character):
@@ -54,13 +54,13 @@ def main():
     player2 = PlayerAgent(thorne)
 
     # Create NPCs
-    groknak = NPC.generate("Groknak", "Barbarian", "Half-Orc", level=3)
-    equip_character(groknak)
-    npc1 = groknak
+    groknak_char = Character.generate("Groknak", chr_class="Barbarian", chr_race="Half-Orc", level=3)
+    equip_character(groknak_char)
+    groknak = NPC(groknak_char)
 
-    zira = NPC.generate("Zira", "Rogue", "Elf", level=3)
-    equip_character(zira)
-    npc2 = zira
+    zira_char = Character.generate("Zira", chr_class="Rogue", chr_race="Elf", level=3)
+    equip_character(zira_char)
+    zira = NPC(zira_char)
 
     print("Players:")
     for player in [player1, player2]:
@@ -70,12 +70,12 @@ def main():
         print(f"  Equipped items: {', '.join([item.name for slot in player.character.equipped_items.values() for item in slot if item])}")
 
     print("\nEnemies:")
-    for npc in [npc1, npc2]:
-        print(f"- {npc.name}, a level {npc.level} {npc.chr_race} {npc.chr_class}")
-        print(f"  Equipped items: {', '.join([item.name for slot in npc.equipped_items.values() for item in slot if item])}")
+    for npc in [groknak, zira]:
+        print(f"- {npc.character.name}, a level {npc.character.level} {npc.character.chr_race} {npc.character.chr_class}")
+        print(f"  Equipped items: {', '.join([item.name for slot in npc.character.equipped_items.values() for item in slot if item])}")
     
     # Start the battle
-    battle = Battle([player1, player2], [npc1, npc2])
+    battle = Battle([player1, player2], [groknak, zira])
     battle.start_battle()
 
 if __name__ == "__main__":
