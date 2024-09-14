@@ -1,5 +1,6 @@
 from typing import Dict, Optional, Union
 from pydantic import BaseModel, Field
+from .weapons import MeleeWeapon, RangedWeapon
 
 class Item(BaseModel):
     """
@@ -33,14 +34,6 @@ class Item(BaseModel):
     def __str__(self):
         return f"{self.name} (x{self.quantity})"
 
-class WeaponAttack(BaseModel):
-    name: str
-    hit_bonus: int
-    damage: str
-
-    class Config:
-        arbitrary_types_allowed = True
-
 class EquipmentItem(BaseModel):
     name: str
     quantity: int
@@ -56,7 +49,7 @@ class EquipmentItem(BaseModel):
 # Add this at the end of the file
 healing_potion = Item(
     name="Healing Potion",
-    description="A small vial of red liquid that restores 2 HP when consumed.",
+    description="A small vial of red liquid that restores 2d4+2 HP when consumed.",
     item_type="potion",
-    effects={"heal": 2}
+    effects={"heal": "2d4+2"}
 )

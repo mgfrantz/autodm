@@ -6,7 +6,10 @@ from .tools import roll_dice
 from .llm import complete
 from .spells import Spell
 from .items import EquipmentItem
+from .weapons import MeleeWeapon, RangedWeapon, WeaponDamageType
+from .character_agent import CharacterAgent
 import random
+from rich import print
 
 CharacterUnion = Union[PlayerAgent, NPC]  # Update this if needed
 
@@ -54,13 +57,16 @@ class Battle:
         self.initialize_character_symbols()
         self.initialize_positions()
         self.update_map()
+        self.init_battle()
 
-    def start_battle(self):
+    def init_battle(self):
         for agent in self.party1 + self.party2:
             agent.set_battle(self)
         self.initialize_positions()
         self.update_map()
         self.roll_initiative()
+
+    def start_battle(self):
         self.run_battle()
 
     def roll_initiative(self):
@@ -97,29 +103,44 @@ class Battle:
         agent.character.movement_remaining = agent.character.speed
         print(f"\n{agent.character.name}'s turn!")
         
-        # Movement
-        move_action = agent.decide_movement()
-        if move_action['action_type'] == 'move':
-            coord = move_action['target']
-            success, message = self.move_to(agent.character, coord)
-            print(message)
-        else:
-            print(f"{agent.character.name} decides not to move.")
+        action_taken = False
+        movement_taken = False
 
-        # Action
-        action = agent.decide_action()
-        print(f"{agent.character.name} decides to: {action['description']}")
-        
+        while not (action_taken and movement_taken):
+            prompt_str = f"You have the following options:\n{'- move' if not movement_taken else ''}\n{'- attack' if not action_taken else ''}\n{'- cast_spell' if not action_taken else ''}\n{'- use_item' if not action_taken else ''}\n{'- end_turn' if not action_taken else ''}\n"
+            if agent.is_npc:
+                action = agent.decide_action()
+            else:
+                action = agent.chat(input(prompt_str))
+            print(f"{agent.character.name} : {action}")
+            
+            # For NPCs, end the turn if both movement and action are taken
+            if agent.is_npc and (action_taken and movement_taken):
+                break
+            
+            # For players, ask if they want to continue their turn
+            if not agent.is_npc:
+                if action_taken and movement_taken:
+                    if not self.player_continue_turn():
+                        break
+                elif action_taken or movement_taken:
+                    print(f"You have {'an action' if movement_taken else 'movement'} remaining.")
+                    if not self.player_continue_turn():
+                        break
+
+        print(f"{agent.character.name}'s turn ends.")
+
+    def handle_action(self, agent: CharacterUnion, action: Dict[str, Any]):
         if action['action_type'] == "attack":
             self.handle_attack(agent, action)
         elif action['action_type'] == "cast_spell":
             self.handle_spell(agent, action)
         elif action['action_type'] == "use_item":
             self.handle_item_use(agent, action)
-        else:
-            print(f"{agent.character.name} performs the action: {action['description']}")
-        
-        print(f"{agent.character.name}'s turn ends.")
+
+    def player_continue_turn(self) -> bool:
+        response = input("Do you want to continue your turn? (yes/no): ").lower().strip()
+        return response == 'yes' or response == 'y'
 
     def handle_attack(self, agent: CharacterUnion, action: Dict[str, Any]):
         target = self.get_target(action['target'])
@@ -176,16 +197,11 @@ class Battle:
                 
                 # Check if the target is in range
                 distance = self.get_distance_between(agent.character, target.character)
-                spell_range = int(spell.range.split()[0])  # Assume range is in format "120 feet"
+                spell_range = spell.range if isinstance(spell.range, int) else 5  # Default to 5 feet for 'touch' spells
                 
                 if distance * 5 <= spell_range:  # Convert grid distance to feet
-                    damage = self.calculate_spell_damage(spell, agent.character)
-                    target.character.hp -= damage
-                    print(f"{agent.character.name} casts {spell_name} at {target_name}.")
-                    print(f"{target_name} takes {damage} damage from {spell_name}!")
-                    self.print_target_hp(target)
-                    
-                    result = "Success"
+                    result = spell.cast(agent.character, target.character)
+                    print(result)
                     
                     attacker_info = self.get_character_info(agent.character)
                     target_info = self.get_character_info(target.character)
@@ -195,7 +211,7 @@ class Battle:
                         result=result,
                         attacker=agent.character.name,
                         target=target_name,
-                        damage=damage,
+                        damage=0,  # We don't have access to the damage here, so we'll pass 0
                         target_hp=target.character.hp,
                         target_max_hp=target.character.max_hp,
                         death_info="",
@@ -210,7 +226,7 @@ class Battle:
             else:
                 print(f"{agent.character.name} tries to cast {spell_name}, but they don't know this spell.")
         else:
-            print(f"{agent.character.name} tries to cast {action['spell_name']} at {action['target']}, but they are not a valid target.")
+            print(f"{agent.character.name} tries to cast {spell.name} at {target.character.name}, but they are not a valid target.")
 
     def handle_item_use(self, agent: CharacterUnion, action: Dict[str, Any]):
         # Implement item use logic
@@ -218,7 +234,7 @@ class Battle:
 
     def get_target(self, target_name: str) -> Optional[CharacterUnion]:
         for agent in self.initiative_order:
-            if agent.character.name.lower() == target_name.lower():
+            if isinstance(agent, CharacterAgent) and agent.character.name.lower() == target_name.lower():
                 return agent
         return None
 
@@ -304,32 +320,22 @@ class Battle:
         return False
 
     def get_battle_state(self) -> Dict[str, List[Dict[str, Union[str, int, bool, Position]]]]:
-        def character_state(agent: CharacterUnion) -> Dict[str, Union[str, int, bool, Position]]:
-            c = agent.character
-            return {
-                "name": c.name,
-                "class": c.chr_class,
-                "level": c.level,
-                "hp": c.hp,
-                "max_hp": c.max_hp,
-                "is_alive": self.is_character_alive(agent),
-                "position": c.position
-            }
-
         return {
-            "party1": [character_state(agent) for agent in self.party1],
-            "party2": [character_state(agent) for agent in self.party2]
+            "party1": [self.get_character_info(agent.character) for agent in self.party1],
+            "party2": [self.get_character_info(agent.character) for agent in self.party2]
         }
 
     def get_character_info(self, character: Character) -> Dict[str, Any]:
         equipped_weapons = character.get_equipped_weapons()
         weapon_name = equipped_weapons[0].name if equipped_weapons else "Unarmed"
         return {
+            "name": character.name,
             "class": character.chr_class,
             "race": character.chr_race,
             "weapon": weapon_name,
             "armor": ", ".join([item.name for item in character.equipped_items.get('armor', []) if item]) or "No armor",
             "armor_class": character.armor_class,
+            'hp': f"{character.hp}/{character.max_hp}",
             "position": character.position,
         }
 
@@ -362,45 +368,72 @@ class Battle:
             symbol = symbols[i % len(symbols)]
             self.character_symbols[agent.character.name] = symbol
 
-    def move_to(self, character: Character, coord: Tuple[int, int]) -> Tuple[bool, str]:
-        x, y = coord
-
+    def move_to(self, character: CharacterUnion, x: int, y: int, verbose=False) -> Tuple[bool, str]:
         if 0 <= x < self.map_size[0] and 0 <= y < self.map_size[1]:
-            current_x, current_y = character.position.x, character.position.y
+            current_x, current_y = character.character.position.x, character.character.position.y
+            if verbose:
+                print(f"{character.character.name} moves from ({current_x}, {current_y}) to ({x}, {y})")
             distance = (abs(current_x - x) + abs(current_y - y)) * 5  # Each cell is 5 feet
-            if distance <= character.movement_remaining:
+            if distance <= character.character.movement_remaining:
                 # Clear the old position
                 self.map[current_y][current_x] = ' . '
                 
                 # Update the character's position
-                character.position = Position(x=x, y=y)
+                character.character.position = Position(x=x, y=y)
                 
                 # Update the new position on the map
-                self.update_map_position(next(agent for agent in self.party1 + self.party2 if agent.character == character))
+                self.update_map_position(character)
                 
-                character.movement_remaining -= distance
-                return True, f"{character.name} moves to ({x}, {y}). Movement remaining: {character.movement_remaining} feet."
+                character.character.movement_remaining -= distance
+                return True, f"{character.character.name} moves to ({x}, {y}). Movement remaining: {character.character.movement_remaining} feet."
             else:
-                return False, f"Not enough movement. Required: {distance} feet, Remaining: {character.movement_remaining} feet."
+                return False, f"Not enough movement. Required: {distance} feet, Remaining: {character.character.movement_remaining} feet."
         return False, f"Invalid coordinates ({x}, {y}). Map size is {self.map_size[0]}x{self.map_size[1]}."
 
-    def display_map(self):
+    def display_map(self, do_return=False):
         print("\nBattle Map:")
         
-        # Create column labels using letters
-        col_labels = '    ' + ' '.join([f'{chr(65+i):2}' for i in range(self.map_size[0])])
-        print(col_labels)
+        # Create column labels (X-axis)
+        col_labels = '     ' + ' '.join([f'{i:2d}' for i in range(self.map_size[0])])
+        x_axis = list(' ' * len(col_labels))
+        x_axis[len(col_labels)//2] = 'X'
+        x_axis = ''.join(x_axis)
         
-        # Print rows with row numbers
-        for i, row in enumerate(self.map):
-            print(f'{i+1:2} |' + ''.join(row))
+        # Create a new map with numbered symbols
+        numbered_map = [row.copy() for row in self.map]
+        symbol_to_number = {}
+        current_number = 1
+
+        for y in range(self.map_size[1]):
+            for x in range(self.map_size[0]):
+                symbol = self.map[y][x].strip()
+                if symbol != '.':
+                    if symbol not in symbol_to_number:
+                        symbol_to_number[symbol] = current_number
+                        current_number += 1
+                    numbered_map[y][x] = f'{symbol_to_number[symbol]:2d} '
         
-        print("\nLegend:")
+        # Print rows with row numbers (Y-axis)
+        s = f"""\
+{x_axis}
+{col_labels}
+"""
+        for i, row in enumerate(reversed(numbered_map)):
+            _chr = "Y" if i == self.map_size[1]//2 else " "
+            s += f'{_chr}{i:2d} |' + ''.join(row) + f'| {i:2d}\n'
+        
+        s += col_labels
+        # Repeat column labels at the bottom
+        
+        s += "\nLegend:\n"
         for name, symbol in self.character_symbols.items():
             agent = next((a for a in self.party1 + self.party2 if a.character.name == name), None)
             if agent:
-                print(f"{symbol}: {name} ({agent.character.chr_class})")
-        print()
+                number = symbol_to_number[symbol]
+                s += f"{number}: {name} ({agent.character.chr_class})\n"
+        print(s)
+        if do_return:
+            return s
 
     def get_distance_between(self, char1: Character, char2: Character) -> int:
         return abs(char1.position.x - char2.position.x) + abs(char1.position.y - char2.position.y)
@@ -408,9 +441,9 @@ class Battle:
     def get_character_position(self, character: CharacterUnion) -> str:
         if hasattr(character, 'character'):  # PlayerAgent
             pos = character.character.position
-        else:  # NPC
+        else: 
             pos = character.position
-        return f"{chr(65 + pos.x)} {pos.y + 1}"
+        return pos
 
     def get_characters_in_range(self, character: Character, range_feet: int) -> List[CharacterUnion]:
         in_range = []
@@ -420,3 +453,58 @@ class Battle:
                 if distance * 5 <= range_feet:  # Convert grid distance to feet
                     in_range.append(agent)
         return in_range
+    
+if __name__ == "__main__":
+    from .character import Character, Attributes
+    from .player_agent import PlayerAgent
+    from .npc import NPC
+    from .spells import Spell
+    from .items import EquipmentItem
+
+    # Create characters
+    print("Creating characters...")
+    character1 = Character.generate(chr_class="Wizard", max_hp=100, hp=100)
+    character2 = Character.generate(chr_class="Fighter", max_hp=100, hp=100)
+    print("Equipping characters with items and spells...")
+    # Create a spell
+    fireball = Spell(name="Fireball", description="A magical explosion that deals fire damage to all creatures in a 15-foot radius.", level=1, range=60, components="V, S, M", duration="Instantaneous", casting_time=1, attack_type='ranged', school="Evocation", damage="1d6")
+    fireball.learn(character1)
+    # Create items
+    longsword = MeleeWeapon(name='Longsword', damage_dice='1d8', damage_type=WeaponDamageType.SLASHING)
+    character2.equip_item(longsword)
+    bow = RangedWeapon(name='Bow', damage_dice='1d6', damage_type=WeaponDamageType.PIERCING, range_normal=100, range_long=400)
+    character2.equip_item(bow)
+
+    # Create player and NPC agents
+    print("Creating player and NPC agents...")
+    player = PlayerAgent(character1)
+    npc = NPC(character2)
+
+    # Create a battle
+    print("Creating a battle...")
+    battle = Battle([player], [npc])
+
+    # Test movement
+    print("Testing movement. Initializing player 1 to (0,0) and npc to (9,9)")
+    battle.move_to(player, 0, 0, verbose=True)
+    battle.move_to(npc, 9, 9, verbose=True)
+    battle.display_map()
+    print("Testing movement. Moving player 1 to (3,3) and npc to (6,6)")
+    battle.move_to(player, 3, 3, verbose=True)
+    battle.move_to(npc, 6, 6, verbose=True)
+    battle.display_map()
+
+    # Test spell casting
+    print("Testing spell casting...")
+    print(battle.get_battle_state())
+    print("Player 1 casts Fireball at npc")
+    print(player.cast_spell("Fireball", npc))
+    print(battle.get_battle_state())
+
+    # Test melee attack
+    print("Testing melee attack...")
+    print("Moving npc to (3,4)")
+    battle.move_to(npc, 3, 4, verbose=True)
+    print("Npc attacks player")
+    print(npc.attack(player))
+    print(battle.get_battle_state())

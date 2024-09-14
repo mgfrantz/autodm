@@ -1,7 +1,8 @@
 from typing import List, Optional, Dict, Union, ClassVar, Tuple
 from pydantic import BaseModel, Field
 import random
-from .items import Item, WeaponAttack, EquipmentItem
+from .items import Item, EquipmentItem
+from .weapons import Weapon, MeleeWeapon, RangedWeapon
 from enum import Enum
 import copy
 from .llm import complete, complete_pydantic
@@ -66,6 +67,8 @@ class Character(BaseModel):
     relationships: Dict[str, Relationship] = Field(default_factory=dict)
     position: Position = Field(default_factory=Position)
     backstory: str = ""
+    movement_speed: int = 30  # Default movement speed in feet
+    movement_remaining: int = Field(30, description="Remaining movement in the current turn")
 
     class Config:
         arbitrary_types_allowed = True
@@ -80,14 +83,12 @@ class Character(BaseModel):
         self.check_death()
 
     skills: Dict[str, int] = Field(default_factory=dict)
-    equipped_items: Dict[str, List[Optional[EquipmentItem]]] = Field(default_factory=lambda: {
+    equipped_items: Dict[str, List[Optional[Union[EquipmentItem, Weapon]]]] = Field(default_factory=lambda: {
         "weapon": [],
         "armor": [],
         "accessory": []
     })
     inventory: List[EquipmentItem] = Field(default_factory=list)
-    movement_speed: int = 30  # Default movement speed in feet
-    movement_remaining: int = 30  # Default movement remaining in feet
     battle_state: BattleState = BattleState.NOT_IN_BATTLE  # Default battle state
     character_state: CharacterState = CharacterState.ALIVE  # Default character state
 
@@ -203,9 +204,7 @@ class Character(BaseModel):
 
         default_spells = []
         if chr_class in ["Wizard", "Sorcerer"]:
-            default_spells.append(magic_missile)
-            default_spells.append(shield)
-            default_spells.append(fireball)
+            default_spells.extend([fireball, magic_missile, shield])
         elif chr_class in ["Cleric", "Druid", "Paladin"]:
             default_spells.append(cure_wounds)
 
@@ -289,7 +288,7 @@ class Character(BaseModel):
 
         return character
 
-    def equip_item(self, item: EquipmentItem) -> None:
+    def equip_item(self, item: Union[EquipmentItem, Weapon]) -> None:
         """
         Equip an item to the character.
         """
@@ -314,24 +313,22 @@ class Character(BaseModel):
         dex_modifier = self.attributes.get_modifier('dexterity')
         base_ac = 10 + dex_modifier  # Start with base AC
 
-        armor = self.equipped_items.get('armor')
-        if armor:
-            for item in armor:
-                if 'armor_class' in item.effects:
-                    if isinstance(item.effects['armor_class'], int):
-                        base_ac = max(base_ac, item.effects['armor_class'] + dex_modifier)
-                    else:
-                        # If it's a string (like "11 + Dex modifier"), we'll need to parse it
-                        armor_base = int(item.effects['armor_class'].split()[0])
-                        base_ac = max(base_ac, armor_base + dex_modifier)
-
-        # Add AC bonuses from other equipped items
-        for item in self.equipped_items.values():
-            if item:
-                for i in item:
-                    if i and 'armor_class' in i.effects:
-                        if isinstance(i.effects['armor_class'], int):
-                            base_ac += i.effects['armor_class']
+        for slot, items in self.equipped_items.items():
+            for item in items:
+                if item:
+                    if isinstance(item, (EquipmentItem, Weapon)) and 'armor_class' in item.effects:
+                        if isinstance(item.effects['armor_class'], int):
+                            if slot == 'armor':
+                                base_ac = max(base_ac, item.effects['armor_class'] + dex_modifier)
+                            else:
+                                base_ac += item.effects['armor_class']
+                        else:
+                            # If it's a string (like "11 + Dex modifier"), we'll need to parse it
+                            armor_base = int(item.effects['armor_class'].split()[0])
+                            if slot == 'armor':
+                                base_ac = max(base_ac, armor_base + dex_modifier)
+                            else:
+                                base_ac += armor_base
 
         self.armor_class = base_ac
         print(f"Armor Class recalculated: {self.armor_class}")
@@ -425,6 +422,60 @@ class Character(BaseModel):
 
     def move(self, new_position: Position):
         self.position = new_position
+
+    def get_weapons(self) -> List[Union[MeleeWeapon, RangedWeapon]]:
+        """Get a list of all weapons the character has."""
+        return [item for item in self.inventory if isinstance(item, (MeleeWeapon, RangedWeapon))]
+
+    def get_attack_bonus(self) -> int:
+        """
+        Calculate and return the character's attack bonus.
+        This is typically the relevant ability modifier plus the proficiency bonus.
+        """
+        # Determine the relevant ability based on the equipped weapon
+        equipped_weapons = self.get_equipped_weapons()
+        if equipped_weapons:
+            weapon = equipped_weapons[0]
+            if isinstance(weapon, RangedWeapon):
+                ability = 'dexterity'
+            else:  # Melee weapon or unarmed
+                ability = 'strength'
+        else:
+            # Default to strength if no weapon is equipped
+            ability = 'strength'
+        
+        ability_modifier = self.attributes.get_modifier(ability)
+        return ability_modifier + self.proficiency_bonus
+
+    def get_damage_bonus(self) -> int:
+        """
+        Calculate and return the character's damage bonus.
+        This is typically just the relevant ability modifier.
+        """
+        # Determine the relevant ability based on the equipped weapon
+        equipped_weapons = self.get_equipped_weapons()
+        if equipped_weapons:
+            weapon = equipped_weapons[0]
+            if isinstance(weapon, RangedWeapon):
+                ability = 'dexterity'
+            else:  # Melee weapon or unarmed
+                ability = 'strength'
+        else:
+            # Default to strength if no weapon is equipped
+            ability = 'strength'
+        
+        return self.attributes.get_modifier(ability)
+
+    def take_damage(self, damage: int) -> None:
+        """
+        Reduce the character's HP by the given damage amount.
+
+        Args:
+            damage (int): The amount of damage to be taken.
+        """
+        self.hp -= damage
+        print(f"{self.name} takes {damage} damage. Current HP: {self.hp}/{self.max_hp}")
+        self.check_death()
 
 class Characters:
     def __init__(self):

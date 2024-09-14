@@ -1,18 +1,56 @@
-from .character_agent import Agent
+from .character_agent import CharacterAgent
 from .character import Character, Attributes
 from .llm import complete
 from pydantic import Field
 from typing import Union, Dict, Any
 import json
 
-class NPC(Agent):
+class NPC(CharacterAgent):
     def __init__(self, character: Union[Character, None] = None):
         if character is None:
             character = Character.generate()
         super().__init__(character, is_npc=True)
         self.is_npc = True
 
-    def handle_action(self) -> Dict[str, Any]:
+    def decide_action(self) -> Dict[str, Any]:
+        battle_context = self.get_battle_context()
+        
+        context = f"""
+You are {self.character.name}, a level {self.character.level} {self.character.chr_race} {self.character.chr_class}.
+
+Based on the following information, decide on the most appropriate action to take in this battle situation. \
+In each turn, you can take a movement and an action.
+
+Weapons: {self.character.get_equipped_weapons()}
+Spells: {self.character.spells}
+Inventory: {self.character.inventory}
+
+
+Here is current information about the battle, including the names and location of allies and enemies:
+{battle_context}
+
+Use plain text to respond. \
+If you intend to use an attack, make sure you are in range of the target. \
+If you are in range of an enemy, you should attack, otherwise you should move closer to the intended target. \
+If you have ranged spells, you should cast them if you are in range of an enemy, otherwise you should move closer to the intended target. \
+Locations are given in the battle context above, so there's no need to clarify where certain characters are.
+
+Response: \
+"""
+        try:
+            response = self.chat(self.get_battle_context())
+            action_dict = json.loads(str(response))
+            return action_dict
+        except json.JSONDecodeError:
+            # If the AI response is not valid JSON, fall back to a random action
+            random_enemy = self.battle.get_random_target(self)  # Changed from get_random_enemy to get_random_target
+            return {
+                "action_type": "attack",
+                "target": random_enemy.name,
+                "description": f"{self.character.name} attacks {random_enemy.name} with their weapon."
+            }
+
+    def decide_movement(self) -> Dict[str, Any]:
         battle_context = self.get_battle_context()
         
         context = f"""
@@ -21,76 +59,43 @@ Backstory: {self.character.backstory}
 
 {battle_context}
 
-You have the ability to take an action or a movement.
-Decide on the most appropriate action or movement to take in the current situation. \
-Your movement range is {self.character.speed} feet. \
+Decide on the most appropriate movement to take in this battle situation. 
+Your movement speed is {self.character.speed} feet.
 Your current position is ({self.character.position.x}, {self.character.position.y}).
 You have {self.character.movement_remaining} feet of movement remaining.
+
 Your options for movement include:
-- Move to a specific coordinate (e.g., "move to A5")
+- Move to a specific coordinate (e.g., "move to (5, 3)")
 - Stay in your current position
 
-"Battle state:"
-{self.battle.get_battle_state() if self.battle else "Not in battle"}
-
 Consider the following factors:
-- Proximity to enemies and allies (you will not be able to attack or cast spells on enemies that are out of range)
-- Your class abilities and fighting style.
+- Proximity to enemies and allies
+- Tactical advantages (e.g., cover, high ground)
+- Your class abilities and fighting style
 
-Please use the available functions to gather information and make a decision.
-Once you have taken an action or made a move, you should have enough information to respond without any more tools.
+Respond with a JSON object containing the following fields:
+- action_type: "move"
+- target: The coordinate to move to (e.g., "(5, 3)")
+- description: A brief description of the movement and its purpose
 """
         response = self.agent.chat(context)
-        return response.text
+        try:
+            movement_dict = json.loads(str(response))
+            return movement_dict
+        except json.JSONDecodeError:
+            # If JSON parsing fails, return a default movement
+            return {
+                "action_type": "move",
+                "target": f"({self.character.position.x}, {self.character.position.y})",
+                "description": f"{self.character.name} stays in their current position."
+            }
 
     # Delegate attribute access to the character object
     def __getattr__(self, name):
         return getattr(self.character, name)
 
-    def attack(self, target: str) -> str:
-        weapon = self.character.get_equipped_weapons()[0] if self.character.get_equipped_weapons() else None
-        weapon_name = weapon.name if weapon else "an unarmed strike"
-        return f"{self.character.name} attacks {target} with {weapon_name}."
 
-    def cast_spell(self, spell_name: str, target: str = "") -> str:
-        spell = next((s for s in self.character.spells if s.name.lower() == spell_name.lower()), None)
-        if not spell:
-            return f"{self.character.name} doesn't know the spell {spell_name}."
-        if not self.character.can_cast_spell(spell):
-            return f"{self.character.name} cannot cast {spell_name} at this time (no available spell slots)."
-        try:
-            self.character.cast_spell(spell)
-            if spell.name.lower() == "shield" or spell.range.lower() == "self":
-                return f"{self.character.name} casts {spell.name} on themselves."
-            elif target:
-                return f"{self.character.name} casts {spell.name} at {target}."
-            else:
-                return f"{self.character.name} casts {spell.name}."
-        except ValueError as e:
-            return str(e)
-
-    def use_item(self, item_name: str, target: str = "") -> str:
-        item = next((i for i in self.character.inventory if i.name.lower() == item_name.lower()), None)
-        if not item:
-            return f"{self.character.name} doesn't have {item_name} in their inventory."
-        
-        if item.item_type == "potion" and "heal" in item.effects:
-            target_char = self.battle.get_target(target) if target else self.character
-            if not target_char:
-                return f"Invalid target: {target}"
-            
-            heal_amount = item.effects["heal"]
-            old_hp = target_char.hp
-            target_char.hp += heal_amount
-            actual_heal = target_char.hp - old_hp
-            
-            self.character.inventory.remove(item)
-            
-            return f"{self.character.name} uses {item_name} on {target_char.name}. {target_char.name} heals for {actual_heal} HP."
-        
-        return f"{self.character.name} uses {item_name}."
-
-    # Add other missing methods as needed
+    
 
 # Test scenario (optional)
 if __name__ == "__main__":

@@ -17,5 +17,4 @@ else:
 
 class PlayerAgent(CharacterAgent):
     def __init__(self, character: Character):
-        super().__init__(character)
-        self.is_npc = False
+        super().__init__(character, is_npc=False)

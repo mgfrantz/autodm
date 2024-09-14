@@ -2,11 +2,13 @@ from typing import Optional, Dict, TYPE_CHECKING, Any, List, Union
 from .character import Character, Attributes, Position
 from .llm import get_llm, complete
 from .items import EquipmentItem
+from .weapons import WeaponDamageType
 from llama_index.core.tools import BaseTool, FunctionTool
 from llama_index.core.agent import ReActAgent
 import random
 import json
 from pydantic import Field
+from .weapons import MeleeWeapon, RangedWeapon
 
 if TYPE_CHECKING:
     from .battle import Battle
@@ -64,37 +66,57 @@ class CharacterAgent:
         """
         if self.battle:
             if 0 <= x < self.battle.map_size[0] and 0 <= y < self.battle.map_size[1]:
-                success, message = self.battle.move_to(self.character, (x, y))
+                success, message = self.battle.move_to(self, x, y)
                 return message
             else:
                 return f"Invalid coordinates ({x}, {y}). Map size is {self.battle.map_size[0]}x{self.battle.map_size[1]}."
         return f"{self.character.name} is not in a battle and cannot move."
 
-    def attack(self, target: str) -> str:
+    def attack(self, target: Union[str, 'CharacterAgent'], weapon_name: Optional[str] = None) -> str:
         """
         Perform an attack action against a specified target.
-        Once this function is called, you should have enough information to responds without any more tools.
+        Once this function is called, you should have enough information to respond without any more tools.
 
         Args:
-            target (str): The name of the target to attack.
+            target (Union[str, CharacterAgent]): The name of the target or the target CharacterAgent to attack.
+            weapon_name (Optional[str], optional): The name of the weapon to use. Defaults to None.
 
         Returns:
             str: A message describing the attack action.
-
-        Note: You should be able to answer the question without any more tools after calling this function.
         """
-        weapon = self.character.get_equipped_weapons()[0] if self.character.get_equipped_weapons() else None
-        weapon_name = weapon.name if weapon else "an unarmed strike"
-        return f"{self.character.name} attacks {target} with {weapon_name}."
+        weapons = self.character.get_equipped_weapons()
+        weapon_names = [w.name for w in weapons]
+        if weapon_name:
+            if not len(weapons):
+                weapon = MeleeWeapon(name='Unarmed Strike', damage_dice='1d4', damage_type=WeaponDamageType.BLUDGEONING, hit_bonus=0, description='A basic unarmed strike', reach=5)
+            elif weapon_name in weapon_names:
+                weapon = next((w for w in weapons if w.name.lower() == weapon_name.lower()), None)
+            else:
+                weapon = weapons[0]
+        else:
+            weapon = random.choice(weapons) if weapons else MeleeWeapon(name='Unarmed Strike', damage_dice='1d4', damage_type=WeaponDamageType.BLUDGEONING, hit_bonus=0, description='A basic unarmed strike', reach=5)
 
-    def cast_spell(self, spell_name: str, target: str = "") -> str:
+        if isinstance(target, str):
+            target_character = self.battle.get_target(target)
+        elif isinstance(target, CharacterAgent):
+            target_character = target
+        else:
+            return f"Invalid target: {target}"
+
+        if not target_character:
+            return f"Invalid target: {target}"
+
+        is_hit, damage, message = weapon.attack(self, target_character)
+        return message
+
+    def cast_spell(self, spell_name: str, target: Union[str, 'CharacterAgent'] = "") -> str:
         """
         Cast a spell on a specified target.
-        Once this function is called, you should have enough information to responds without any more tools.
+        Once this function is called, you should have enough information to respond without any more tools.
 
         Args:
             spell_name (str): The name of the spell to cast.
-            target (str, optional): The name of the target for the spell. Defaults to "".
+            target (Union[str, CharacterAgent], optional): The name or instance of the target for the spell. Defaults to "".
 
         Returns:
             str: A message describing the spell casting action or any errors.
@@ -107,13 +129,22 @@ class CharacterAgent:
         if not self.character.can_cast_spell(spell):
             return f"{self.character.name} cannot cast {spell_name} at this time (no available spell slots)."
         try:
-            self.character.cast_spell(spell)
-            if spell.range.lower() == "self":
-                return f"{self.character.name} casts {spell.name} on themselves."
-            elif target:
-                return f"{self.character.name} casts {spell.name} at {target}."
+            if self.battle:
+                if isinstance(target, str):
+                    target_character = self.battle.get_target(target)
+                elif isinstance(target, CharacterAgent):
+                    target_character = target.character
+                else:
+                    target_character = self.character
             else:
-                return f"{self.character.name} casts {spell.name}."
+                target_character = self.character  # Default to self if not in battle
+            
+            if target_character is None:
+                return f"Invalid target: {target}"
+            
+            result = spell.cast(self.character, target_character)
+            self.character.cast_spell(spell)
+            return result
         except ValueError as e:
             return str(e)
 
@@ -347,8 +378,8 @@ class CharacterAgent:
 
         battle_description = (
             f"Battle State:\n\n"
-            f"Allies:\n" + allies_info + "\n\n"
-            f"Enemies:\n" + enemies_info
+            f"Allies:\n{allies_info}\n\n"
+            f"Enemies:\n{enemies_info}"
         )
         return battle_description
 
@@ -366,18 +397,31 @@ class CharacterAgent:
 
     def show_map(self) -> str:
         """
-        Display the current battle map.
+        Display the current battle map. Useful when the user wants to see the map.
         Once this function is called, you should have enough information to responds without any more tools.
 
         Returns:
-            str: A message indicating whether the map was displayed or not.
-
-        Note: You should be able to answer the question without any more tools after calling this function.
+            str: A string representation of the map with X and Y axes.
         """
-        if self.battle:
-            self.battle.display_map()
-            return "Map displayed."
-        return "No map available outside of battle."
+        if not self.battle:
+            return "No map available outside of battle."
+
+        map_size = self.battle.map_size
+        map_grid = [[' ' for _ in range(map_size[0])] for _ in range(map_size[1])]
+
+        # Place characters on the map
+        for character in self.battle.get_all_characters():
+            x, y = character.position.x, character.position.y
+            map_grid[y][x] = character.name[0].upper()
+
+        # Create the map string with numbered axes
+        map_str = "  " + " ".join(f"{i:2d}" for i in range(map_size[0])) + " X\n"
+        for y in range(map_size[1]):
+            row = f"{y:2d} " + "|".join(f"{cell:2}" for cell in map_grid[y]) + f" {y:2d}"
+            map_str += row + "\n"
+        map_str += "Y " + " ".join(f"{i:2d}" for i in range(map_size[0])) + " X"
+
+        return f"Current battle map:\n\n{map_str}"
 
     def get_battle_context(self) -> str:
         if not self.battle:
@@ -442,13 +486,15 @@ Consider the battle situation and positions when making decisions.
         prompt = f"""\
 You will be given a command from a user to help execute an action or learn information in a D&D game. \
 Please respond in character. Once you have a response, you should have enough information to respond without any more tools. \
-Do not rely on any implicit knowledge about the character, always call a function. \
+Do not rely on any implicit knowledge about the character, and remember to always call a function. \
 Please return a what happened.
 
+Command:
 {message}
 
 Response:"""
         response = self.agent.chat(prompt)
+        self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
         return response
     
 if __name__ == "__main__":
