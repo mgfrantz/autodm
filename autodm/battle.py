@@ -7,11 +7,11 @@ from .llm import complete
 from .spells import Spell
 from .items import EquipmentItem
 from .weapons import MeleeWeapon, RangedWeapon, WeaponDamageType
-from .character_agent import CharacterAgent
+from .map_grid import Map
 import random
 from rich import print
 
-CharacterUnion = Union[PlayerAgent, NPC]  # Update this if needed
+CharacterUnion = Union[PlayerAgent, NPC]
 
 class BattleAgent:
     def __init__(self):
@@ -51,19 +51,13 @@ class Battle:
         self.initiative_order: List[CharacterUnion] = []
         self.current_turn: int = 0
         self.is_battle_over: bool = False
-        self.map_size = map_size
-        self.map = [[' . ' for _ in range(map_size[0])] for _ in range(map_size[1])]
-        self.character_symbols = {}
-        self.initialize_character_symbols()
-        self.initialize_positions()
-        self.update_map()
+        self.map = Map(width=map_size[0], height=map_size[1])
         self.init_battle()
 
     def init_battle(self):
         for agent in self.party1 + self.party2:
             agent.set_battle(self)
         self.initialize_positions()
-        self.update_map()
         self.roll_initiative()
 
     def start_battle(self):
@@ -234,7 +228,7 @@ class Battle:
 
     def get_target(self, target_name: str) -> Optional[CharacterUnion]:
         for agent in self.initiative_order:
-            if isinstance(agent, CharacterAgent) and agent.character.name.lower() == target_name.lower():
+            if isinstance(agent, 'CharacterAgent') and agent.character.name.lower() == target_name.lower():
                 return agent
         return None
 
@@ -341,134 +335,66 @@ class Battle:
 
     def initialize_positions(self):
         all_agents = self.party1 + self.party2
-        available_positions = [(x, y) for x in range(self.map_size[0]) for y in range(self.map_size[1])]
+        available_positions = [(x, y) for x in range(self.map.width) for y in range(self.map.height)]
         random.shuffle(available_positions)
 
         for agent in all_agents:
             x, y = available_positions.pop()
-            agent.character.position = Position(x=x, y=y)
-
-    def update_map(self):
-        # Clear the map
-        self.map = [[' . ' for _ in range(self.map_size[0])] for _ in range(self.map_size[1])]
-
-        # Update positions for all characters
-        for agent in self.party1 + self.party2:
-            self.update_map_position(agent)
-
-    def update_map_position(self, agent: CharacterUnion):
-        x, y = agent.character.position.x, agent.character.position.y
-        symbol = self.character_symbols[agent.character.name]
-        self.map[y][x] = f' {symbol} '
-
-    def initialize_character_symbols(self):
-        symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        all_agents = self.party1 + self.party2
-        for i, agent in enumerate(all_agents):
-            symbol = symbols[i % len(symbols)]
-            self.character_symbols[agent.character.name] = symbol
+            self.map.add_or_update_player(x, y, agent)
 
     def move_to(self, character: CharacterUnion, x: int, y: int, verbose=False) -> Tuple[bool, str]:
-        if 0 <= x < self.map_size[0] and 0 <= y < self.map_size[1]:
+        if 0 <= x < self.map.width and 0 <= y < self.map.height:
             current_x, current_y = character.character.position.x, character.character.position.y
             if verbose:
                 print(f"{character.character.name} moves from ({current_x}, {current_y}) to ({x}, {y})")
-            distance = (abs(current_x - x) + abs(current_y - y)) * 5  # Each cell is 5 feet
+            distance = (abs(current_x - x) + abs(current_y - y)) * self.map.scale  # Each cell is 5 feet
             if distance <= character.character.movement_remaining:
-                # Clear the old position
-                self.map[current_y][current_x] = ' . '
-                
-                # Update the character's position
-                character.character.position = Position(x=x, y=y)
-                
-                # Update the new position on the map
-                self.update_map_position(character)
-                
+                self.map.add_or_update_player(x, y, character)
                 character.character.movement_remaining -= distance
                 return True, f"{character.character.name} moves to ({x}, {y}). Movement remaining: {character.character.movement_remaining} feet."
             else:
                 return False, f"Not enough movement. Required: {distance} feet, Remaining: {character.character.movement_remaining} feet."
-        return False, f"Invalid coordinates ({x}, {y}). Map size is {self.map_size[0]}x{self.map_size[1]}."
+        return False, f"Invalid coordinates ({x}, {y}). Map size is {self.map.width}x{self.map.height}."
 
     def display_map(self, do_return=False):
-        print("\nBattle Map:")
-        
-        # Create column labels (X-axis)
-        col_labels = '     ' + ' '.join([f'{i:2d}' for i in range(self.map_size[0])])
-        x_axis = list(' ' * len(col_labels))
-        x_axis[len(col_labels)//2] = 'X'
-        x_axis = ''.join(x_axis)
-        
-        # Create a new map with numbered symbols
-        numbered_map = [row.copy() for row in self.map]
-        symbol_to_number = {}
-        current_number = 1
-
-        for y in range(self.map_size[1]):
-            for x in range(self.map_size[0]):
-                symbol = self.map[y][x].strip()
-                if symbol != '.':
-                    if symbol not in symbol_to_number:
-                        symbol_to_number[symbol] = current_number
-                        current_number += 1
-                    numbered_map[y][x] = f'{symbol_to_number[symbol]:2d} '
-        
-        # Print rows with row numbers (Y-axis)
-        s = f"""\
-{x_axis}
-{col_labels}
-"""
-        for i, row in enumerate(reversed(numbered_map)):
-            _chr = "Y" if i == self.map_size[1]//2 else " "
-            s += f'{_chr}{i:2d} |' + ''.join(row) + f'| {i:2d}\n'
-        
-        s += col_labels
-        # Repeat column labels at the bottom
-        
-        s += "\nLegend:\n"
-        for name, symbol in self.character_symbols.items():
-            agent = next((a for a in self.party1 + self.party2 if a.character.name == name), None)
-            if agent:
-                number = symbol_to_number[symbol]
-                s += f"{number}: {name} ({agent.character.chr_class})\n"
-        print(s)
+        map_str = str(self.map)
+        print(map_str)
         if do_return:
-            return s
+            return map_str
 
     def get_distance_between(self, char1: Character, char2: Character) -> int:
-        return abs(char1.position.x - char2.position.x) + abs(char1.position.y - char2.position.y)
+        return self.map.distance_between_players(char1.name, char2.name)
 
-    def get_character_position(self, character: CharacterUnion) -> str:
-        if hasattr(character, 'character'):  # PlayerAgent
-            pos = character.character.position
-        else: 
-            pos = character.position
-        return pos
+    def get_character_position(self, character: CharacterUnion) -> Position:
+        return self.map.locations[character.character.name]["position"]
 
     def get_characters_in_range(self, character: Character, range_feet: int) -> List[CharacterUnion]:
         in_range = []
         for agent in self.party1 + self.party2:
             if agent.character != character:
                 distance = self.get_distance_between(character, agent.character)
-                if distance * 5 <= range_feet:  # Convert grid distance to feet
+                if distance * self.map.scale <= range_feet:  # Convert grid distance to feet
                     in_range.append(agent)
         return in_range
-    
+
 if __name__ == "__main__":
     from .character import Character, Attributes
     from .player_agent import PlayerAgent
     from .npc import NPC
     from .spells import Spell
     from .items import EquipmentItem
+    from .weapons import MeleeWeapon, RangedWeapon, WeaponDamageType
 
     # Create characters
     print("Creating characters...")
-    character1 = Character.generate(chr_class="Wizard", max_hp=100, hp=100)
-    character2 = Character.generate(chr_class="Fighter", max_hp=100, hp=100)
+    character1 = Character.generate(chr_class="Wizard", max_hp=100, current_hp=100)
+    character2 = Character.generate(chr_class="Fighter", max_hp=100, current_hp=100)
+    
     print("Equipping characters with items and spells...")
     # Create a spell
     fireball = Spell(name="Fireball", description="A magical explosion that deals fire damage to all creatures in a 15-foot radius.", level=1, range=60, components="V, S, M", duration="Instantaneous", casting_time=1, attack_type='ranged', school="Evocation", damage="1d6")
     fireball.learn(character1)
+    
     # Create items
     longsword = MeleeWeapon(name='Longsword', damage_dice='1d8', damage_type=WeaponDamageType.SLASHING)
     character2.equip_item(longsword)
@@ -505,6 +431,14 @@ if __name__ == "__main__":
     print("Testing melee attack...")
     print("Moving npc to (3,4)")
     battle.move_to(npc, 3, 4, verbose=True)
-    print("Npc attacks player")
-    print(npc.attack(player))
+    print("Npc attacks player with Longsword")
+    print(npc.attack(player, "Longsword"))
+    print(battle.get_battle_state())
+
+    # Test ranged attack
+    print("Testing ranged attack...")
+    print("Moving npc to (9,9)")
+    battle.move_to(npc, 9, 9, verbose=True)
+    print("Npc attacks player with Bow")
+    print(npc.attack(player, "Bow"))
     print(battle.get_battle_state())

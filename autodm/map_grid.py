@@ -22,6 +22,18 @@ class Position(BaseModel):
         """
         return (self.x, self.y)
     
+    def distance_to(self, other: 'Position') -> int:
+        """
+        Calculate the Chebyshev distance to another position.
+
+        Args:
+            other (Position): The other position.
+
+        Returns:
+            int: The Chebyshev distance to the other position.
+        """
+        return distance(self, other)
+    
     def __str__(self):
         """
         Convert the position to a string.
