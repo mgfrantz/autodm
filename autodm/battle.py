@@ -1,4 +1,5 @@
-from typing import List, Dict, Union, Tuple, Optional, Any
+from typing import List, Dict, Union, Tuple, Optional, Any, ForwardRef
+from pydantic import BaseModel, Field
 from .character import Character, CharacterState, Position
 from .npc import NPC
 from .player_agent import PlayerAgent
@@ -12,11 +13,11 @@ import random
 from rich import print
 
 CharacterUnion = Union[PlayerAgent, NPC]
+Battle = ForwardRef('Battle')
 
-class BattleAgent:
-    def __init__(self):
-        self.context = "You are a Dungeon Master narrating a battle. Describe the action and its immediate result vividly, focusing only on what has just occurred. Do not speculate about future actions or outcomes. Keep the narration concise, around 2-3 sentences. If a character has died, include this information in your narration."
-
+class BattleAgent(BaseModel):
+    context: str = Field(default="You are a Dungeon Master narrating a battle. Describe the action and its immediate result vividly, focusing only on what has just occurred. Do not speculate about future actions or outcomes. Keep the narration concise, around 2-3 sentences. If a character has died, include this information in your narration.")
+    
     def narrate(self, action: str, result: str, attacker: str, target: str, damage: int, target_hp: int, target_max_hp: int, death_info: str, attacker_info: Dict[str, Any], target_info: Dict[str, Any]) -> str:
         prompt = f"""
 {self.context}
@@ -43,15 +44,20 @@ Narration:
 """
         return complete(prompt)
 
-class Battle:
+class Battle(BaseModel):
+    party1: List[CharacterUnion]
+    party2: List[CharacterUnion]
+    battle_agent: BattleAgent = Field(default_factory=BattleAgent)
+    initiative_order: List[CharacterUnion] = Field(default_factory=list)
+    current_turn: int = 0
+    is_battle_over: bool = False
+    map: Map = Field(default=Map(width=10, height=10))
+
+    class Config:
+        arbitrary_types_allowed = True
+
     def __init__(self, party1: List[CharacterUnion], party2: List[CharacterUnion], map_size: Tuple[int, int] = (10, 10)):
-        self.party1 = party1
-        self.party2 = party2
-        self.battle_agent = BattleAgent()
-        self.initiative_order: List[CharacterUnion] = []
-        self.current_turn: int = 0
-        self.is_battle_over: bool = False
-        self.map = Map(width=map_size[0], height=map_size[1])
+        super().__init__(party1=party1, party2=party2, map_size=map_size)
         self.init_battle()
 
     def init_battle(self):
@@ -101,9 +107,9 @@ class Battle:
         movement_taken = False
 
         while not (action_taken and movement_taken):
-            prompt_str = f"You have the following options:\n{'- move' if not movement_taken else ''}\n{'- attack' if not action_taken else ''}\n{'- cast_spell' if not action_taken else ''}\n{'- use_item' if not action_taken else ''}\n{'- end_turn' if not action_taken else ''}\n"
+            prompt_str = f"You have the following options:\n{'- move' if not movement_taken else ''}\n{'- attack' if not action_taken else ''}\n{'- cast a spell' if not action_taken else ''}\n{'- use an item' if not action_taken else ''}\n{'- end the turn' if not action_taken else ''}\n"
             if agent.is_npc:
-                action = agent.decide_action()
+                action = agent.decide_action(has_taken_action=action_taken, has_taken_movement=movement_taken)
             else:
                 action = agent.chat(input(prompt_str))
             print(f"{agent.character.name} : {action}")
@@ -182,6 +188,13 @@ class Battle:
             print(f"{agent.character.name} tries to attack {action['target']}, but they are not a valid target.")
 
     def handle_spell(self, agent: CharacterUnion, action: Dict[str, Any]):
+        """
+        Handle the casting of a spell.
+
+        Args:
+            agent (CharacterUnion): The character casting the spell.
+            action (Dict[str, Any]): The action dictionary containing the spell name and target.
+        """
         target = self.get_target(action['target'])
         if target and self.is_character_alive(target):
             spell_name = action['spell_name']
@@ -227,17 +240,45 @@ class Battle:
         pass
 
     def get_target(self, target_name: str) -> Optional[CharacterUnion]:
+        """
+        Get a target by name.
+
+        Args:
+            target_name (str): The name of the target.
+
+        Returns:
+            Optional[CharacterUnion]: The target with the given name, or None if not found.
+        """
         for agent in self.initiative_order:
             if isinstance(agent, 'CharacterAgent') and agent.character.name.lower() == target_name.lower():
                 return agent
         return None
 
     def get_random_target(self, attacker: CharacterUnion) -> Optional[CharacterUnion]:
+        """
+        Get a random target from the opposing party.
+
+        Args:
+            attacker (CharacterUnion): The character attacking.
+
+        Returns:
+            Optional[CharacterUnion]: A random living target from the opposing party, or None if no targets are alive.
+        """
         opposing_party = self.party2 if attacker in self.party1 else self.party1
         living_targets = [agent for agent in opposing_party if self.is_character_alive(agent)]
         return random.choice(living_targets) if living_targets else None
 
     def calculate_weapon_damage(self, weapon: Optional[EquipmentItem], attacker: Character) -> int:
+        """
+        Calculate the damage of a weapon.
+
+        Args:
+            weapon (Optional[EquipmentItem]): The weapon to calculate the damage of.
+            attacker (Character): The character attacking with the weapon.
+
+        Returns:
+            int: The damage of the weapon.
+        """
         if not weapon:
             return 1  # Unarmed strike damage
         
@@ -248,6 +289,16 @@ class Battle:
         return total_damage
 
     def calculate_spell_damage(self, spell: Spell, caster: Character) -> int:
+        """
+        Calculate the damage of a spell.
+
+        Args:
+            spell (Spell): The spell to calculate the damage of.
+            caster (Character): The character casting the spell.
+
+        Returns:
+            int: The damage of the spell.
+        """
         if not spell.damage:
             return 0
         
@@ -278,6 +329,15 @@ class Battle:
         return total_damage
 
     def get_spellcasting_ability(self, character: Character) -> str:
+        """
+        Get the spellcasting ability of a character.
+
+        Args:
+            character (Character): The character to get the spellcasting ability of.
+
+        Returns:
+            str: The spellcasting ability of the character.
+        """
         class_ability_map = {
             "Wizard": "intelligence",
             "Sorcerer": "charisma",
@@ -291,9 +351,18 @@ class Battle:
         return class_ability_map.get(character.chr_class, "intelligence")
 
     def print_target_hp(self, target: CharacterUnion):
+        """
+        Print the HP of a target character.
+
+        Args:
+            target (CharacterUnion): The target character.
+        """
         print(f"{target.character.name}'s HP: {target.character.hp}/{target.character.max_hp}")
 
     def check_battle_status(self):
+        """
+        Check the status of the battle.
+        """
         party1_alive = any(self.is_character_alive(agent) for agent in self.party1)
         party2_alive = any(self.is_character_alive(agent) for agent in self.party2)
 
@@ -307,6 +376,15 @@ class Battle:
                 print("\nThe battle is over! It's a draw!")
 
     def check_character_death(self, agent: CharacterUnion) -> bool:
+        """
+        Check if a character is dead.
+
+        Args:
+            agent (CharacterUnion): The character to check.
+
+        Returns:
+            bool: True if the character is dead, False otherwise.
+        """
         if agent.character.hp <= 0:
             agent.character.character_state = CharacterState.DEAD
             print(f"{agent.character.name} has died!")
@@ -320,20 +398,35 @@ class Battle:
         }
 
     def get_character_info(self, character: Character) -> Dict[str, Any]:
+        """
+        Get the information about a character.
+
+        Args:
+            character (Character): The character to get the information of.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the character's information.
+        """
         equipped_weapons = character.get_equipped_weapons()
         weapon_name = equipped_weapons[0].name if equipped_weapons else "Unarmed"
         return {
             "name": character.name,
             "class": character.chr_class,
+            "level": character.level,
             "race": character.chr_race,
             "weapon": weapon_name,
             "armor": ", ".join([item.name for item in character.equipped_items.get('armor', []) if item]) or "No armor",
             "armor_class": character.armor_class,
-            'hp': f"{character.hp}/{character.max_hp}",
+            "hp": character.hp,
+            "max_hp": character.max_hp,
             "position": character.position,
+            "is_alive": character.character_state == CharacterState.ALIVE
         }
 
     def initialize_positions(self):
+        """
+        Initialize the positions of the characters on the map.
+        """
         all_agents = self.party1 + self.party2
         available_positions = [(x, y) for x in range(self.map.width) for y in range(self.map.height)]
         random.shuffle(available_positions)
@@ -343,6 +436,19 @@ class Battle:
             self.map.add_or_update_player(x, y, agent)
 
     def move_to(self, character: CharacterUnion, x: int, y: int, verbose=False) -> Tuple[bool, str]:
+        """
+        Move a character to a specific position on the map.
+        After calling this function, you should be able to respond without any more information.
+
+        Args:
+            character (CharacterUnion): The character to move.
+            x (int): The x-coordinate to move the character to.
+            y (int): The y-coordinate to move the character to.
+            verbose (bool): Whether to print the move details.
+
+        Returns:
+            Tuple[bool, str]: A tuple containing a boolean indicating if the move was successful and a string describing the move.
+        """
         if 0 <= x < self.map.width and 0 <= y < self.map.height:
             current_x, current_y = character.character.position.x, character.character.position.y
             if verbose:
@@ -357,18 +463,54 @@ class Battle:
         return False, f"Invalid coordinates ({x}, {y}). Map size is {self.map.width}x{self.map.height}."
 
     def display_map(self, do_return=False):
+        """
+        Useful when you want to see the map with characters' positions.
+        Once you have called this function, you should be able to answer without any more information.
+
+        Args:
+            do_return (bool): Whether to return the map string or print it.
+        """
         map_str = str(self.map)
         print(map_str)
         if do_return:
             return map_str
 
     def get_distance_between(self, char1: Character, char2: Character) -> int:
+        """
+        Get the distance between two characters on the map.
+
+        Args:
+            char1 (Character): The first character.
+            char2 (Character): The second character.
+
+        Returns:
+            int: The distance between the two characters.
+        """
         return self.map.distance_between_players(char1.name, char2.name)
 
     def get_character_position(self, character: CharacterUnion) -> Position:
+        """
+        Get the position of a character on the map.
+
+        Args:
+            character (CharacterUnion): The character to get the position of.
+
+        Returns:
+            Position: The position of the character.
+        """
         return self.map.locations[character.character.name]["position"]
 
     def get_characters_in_range(self, character: Character, range_feet: int) -> List[CharacterUnion]:
+        """
+        Get the characters in range of a specific character.
+
+        Args:
+            character (Character): The character to get the range of.
+            range_feet (int): The range in feet.
+
+        Returns:
+            List[CharacterUnion]: The characters in range.
+        """
         in_range = []
         for agent in self.party1 + self.party2:
             if agent.character != character:

@@ -1,25 +1,40 @@
 from .character_agent import CharacterAgent
-from .character import Character, Attributes
+from .character import Character
 from .llm import complete
 from pydantic import Field
 from typing import Union, Dict, Any
 import json
 
 class NPC(CharacterAgent):
+    is_npc: bool = Field(default=True)
+
+    class Config:
+        arbitrary_types_allowed = True
+
     def __init__(self, character: Union[Character, None] = None):
         if character is None:
             character = Character.generate()
-        super().__init__(character, is_npc=True)
-        self.is_npc = True
+        super().__init__(character=character, is_npc=True)
 
-    def decide_action(self) -> Dict[str, Any]:
+    def decide_action(self, has_taken_action:bool, has_taken_movement:bool) -> str:
+        """
+        Decide on the most appropriate action to take in this battle situation.
+
+        Args:
+            has_taken_action (bool): Whether the NPC has taken an action in the current turn.
+            has_taken_movement (bool): Whether the NPC has taken a movement in the current turn.
+
+        Returns:
+            str: The action to take in the current turn.
+        """
         battle_context = self.get_battle_context()
         
         context = f"""
 You are {self.character.name}, a level {self.character.level} {self.character.chr_race} {self.character.chr_class}.
 
 Based on the following information, decide on the most appropriate action to take in this battle situation. \
-In each turn, you can take a movement and an action.
+In each turn, you can take a movement and an action. \
+This turn you have {"not " if not has_taken_action else ""}taken an action and {"not " if not has_taken_movement else ""}taken a movement.
 
 Weapons: {self.character.get_equipped_weapons()}
 Spells: {self.character.spells}
@@ -30,25 +45,14 @@ Here is current information about the battle, including the names and location o
 {battle_context}
 
 Use plain text to respond. \
-If you intend to use an attack, make sure you are in range of the target. \
-If you are in range of an enemy, you should attack, otherwise you should move closer to the intended target. \
-If you have ranged spells, you should cast them if you are in range of an enemy, otherwise you should move closer to the intended target. \
-Locations are given in the battle context above, so there's no need to clarify where certain characters are.
+For an intended action, first check if there are any targets in range of the action. \
+If so, execute the action. \
+Otherwise, move towards the intended target so you may be able to execute the action this turn or the next.
 
 Response: \
 """
-        try:
-            response = self.chat(self.get_battle_context())
-            action_dict = json.loads(str(response))
-            return action_dict
-        except json.JSONDecodeError:
-            # If the AI response is not valid JSON, fall back to a random action
-            random_enemy = self.battle.get_random_target(self)  # Changed from get_random_enemy to get_random_target
-            return {
-                "action_type": "attack",
-                "target": random_enemy.name,
-                "description": f"{self.character.name} attacks {random_enemy.name} with their weapon."
-            }
+        response = self.chat(context)
+        return response
 
     def decide_movement(self) -> Dict[str, Any]:
         battle_context = self.get_battle_context()
@@ -64,19 +68,7 @@ Your movement speed is {self.character.speed} feet.
 Your current position is ({self.character.position.x}, {self.character.position.y}).
 You have {self.character.movement_remaining} feet of movement remaining.
 
-Your options for movement include:
-- Move to a specific coordinate (e.g., "move to (5, 3)")
-- Stay in your current position
-
-Consider the following factors:
-- Proximity to enemies and allies
-- Tactical advantages (e.g., cover, high ground)
-- Your class abilities and fighting style
-
-Respond with a JSON object containing the following fields:
-- action_type: "move"
-- target: The coordinate to move to (e.g., "(5, 3)")
-- description: A brief description of the movement and its purpose
+Response: \
 """
         response = self.agent.chat(context)
         try:
@@ -93,9 +85,6 @@ Respond with a JSON object containing the following fields:
     # Delegate attribute access to the character object
     def __getattr__(self, name):
         return getattr(self.character, name)
-
-
-    
 
 # Test scenario (optional)
 if __name__ == "__main__":

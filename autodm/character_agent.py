@@ -1,28 +1,33 @@
-from typing import Optional, Dict, TYPE_CHECKING, Any, List, Union
-from .character import Character, Attributes, Position
-from .llm import get_llm, complete
+from typing import Optional, Dict, TYPE_CHECKING, Any, List, Union, ForwardRef
+from pydantic import BaseModel, Field
+from .character import Character
+from .llm import get_llm
 from .items import EquipmentItem
-from .weapons import WeaponDamageType
+from .weapons import WeaponDamageType, MeleeWeapon, RangedWeapon
 from llama_index.core.tools import BaseTool, FunctionTool
 from llama_index.core.agent import ReActAgent
 import random
 import json
-from pydantic import Field
-from .weapons import MeleeWeapon, RangedWeapon
 
-if TYPE_CHECKING:
-    from .battle import Battle
+Battle = ForwardRef('Battle')
 
-class CharacterAgent:
+class CharacterAgent(BaseModel):
     character: Character
-    battle: Optional['Battle'] = None
-    agent: ReActAgent
+    battle: Optional[Battle] = None
+    agent: Optional[ReActAgent] = None
     is_npc: bool = False
+    tools: List[Any] = Field(default_factory=list)
 
-    def __init__(self, character: Character, is_npc: bool = False):
-        self.character = character
-        self.is_npc = is_npc
-        self.tools = [
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __init__(self, character: Character, is_npc: bool = False, **data):
+        super().__init__(character=character, is_npc=is_npc, **data)
+        self.tools = self.create_tools()
+        self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
+
+    def create_tools(self) -> List[Any]:
+        return [
             FunctionTool.from_defaults(fn=self.move_to, name="move_to"),
             FunctionTool.from_defaults(fn=self.attack, name="attack"),
             FunctionTool.from_defaults(fn=self.cast_spell, name="cast_spell"),
@@ -45,7 +50,6 @@ class CharacterAgent:
             FunctionTool.from_defaults(fn=self.perform_ability_check, name="perform_ability_check"),
             FunctionTool.from_defaults(fn=self.show_map, name="show_map"),
         ]
-        self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
 
     def set_battle(self, battle: 'Battle'):
         self.battle = battle
@@ -65,11 +69,11 @@ class CharacterAgent:
         Note: You should be able to answer the question without any more tools after calling this function.
         """
         if self.battle:
-            if 0 <= x < self.battle.map_size[0] and 0 <= y < self.battle.map_size[1]:
+            if 0 <= x < self.battle.map.width and 0 <= y < self.battle.map.height:
                 success, message = self.battle.move_to(self, x, y)
                 return message
             else:
-                return f"Invalid coordinates ({x}, {y}). Map size is {self.battle.map_size[0]}x{self.battle.map_size[1]}."
+                return f"Invalid coordinates ({x}, {y}). Map size is {self.battle.map.width}x{self.battle.map.height}."
         return f"{self.character.name} is not in a battle and cannot move."
 
     def attack(self, target: Union[str, 'CharacterAgent'], weapon_name: Optional[str] = None) -> str:
@@ -406,22 +410,8 @@ class CharacterAgent:
         if not self.battle:
             return "No map available outside of battle."
 
-        map_size = self.battle.map_size
-        map_grid = [[' ' for _ in range(map_size[0])] for _ in range(map_size[1])]
-
-        # Place characters on the map
-        for character in self.battle.get_all_characters():
-            x, y = character.position.x, character.position.y
-            map_grid[y][x] = character.name[0].upper()
-
-        # Create the map string with numbered axes
-        map_str = "  " + " ".join(f"{i:2d}" for i in range(map_size[0])) + " X\n"
-        for y in range(map_size[1]):
-            row = f"{y:2d} " + "|".join(f"{cell:2}" for cell in map_grid[y]) + f" {y:2d}"
-            map_str += row + "\n"
-        map_str += "Y " + " ".join(f"{i:2d}" for i in range(map_size[0])) + " X"
-
-        return f"Current battle map:\n\n{map_str}"
+        return str(self.battle.map)
+        
 
     def get_battle_context(self) -> str:
         if not self.battle:
@@ -437,8 +427,8 @@ class CharacterAgent:
             allies = battle_state['party2']
             enemies = battle_state['party1']
 
-        allies_info = "\n".join([f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP, Position: ({ally['position'].x}, {ally['position'].y})" for ally in allies])
-        enemies_info = "\n".join([f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP, Position: ({enemy['position'].x}, {enemy['position'].y})" for enemy in enemies])
+        allies_info = "\n".join([f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP, Position: ({ally['position'].x}, {ally['position'].y})" for ally in allies if (ally['is_alive'] and ally['name'] != self.character.name)])
+        enemies_info = "\n".join([f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP, Position: ({enemy['position'].x}, {enemy['position'].y})" for enemy in enemies if enemy['is_alive']])
         
         return f"""
 Current battle situation:
@@ -450,7 +440,7 @@ Your allies:
 Your enemies:
 {enemies_info}
 
-Map size: {self.battle.map_size[0]}x{self.battle.map_size[1]}
+Map size: {self.battle.map.width}x{self.battle.map.height}
 
 Consider the battle situation and positions when making decisions.
 """
@@ -498,7 +488,8 @@ Response:"""
         return response
     
 if __name__ == "__main__":
+    from .character import Character
+
     character = Character.generate()
-    agent = CharacterAgent(character)
-    while (inp:=input("What would you like to do? ")) != "exit":
-        print(agent.chat(inp))
+    character_agent = CharacterAgent(character=character)
+    print(character_agent.chat("What is your name?"))
