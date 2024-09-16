@@ -1,22 +1,25 @@
-from typing import Optional, Dict, TYPE_CHECKING, Any, List, Union, ForwardRef
-from pydantic import BaseModel, Field
-from .character import Character
-from .llm import get_llm
-from .items import EquipmentItem
-from .weapons import WeaponDamageType, MeleeWeapon, RangedWeapon
-from llama_index.core.tools import BaseTool, FunctionTool
-from llama_index.core.agent import ReActAgent
+from typing import List, Optional, TYPE_CHECKING, Union, Any
+from .base_agent import BaseAgent
+from pydantic import Field
+from tenacity import retry, stop_after_attempt, wait_fixed
+from ..core.character import Character
+from ..utils.llm import get_llm
+from llama_index.core.tools import FunctionTool
+from llama_index.core.agent import ReActAgent, AgentRunner
+from ..items.weapons import unarmed_strike
+from ..utils.skill_checks import perform_skill_check, perform_ability_check
+from ..battle.battle import Battle
 import random
-import json
 
-Battle = ForwardRef('Battle')
+if TYPE_CHECKING:
+    from autodm.battle.battle import Battle
 
-class CharacterAgent(BaseModel):
+class CharacterAgent(BaseAgent):
     character: Character
-    battle: Optional[Battle] = None
+    battle: Optional[Any] = None  # Use string literal for forward reference
     agent: Optional[ReActAgent] = None
     is_npc: bool = False
-    tools: List[Any] = Field(default_factory=list)
+    tools: List[FunctionTool] = Field(default_factory=list)
 
     class Config:
         arbitrary_types_allowed = True
@@ -24,34 +27,61 @@ class CharacterAgent(BaseModel):
     def __init__(self, character: Character, is_npc: bool = False, **data):
         super().__init__(character=character, is_npc=is_npc, **data)
         self.tools = self.create_tools()
-        self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
+        # self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
+        self.agent = AgentRunner.from_llm(self.tools, llm=get_llm(), verbose=True)
 
     def create_tools(self) -> List[Any]:
-        return [
+        npc_tools = [
             FunctionTool.from_defaults(fn=self.move_to, name="move_to"),
+            FunctionTool.from_defaults(fn=self.get_equipped_weapons, name="get_equipped_weapons"),
+            FunctionTool.from_defaults(fn=self.attack, name="attack"),
+            FunctionTool.from_defaults(fn=self.cast_spell, name="cast_spell"),
+            FunctionTool.from_defaults(fn=self.use_item, name="use_item"),
+            FunctionTool.from_defaults(
+                fn=self.get_characters_in_range, name="get_characters_in_range"
+            ),
+            FunctionTool.from_defaults(fn=self.intimidate, name="intimidate"),
+            FunctionTool.from_defaults(fn=self.persuade, name="persuade"),
+            FunctionTool.from_defaults(fn=self.deceive, name="deceive"),
+            FunctionTool.from_defaults(fn=self.say, name="say"),
+            FunctionTool.from_defaults(fn=self.observe_battle, name="observe_battle"),
+        ]
+        all_tools = [
+            FunctionTool.from_defaults(fn=self.move_to, name="move_to"),
+            FunctionTool.from_defaults(fn=self.get_equipped_weapons, name="get_equipped_weapons"),
             FunctionTool.from_defaults(fn=self.attack, name="attack"),
             FunctionTool.from_defaults(fn=self.cast_spell, name="cast_spell"),
             FunctionTool.from_defaults(fn=self.use_item, name="use_item"),
             FunctionTool.from_defaults(fn=self.check_inventory, name="check_inventory"),
             FunctionTool.from_defaults(fn=self.check_status, name="check_status"),
             FunctionTool.from_defaults(fn=self.check_spells, name="check_spells"),
-            FunctionTool.from_defaults(fn=self.check_attributes, name="check_attributes"),
+            FunctionTool.from_defaults(
+                fn=self.check_attributes, name="check_attributes"
+            ),
             FunctionTool.from_defaults(fn=self.check_equipment, name="check_equipment"),
             FunctionTool.from_defaults(fn=self.check_hp, name="check_hp"),
             FunctionTool.from_defaults(fn=self.check_skills, name="check_skills"),
             FunctionTool.from_defaults(fn=self.get_position, name="get_position"),
-            FunctionTool.from_defaults(fn=self.get_characters_in_range, name="get_characters_in_range"),
+            FunctionTool.from_defaults(
+                fn=self.get_characters_in_range, name="get_characters_in_range"
+            ),
             FunctionTool.from_defaults(fn=self.intimidate, name="intimidate"),
             FunctionTool.from_defaults(fn=self.persuade, name="persuade"),
             FunctionTool.from_defaults(fn=self.deceive, name="deceive"),
             FunctionTool.from_defaults(fn=self.say, name="say"),
             FunctionTool.from_defaults(fn=self.observe_battle, name="observe_battle"),
-            FunctionTool.from_defaults(fn=self.perform_skill_check, name="perform_skill_check"),
-            FunctionTool.from_defaults(fn=self.perform_ability_check, name="perform_ability_check"),
+            FunctionTool.from_defaults(
+                fn=self.perform_skill_check, name="perform_skill_check"
+            ),
+            FunctionTool.from_defaults(
+                fn=self.perform_ability_check, name="perform_ability_check"
+            ),
             FunctionTool.from_defaults(fn=self.show_map, name="show_map"),
         ]
 
-    def set_battle(self, battle: 'Battle'):
+        return npc_tools if self.is_npc else all_tools
+
+    def set_battle(self, battle: "Battle"):
         self.battle = battle
 
     def move_to(self, x: int, y: int) -> str:
@@ -76,7 +106,9 @@ class CharacterAgent(BaseModel):
                 return f"Invalid coordinates ({x}, {y}). Map size is {self.battle.map.width}x{self.battle.map.height}."
         return f"{self.character.name} is not in a battle and cannot move."
 
-    def attack(self, target: Union[str, 'CharacterAgent'], weapon_name: Optional[str] = None) -> str:
+    def attack(
+        self, target: Union[str, Any], weapon_name: Optional[str] = None
+    ) -> str:
         """
         Perform an attack action against a specified target.
         Once this function is called, you should have enough information to respond without any more tools.
@@ -91,14 +123,23 @@ class CharacterAgent(BaseModel):
         weapons = self.character.get_equipped_weapons()
         weapon_names = [w.name for w in weapons]
         if weapon_name:
-            if not len(weapons):
-                weapon = MeleeWeapon(name='Unarmed Strike', damage_dice='1d4', damage_type=WeaponDamageType.BLUDGEONING, hit_bonus=0, description='A basic unarmed strike', reach=5)
+            # If the character has no weapons, they will use their fists
+            if not weapons:
+                weapon = unarmed_strike
+            # If the weapon is in the list of equipped weapons, use it
             elif weapon_name in weapon_names:
-                weapon = next((w for w in weapons if w.name.lower() == weapon_name.lower()), None)
+                weapon = next(
+                    (w for w in weapons if w.name.lower() == weapon_name.lower()), None
+                )
+            # If the weapon is not in the list of equipped weapons, use a random weapon
             else:
-                weapon = weapons[0]
+                weapon = random.choice(weapons)
         else:
-            weapon = random.choice(weapons) if weapons else MeleeWeapon(name='Unarmed Strike', damage_dice='1d4', damage_type=WeaponDamageType.BLUDGEONING, hit_bonus=0, description='A basic unarmed strike', reach=5)
+            weapon = (
+                random.choice(weapons)
+                if weapons
+                else unarmed_strike
+            )
 
         if isinstance(target, str):
             target_character = self.battle.get_target(target)
@@ -112,8 +153,20 @@ class CharacterAgent(BaseModel):
 
         is_hit, damage, message = weapon.attack(self, target_character)
         return message
+    
+    def get_equipped_weapons(self) -> str:
+        """
+        Get the character's equipped weapons.
 
-    def cast_spell(self, spell_name: str, target: Union[str, 'CharacterAgent'] = "") -> str:
+        Returns:
+            str: A string listing all equipped weapons.
+        """
+        weapons = self.character.get_equipped_weapons()
+        return f"{self.character.name}'s equipped weapons: {weapons}"
+
+    def cast_spell(
+        self, spell_name: str, target: Union[str, Any] = ""
+    ) -> str:
         """
         Cast a spell on a specified target.
         Once this function is called, you should have enough information to respond without any more tools.
@@ -127,7 +180,10 @@ class CharacterAgent(BaseModel):
 
         Note: You should be able to answer the question without any more tools after calling this function.
         """
-        spell = next((s for s in self.character.spells if s.name.lower() == spell_name.lower()), None)
+        spell = next(
+            (s for s in self.character.spells if s.name.lower() == spell_name.lower()),
+            None,
+        )
         if not spell:
             return f"{self.character.name} doesn't know the spell {spell_name}."
         if not self.character.can_cast_spell(spell):
@@ -142,10 +198,10 @@ class CharacterAgent(BaseModel):
                     target_character = self.character
             else:
                 target_character = self.character  # Default to self if not in battle
-            
+
             if target_character is None:
                 return f"Invalid target: {target}"
-            
+
             result = spell.cast(self.character, target_character)
             self.character.cast_spell(spell)
             return result
@@ -163,24 +219,31 @@ class CharacterAgent(BaseModel):
         Returns:
             str: A message describing the item usage or any errors.
         """
-        item = next((i for i in self.character.inventory if i.name.lower() == item_name.lower()), None)
+        item = next(
+            (
+                i
+                for i in self.character.inventory
+                if i.name.lower() == item_name.lower()
+            ),
+            None,
+        )
         if not item:
             return f"{self.character.name} doesn't have {item_name} in their inventory."
-        
+
         if item.item_type == "potion" and "heal" in item.effects:
             target_char = self.battle.get_target(target) if target else self.character
             if not target_char:
                 return f"Invalid target: {target}"
-            
+
             heal_amount = item.effects["heal"]
             old_hp = target_char.hp
             target_char.hp += heal_amount
             actual_heal = target_char.hp - old_hp
-            
+
             self.character.inventory.remove(item)
-            
+
             return f"{self.character.name} uses {item_name} on {target_char.name}. {target_char.name} heals for {actual_heal} HP."
-        
+
         return f"{self.character.name} uses {item_name}."
 
     def check_inventory(self) -> str:
@@ -190,7 +253,11 @@ class CharacterAgent(BaseModel):
         Returns:
             str: A string listing all items in the character's inventory.
         """
-        inventory = ", ".join([item.name for item in self.character.inventory]) if self.character.inventory else "Empty"
+        inventory = (
+            ", ".join([item.name for item in self.character.inventory])
+            if self.character.inventory
+            else "Empty"
+        )
         return f"{self.character.name}'s inventory: {inventory}"
 
     def check_status(self) -> str:
@@ -221,8 +288,19 @@ class CharacterAgent(BaseModel):
         Returns:
             str: A string listing known spells and available spell slots.
         """
-        spells = ", ".join([spell.name for spell in self.character.spells]) if self.character.spells else "No spells known"
-        spell_slots = ", ".join([f"Level {level}: {slots}" for level, slots in self.character.spell_slots.items() if slots > 0])
+        print("Calling check_spells")
+        spells = (
+            ", ".join([spell.name for spell in self.character.spells])
+            if self.character.spells
+            else "No spells known"
+        )
+        spell_slots = ", ".join(
+            [
+                f"Level {level}: {slots}"
+                for level, slots in self.character.spell_slots.items()
+                if slots > 0
+            ]
+        )
         return f"{self.character.name}'s known spells: {spells}\nAvailable spell slots: {spell_slots}"
 
     def check_attributes(self) -> str:
@@ -246,7 +324,9 @@ class CharacterAgent(BaseModel):
             for item in items:
                 if item:
                     equipped_items.append(f"{slot.capitalize()}: {item.name}")
-        equipped_str = "\n".join(equipped_items) if equipped_items else "No items equipped"
+        equipped_str = (
+            "\n".join(equipped_items) if equipped_items else "No items equipped"
+        )
         return f"{self.character.name}'s equipped items:\n{equipped_str}"
 
     def check_hp(self) -> str:
@@ -265,7 +345,16 @@ class CharacterAgent(BaseModel):
         Returns:
             str: A string listing all of the character's skills and their modifiers.
         """
-        skills_str = "\n".join([f"{skill}: {modifier}" for skill, modifier in self.character.skills.items()]) if self.character.skills else "No skills"
+        skills_str = (
+            "\n".join(
+                [
+                    f"{skill}: {modifier}"
+                    for skill, modifier in self.character.skills.items()
+                ]
+            )
+            if self.character.skills
+            else "No skills"
+        )
         return f"{self.character.name}'s skills:\n{skills_str}"
 
     def get_position(self) -> str:
@@ -297,17 +386,23 @@ class CharacterAgent(BaseModel):
         if range_feet is None:
             return f"Unknown {action_type}: {action_name}"
 
-        in_range_characters = self.battle.get_characters_in_range(self.character, range_feet)
-        
+        in_range_characters = self.battle.get_characters_in_range(
+            self.character, range_feet
+        )
+
         if not in_range_characters:
             return f"No characters are within range of your {action_name}."
-        
+
         result = f"Characters within range of your {action_name} ({range_feet} feet):\n"
         for character in in_range_characters:
-            name = character.name if isinstance(character, type(self)) else character.character.name
+            name = (
+                character.character.name
+                if isinstance(character, type(self))
+                else character.character.name
+            )
             char_type = "Enemy" if isinstance(character, type(self)) else "Ally"
             result += f"- {name} ({char_type})\n"
-        
+
         return result.strip()
 
     def intimidate(self, target: str) -> str:
@@ -371,14 +466,18 @@ class CharacterAgent(BaseModel):
         if not self.battle:
             return "You are not currently in a battle."
 
-        battle_state = self.battle.get_battle_state()
-        
+        battle_state = self.battle.get_battle_state(self.character)
+
         def format_character_info(char):
-            status = "alive" if char['is_alive'] else "dead"
+            status = "alive" if char["is_alive"] else "dead"
             return f"{char['name']} (Level {char['level']} {char['class']}): {char['hp']}/{char['max_hp']} HP, {status}, Position: ({char['position'].x}, {char['position'].y})"
 
-        allies_info = "\n".join([format_character_info(ally) for ally in battle_state['allies']])
-        enemies_info = "\n".join([format_character_info(enemy) for enemy in battle_state['enemies']])
+        allies_info = "\n".join(
+            [format_character_info(ally) for ally in battle_state["allies"]]
+        )
+        enemies_info = "\n".join(
+            [format_character_info(enemy) for enemy in battle_state["enemies"]]
+        )
 
         battle_description = (
             f"Battle State:\n\n"
@@ -388,14 +487,16 @@ class CharacterAgent(BaseModel):
         return battle_description
 
     def perform_skill_check(self, skill: str, difficulty_class: int) -> str:
-        from .skill_checks import perform_skill_check
+
         success, total = perform_skill_check(self.character, skill, difficulty_class)
         result = "Success" if success else "Failure"
         return f"{self.character.name} performs a {skill} check (DC {difficulty_class}): {result} (rolled {total})"
 
     def perform_ability_check(self, ability: str, difficulty_class: int) -> str:
-        from .skill_checks import perform_ability_check
-        success, total = perform_ability_check(self.character, ability, difficulty_class)
+
+        success, total = perform_ability_check(
+            self.character, ability, difficulty_class
+        )
         result = "Success" if success else "Failure"
         return f"{self.character.name} performs a {ability} check (DC {difficulty_class}): {result} (rolled {total})"
 
@@ -411,25 +512,44 @@ class CharacterAgent(BaseModel):
             return "No map available outside of battle."
 
         return str(self.battle.map)
-        
 
     def get_battle_context(self) -> str:
+        """
+        Get the current battle context.
+
+        Returns:
+            str: A string describing the current battle context.
+        """
         if not self.battle:
             return ""
 
         battle_state = self.battle.get_battle_state()
-        
-        # Determine which party the current character belongs to
-        if any(agent.character.name == self.character.name for agent in self.battle.party1):
-            allies = battle_state['party1']
-            enemies = battle_state['party2']
-        else:
-            allies = battle_state['party2']
-            enemies = battle_state['party1']
 
-        allies_info = "\n".join([f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP, Position: ({ally['position'].x}, {ally['position'].y})" for ally in allies if (ally['is_alive'] and ally['name'] != self.character.name)])
-        enemies_info = "\n".join([f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP, Position: ({enemy['position'].x}, {enemy['position'].y})" for enemy in enemies if enemy['is_alive']])
-        
+        # Determine which party the current character belongs to
+        if any(
+            agent.character.name == self.character.name for agent in self.battle.party1
+        ):
+            allies = battle_state["party1"]
+            enemies = battle_state["party2"]
+        else:
+            allies = battle_state["party2"]
+            enemies = battle_state["party1"]
+
+        allies_info = "\n".join(
+            [
+                f"- {ally['name']} (Level {ally['level']} {ally['class']}): {ally['hp']}/{ally['max_hp']} HP, Position: ({ally['position'].x}, {ally['position'].y})"
+                for ally in allies
+                if (ally["is_alive"] and ally["name"] != self.character.name)
+            ]
+        )
+        enemies_info = "\n".join(
+            [
+                f"- {enemy['name']} (Level {enemy['level']} {enemy['class']}): {enemy['hp']}/{enemy['max_hp']} HP, Position: ({enemy['position'].x}, {enemy['position'].y})"
+                for enemy in enemies
+                if enemy["is_alive"]
+            ]
+        )
+
         return f"""
 Current battle situation:
 Your position: ({self.character.position.x}, {self.character.position.y})
@@ -462,34 +582,44 @@ Consider the battle situation and positions when making decisions.
             None: If the range is not known.
         """
         if action_type == "weapon":
-            weapon = next((w for w in self.character.get_equipped_weapons() if w.name.lower() == action_name.lower()), None)
+            weapon = next(
+                (
+                    w
+                    for w in self.character.get_equipped_weapons()
+                    if w.name.lower() == action_name.lower()
+                ),
+                None,
+            )
             return 5 if weapon else None  # Assuming melee range for weapons
         elif action_type == "spell":
-            spell = next((s for s in self.character.spells if s.name.lower() == action_name.lower()), None)
+            spell = next(
+                (
+                    s
+                    for s in self.character.spells
+                    if s.name.lower() == action_name.lower()
+                ),
+                None,
+            )
             if spell:
-                range_str = spell.range.split()[0]
+                range_str = str(spell.range).split()[0]
                 return int(range_str) if range_str.isdigit() else None
         return None
-    
+
+    @retry(stop=stop_after_attempt(6), wait=wait_fixed(20))
     def chat(self, message: str) -> str:
         response = self.agent.chat(message)
         prompt = f"""\
 You will be given a command from a user to help execute an action or learn information in a D&D game. \
-Please respond in character. Once you have a response, you should have enough information to respond without any more tools. \
+Please respond in character in the first person. \
+ALWAYS call a function, there are no actions that can be executed without calling a function. \
+Once you have a response, you should have enough information to respond without any more tools. \
 Do not rely on any implicit knowledge about the character, and remember to always call a function. \
-Please return a what happened.
+Please return a what happened or the desired information. \
+Do not return anything else or perform any follow ups.
 
 Command:
-{message}
-
-Response:"""
+{message}"""
         response = self.agent.chat(prompt)
-        self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
+        # Recreate the agent to clear the memory
+        # self.agent = ReActAgent.from_tools(self.tools, llm=get_llm(), verbose=True)
         return response
-    
-if __name__ == "__main__":
-    from .character import Character
-
-    character = Character.generate()
-    character_agent = CharacterAgent(character=character)
-    print(character_agent.chat("What is your name?"))

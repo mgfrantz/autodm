@@ -1,6 +1,6 @@
 from typing import Tuple
-from .character import Character
-from .tools import roll_dice
+from ..core.character import Character
+from ..utils.dice import roll_dice
 
 def perform_skill_check(character: Character, skill: str, difficulty_class: int) -> Tuple[bool, int]:
     """

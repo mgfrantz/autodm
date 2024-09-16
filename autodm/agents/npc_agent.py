@@ -1,22 +1,35 @@
-from .character_agent import CharacterAgent
-from .character import Character
-from .llm import complete
+from .character_agent import CharacterAgent, Character
 from pydantic import Field
 from typing import Union, Dict, Any
 import json
 
 class NPC(CharacterAgent):
+    """
+    Represents a Non-Player Character (NPC) in the game.
+
+    This class extends the CharacterAgent class and provides additional
+    functionality specific to NPCs, such as decision-making and action generation.
+    """
+
     is_npc: bool = Field(default=True)
 
     class Config:
         arbitrary_types_allowed = True
 
-    def __init__(self, character: Union[Character, None] = None):
+    def __init__(self, character: Union[None, Character] = None):
+        """
+        Initialize an NPC.
+
+        Args:
+            character (Union[None, Character], optional): The character associated with this NPC. 
+                If None, a new character will be generated. Defaults to None.
+        """
         if character is None:
+            from autodm.core.character import Character
             character = Character.generate()
         super().__init__(character=character, is_npc=True)
 
-    def decide_action(self, has_taken_action:bool, has_taken_movement:bool) -> str:
+    def decide_action(self, has_taken_action: bool, has_taken_movement: bool) -> str:
         """
         Decide on the most appropriate action to take in this battle situation.
 
@@ -40,7 +53,6 @@ Weapons: {self.character.get_equipped_weapons()}
 Spells: {self.character.spells}
 Inventory: {self.character.inventory}
 
-
 Here is current information about the battle, including the names and location of allies and enemies:
 {battle_context}
 
@@ -48,13 +60,17 @@ Use plain text to respond. \
 For an intended action, first check if there are any targets in range of the action. \
 If so, execute the action. \
 Otherwise, move towards the intended target so you may be able to execute the action this turn or the next.
-
-Response: \
 """
         response = self.chat(context)
         return response
 
     def decide_movement(self) -> Dict[str, Any]:
+        """
+        Decide on the most appropriate movement to take in this battle situation.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the movement decision.
+        """
         battle_context = self.get_battle_context()
         
         context = f"""
@@ -85,10 +101,3 @@ Response: \
     # Delegate attribute access to the character object
     def __getattr__(self, name):
         return getattr(self.character, name)
-
-# Test scenario (optional)
-if __name__ == "__main__":
-    npc = NPC.generate("Groknak", "Barbarian", "Half-Orc", level=3)
-    print(f"Generated NPC: {npc.character.name}")
-    print(f"Backstory: {npc.backstory}")
-    print(f"Attributes: {npc.character.attributes}")

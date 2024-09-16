@@ -1,8 +1,10 @@
-from .spells import AttackSpell, HealingSpell, Spell, SpellSchool
+from .attack_spell import AttackSpell
+from .healing_spell import HealingSpell
+from .base_spell import Spell, SpellSchool
 
 fireball = AttackSpell(
     name="Fireball",
-    level=1,
+    level=3,
     school=SpellSchool.EVOCATION,
     casting_time=1,
     range=150,
@@ -10,7 +12,7 @@ fireball = AttackSpell(
     duration="Instantaneous",
     description="A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.",
     attack_type="ranged",
-    damage="1d6",
+    damage="8d6",
     classes=["Sorcerer", "Wizard"]
 )
 
@@ -20,7 +22,7 @@ cure_wounds = HealingSpell(
     school=SpellSchool.EVOCATION,
     casting_time=1,
     range=5,
-    healing_amount='1d6',
+    healing_amount='1d8',
     components="V, S",
     duration="Instantaneous",
     description="A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier.",

@@ -18,6 +18,7 @@ class LLMManager:
             # Uncomment the model you want to use
             # cls._instance.llm = Ollama(model="llama3.1")
             # cls._instance.llm = Ollama(model='hermes3')
+            # cls._instance.llm = Ollama(model='mistral-nemo')
             
             # Gemini model with all safety settings set to BLOCK_NONE
             cls._instance.llm = Gemini(
@@ -38,7 +39,7 @@ class LLMManager:
 llm_manager = LLMManager()
 
 def get_llm() -> LLM:
-    return llm_manager.get_llm()  # Fixed: Return the LLM instance
+    return llm_manager.get_llm()
 
 def complete(prompt: str) -> str:
     llm = get_llm()
