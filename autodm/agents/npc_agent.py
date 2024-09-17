@@ -68,26 +68,11 @@ Your known spells: {', '.join([spell.name for spell in self.character.spells])}
 Here are your options for your location:
 {self.get_characters_in_range()}
 
-Respond with a JSON object containing the following keys:
-- action_type: The type of action you want to take (one of: {', '.join(available_actions)})
-- target: The target of your action (if applicable)
-- details: Any additional details about the action (e.g., spell name, item name, coordinates for movement)
-
-Example response:
-{{
-    "action_type": "attack",
-    "target": "Enemy1",
-    "details": "Using Longsword"
-}}
-
+Respond by describing what you want to do given the existing tools and the current battle situation. \
 Make a strategic decision based on your character's abilities, the current battle situation, and the available actions.
 """
         response = self.chat(context)
-        try:
-            action = json.loads(response)
-            return action
-        except json.JSONDecodeError:
-            return {"action_type": "pass", "reason": "Failed to parse action"}
+        return response
 
     def decide_movement(self) -> Dict[str, Any]:
         """

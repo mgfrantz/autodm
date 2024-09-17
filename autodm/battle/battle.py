@@ -130,7 +130,8 @@ class Battle(BaseModel):
         return agent.character.character_state == CharacterState.ALIVE
 
     def agent_turn(self, agent: BaseAgent):
-        while not any(agent.turn_state.standard_action_taken, agent.turn_state.movement_action_taken):
+        # If there is a movement or action remaining, don't end the turn
+        while not all([agent.turn_state.standard_action_taken, agent.turn_state.movement_taken]):
             if agent.is_npc:
                 action = agent.decide_action(self.current_turn_state)
             else:
@@ -139,27 +140,11 @@ class Battle(BaseModel):
                 # Parse the response to extract the action
                 action = self.parse_agent_response(response)
             
-            if action:
-                if action.get('action_type') in ['attack', 'cast_spell', 'use_item']:
-                    if self.can_take_action(ActionType.STANDARD):
-                        self.handle_action(agent, action)
-                        self.take_action(ActionType.STANDARD)
-                    else:
-                        print("You've already taken your standard action this turn.")
-                elif action.get('action_type') == 'move':
-                    if self.can_take_action(ActionType.MOVEMENT):
-                        self.handle_action(agent, action)
-                        self.take_action(ActionType.MOVEMENT)
-                    else:
-                        print("You've already used your movement this turn.")
-                elif action.get('action_type') == 'pass':
-                    break
-                else:
-                    # Handle non-turn-consuming actions like showing the map
-                    self.handle_action(agent, action)
-                    print("This action doesn't consume your turn. You can still take other actions.")
-            else:
-                print("Invalid action. Please try again.")
+
+            print(action)
+        # When the turn is over, reset the turn state
+        agent.turn_state.reset(movement_speed=agent.character.speed)
+
 
     def parse_agent_response(self, response) -> Dict[str, Any]:
         # This method should parse the AgentChatResponse and return a dictionary

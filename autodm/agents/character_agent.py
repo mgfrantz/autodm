@@ -44,6 +44,7 @@ class CharacterAgent(BaseAgent):
             FunctionTool.from_defaults(fn=self.intimidate, name="intimidate"),
             FunctionTool.from_defaults(fn=self.persuade, name="persuade"),
             FunctionTool.from_defaults(fn=self.deceive, name="deceive"),
+            FunctionTool.from_defaults(fn=self.end_turn, name="end_turn"),
         ]
 
         movement_tools = [
@@ -536,7 +537,20 @@ Enemies in range:
         )
         result = "Success" if success else "Failure"
         return f"{self.character.name} performs a {ability} check (DC {difficulty_class}): {result} (rolled {total})"
+    
+    def end_turn(self) -> str:
+        """
+        End the character's turn.
 
+        Returns:
+            str: A message describing the end of the character's turn.
+        """
+        if self.battle:
+            self.turn_state.standard_action_taken = True
+            self.turn_state.movement_taken = True
+            return f"{self.character.name} ends their turn."
+        return f"{self.character.name} is not in a battle."
+    
     def show_map(self) -> str:
         """
         Display the current battle map. Useful when the user wants to see the map.
