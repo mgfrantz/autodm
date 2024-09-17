@@ -54,3 +54,9 @@ class CharacterRace(Enum):
     HALF_ORC = "Half-Orc"
     TIEFLING = "Tiefling"
     DRAGONBORN = "Dragonborn"
+
+class ActionType(Enum):
+    STANDARD = auto()
+    MOVEMENT = auto()
+    BONUS = auto()
+    REACTION = auto()

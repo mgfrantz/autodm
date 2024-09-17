@@ -6,6 +6,7 @@ from .enums import CharacterState, CharacterClass, CharacterRace
 from .position import Position
 from ..items.equipment import EquipmentItem, ItemType
 from ..spells.base_spell import Spell
+from ..spells.spell_slots import SpellSlots
 from ..utils.llm import complete_pydantic, complete
 from ..utils.dice import roll_attribute
 from ..spells.defined_spells import fireball, magic_missile, shield, cure_wounds
@@ -31,7 +32,7 @@ class Character(BaseModel):
     inventory: List[EquipmentItem] = Field(default_factory=list, description="The inventory of the character.")
     equipped_items: Dict[str, List[EquipmentItem]] = Field(default_factory=dict, description="The equipped items of the character.")
     spells: List[Spell] = Field(default_factory=list, description="The spells of the character.")
-    spell_slots: Dict[int, int] = Field(default_factory=dict, description="The spell slots of the character.")
+    spell_slots: SpellSlots = Field(default_factory=SpellSlots, description="The spell slots of the character.")
     backstory: Optional[str] = Field(None, description="The backstory of the character.")
 
     def take_damage(self, damage: int):
@@ -56,11 +57,11 @@ class Character(BaseModel):
         return self.equipped_items.get('weapon', [])
 
     def can_cast_spell(self, spell: Spell) -> bool:
-        return self.spell_slots.get(spell.level, 0) > 0
+        return self.spell_slots.get_slots(spell.level) > 0
 
     def cast_spell(self, spell: Spell):
         if self.can_cast_spell(spell):
-            self.spell_slots[spell.level] -= 1
+            self.spell_slots.use_slot(spell.level)
         else:
             raise ValueError(f"Cannot cast {spell.name}. No spell slots available.")
 
@@ -164,19 +165,19 @@ class Character(BaseModel):
             default_spells.append(cure_wounds)
 
         # Initialize spell slots based on class and level
-        spell_slots = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+        spell_slots = SpellSlots()
         if chr_class in [CharacterClass.WIZARD, CharacterClass.SORCERER, CharacterClass.BARD, CharacterClass.CLERIC, CharacterClass.DRUID]:
             if level >= 1:
-                spell_slots[1] = 2
+                spell_slots.set_max_slots(1, 2)
             if level >= 3:
-                spell_slots[2] = 1
+                spell_slots.set_max_slots(2, 1)
             if level >= 5:
-                spell_slots[3] = 1
+                spell_slots.set_max_slots(3, 1)
         elif chr_class in [CharacterClass.PALADIN, CharacterClass.RANGER]:
             if level >= 2:
-                spell_slots[1] = 2
+                spell_slots.set_max_slots(1, 2)
             if level >= 5:
-                spell_slots[2] = 1
+                spell_slots.set_max_slots(2, 1)
 
         # Initialize skills based on class and background
         skills = {

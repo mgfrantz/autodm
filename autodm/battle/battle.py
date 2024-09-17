@@ -10,6 +10,8 @@ from ..items.equipment import EquipmentItem
 from ..spells.base_spell import Spell
 from ..core.position import Position
 import random
+from .turn_state import TurnState
+from ..core.enums import ActionType
 
 class BattleAgent(BaseModel):
     context: str = Field(default="You are a Dungeon Master narrating a battle. Describe the action and its immediate result vividly, focusing only on what has just occurred. Do not speculate about future actions or outcomes. Keep the narration concise, around 2-3 sentences. If a character has died, include this information in your narration.")
@@ -48,6 +50,7 @@ class Battle(BaseModel):
     current_turn: int = 0
     is_battle_over: bool = False
     map: Map = Field(default=Map(width=10, height=10))
+    current_turn_state: TurnState = Field(default_factory=TurnState)
 
     class Config:
         arbitrary_types_allowed = True
@@ -61,6 +64,25 @@ class Battle(BaseModel):
             agent.set_battle(self)
         self.initialize_positions()
         self.roll_initiative()
+
+    def list_character_names(self):
+        chars = self.party1 + self.party2
+        names = [character.name for character in chars]
+        return names
+    
+    def parties(self, character: Character):
+        party_1_names = [agent.character.name for agent in self.party1]
+        party_2_names = [agent.character.name for agent in self.party2]
+        if character.name in party_1_names:
+            return {
+                'allies': self.party1,
+                'enemies': self.party2
+            }
+        elif character.name in party_2_names:
+            return {
+                'allies': self.party2,
+                'enemies': self.party1
+            }
 
     def start_battle(self):
         self.run_battle()
@@ -78,56 +100,117 @@ class Battle(BaseModel):
     def get_initiative(self, agent: BaseAgent) -> int:
         return agent.character.initiative
 
+    def start_turn(self, agent: BaseAgent):
+        self.current_turn_state.reset(agent.character.speed)
+        print(f"\n{agent.character.name}'s turn!")
+
+    def end_turn(self):
+        self.current_turn = (self.current_turn + 1) % len(self.initiative_order)
+        self.check_battle_status()
+
+    def can_take_action(self, action_type: ActionType) -> bool:
+        return self.current_turn_state.can_take_action(action_type)
+
+    def take_action(self, action_type: ActionType) -> bool:
+        return self.current_turn_state.take_action(action_type)
+
     def run_battle(self):
         while not self.is_battle_over:
             current_agent = self.initiative_order[self.current_turn]
             
-            print("\n" + "="*40)  # Clear separator between turns
-            
             if self.is_character_alive(current_agent):
+                self.start_turn(current_agent)
                 self.agent_turn(current_agent)
+                self.end_turn()
             else:
                 print(f"{current_agent.character.name} is dead and cannot take any actions.")
-
-            self.current_turn = (self.current_turn + 1) % len(self.initiative_order)
-            self.check_battle_status()
+                self.end_turn()
 
     def is_character_alive(self, agent: BaseAgent) -> bool:
         return agent.character.character_state == CharacterState.ALIVE
 
     def agent_turn(self, agent: BaseAgent):
-        agent.character.movement_remaining = agent.character.speed
-        print(f"\n{agent.character.name}'s turn!")
-        
-        action_taken = False
-        movement_taken = False
-
-        while not (action_taken and movement_taken):
-            prompt_str = f"You have the following options:\n{'- move' if not movement_taken else ''}\n{'- attack' if not action_taken else ''}\n{'- cast a spell' if not action_taken else ''}\n{'- use an item' if not action_taken else ''}\n{'- end the turn' if not action_taken else ''}\n"
+        while not any(agent.turn_state.standard_action_taken, agent.turn_state.movement_action_taken):
             if agent.is_npc:
-                action = agent.decide_action(has_taken_action=action_taken, has_taken_movement=movement_taken)
+                action = agent.decide_action(self.current_turn_state)
             else:
-                action = agent.chat(input(prompt_str))
-            print(f"{agent.character.name} : {action}")
+                inp = input("Enter your action: ")
+                response = agent.decide_action(self.current_turn_state, inp)
+                # Parse the response to extract the action
+                action = self.parse_agent_response(response)
             
-            # For NPCs, end the turn if both movement and action are taken
-            if (action_taken and movement_taken):
-                break
-            
+            if action:
+                if action.get('action_type') in ['attack', 'cast_spell', 'use_item']:
+                    if self.can_take_action(ActionType.STANDARD):
+                        self.handle_action(agent, action)
+                        self.take_action(ActionType.STANDARD)
+                    else:
+                        print("You've already taken your standard action this turn.")
+                elif action.get('action_type') == 'move':
+                    if self.can_take_action(ActionType.MOVEMENT):
+                        self.handle_action(agent, action)
+                        self.take_action(ActionType.MOVEMENT)
+                    else:
+                        print("You've already used your movement this turn.")
+                elif action.get('action_type') == 'pass':
+                    break
+                else:
+                    # Handle non-turn-consuming actions like showing the map
+                    self.handle_action(agent, action)
+                    print("This action doesn't consume your turn. You can still take other actions.")
+            else:
+                print("Invalid action. Please try again.")
 
-        print(f"{agent.character.name}'s turn ends.")
+    def parse_agent_response(self, response) -> Dict[str, Any]:
+        # This method should parse the AgentChatResponse and return a dictionary
+        # You may need to adjust this based on the actual structure of AgentChatResponse
+        if hasattr(response, 'response'):
+            # If the response has a 'response' attribute, use that
+            content = response.response
+        elif hasattr(response, 'content'):
+            # If the response has a 'content' attribute, use that
+            content = response.content
+        else:
+            # If we can't find the content, return an empty dict
+            return {}
+
+        # Try to parse the content as a dictionary
+        try:
+            return eval(content)
+        except:
+            # If parsing fails, try to extract action_type from the text
+            if 'attack' in content.lower():
+                return {'action_type': 'attack'}
+            elif 'cast' in content.lower():
+                return {'action_type': 'cast_spell'}
+            elif 'move' in content.lower():
+                return {'action_type': 'move'}
+            elif 'use' in content.lower():
+                return {'action_type': 'use_item'}
+            else:
+                return {'action_type': 'pass'}
 
     def handle_action(self, agent: BaseAgent, action: Dict[str, Any]):
-        if action['action_type'] == "attack":
+        action_type = action.get('action_type')
+        if action_type == "attack":
             self.handle_attack(agent, action)
-        elif action['action_type'] == "cast_spell":
+        elif action_type == "cast_spell":
             self.handle_spell(agent, action)
-        elif action['action_type'] == "use_item":
+        elif action_type == "use_item":
             self.handle_item_use(agent, action)
+        elif action_type == "move":
+            self.handle_movement(agent, action)
+        elif action_type == "show_map":
+            self.display_map()
+        elif action_type == "pass":
+            return
+        else:
+            print(f"Performing action: {action_type}")
 
-    def player_continue_turn(self) -> bool:
-        response = input("Do you want to continue your turn? (yes/no): ").lower().strip()
-        return response == 'yes' or response == 'y'
+    def handle_movement(self, agent: BaseAgent, action: Dict[str, Any]):
+        x, y = action['target']
+        success, message = self.move_to(agent, x, y)
+        print(message)
 
     def handle_attack(self, agent: BaseAgent, action: Dict[str, Any]):
         target = self.get_target(action['target'])

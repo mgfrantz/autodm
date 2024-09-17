@@ -1,5 +1,6 @@
 from .character_agent import CharacterAgent
 from pydantic import Field
+from autodm.battle.battle import TurnState
 
 class PlayerAgent(CharacterAgent):
     is_npc: bool = Field(default=False)
@@ -7,11 +8,12 @@ class PlayerAgent(CharacterAgent):
     class Config:
         arbitrary_types_allowed = True
 
-    def interpret_action(self, user_input: str) -> str:
+    def decide_action(self, turn_state: TurnState, user_input: str) -> str:
         """
         Interpret and execute a user action for a player character.
 
         Args:
+            turn_state (TurnState): The current state of the turn.
             user_input (str): The input string from the user describing the action.
 
         Returns:

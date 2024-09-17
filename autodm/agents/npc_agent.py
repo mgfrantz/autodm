@@ -1,6 +1,8 @@
 from .character_agent import CharacterAgent, Character
 from pydantic import Field
 from typing import Union, Dict, Any
+from ..battle.turn_state import TurnState
+from ..core.enums import ActionType
 import json
 
 class NPC(CharacterAgent):
@@ -16,53 +18,76 @@ class NPC(CharacterAgent):
     class Config:
         arbitrary_types_allowed = True
 
-    def __init__(self, character: Union[None, Character] = None):
+    def __init__(self, character: Union[None, Character] = None, ignore_spell_slots: bool = False):
         """
         Initialize an NPC.
 
         Args:
             character (Union[None, Character], optional): The character associated with this NPC. 
                 If None, a new character will be generated. Defaults to None.
+            ignore_spell_slots (bool): Whether to ignore spell slot restrictions. Defaults to False.
         """
         if character is None:
             from autodm.core.character import Character
             character = Character.generate()
-        super().__init__(character=character, is_npc=True)
+        super().__init__(character=character, is_npc=True, ignore_spell_slots=ignore_spell_slots)
 
-    def decide_action(self, has_taken_action: bool, has_taken_movement: bool) -> str:
+    def decide_action(self, turn_state: TurnState) -> Dict[str, Any]:
         """
         Decide on the most appropriate action to take in this battle situation.
 
         Args:
-            has_taken_action (bool): Whether the NPC has taken an action in the current turn.
-            has_taken_movement (bool): Whether the NPC has taken a movement in the current turn.
+            turn_state (TurnState): The current state of the turn.
 
         Returns:
-            str: The action to take in the current turn.
+            Dict[str, Any]: A dictionary containing the decided action.
         """
-        battle_context = self.get_battle_context()
+        if not self.battle:
+            return {"action_type": "pass", "reason": "Not in battle"}
+
+        available_actions = []
+        if turn_state.can_take_action(ActionType.STANDARD):
+            available_actions.extend(["attack", "cast_spell", "use_item"])
+        if turn_state.can_take_action(ActionType.MOVEMENT):
+            available_actions.append("move")
+        if turn_state.can_take_action(ActionType.BONUS):
+            available_actions.append("bonus_action")
+        available_actions.append("pass")
         
         context = f"""
 You are {self.character.name}, a level {self.character.level} {self.character.chr_race} {self.character.chr_class}.
 
-Based on the following information, decide on the most appropriate action to take in this battle situation. \
-In each turn, you can take a movement and an action. \
-This turn you have {"not " if not has_taken_action else ""}taken an action and {"not " if not has_taken_movement else ""}taken a movement.
+Based on the following information, decide on the most appropriate action to take in this battle situation.
+Available actions: {', '.join(available_actions)}
 
-Weapons: {self.character.get_equipped_weapons()}
-Spells: {self.character.spells}
-Inventory: {self.character.inventory}
+Your current position: {self.character.position}
+Your current HP: {self.character.current_hp}/{self.character.max_hp}
+Your equipped weapons: {self.get_equipped_weapons()}
+Your known spells: {', '.join([spell.name for spell in self.character.spells])}
 
-Here is current information about the battle, including the names and location of allies and enemies:
-{battle_context}
+Here are your options for your location:
+{self.get_characters_in_range()}
 
-Use plain text to respond. \
-For an intended action, first check if there are any targets in range of the action. \
-If so, execute the action. \
-Otherwise, move towards the intended target so you may be able to execute the action this turn or the next.
+Respond with a JSON object containing the following keys:
+- action_type: The type of action you want to take (one of: {', '.join(available_actions)})
+- target: The target of your action (if applicable)
+- details: Any additional details about the action (e.g., spell name, item name, coordinates for movement)
+
+Example response:
+{{
+    "action_type": "attack",
+    "target": "Enemy1",
+    "details": "Using Longsword"
+}}
+
+Make a strategic decision based on your character's abilities, the current battle situation, and the available actions.
 """
         response = self.chat(context)
-        return response
+        try:
+            action = json.loads(response)
+            return action
+        except json.JSONDecodeError:
+            return {"action_type": "pass", "reason": "Failed to parse action"}
 
     def decide_movement(self) -> Dict[str, Any]:
         """
@@ -75,16 +100,12 @@ Otherwise, move towards the intended target so you may be able to execute the ac
         
         context = f"""
 You are {self.character.name}, a level {self.character.level} {self.character.chr_race} {self.character.chr_class}.
-Backstory: {self.character.backstory}
 
-{battle_context}
+Here are your options for your location:
+{self.battle.get_characters_in_range()}
 
-Decide on the most appropriate movement to take in this battle situation. 
-Your movement speed is {self.character.speed} feet.
-Your current position is ({self.character.position.x}, {self.character.position.y}).
-You have {self.character.movement_remaining} feet of movement remaining.
-
-Response: \
+If you are in range of an enemy, attack or cast a spell. \
+Otherwise, move towards the intended target so you may be able to execute the action this turn or the next.\
 """
         response = self.agent.chat(context)
         try:
