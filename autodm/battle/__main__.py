@@ -8,12 +8,12 @@ from ..core.enums import CharacterClass
 
 def main():
     # Create player characters
-    player1 = PlayerAgent(character=Character.generate(chr_class=CharacterClass.WIZARD, name="Player1", level=5), ignore_spell_slots=True)
-    player2 = PlayerAgent(character=Character.generate(chr_class=CharacterClass.FIGHTER, name="Player2", level=5), ignore_spell_slots=True)
+    player1 = PlayerAgent(character=Character.generate(chr_class=CharacterClass.WIZARD, name="Player1", level=5), ignore_spell_slots=True, verbose=True)
+    player2 = PlayerAgent(character=Character.generate(chr_class=CharacterClass.FIGHTER, name="Player2", level=5), ignore_spell_slots=True, verbose=True)
 
     # Create NPC characters
-    npc1 = NPC(character=Character.generate(chr_class=CharacterClass.WIZARD, name="NPC1", level=5), ignore_spell_slots=True)
-    npc2 = NPC(character=Character.generate(chr_class=CharacterClass.FIGHTER, name="NPC2", level=5), ignore_spell_slots=True)
+    npc1 = NPC(character=Character.generate(chr_class=CharacterClass.WIZARD, name="NPC1", level=5), ignore_spell_slots=True, verbose=True)
+    npc2 = NPC(character=Character.generate(chr_class=CharacterClass.FIGHTER, name="NPC2", level=5), ignore_spell_slots=True, verbose=True)
 
     # Add spells to wizard characters
     player1.character.spells.extend([fireball, magic_missile])
@@ -21,6 +21,8 @@ def main():
 
     # Equip characters with weapons
     player2.character.equip(longsword)
+    player1.character.equip(longbow)
+    npc2.character.equip(longsword)
     npc2.character.equip(longbow)
 
     # Create the battle

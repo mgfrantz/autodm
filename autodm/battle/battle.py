@@ -101,7 +101,7 @@ class Battle(BaseModel):
         return agent.character.initiative
 
     def start_turn(self, agent: BaseAgent):
-        self.current_turn_state.reset(agent.character.speed)
+        agent.turn_state.reset(agent.character.speed)
         print(f"\n{agent.character.name}'s turn!")
 
     def end_turn(self):
@@ -130,67 +130,48 @@ class Battle(BaseModel):
         return agent.character.character_state == CharacterState.ALIVE
 
     def agent_turn(self, agent: BaseAgent):
-        # If there is a movement or action remaining, don't end the turn
-        while not all([agent.turn_state.standard_action_taken, agent.turn_state.movement_taken]):
+        agent.turn_state.reset(agent.character.speed)
+        while not (agent.turn_state.standard_action_taken and agent.turn_state.movement_taken):
             if agent.is_npc:
-                action = agent.decide_action(self.current_turn_state)
+                action = agent.decide_action(agent.turn_state)
             else:
-                inp = input("Enter your action: ")
-                response = agent.decide_action(self.current_turn_state, inp)
-                # Parse the response to extract the action
-                action = self.parse_agent_response(response)
+                inp = input(f"{agent.character.name}'s turn. Enter your action: ")
+                action = agent.decide_action(agent.turn_state, inp)
             
+            if not agent.verbose:
+                print(action)
+            return action
 
-            print(action)
-        # When the turn is over, reset the turn state
-        agent.turn_state.reset(movement_speed=agent.character.speed)
+            if action.get('action_type') == 'pass':
+                break
 
-
-    def parse_agent_response(self, response) -> Dict[str, Any]:
-        # This method should parse the AgentChatResponse and return a dictionary
-        # You may need to adjust this based on the actual structure of AgentChatResponse
-        if hasattr(response, 'response'):
-            # If the response has a 'response' attribute, use that
-            content = response.response
-        elif hasattr(response, 'content'):
-            # If the response has a 'content' attribute, use that
-            content = response.content
-        else:
-            # If we can't find the content, return an empty dict
-            return {}
-
-        # Try to parse the content as a dictionary
-        try:
-            return eval(content)
-        except:
-            # If parsing fails, try to extract action_type from the text
-            if 'attack' in content.lower():
-                return {'action_type': 'attack'}
-            elif 'cast' in content.lower():
-                return {'action_type': 'cast_spell'}
-            elif 'move' in content.lower():
-                return {'action_type': 'move'}
-            elif 'use' in content.lower():
-                return {'action_type': 'use_item'}
-            else:
-                return {'action_type': 'pass'}
+        print(f"{agent.character.name}'s turn ends.")
 
     def handle_action(self, agent: BaseAgent, action: Dict[str, Any]):
         action_type = action.get('action_type')
         if action_type == "attack":
-            self.handle_attack(agent, action)
+            if agent.turn_state.can_take_action(ActionType.STANDARD):
+                self.handle_attack(agent, action)
+                agent.turn_state.take_action(ActionType.STANDARD)
         elif action_type == "cast_spell":
-            self.handle_spell(agent, action)
+            if agent.turn_state.can_take_action(ActionType.STANDARD):
+                self.handle_spell(agent, action)
+                agent.turn_state.take_action(ActionType.STANDARD)
         elif action_type == "use_item":
-            self.handle_item_use(agent, action)
+            if agent.turn_state.can_take_action(ActionType.STANDARD):
+                self.handle_item_use(agent, action)
+                agent.turn_state.take_action(ActionType.STANDARD)
         elif action_type == "move":
-            self.handle_movement(agent, action)
+            if agent.turn_state.can_take_action(ActionType.MOVEMENT):
+                self.handle_movement(agent, action)
+                agent.turn_state.take_action(ActionType.MOVEMENT)
         elif action_type == "show_map":
             self.display_map()
         elif action_type == "pass":
-            return
+            agent.turn_state.standard_action_taken = True
+            agent.turn_state.movement_taken = True
         else:
-            print(f"Performing action: {action_type}")
+            print(f"Unknown action type: {action_type}")
 
     def handle_movement(self, agent: BaseAgent, action: Dict[str, Any]):
         x, y = action['target']

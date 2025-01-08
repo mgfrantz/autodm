@@ -23,6 +23,7 @@ class CharacterAgent(BaseAgent):
     tools: List[FunctionTool] = Field(default_factory=list)
     ignore_spell_slots: bool = False
     turn_state: TurnState = Field(default_factory=TurnState)
+    verbose: bool = Field(default=False, description="If true, the agent will print out its internal monologue to the console.")
 
     class Config:
         arbitrary_types_allowed = True
@@ -31,7 +32,7 @@ class CharacterAgent(BaseAgent):
         super().__init__(character=character, is_npc=is_npc, ignore_spell_slots=ignore_spell_slots, **data)
         self.turn_state = TurnState()
         self.tools = self.create_tools(self.turn_state)
-        self.agent = AgentRunner.from_llm(self.create_tools(self.turn_state), llm=get_llm(), verbose=True)
+        self.agent = AgentRunner.from_llm(self.create_tools(self.turn_state), llm=get_llm(), verbose=self.verbose)
 
     def create_tools(self, turn_state: Optional[TurnState] = None) -> List[Any]:
         if not turn_state:
@@ -109,9 +110,14 @@ class CharacterAgent(BaseAgent):
                 success, message = self.battle.move_to(self, x, y)
                 if success:
                     self.turn_state.movement_taken = True
+                if not self.verbose:
+                    print(message)
                 return message
             else:
-                return f"Invalid coordinates ({x}, {y}). Map size is {self.battle.map.width}x{self.battle.map.height}."
+                message = f"Invalid coordinates ({x}, {y}). Map size is {self.battle.map.width}x{self.battle.map.height}."
+                if not self.verbose:
+                    print(message)
+                return message
         return f"{self.character.name} is not in a battle and cannot move."
 
     def attack(
@@ -164,6 +170,8 @@ class CharacterAgent(BaseAgent):
 
         is_hit, damage, message = weapon.attack(self, target_character)
         self.turn_state.standard_action_taken = True
+        if not self.verbose:
+            print(message)
         return message
     
     def get_equipped_weapons(self) -> str:
@@ -194,7 +202,10 @@ class CharacterAgent(BaseAgent):
         """
         if self.battle:
             if self.turn_state.standard_action_taken:
-                return f"{self.character.name} has already taken their standard action this turn."
+                message = f"{self.character.name} has already taken their standard action this turn."
+                if not self.verbose:
+                    print(message)
+                return message
         spell = next(
             (s for s in self.character.spells if s.name.lower() == spell_name.lower()),
             None,
@@ -223,6 +234,8 @@ class CharacterAgent(BaseAgent):
             if not self.ignore_spell_slots:
                 self.character.cast_spell(spell)
             self.turn_state.standard_action_taken = True
+            if not self.verbose:
+                print(result)
             return result
         except ValueError as e:
             return str(e)
@@ -240,7 +253,10 @@ class CharacterAgent(BaseAgent):
         """
         if self.battle:
             if self.turn_state.standard_action_taken:
-                return f"{self.character.name} has already taken their standard action this turn."
+                message = f"{self.character.name} has already taken their standard action this turn."
+                if not self.verbose:
+                    print(message)
+                return message
         item = next(
             (
                 i
@@ -264,9 +280,14 @@ class CharacterAgent(BaseAgent):
 
             self.character.inventory.remove(item)
             self.turn_state.standard_action_taken = True
+            if not self.verbose:
+                print(f"{self.character.name} uses {item_name} on {target_char.name}. {target_char.name} heals for {actual_heal} HP.")
             return f"{self.character.name} uses {item_name} on {target_char.name}. {target_char.name} heals for {actual_heal} HP."
 
-        return f"{self.character.name} uses {item_name}."
+        message = f"{self.character.name} uses {item_name}."
+        if not self.verbose:
+            print(message)
+        return message
 
     def check_inventory(self) -> str:
         """
@@ -280,6 +301,8 @@ class CharacterAgent(BaseAgent):
             if self.character.inventory
             else "Empty"
         )
+        if not self.verbose:
+            print(f"{self.character.name}'s inventory: {inventory}")
         return f"{self.character.name}'s inventory: {inventory}"
 
     def check_status(self) -> str:
@@ -301,6 +324,8 @@ class CharacterAgent(BaseAgent):
             f"Experience Points: {self.character.experience_points}\n"
             f"Proficiency Bonus: {self.character.proficiency_bonus}\n"
         )
+        if not self.verbose:
+            print(status)
         return status
 
     def check_spells(self) -> str:
@@ -310,7 +335,6 @@ class CharacterAgent(BaseAgent):
         Returns:
             str: A string listing known spells and available spell slots.
         """
-        print("Calling check_spells")
         spells = (
             ", ".join([spell.name for spell in self.character.spells])
             if self.character.spells
@@ -323,7 +347,10 @@ class CharacterAgent(BaseAgent):
                 if slots > 0
             ]
         )
-        return f"{self.character.name}'s known spells: {spells}\nAvailable spell slots: {spell_slots}"
+        message = f"{self.character.name}'s known spells: {spells}\nAvailable spell slots: {spell_slots}"
+        if not self.verbose:
+            print(message)
+        return message
 
     def check_attributes(self) -> str:
         """
@@ -332,7 +359,10 @@ class CharacterAgent(BaseAgent):
         Returns:
             str: A string representation of the character's attributes.
         """
-        return str(self.character.attributes)
+        message = str(self.character.attributes)
+        if not self.verbose:
+            print(message)
+        return message
 
     def check_equipment(self) -> str:
         """
@@ -349,7 +379,10 @@ class CharacterAgent(BaseAgent):
         equipped_str = (
             "\n".join(equipped_items) if equipped_items else "No items equipped"
         )
-        return f"{self.character.name}'s equipped items:\n{equipped_str}"
+        message = f"{self.character.name}'s equipped items:\n{equipped_str}"
+        if not self.verbose:
+            print(message)
+        return message
 
     def check_hp(self) -> str:
         """
@@ -358,7 +391,10 @@ class CharacterAgent(BaseAgent):
         Returns:
             str: A string showing the character's current and maximum HP.
         """
-        return f"{self.character.name}'s HP: {self.character.current_hp}/{self.character.max_hp}"
+        message = f"{self.character.name}'s HP: {self.character.current_hp}/{self.character.max_hp}"
+        if not self.verbose:
+            print(message)
+        return message
 
     def check_skills(self) -> str:
         """
@@ -377,7 +413,10 @@ class CharacterAgent(BaseAgent):
             if self.character.skills
             else "No skills"
         )
-        return f"{self.character.name}'s skills:\n{skills_str}"
+        message = f"{self.character.name}'s skills:\n{skills_str}"
+        if not self.verbose:
+            print(message)
+        return message
 
     def get_position(self) -> str:
         """
@@ -387,8 +426,12 @@ class CharacterAgent(BaseAgent):
             str: A string describing the character's current position.
         """
         if self.battle:
-            return f"{self.character.name}'s position: ({self.character.position.x}, {self.character.position.y})"
-        return f"{self.character.name} is not in a battle."
+            message = f"{self.character.name}'s position: ({self.character.position.x}, {self.character.position.y})"
+        else:
+            message = f"{self.character.name} is not in a battle."
+        if not self.verbose:
+            print(message)
+        return message
 
     def get_characters_in_range(self, scale:int=5) -> str:
         """
@@ -401,7 +444,10 @@ class CharacterAgent(BaseAgent):
             str: A string listing characters within range for each available action.
         """
         if not self.battle:
-            return "You are not currently in a battle."
+            message = "You are not currently in a battle."
+            if not self.verbose:
+                print(message)
+            return message
 
         s = ""
 
@@ -441,6 +487,9 @@ Enemies in range:
 """
             if allies_in_range or enemies_in_range:
                 s += _s
+
+        if not self.verbose:
+            print(s.strip())
         return s.strip()
 
     def intimidate(self, target: str) -> str:
@@ -454,6 +503,8 @@ Enemies in range:
         Returns:
             str: A message describing the intimidation attempt.
         """
+        if not self.verbose:
+            print(f"{self.character.name} attempts to intimidate {target}.")
         return f"{self.character.name} attempts to intimidate {target}."
 
     def persuade(self, target: str) -> str:
@@ -467,6 +518,8 @@ Enemies in range:
         Returns:
             str: A message describing the persuasion attempt.
         """
+        if not self.verbose:
+            print(f"{self.character.name} attempts to persuade {target}.")
         return f"{self.character.name} attempts to persuade {target}."
 
     def deceive(self, target: str) -> str:
@@ -480,6 +533,8 @@ Enemies in range:
         Returns:
             str: A message describing the deception attempt.
         """
+        if not self.verbose:
+            print(f"{self.character.name} attempts to deceive {target}.")
         return f"{self.character.name} attempts to deceive {target}."
 
     def say(self, message: str) -> str:
@@ -492,6 +547,8 @@ Enemies in range:
         Returns:
             str: A formatted string of the character's speech.
         """
+        if not self.verbose:
+            print(f"{self.character.name} says: '{message}'")
         return f"{self.character.name} says: '{message}'"
 
     def observe_battle(self) -> str:
@@ -522,12 +579,16 @@ Enemies in range:
             f"Allies:\n{allies_info}\n\n"
             f"Enemies:\n{enemies_info}"
         )
+        if not self.verbose:
+            print(battle_description)
         return battle_description
 
     def perform_skill_check(self, skill: str, difficulty_class: int) -> str:
 
         success, total = perform_skill_check(self.character, skill, difficulty_class)
         result = "Success" if success else "Failure"
+        if not self.verbose:
+            print(f"{self.character.name} performs a {skill} check (DC {difficulty_class}): {result} (rolled {total})")
         return f"{self.character.name} performs a {skill} check (DC {difficulty_class}): {result} (rolled {total})"
 
     def perform_ability_check(self, ability: str, difficulty_class: int) -> str:
@@ -536,6 +597,8 @@ Enemies in range:
             self.character, ability, difficulty_class
         )
         result = "Success" if success else "Failure"
+        if not self.verbose:
+            print(f"{self.character.name} performs a {ability} check (DC {difficulty_class}): {result} (rolled {total})")
         return f"{self.character.name} performs a {ability} check (DC {difficulty_class}): {result} (rolled {total})"
     
     def end_turn(self) -> str:
@@ -548,6 +611,8 @@ Enemies in range:
         if self.battle:
             self.turn_state.standard_action_taken = True
             self.turn_state.movement_taken = True
+            if not self.verbose:
+                print(f"{self.character.name} ends their turn.")
             return f"{self.character.name} ends their turn."
         return f"{self.character.name} is not in a battle."
     
@@ -562,6 +627,8 @@ Enemies in range:
         if not self.battle:
             return "No map available outside of battle."
 
+        if not self.verbose:
+            print(str(self.battle.map))
         return str(self.battle.map)
 
     def get_battle_context(self) -> str:
@@ -601,7 +668,7 @@ Enemies in range:
             ]
         )
 
-        return f"""
+        s =  f"""
 Current battle situation:
 Your position: ({self.character.position.x}, {self.character.position.y})
 
@@ -615,6 +682,9 @@ Map size: {self.battle.map.width}x{self.battle.map.height}
 
 Consider the battle situation and positions when making decisions.
 """
+        if self.verbose:
+            print(s)
+        return s
 
     def interpret_action(self, user_input: str) -> str:
         # This method should be implemented in the subclasses (PlayerAgent and NPC)
@@ -668,8 +738,12 @@ Do not rely on any implicit knowledge about the character, and remember to alway
 Please return a what happened or the desired information. \
 Do not return anything else or perform any follow ups.
 
+Here is the turn state: {self.turn_state}
+
 Command: {message}"""
         response = self.agent.chat(prompt)
         # Recreate the agent to clear the memory
-        self.agent = ReActAgent.from_tools(self.create_tools(), llm=get_llm(), verbose=True)
+        self.agent = ReActAgent.from_tools(self.create_tools(), llm=get_llm(), verbose=self.verbose)
+        if not self.verbose:
+            print(response)
         return response

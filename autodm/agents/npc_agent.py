@@ -18,7 +18,7 @@ class NPC(CharacterAgent):
     class Config:
         arbitrary_types_allowed = True
 
-    def __init__(self, character: Union[None, Character] = None, ignore_spell_slots: bool = False):
+    def __init__(self, character: Union[None, Character] = None, ignore_spell_slots: bool = False, verbose: bool = False):
         """
         Initialize an NPC.
 
@@ -26,11 +26,12 @@ class NPC(CharacterAgent):
             character (Union[None, Character], optional): The character associated with this NPC. 
                 If None, a new character will be generated. Defaults to None.
             ignore_spell_slots (bool): Whether to ignore spell slot restrictions. Defaults to False.
+            verbose (bool): Whether to print verbose output. Defaults to False.
         """
         if character is None:
             from autodm.core.character import Character
             character = Character.generate()
-        super().__init__(character=character, is_npc=True, ignore_spell_slots=ignore_spell_slots)
+        super().__init__(character=character, is_npc=True, ignore_spell_slots=ignore_spell_slots, verbose=verbose)
 
     def decide_action(self, turn_state: TurnState) -> Dict[str, Any]:
         """
