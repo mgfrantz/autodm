@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -89,8 +89,23 @@
   - World schema: optional region terrain/coordinates/connections for richer maps
   - 52 navigation tests (339 total)
 
+- [x] **Add save/load** — named snapshots with full state restoration
+  - `SaveSlot` model: frozen point-in-time snapshot of the full mutable game
+    state (character_snapshot + game_state + story_log + current_act),
+    cascade-deletes with its GameSave
+  - The key gap this closes: character state (HP, XP, level, ability scores,
+    inventory, spells) is mutated directly on the Character row during play;
+    a SaveSlot captures a copy so loading writes it back, rewinding the game
+  - `app/api/saves.py` router: `POST /save` (create), `GET /saves` (list),
+    `GET /saves/{id}` (detail), `POST /load/{id}` (restore), `DELETE /saves/{id}`
+  - `capture_character_snapshot` / `apply_character_snapshot` helpers round-trip
+    mutable fields; inventory/spells parsed to structured form in the snapshot
+  - Frontend: `SaveSlotSummary`/`LoadSaveResult` types + API client; `setStory`
+    action in Zustand for clean story resets; GameView 💾 Save button + Save/Load
+    overlay modal (create, load, delete, character-state previews per slot)
+  - 18 save/load tests (357 total)
+
 ## Next Priorities
-- [ ] **Add save/load** — proper game persistence
 - [ ] **Frontend polish** — animations, transitions, responsive design
 - [ ] **Context window management** — smart summarization of story log
 - [ ] **World state persistence** — NPC relationship tracking, faction reputation
