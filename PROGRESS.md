@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -33,22 +33,28 @@
   - Backend: `stream_narration` generator + SSE endpoints (`/start/stream`, `/action/stream`)
   - Frontend: SSE client + live typing-cursor DM bubble in GameView
   - 7 streaming tests passing (68 total)
-- [x] **Add combat engine** — initiative tracker, turn order, enemy stats
+|- [x] **Add combat engine** — initiative tracker, turn order, enemy stats
   - `Combatant` (HP/damage/conditions/enemy stats), `Attack` (crit doubling)
   - `Encounter` (initiative roll, deterministic turn order, round cycling,
     active/winner detection, `resolve_attack` d20-vs-AC with nat1/nat20)
   - JSON serialization for persistence; 27 combat tests (95 total)
+- [x] **Add inventory management** — items, equipment, loot
+  - `Item` (type, stats, value, weight, uses, quantity)
+  - `Inventory` (add/remove, equip/unequip, use consumables)
+  - Armor types with AC calculation (Light/Medium/Heavy/Shield)
+  - Item stacking for consumables
+  - Starting equipment by class (fighter, wizard, rogue, etc.)
+  - Inventory API endpoints for CRUD operations
+  - 36 inventory tests (131 total)
 
 ## Next Priorities
-|- [x] **Combat API integration** — expose combat engine via REST endpoints (start encounter, take turn, attack) + frontend combat tracker UI
-- [ ] **Add inventory management** — items, equipment, loot
-- [ ] **Add spell system** — spell slots, known spells per class
-- [ ] **Add XP/leveling** — automatic level-up, stat increases
-- [ ] **Add map/region navigation** — visual region explorer
-- [ ] **Add save/load** — proper game persistence
-- [ ] **Frontend polish** — animations, transitions, responsive design
-- [ ] **Context window management** — smart summarization of story log
-- [ ] **World state persistence** — NPC relationship tracking, faction reputation
+|- [ ] **Add spell system** — spell slots, known spells per class
+|- [ ] **Add XP/leveling** — automatic level-up, stat increases
+|- [ ] **Add map/region navigation** — visual region explorer
+|- [ ] **Add save/load** — proper game persistence
+|- [ ] **Frontend polish** — animations, transitions, responsive design
+|- [ ] **Context window management** — smart summarization of story log
+|- [ ] **World state persistence** — NPC relationship tracking, faction reputation
 
 ## How to Use This File
 When you (the agent) work on the project:
