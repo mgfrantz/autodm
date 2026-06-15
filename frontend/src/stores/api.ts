@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -175,3 +175,57 @@ export async function streamPlayerAction(
     },
   );
 }
+
+// === Combat ===
+
+export const startCombat = async (gameId: number, enemies: Array<{
+  name: string;
+  max_hp: number;
+  armor_class: number;
+  initiative_bonus?: number;
+  speed?: number;
+  attacks: Array<{
+    name: string;
+    attack_bonus: number;
+    damage_dice_count: number;
+    damage_dice_sides: number;
+    damage_bonus: number;
+    damage_type: string;
+  }>;
+}>) => {
+  const res = await API.post(`/game/${gameId}/combat/start`, { enemies });
+  return res.data;
+};
+
+export const getCombatState = async (gameId: number): Promise<CombatState> => {
+  const res = await API.get<CombatState>(`/game/${gameId}/combat/state`);
+  return res.data;
+};
+
+export const nextTurn = async (gameId: number) => {
+  const res = await API.post(`/game/${gameId}/combat/next-turn`);
+  return res.data;
+};
+
+export const makeAttack = async (
+  gameId: number,
+  attackerId: string,
+  targetId: string,
+  attackName: string,
+  advantage = false,
+  disadvantage = false,
+): Promise<CombatResult> => {
+  const res = await API.post(`/game/${gameId}/combat/attack`, {
+    attacker_id: attackerId,
+    target_id: targetId,
+    attack_name: attackName,
+    advantage,
+    disadvantage,
+  });
+  return res.data;
+};
+
+export const endCombat = async (gameId: number) => {
+  const res = await API.post(`/game/${gameId}/combat/end`);
+  return res.data;
+};

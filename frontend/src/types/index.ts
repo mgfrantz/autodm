@@ -65,3 +65,64 @@ export interface DMResponse {
   combat_active: boolean;
   roll_requested: boolean;
 }
+
+// === Combat Types ===
+
+export interface Combatant {
+  id: string;
+  name: string;
+  side: 'player' | 'enemy';
+  max_hp: number;
+  current_hp: number;
+  armor_class: number;
+  initiative: number;
+  initiative_bonus: number;
+  speed: number;
+  conditions: string[];
+  attacks: Attack[];
+}
+
+export interface Attack {
+  name: string;
+  attack_bonus: number;
+  damage_dice_count: number;
+  damage_dice_sides: number;
+  damage_bonus: number;
+  damage_type: string;
+}
+
+export interface Encounter {
+  combatants: Combatant[];
+  turn_order_ids: string[];
+  current_turn_index: number;
+  round_number: number;
+  started: boolean;
+  log: string[];
+}
+
+export interface CombatState {
+  in_combat: boolean;
+  is_active?: boolean;
+  winner?: 'player' | 'enemy' | null;
+  round?: number;
+  current_turn?: string;
+  current_turn_id?: string;
+  encounter?: Encounter;
+}
+
+export interface CombatResult {
+  result: {
+    attacker: string;
+    target: string;
+    attack: string;
+    hit: boolean;
+    critical: boolean;
+    critical_miss: boolean;
+    damage: number;
+    target_remaining_hp: number;
+    description: string;
+  };
+  encounter: Encounter;
+  combat_active: boolean;
+  winner?: 'player' | 'enemy' | null;
+}

@@ -1,31 +1,42 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getGameState, streamStartAdventure, streamPlayerAction } from '../stores/api'
+import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry } from '../types'
+import type { StoryEntry, Attack } from '../types'
+import CombatTracker from '../components/CombatTracker'
 
 export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
   const gid = parseInt(gameId || '0')
 
-  const { gameState, story, setGameState, addToStory, loading, setLoading, error, setError } = useGameStore()
+  const { gameState, story, combatState, setGameState, setCombatState, addToStory, loading, setLoading, error, setError } = useGameStore()
   const [actionInput, setActionInput] = useState('')
   const [started, setStarted] = useState(false)
   const [streamingText, setStreamingText] = useState('')
   const storyEndRef = useRef<HTMLDivElement>(null)
 
-  // Load game state
+  // Load game state and combat state
   useEffect(() => {
-    getGameState(gid)
-      .then((state) => {
+    const loadState = async () => {
+      try {
+        const state = await getGameState(gid)
         setGameState(state)
+        
+        // Check for combat state
+        const combat = await getCombatState(gid)
+        setCombatState(combat)
+        
         if (state.story_log.length === 0 && !started) {
           handleStart()
         } else {
           state.story_log.forEach((entry: StoryEntry) => addToStory(entry))
         }
-      })
-      .catch(() => setError('Failed to load game'))
+      } catch {
+        setError('Failed to load game')
+      }
+    }
+    
+    loadState()
   }, [gid])
 
   // Auto-scroll to bottom
@@ -42,7 +53,6 @@ export default function GameView() {
         (chunk) => setStreamingText((prev) => prev + chunk),
         () => {},
       )
-      // Commit the fully streamed narration to the story log.
       setStreamingText((final) => {
         addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
         return ''
@@ -66,17 +76,86 @@ export default function GameView() {
         gid,
         action,
         (chunk) => setStreamingText((prev) => prev + chunk),
-        () => {},
+        async (combatActive) => {
+          // Check combat state after DM responds
+          if (combatActive) {
+            const combat = await getCombatState(gid)
+            setCombatState(combat)
+          }
+        },
       )
       setStreamingText((final) => {
         addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
         return ''
       })
+      // Refresh combat state after action
+      const combat = await getCombatState(gid)
+      setCombatState(combat)
     } catch (err) {
       setError('The DM falters... (error processing action)')
     }
     setLoading(false)
   }
+
+  const handleAttack = async (attackerId: string, targetId: string, attack: Attack) => {
+    try {
+      const result = await makeAttack(gid, attackerId, targetId, attack.name)
+      
+      // Add combat result to story
+      addToStory({ 
+        role: 'system', 
+        content: result.result.description,
+        timestamp: new Date().toISOString() 
+      })
+      
+      // Update combat state
+      setCombatState({
+        in_combat: result.combat_active,
+        is_active: result.combat_active,
+        winner: result.winner,
+        encounter: result.encounter,
+      })
+      
+      // If combat ended, add a message
+      if (!result.combat_active && result.winner) {
+        addToStory({
+          role: 'system',
+          content: result.winner === 'player' 
+            ? '🎉 Victory! You have defeated all enemies!' 
+            : '💀 You have been defeated...',
+          timestamp: new Date().toISOString()
+        })
+      }
+    } catch (err) {
+      setError('Attack failed')
+    }
+  }
+
+  const handleNextTurn = async () => {
+    try {
+      const result = await nextTurn(gid)
+      
+      // Update combat state
+      const combat = await getCombatState(gid)
+      setCombatState(combat)
+      
+      // If combat ended, add a message
+      if (result.combat_over && result.winner) {
+        addToStory({
+          role: 'system',
+          content: result.winner === 'player' 
+            ? '🎉 Victory! You have defeated all enemies!' 
+            : '💀 You have been defeated...',
+          timestamp: new Date().toISOString()
+        })
+      }
+    } catch (err) {
+      setError('Failed to advance turn')
+    }
+  }
+
+  const isPlayerTurn = combatState?.encounter?.combatants.find(c => c.id === combatState.current_turn_id)?.side === 'player'
+  const inCombat = combatState?.in_combat && combatState?.is_active
 
   if (!gameState) {
     return (
@@ -89,7 +168,7 @@ export default function GameView() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row max-w-7xl mx-auto p-4 gap-4">
       {/* Main Story Panel */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex flex-col ${inCombat ? 'lg:flex-[2]' : 'flex-1'}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <Link to="/" className="text-parchment-400 hover:text-parchment-200 text-sm">
@@ -109,11 +188,13 @@ export default function GameView() {
                 className={`rounded-lg p-4 ${
                   entry.role === 'dm'
                     ? 'bg-parchment-900/60 border-l-4 border-arcane-500'
+                    : entry.role === 'system'
+                    ? 'bg-parchment-900/60 border-l-4 border-amber-500'
                     : 'bg-blood-700/30 border-l-4 border-blood-500 ml-8'
                 }`}
               >
                 <div className="text-xs text-parchment-500 mb-1 font-semibold uppercase">
-                  {entry.role === 'dm' ? '🗡️ Dungeon Master' : '🧑 Player'}
+                  {entry.role === 'dm' ? '🗡️ Dungeon Master' : entry.role === 'system' ? '⚙️ System' : '🧑 Player'}
                 </div>
                 <div className="text-parchment-200 whitespace-pre-wrap leading-relaxed">
                   {entry.content}
@@ -142,45 +223,57 @@ export default function GameView() {
           </div>
         </div>
 
-        {/* Action Input */}
-        <div className="panel">
-          {error && (
-            <div className="text-blood-500 text-sm mb-2">{error}</div>
-          )}
-          <div className="flex gap-2">
-            <input
-              className="input-field flex-1"
-              value={actionInput}
-              onChange={(e) => setActionInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAction()}
-              placeholder="What do you do? (e.g., 'I examine the door', 'I attack the goblin', 'I talk to the innkeeper')"
-              disabled={loading}
-            />
-            <button
-              className="btn-primary px-8"
-              onClick={handleAction}
-              disabled={loading || !actionInput.trim()}
-            >
-              Act
-            </button>
-          </div>
-          {/* Quick Actions */}
-          <div className="flex gap-2 mt-2 flex-wrap">
-            {['Look around', 'Check inventory', 'Check my stats'].map((q) => (
+        {/* Action Input - Disabled during combat */}
+        {!inCombat && (
+          <div className="panel">
+            {error && (
+              <div className="text-blood-500 text-sm mb-2">{error}</div>
+            )}
+            <div className="flex gap-2">
+              <input
+                className="input-field flex-1"
+                value={actionInput}
+                onChange={(e) => setActionInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAction()}
+                placeholder="What do you do? (e.g., 'I examine the door', 'I attack the goblin', 'I talk to the innkeeper')"
+                disabled={loading}
+              />
               <button
-                key={q}
-                onClick={() => setActionInput(q)}
-                className="text-xs bg-parchment-700 hover:bg-parchment-600 text-parchment-300 px-3 py-1 rounded-full transition-colors"
+                className="btn-primary px-8"
+                onClick={handleAction}
+                disabled={loading || !actionInput.trim()}
               >
-                {q}
+                Act
               </button>
-            ))}
+            </div>
+            {/* Quick Actions */}
+            <div className="flex gap-2 mt-2 flex-wrap">
+              {['Look around', 'Check inventory', 'Check my stats'].map((q) => (
+                <button
+                  key={q}
+                  onClick={() => setActionInput(q)}
+                  className="text-xs bg-parchment-700 hover:bg-parchment-600 text-parchment-300 px-3 py-1 rounded-full transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Combat indicator */}
+        {inCombat && (
+          <div className="panel bg-blood-900/30 border border-blood-500">
+            <div className="text-center text-parchment-200 font-semibold">
+              ⚔️ COMBAT IN PROGRESS ⚔️
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Character Sidebar */}
-      <div className="lg:w-72 space-y-4">
+      {/* Right Sidebar */}
+      <div className="lg:w-80 space-y-4">
+        {/* Character Info */}
         <div className="panel">
           <h2 className="font-fantasy text-lg text-parchment-200 mb-3">
             {gameState.character.name}
@@ -215,6 +308,18 @@ export default function GameView() {
             <span className="text-parchment-500">{gameState.xp} XP</span>
           </div>
         </div>
+
+        {/* Combat Tracker - Only show during combat */}
+        {inCombat && combatState?.encounter && (
+          <CombatTracker
+            combatants={combatState.encounter.combatants}
+            currentTurnId={combatState.current_turn_id || null}
+            roundNumber={combatState.round || 1}
+            isPlayerTurn={isPlayerTurn}
+            onAttack={handleAttack}
+            onNextTurn={handleNextTurn}
+          />
+        )}
       </div>
     </div>
   )
