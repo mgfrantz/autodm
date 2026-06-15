@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-parchment-900 text-parchment-100 font-body;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-blood-600 hover:bg-blood-700 text-parchment-50 font-semibold py-2 px-6 rounded-lg transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-parchment-700 hover:bg-parchment-600 text-parchment-100 font-semibold py-2 px-6 rounded-lg transition-colors;
+  }
+  .panel {
+    @apply bg-parchment-800/80 border border-parchment-700 rounded-xl p-6;
+  }
+  .input-field {
+    @apply bg-parchment-900 border border-parchment-600 rounded-lg px-4 py-2 text-parchment-100 focus:ring-2 focus:ring-arcane-500 focus:border-transparent;
+  }
+  .title-fantasy {
+    @apply font-fantasy text-3xl text-parchment-200;
+  }
+}
