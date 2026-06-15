@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -33,9 +33,14 @@
   - Backend: `stream_narration` generator + SSE endpoints (`/start/stream`, `/action/stream`)
   - Frontend: SSE client + live typing-cursor DM bubble in GameView
   - 7 streaming tests passing (68 total)
+- [x] **Add combat engine** — initiative tracker, turn order, enemy stats
+  - `Combatant` (HP/damage/conditions/enemy stats), `Attack` (crit doubling)
+  - `Encounter` (initiative roll, deterministic turn order, round cycling,
+    active/winner detection, `resolve_attack` d20-vs-AC with nat1/nat20)
+  - JSON serialization for persistence; 27 combat tests (95 total)
 
 ## Next Priorities
-- [ ] **Add combat engine** — initiative tracker, turn order, enemy stats
+- [ ] **Combat API integration** — expose combat engine via REST endpoints (start encounter, take turn, attack) + frontend combat tracker UI
 - [ ] **Add inventory management** — items, equipment, loot
 - [ ] **Add spell system** — spell slots, known spells per class
 - [ ] **Add XP/leveling** — automatic level-up, stat increases
