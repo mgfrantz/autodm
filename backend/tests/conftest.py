@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.main import app
-from app.models.database import get_db
+from app.models.database import get_db, get_session_factory
 from app.models.models import Base
 
 # Add the backend directory to Python path so app module can be imported
@@ -57,7 +57,13 @@ def client(db_session):
         finally:
             pass
 
+    def override_session_factory():
+        # Return the test session factory so routes that manage their own
+        # sessions (e.g. streaming endpoints) hit the test database.
+        return TestingSessionLocal
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_session_factory] = override_session_factory
     test_client = TestClient(app)
     yield test_client
     app.dependency_overrides.clear()

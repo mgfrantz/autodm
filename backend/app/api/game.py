@@ -5,16 +5,22 @@ import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.models.database import get_db
+from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.orchestrator import orchestrator
 from app.prompts.dm_prompts import DM_SYSTEM_PROMPT, ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 
 router = APIRouter()
+
+
+def _sse(payload: dict) -> str:
+    """Format a dict as a Server-Sent Events data line."""
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 class GameCreate(BaseModel):
@@ -112,6 +118,76 @@ End with 2-3 clear choices for the player.
     return {"narration": narration}
 
 
+@router.post("/{game_id}/start/stream")
+async def start_adventure_stream(game_id: int, session_factory=Depends(get_session_factory)):
+    """Stream the opening narration to the client via Server-Sent Events.
+
+    Streams DM narration token-by-token, then persists the full narration to
+    the story log once streaming completes. Emits ``chunk`` events while the
+    LLM is producing text and a final ``done`` event.
+    """
+    # Read phase: load game in a short-lived session.
+    db = session_factory()
+    try:
+        save = db.query(GameSave).filter(GameSave.id == game_id).first()
+        if not save:
+            raise HTTPException(status_code=404, detail="Game not found")
+        character = save.character
+        world = save.world
+        world_data = json.loads(world.world_data)
+
+        user_prompt = f"""\
+The adventure begins.
+
+World: {world.name}
+Setting: {world_data.get('description', '')}
+Starting Location: {world_data.get('starting_settlement', {}).get('name', '')}
+Hook: {world_data.get('hook', '')}
+
+Character: {character.name}, a level {character.level} {character.race} {character.char_class}.
+
+Narrate the opening scene. Set the mood, introduce the setting, and present the hook.
+End with 2-3 clear choices for the player.
+"""
+    finally:
+        db.close()
+
+    async def event_stream():
+        collected: list[str] = []
+        try:
+            async for chunk in orchestrator.stream_narration(
+                system_prompt=DM_SYSTEM_PROMPT,
+                user_prompt=user_prompt,
+            ):
+                collected.append(chunk)
+                yield _sse({"type": "chunk", "content": chunk})
+        except Exception as exc:  # noqa: BLE001 - surface errors to the client
+            yield _sse({"type": "error", "message": str(exc)})
+            return
+
+        narration = "".join(collected)
+
+        # Persist the completed narration.
+        db = session_factory()
+        try:
+            save = db.query(GameSave).filter(GameSave.id == game_id).first()
+            if save:
+                story_log = json.loads(save.story_log)
+                story_log.append({
+                    "role": "dm",
+                    "content": narration,
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
+                save.story_log = json.dumps(story_log)
+                db.commit()
+        finally:
+            db.close()
+
+        yield _sse({"type": "done"})
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
 @router.post("/{game_id}/action", response_model=DMResponse)
 async def player_action(game_id: int, action: PlayerAction, db: Session = Depends(get_db)):
     """Process a player action and get DM response."""
@@ -164,6 +240,87 @@ Conditions: {', '.join(game_state.get('conditions', ['none']))}
         narration=narration,
         combat_active=game_state.get("in_combat", False),
     )
+
+
+@router.post("/{game_id}/action/stream")
+async def player_action_stream(game_id: int, action: PlayerAction, session_factory=Depends(get_session_factory)):
+    """Stream the DM's response to a player action via Server-Sent Events.
+
+    Mirrors the non-streaming ``player_action`` endpoint but emits narration
+    token-by-token. The player's action and the full DM response are persisted
+    to the story log once streaming completes. Emits ``chunk`` events followed
+    by a ``done`` event that carries combat state metadata.
+    """
+    # Read phase: load the current game state in a short-lived session.
+    db = session_factory()
+    try:
+        save = db.query(GameSave).filter(GameSave.id == game_id).first()
+        if not save:
+            raise HTTPException(status_code=404, detail="Game not found")
+        character = save.character
+        game_state = json.loads(save.game_state)
+        story_log = json.loads(save.story_log)
+
+        recent_events = "\n".join(
+            f"[{entry.get('role', 'unknown')}]: {entry.get('content', '')[:200]}"
+            for entry in story_log[-10:]
+        )
+
+        context = f"""\
+Character: {character.name} (Level {character.level} {character.race} {character.char_class})
+HP: {character.current_hp}/{character.max_hp}
+AC: {character.armor_class}
+Location: {game_state.get('location', 'Unknown')}
+Conditions: {', '.join(game_state.get('conditions', ['none']))}
+"""
+
+        user_prompt = ENCOUNTER_PROMPT.format(
+            location=game_state.get("location", "Unknown"),
+            hp=character.current_hp,
+            max_hp=character.max_hp,
+            conditions=", ".join(game_state.get("conditions", ["none"])),
+            recent_events=recent_events,
+            player_action=action.action,
+        )
+
+        combat_active = game_state.get("in_combat", False)
+    finally:
+        db.close()
+
+    async def event_stream():
+        collected: list[str] = []
+        try:
+            async for chunk in orchestrator.stream_narration(
+                system_prompt=DM_SYSTEM_PROMPT,
+                user_prompt=user_prompt,
+                context=context,
+            ):
+                collected.append(chunk)
+                yield _sse({"type": "chunk", "content": chunk})
+        except Exception as exc:  # noqa: BLE001 - surface errors to the client
+            yield _sse({"type": "error", "message": str(exc)})
+            return
+
+        narration = "".join(collected)
+
+        # Persist the exchange once streaming is complete.
+        db = session_factory()
+        try:
+            save = db.query(GameSave).filter(GameSave.id == game_id).first()
+            if save:
+                log = json.loads(save.story_log)
+                now = datetime.utcnow().isoformat()
+                log.append({"role": "player", "content": action.action, "timestamp": now})
+                log.append({"role": "dm", "content": narration, "timestamp": now})
+                save.story_log = json.dumps(log)
+                save.updated_at = datetime.utcnow()
+                db.commit()
+        finally:
+            db.close()
+
+        yield _sse({"type": "done", "combat_active": combat_active})
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @router.get("/{game_id}/state")

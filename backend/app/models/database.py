@@ -24,3 +24,14 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_session_factory():
+    """FastAPI dependency returning the session factory (a callable).
+
+    Used for routes that need to open their own sessions across request
+    lifetimes — notably streaming endpoints where the DB write happens inside
+    an async generator after the response has started. Returns
+    ``SessionLocal`` by default; tests override this to point at the test DB.
+    """
+    return SessionLocal

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { startAdventure, playerAction, getGameState } from '../stores/api'
+import { getGameState, streamStartAdventure, streamPlayerAction } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
 import type { StoryEntry } from '../types'
 
@@ -11,6 +11,7 @@ export default function GameView() {
   const { gameState, story, setGameState, addToStory, loading, setLoading, error, setError } = useGameStore()
   const [actionInput, setActionInput] = useState('')
   const [started, setStarted] = useState(false)
+  const [streamingText, setStreamingText] = useState('')
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Load game state
@@ -30,13 +31,22 @@ export default function GameView() {
   // Auto-scroll to bottom
   useEffect(() => {
     storyEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [story])
+  }, [story, streamingText])
 
   const handleStart = async () => {
     setLoading(true)
+    setStreamingText('')
     try {
-      const res = await startAdventure(gid)
-      addToStory({ role: 'dm', content: res.narration, timestamp: new Date().toISOString() })
+      await streamStartAdventure(
+        gid,
+        (chunk) => setStreamingText((prev) => prev + chunk),
+        () => {},
+      )
+      // Commit the fully streamed narration to the story log.
+      setStreamingText((final) => {
+        addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
+        return ''
+      })
       setStarted(true)
     } catch (err) {
       setError('Failed to start adventure')
@@ -50,9 +60,18 @@ export default function GameView() {
     setActionInput('')
     addToStory({ role: 'player', content: action, timestamp: new Date().toISOString() })
     setLoading(true)
+    setStreamingText('')
     try {
-      const res = await playerAction(gid, action)
-      addToStory({ role: 'dm', content: res.narration, timestamp: new Date().toISOString() })
+      await streamPlayerAction(
+        gid,
+        action,
+        (chunk) => setStreamingText((prev) => prev + chunk),
+        () => {},
+      )
+      setStreamingText((final) => {
+        addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
+        return ''
+      })
     } catch (err) {
       setError('The DM falters... (error processing action)')
     }
@@ -101,7 +120,20 @@ export default function GameView() {
                 </div>
               </div>
             ))}
-            {loading && (
+            {/* Live-streaming DM narration */}
+            {streamingText && (
+              <div className="rounded-lg p-4 bg-parchment-900/60 border-l-4 border-arcane-500">
+                <div className="text-xs text-parchment-500 mb-1 font-semibold uppercase">
+                  🗡️ Dungeon Master
+                  <span className="ml-2 text-arcane-400 animate-pulse">typing...</span>
+                </div>
+                <div className="text-parchment-200 whitespace-pre-wrap leading-relaxed">
+                  {streamingText}
+                  <span className="inline-block w-2 h-4 ml-0.5 bg-arcane-400 animate-pulse align-middle" />
+                </div>
+              </div>
+            )}
+            {loading && !streamingText && (
               <div className="text-parchment-400 animate-pulse text-center py-4">
                 🎲 The DM considers your actions...
               </div>
