@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -47,8 +47,19 @@
   - Inventory API endpoints for CRUD operations
   - 36 inventory tests (131 total)
 
+|- [x] **Add spell system** — spell slots, known spells per class
+  - Spells engine with DnD 5e mechanics (cantrips, levels 1-9, schools)
+  - Spellbook: known/prepared spells, slot tracking, casting
+  - Caster profiles: full/half/third casters, known vs prepared styles
+  - Starting spells per class (wizard, sorcerer, cleric, druid, bard, warlock, paladin, ranger)
+  - Spell registry with ~20 common spells (fire bolt, magic missile, fireball, cure wounds, etc.)
+  - Effect resolution: attack-roll, saving-throw, healing, direct damage
+  - Cantrip scaling (extra dice at 5/11/17) and upcasting support
+  - Long rest slot recovery
+  - Spells API: get, initialize, learn, prepare, cast, rest
+  - 65 spell tests (206 total)
+
 ## Next Priorities
-|- [ ] **Add spell system** — spell slots, known spells per class
 |- [ ] **Add XP/leveling** — automatic level-up, stat increases
 |- [ ] **Add map/region navigation** — visual region explorer
 |- [ ] **Add save/load** — proper game persistence
