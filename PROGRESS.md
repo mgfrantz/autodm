@@ -1,0 +1,52 @@
+# PROGRESS.md — DnD LLM Game Development Tracker
+
+## Status: MVP SCAFFOLD COMPLETE ✅
+
+## Completed
+- [x] Project structure created (backend + frontend)
+- [x] DESIGN.md with full architecture
+- [x] AGENTS.md with build priorities
+- [x] Backend: FastAPI app structure
+- [x] Backend: SQLAlchemy models (Character, World, GameSave)
+- [x] Backend: Database setup + session management
+- [x] Backend: Dice engine (d20, advantage/disadvantage, ability mods)
+- [x] Backend: LLM orchestrator (provider-agnostic)
+- [x] Backend: DM prompt templates
+- [x] Backend: Character API (create, list, get, delete)
+- [x] Backend: World API (LLM generation, list, detail)
+- [x] Backend: Game API (create, start, action, state, list)
+- [x] Frontend: Vite + React + TypeScript + TailwindCSS
+- [x] Frontend: Types and API client
+- [x] Frontend: Zustand game store
+- [x] Frontend: Home view (character/game lists)
+- [x] Frontend: Character creation wizard (3-step: identity, abilities, story)
+- [x] Frontend: World generation view (tone selection)
+- [x] Frontend: Game view (DM narration, action input, character sidebar)
+- [x] Dependencies installed (backend pip, frontend npm)
+- [x] Initial git commit
+
+## Next Priorities
+- [ ] **Verify backend boots** — run `python run.py` and check for import errors
+- [ ] **Verify frontend compiles** — run `npm run dev` and check for errors
+- [ ] **Fix any import/type errors** in the scaffold
+- [ ] **Write tests** for dice engine (test_dice.py)
+- [ ] **Write tests** for character creation (test_characters.py)
+- [ ] **Add LLM streaming** — stream DM narration to frontend for real-time feel
+- [ ] **Add combat engine** — initiative tracker, turn order, enemy stats
+- [ ] **Add inventory management** — items, equipment, loot
+- [ ] **Add spell system** — spell slots, known spells per class
+- [ ] **Add XP/leveling** — automatic level-up, stat increases
+- [ ] **Add map/region navigation** — visual region explorer
+- [ ] **Add save/load** — proper game persistence
+- [ ] **Frontend polish** — animations, transitions, responsive design
+- [ ] **Context window management** — smart summarization of story log
+- [ ] **World state persistence** — NPC relationship tracking, faction reputation
+
+## How to Use This File
+When you (the agent) work on the project:
+1. Read this file first
+2. Pick the top unchecked item from "Next Priorities"
+3. Implement it
+4. Test it
+5. Move it to "Completed" and commit
+6. Report what you did
