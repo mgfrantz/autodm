@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -24,11 +24,11 @@
 - [x] Frontend: Game view (DM narration, action input, character sidebar)
 - [x] Dependencies installed (backend pip, frontend npm)
 - [x] Initial git commit
+- [x] **Verify backend boots** — fixed lazy LLM initialization
+- [x] **Verify frontend compiles** — fixed unused TypeScript imports
+- [x] **Fix any import/type errors** — all resolved
 
 ## Next Priorities
-- [ ] **Verify backend boots** — run `python run.py` and check for import errors
-- [ ] **Verify frontend compiles** — run `npm run dev` and check for errors
-- [ ] **Fix any import/type errors** in the scaffold
 - [ ] **Write tests** for dice engine (test_dice.py)
 - [ ] **Write tests** for character creation (test_characters.py)
 - [ ] **Add LLM streaming** — stream DM narration to frontend for real-time feel
