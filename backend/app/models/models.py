@@ -37,6 +37,7 @@ class Character(Base):
     # Story
     backstory = Column(Text, nullable=True)
     inventory = Column(Text, default="[]")  # JSON array
+    spells = Column(Text, default="{}")  # JSON: spellbook data
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
