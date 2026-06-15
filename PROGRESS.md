@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -73,8 +73,23 @@
   - Combat API: enemy kills award XP with auto level-up (HP reflected in-combat)
   - 81 leveling tests (287 total)
 
+- [x] **Add map/region navigation** — visual region explorer + overland travel
+  - `navigation.py` engine: derives a connected region graph from world data
+    (auto-layout coordinates, nearest-neighbour + bridge connectivity, terrain
+    classification by keywords, terrain-based encounter rates)
+  - `WorldMap`/`RegionNode`/`TravelResult` dataclasses; deterministic layout so
+    only player position (current region + visited) is persisted
+  - Overland travel: adjacency validation, distance-based travel hours,
+    random encounters drawn from destination dangers
+  - Navigation API: `GET /navigation/{id}/map`, `/regions`, `POST /travel`
+    (persists position + `location`/`visited_locations` used elsewhere)
+  - Frontend `WorldMap` component: SVG node graph with travel roads, pulsing
+    current location, reachable/visited/unknown states, region detail panel
+  - GameView: Map button + overlay modal; travel outcomes logged to story
+  - World schema: optional region terrain/coordinates/connections for richer maps
+  - 52 navigation tests (339 total)
+
 ## Next Priorities
-- [ ] **Add map/region navigation** — visual region explorer
 - [ ] **Add save/load** — proper game persistence
 - [ ] **Frontend polish** — animations, transitions, responsive design
 - [ ] **Context window management** — smart summarization of story log
