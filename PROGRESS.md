@@ -40,7 +40,7 @@
   - JSON serialization for persistence; 27 combat tests (95 total)
 
 ## Next Priorities
-- [ ] **Combat API integration** — expose combat engine via REST endpoints (start encounter, take turn, attack) + frontend combat tracker UI
+|- [x] **Combat API integration** — expose combat engine via REST endpoints (start encounter, take turn, attack) + frontend combat tracker UI
 - [ ] **Add inventory management** — items, equipment, loot
 - [ ] **Add spell system** — spell slots, known spells per class
 - [ ] **Add XP/leveling** — automatic level-up, stat increases
