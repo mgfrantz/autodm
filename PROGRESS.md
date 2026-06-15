@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -29,9 +29,12 @@
 - [x] **Fix any import/type errors** — all resolved
 - [x] **Write tests** for dice engine — 35 tests, all passing
 - [x] **Write tests** for character creation — 26 tests, all passing
+- [x] **Add LLM streaming** — stream DM narration to frontend for real-time feel
+  - Backend: `stream_narration` generator + SSE endpoints (`/start/stream`, `/action/stream`)
+  - Frontend: SSE client + live typing-cursor DM bubble in GameView
+  - 7 streaming tests passing (68 total)
 
 ## Next Priorities
-- [ ] **Add LLM streaming** — stream DM narration to frontend for real-time feel
 - [ ] **Add combat engine** — initiative tracker, turn order, enemy stats
 - [ ] **Add inventory management** — items, equipment, loot
 - [ ] **Add spell system** — spell slots, known spells per class
