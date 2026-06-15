@@ -28,9 +28,9 @@
 - [x] **Verify frontend compiles** — fixed unused TypeScript imports
 - [x] **Fix any import/type errors** — all resolved
 - [x] **Write tests** for dice engine — 35 tests, all passing
+- [x] **Write tests** for character creation — 26 tests, all passing
 
 ## Next Priorities
-- [ ] **Write tests** for character creation (test_characters.py)
 - [ ] **Add LLM streaming** — stream DM narration to frontend for real-time feel
 - [ ] **Add combat engine** — initiative tracker, turn order, enemy stats
 - [ ] **Add inventory management** — items, equipment, loot
