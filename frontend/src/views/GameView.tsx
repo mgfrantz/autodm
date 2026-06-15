@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn } from '../stores/api'
+import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry, Attack } from '../types'
+import type { StoryEntry, Attack, WorldMapData } from '../types'
 import CombatTracker from '../components/CombatTracker'
+import WorldMap from '../components/WorldMap'
 
 export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
@@ -13,6 +14,9 @@ export default function GameView() {
   const [actionInput, setActionInput] = useState('')
   const [started, setStarted] = useState(false)
   const [streamingText, setStreamingText] = useState('')
+  const [showMap, setShowMap] = useState(false)
+  const [worldMap, setWorldMap] = useState<WorldMapData | null>(null)
+  const [mapLoading, setMapLoading] = useState(false)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Load game state and combat state
@@ -157,6 +161,46 @@ export default function GameView() {
   const isPlayerTurn = combatState?.encounter?.combatants.find(c => c.id === combatState.current_turn_id)?.side === 'player'
   const inCombat = combatState?.in_combat && combatState?.is_active
 
+  const handleOpenMap = async () => {
+    setShowMap(true)
+    setMapLoading(true)
+    try {
+      const mapData = await getWorldMap(gid)
+      setWorldMap(mapData)
+    } catch {
+      setError('Failed to load map')
+      setShowMap(false)
+    }
+    setMapLoading(false)
+  }
+
+  const handleTravel = async (regionId: string) => {
+    if (mapLoading) return
+    setMapLoading(true)
+    try {
+      const result = await travelToRegion(gid, regionId)
+      // Refresh the map + game state.
+      const [mapData, state] = await Promise.all([getWorldMap(gid), getGameState(gid)])
+      setWorldMap(mapData)
+      setGameState(state)
+      // Surface the travel outcome in the story log.
+      if (result.success) {
+        addToStory({
+          role: 'system',
+          content: result.encounter_triggered
+            ? `🗺️ ${result.message}${result.encounter_danger ? ` (${result.encounter_danger})` : ''}`
+            : `🗺️ ${result.message}`,
+          timestamp: new Date().toISOString(),
+        })
+      } else {
+        setError(result.message)
+      }
+    } catch {
+      setError('Travel failed')
+    }
+    setMapLoading(false)
+  }
+
   if (!gameState) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -177,6 +221,14 @@ export default function GameView() {
           <h1 className="font-fantasy text-xl text-parchment-300">
             {gameState.world.name}
           </h1>
+          <button
+            className="btn-primary text-sm px-3 py-1.5"
+            onClick={handleOpenMap}
+            disabled={inCombat}
+            title={inCombat ? 'Cannot travel during combat' : 'Open the world map'}
+          >
+            🗺️ Map
+          </button>
         </div>
 
         {/* Story Log */}
@@ -321,6 +373,40 @@ export default function GameView() {
           />
         )}
       </div>
+
+      {/* World Map overlay */}
+      {showMap && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => !mapLoading && setShowMap(false)}
+        >
+          <div
+            className="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🗺️ World Map</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowMap(false)}
+                disabled={mapLoading}
+              >
+                ×
+              </button>
+            </div>
+            {mapLoading && !worldMap ? (
+              <div className="text-parchment-400 animate-pulse text-center py-12">Charting the realm…</div>
+            ) : worldMap ? (
+              <WorldMap map={worldMap} traveling={mapLoading} onTravel={handleTravel} />
+            ) : (
+              <div className="text-parchment-500 text-center py-8">No map data available.</div>
+            )}
+            <p className="text-xs text-parchment-600 mt-3 text-center">
+              Click a glowing region to travel. Random encounters may occur en route.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

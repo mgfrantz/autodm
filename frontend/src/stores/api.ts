@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -227,5 +227,17 @@ export const makeAttack = async (
 
 export const endCombat = async (gameId: number) => {
   const res = await API.post(`/game/${gameId}/combat/end`);
+  return res.data;
+};
+
+// === Navigation / Map ===
+
+export const getWorldMap = async (gameId: number): Promise<WorldMapData> => {
+  const res = await API.get<WorldMapData>(`/navigation/${gameId}/map`);
+  return res.data;
+};
+
+export const travelToRegion = async (gameId: number, regionId: string): Promise<TravelResult> => {
+  const res = await API.post<TravelResult>(`/navigation/${gameId}/travel`, { region_id: regionId });
   return res.data;
 };

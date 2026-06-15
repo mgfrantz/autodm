@@ -126,3 +126,39 @@ export interface CombatResult {
   combat_active: boolean;
   winner?: 'player' | 'enemy' | null;
 }
+
+// === Navigation / Map Types ===
+
+export interface RegionNode {
+  id: string;
+  name: string;
+  description: string;
+  terrain: string;
+  icon: string;
+  settlements: string[];
+  dangers: string[];
+  coordinates: [number, number];
+  connections: string[];
+  /** Present in the /regions list response. */
+  visited?: boolean;
+  reachable?: boolean;
+  current?: boolean;
+}
+
+export interface WorldMapData {
+  current_region_id: string;
+  current_region: RegionNode;
+  visited_region_ids: string[];
+  reachable_region_ids: string[];
+  regions: RegionNode[];
+}
+
+export interface TravelResult {
+  success: boolean;
+  message: string;
+  from_region_id: string | null;
+  to_region: RegionNode | null;
+  travel_hours: number;
+  encounter_triggered: boolean;
+  encounter_danger: string | null;
+}

@@ -39,13 +39,16 @@ WORLD_SCHEMA = {
         "regions": {
             "type": "array",
             "items": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "description": {"type": "string"},
-                    "settlements": {"type": "array", "items": {"type": "string"}},
-                    "dangers": {"type": "array", "items": {"type": "string"}},
-                },
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "terrain": {"type": "string"},
+                "settlements": {"type": "array", "items": {"type": "string"}},
+                "dangers": {"type": "array", "items": {"type": "string"}},
+                "coordinates": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2, "description": "Normalized map position [x, y] in 0..1"},
+                "connections": {"type": "array", "items": {"type": "string"}, "description": "Names of adjacent regions reachable by travel"},
+            },
             },
         },
         "campaign_arc": {
