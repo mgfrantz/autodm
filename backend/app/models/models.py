@@ -34,6 +34,10 @@ class Character(Base):
     armor_class = Column(Integer, default=10)
     speed = Column(Integer, default=30)
 
+    # Progression
+    xp = Column(Integer, default=0)
+    asi_used = Column(Integer, default=0)  # Ability Score Improvement instances spent
+
     # Story
     backstory = Column(Text, nullable=True)
     inventory = Column(Text, default="[]")  # JSON array

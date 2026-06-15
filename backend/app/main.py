@@ -4,7 +4,7 @@ FastAPI application entry point for the DnD LLM Game.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import characters, combat, game, world, inventory, spells
+from app.api import characters, combat, game, world, inventory, spells, leveling
 
 app = FastAPI(
     title="DnD LLM Game",
@@ -36,6 +36,7 @@ async def health():
 app.include_router(characters.router, prefix="/api/characters", tags=["characters"])
 app.include_router(inventory.router, prefix="/api/characters", tags=["inventory"])
 app.include_router(spells.router, prefix="/api/characters", tags=["spells"])
+app.include_router(leveling.router, prefix="/api/characters", tags=["leveling"])
 app.include_router(combat.router, prefix="/api/game", tags=["combat"])
 app.include_router(game.router, prefix="/api/game", tags=["game"])
 app.include_router(world.router, prefix="/api/world", tags=["world"])

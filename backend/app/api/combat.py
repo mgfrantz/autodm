@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from app.models.database import get_db
 from app.models.models import GameSave, Character
 from app.engine.combat import Encounter, Combatant, Attack, AttackResult
+from app.engine.dice import ability_modifier
+from app.engine.leveling import apply_xp
 
 router = APIRouter()
 
@@ -216,8 +218,29 @@ def make_attack(game_id: int, request: AttackRequest, db: Session = Depends(get_
     if target.id == "player":
         save.character.current_hp = target.current_hp
     elif attacker.id == "player" and not target.is_alive:
-        # Grant XP for kill (simplified: 50 XP per enemy)
-        save.xp = (save.xp or 0) + 50
+        # Grant XP for the kill (simplified: 50 XP per enemy) and auto-level.
+        xp_award = 50
+        char = save.character
+        con_mod = ability_modifier(char.constitution)
+        levelup = apply_xp(
+            char_class=char.char_class,
+            level=char.level,
+            xp_before=char.xp or 0,
+            xp_after=(char.xp or 0) + xp_award,
+            con_mod=con_mod,
+            asi_used=char.asi_used or 0,
+        )
+        char.xp = levelup.xp
+        # Keep the game-save XP mirrored for backward compatibility.
+        save.xp = (save.xp or 0) + xp_award
+        if levelup.leveled_up:
+            char.level = levelup.to_level
+            if levelup.hp_gained:
+                char.max_hp = (char.max_hp or 0) + levelup.hp_gained
+                char.current_hp = (char.current_hp or 0) + levelup.hp_gained
+                # Reflect the HP increase on the in-combat player combatant too.
+                attacker.max_hp = char.max_hp
+                attacker.current_hp = char.current_hp
 
     save.game_state = json.dumps(game_state)
     save.updated_at = datetime.utcnow()

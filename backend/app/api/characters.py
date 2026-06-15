@@ -46,6 +46,8 @@ class CharacterResponse(BaseModel):
     current_hp: int
     armor_class: int
     speed: int
+    xp: int
+    asi_used: int
     backstory: str | None
 
     class Config:
