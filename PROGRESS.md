@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -59,13 +59,26 @@
   - Spells API: get, initialize, learn, prepare, cast, rest
   - 65 spell tests (206 total)
 
+- [x] **Add XP/leveling** — automatic level-up, stat increases
+  - `leveling.py` engine: DnD 5e XP threshold table (levels 1-20),
+    level-for-XP resolution, level progress (XP into level, % to next)
+  - HP growth (fixed-average hit die + CON mod per level, optional rolled);
+    class hit-die table
+  - Ability Score Improvements: standard 4/8/12/16/19, Fighter +6/+14,
+    Rogue +10; ASI instance = 2 points (one +2 or two +1s), capped at 20
+  - Class-feature milestone table (core 12 classes) for narration/UI
+  - Leveling API: progress, award-xp (auto level-up + HP), apply-asi
+    (+CON retroactively raises max HP), features
+  - Character model: xp + asi_used columns; surfaced in CharacterResponse
+  - Combat API: enemy kills award XP with auto level-up (HP reflected in-combat)
+  - 81 leveling tests (287 total)
+
 ## Next Priorities
-|- [ ] **Add XP/leveling** — automatic level-up, stat increases
-|- [ ] **Add map/region navigation** — visual region explorer
-|- [ ] **Add save/load** — proper game persistence
-|- [ ] **Frontend polish** — animations, transitions, responsive design
-|- [ ] **Context window management** — smart summarization of story log
-|- [ ] **World state persistence** — NPC relationship tracking, faction reputation
+- [ ] **Add map/region navigation** — visual region explorer
+- [ ] **Add save/load** — proper game persistence
+- [ ] **Frontend polish** — animations, transitions, responsive design
+- [ ] **Context window management** — smart summarization of story log
+- [ ] **World state persistence** — NPC relationship tracking, faction reputation
 
 ## How to Use This File
 When you (the agent) work on the project:
