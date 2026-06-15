@@ -19,11 +19,18 @@ class LLMOrchestrator:
     """Manages all LLM interactions for the game."""
 
     def __init__(self):
-        self.client = AsyncOpenAI(
-            api_key=config.api_key,
-            base_url=config.base_url if config.base_url else None,
-        )
+        self._client: Optional[AsyncOpenAI] = None
         self.model = config.model
+
+    @property
+    def client(self) -> AsyncOpenAI:
+        """Lazy-initialize the LLM client on first access."""
+        if self._client is None:
+            self._client = AsyncOpenAI(
+                api_key=config.api_key,
+                base_url=config.base_url if config.base_url else None,
+            )
+        return self._client
 
     async def generate_structured(
         self,
@@ -80,5 +87,23 @@ class LLMOrchestrator:
         return response.choices[0].message.content
 
 
-# Singleton
-orchestrator = LLMOrchestrator()
+# Lazy singleton - initialized on first use
+_orchestrator_instance: Optional[LLMOrchestrator] = None
+
+
+def get_orchestrator() -> LLMOrchestrator:
+    """Get the singleton LLM orchestrator (lazy-initialized)."""
+    global _orchestrator_instance
+    if _orchestrator_instance is None:
+        _orchestrator_instance = LLMOrchestrator()
+    return _orchestrator_instance
+
+
+# Backward compatibility - importable as a property that calls get_orchestrator()
+class _OrchestratorProxy:
+    """Proxy that lazily initializes the orchestrator when accessed."""
+    def __getattr__(self, name: str) -> Any:
+        return getattr(get_orchestrator(), name)
+
+
+orchestrator = _OrchestratorProxy()

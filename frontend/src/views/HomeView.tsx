@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { listCharacters, listWorlds, listGames } from '../stores/api'
-import type { Character, World } from '../types'
+import type { Character } from '../types'
 
 export default function HomeView() {
   const [characters, setCharacters] = useState<Character[]>([])
-  const [worlds, setWorlds] = useState<World[]>([])
+  const [_worlds, setWorlds] = useState<any[]>([])
   const [games, setGames] = useState<any[]>([])
 
   useEffect(() => {
