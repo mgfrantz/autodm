@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -240,4 +240,25 @@ export const getWorldMap = async (gameId: number): Promise<WorldMapData> => {
 export const travelToRegion = async (gameId: number, regionId: string): Promise<TravelResult> => {
   const res = await API.post<TravelResult>(`/navigation/${gameId}/travel`, { region_id: regionId });
   return res.data;
+};
+
+// === Save / Load ===
+
+export const createSaveSlot = async (gameId: number, slotName: string): Promise<SaveSlotSummary> => {
+  const res = await API.post<SaveSlotSummary>(`/game/${gameId}/save`, { slot_name: slotName });
+  return res.data;
+};
+
+export const listSaveSlots = async (gameId: number): Promise<SaveSlotSummary[]> => {
+  const res = await API.get<SaveSlotSummary[]>(`/game/${gameId}/saves`);
+  return res.data;
+};
+
+export const loadSaveSlot = async (gameId: number, slotId: number): Promise<LoadSaveResult> => {
+  const res = await API.post<LoadSaveResult>(`/game/${gameId}/load/${slotId}`);
+  return res.data;
+};
+
+export const deleteSaveSlot = async (gameId: number, slotId: number): Promise<void> => {
+  await API.delete(`/game/${gameId}/saves/${slotId}`);
 };

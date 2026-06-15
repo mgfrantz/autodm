@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion } from '../stores/api'
+import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry, Attack, WorldMapData } from '../types'
+import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary } from '../types'
 import CombatTracker from '../components/CombatTracker'
 import WorldMap from '../components/WorldMap'
 
@@ -10,13 +10,17 @@ export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
   const gid = parseInt(gameId || '0')
 
-  const { gameState, story, combatState, setGameState, setCombatState, addToStory, loading, setLoading, error, setError } = useGameStore()
+  const { gameState, story, combatState, setGameState, setCombatState, addToStory, setStory, loading, setLoading, error, setError } = useGameStore()
   const [actionInput, setActionInput] = useState('')
   const [started, setStarted] = useState(false)
   const [streamingText, setStreamingText] = useState('')
   const [showMap, setShowMap] = useState(false)
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null)
   const [mapLoading, setMapLoading] = useState(false)
+  const [showSaves, setShowSaves] = useState(false)
+  const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>([])
+  const [newSaveName, setNewSaveName] = useState('')
+  const [saveBusy, setSaveBusy] = useState(false)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Load game state and combat state
@@ -201,6 +205,62 @@ export default function GameView() {
     setMapLoading(false)
   }
 
+  const refreshSaves = async () => {
+    try {
+      const slots = await listSaveSlots(gid)
+      setSaveSlots(slots)
+    } catch {
+      setError('Failed to load saves')
+    }
+  }
+
+  const handleOpenSaves = async () => {
+    setShowSaves(true)
+    await refreshSaves()
+  }
+
+  const handleCreateSave = async () => {
+    const name = newSaveName.trim() || `Save ${new Date().toLocaleString()}`
+    setSaveBusy(true)
+    try {
+      await createSaveSlot(gid, name)
+      setNewSaveName('')
+      await refreshSaves()
+    } catch {
+      setError('Failed to create save')
+    }
+    setSaveBusy(false)
+  }
+
+  const handleLoadSave = async (slotId: number) => {
+    setSaveBusy(true)
+    try {
+      await loadSaveSlot(gid, slotId)
+      // Reload the full game + combat state after restoring.
+      const [state, combat] = await Promise.all([getGameState(gid), getCombatState(gid)])
+      setGameState(state)
+      setCombatState(combat)
+      // Reset the story panel with the restored log.
+      setStory([...state.story_log])
+      setShowSaves(false)
+      addToStory({ role: 'system', content: '💾 Game restored from save.', timestamp: new Date().toISOString() })
+    } catch {
+      setError('Failed to load save')
+    }
+    setSaveBusy(false)
+  }
+
+  const handleDeleteSave = async (slotId: number) => {
+    setSaveBusy(true)
+    try {
+      await deleteSaveSlot(gid, slotId)
+      await refreshSaves()
+    } catch {
+      setError('Failed to delete save')
+    }
+    setSaveBusy(false)
+  }
+
   if (!gameState) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -221,14 +281,23 @@ export default function GameView() {
           <h1 className="font-fantasy text-xl text-parchment-300">
             {gameState.world.name}
           </h1>
-          <button
-            className="btn-primary text-sm px-3 py-1.5"
-            onClick={handleOpenMap}
-            disabled={inCombat}
-            title={inCombat ? 'Cannot travel during combat' : 'Open the world map'}
-          >
-            🗺️ Map
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={handleOpenSaves}
+              title="Save or load game"
+            >
+              💾 Save
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={handleOpenMap}
+              disabled={inCombat}
+              title={inCombat ? 'Cannot travel during combat' : 'Open the world map'}
+            >
+              🗺️ Map
+            </button>
+          </div>
         </div>
 
         {/* Story Log */}
@@ -403,6 +472,89 @@ export default function GameView() {
             )}
             <p className="text-xs text-parchment-600 mt-3 text-center">
               Click a glowing region to travel. Random encounters may occur en route.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Save / Load overlay */}
+      {showSaves && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => !saveBusy && setShowSaves(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">💾 Save & Load</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowSaves(false)}
+                disabled={saveBusy}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Create new save */}
+            <div className="flex gap-2 mb-4">
+              <input
+                className="input-field flex-1"
+                value={newSaveName}
+                onChange={(e) => setNewSaveName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateSave()}
+                placeholder="Save name (e.g., 'Before the dragon')"
+                disabled={saveBusy}
+              />
+              <button
+                className="btn-primary px-4"
+                onClick={handleCreateSave}
+                disabled={saveBusy}
+              >
+                Save
+              </button>
+            </div>
+
+            {/* Existing saves */}
+            {saveSlots.length === 0 ? (
+              <div className="text-parchment-500 text-center py-8">No saves yet. Create one above.</div>
+            ) : (
+              <div className="space-y-2">
+                {saveSlots.map((slot) => (
+                  <div
+                    key={slot.id}
+                    className="flex items-center justify-between bg-parchment-900/60 rounded-lg p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-parchment-200 font-semibold truncate">{slot.slot_name}</div>
+                      <div className="text-xs text-parchment-500">
+                        {slot.created_at ? new Date(slot.created_at).toLocaleString() : ''} · Lv {slot.character_level ?? '?'} · {slot.character_hp ?? '?'}/{slot.character_max_hp ?? '?'} HP · Act {slot.current_act}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0 ml-2">
+                      <button
+                        className="text-xs bg-arcane-700 hover:bg-arcane-600 text-parchment-200 px-3 py-1 rounded transition-colors disabled:opacity-50"
+                        onClick={() => handleLoadSave(slot.id)}
+                        disabled={saveBusy}
+                      >
+                        Load
+                      </button>
+                      <button
+                        className="text-xs bg-blood-800 hover:bg-blood-700 text-parchment-200 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                        onClick={() => handleDeleteSave(slot.id)}
+                        disabled={saveBusy}
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-parchment-600 mt-3 text-center">
+              Loading a save rewinds your character, inventory, and story to that moment.
             </p>
           </div>
         </div>

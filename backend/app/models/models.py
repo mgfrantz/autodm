@@ -62,7 +62,7 @@ class World(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationship
-    saves = relationship("GameSave", back_populates="world")
+    world_saves = relationship("GameSave", back_populates="world")
 
 
 class GameSave(Base):
@@ -87,4 +87,36 @@ class GameSave(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     character = relationship("Character", back_populates="saves")
-    world = relationship("World", back_populates="saves")
+    world = relationship("World", back_populates="world_saves")
+    save_slots = relationship(
+        "SaveSlot",
+        back_populates="game_save",
+        cascade="all, delete-orphan",
+        order_by="SaveSlot.created_at.desc()",
+    )
+
+
+class SaveSlot(Base):
+    """A named save-game snapshot capturing the full game state at a moment.
+
+    Unlike the always-current :class:`GameSave`, a ``SaveSlot`` is a frozen
+    point-in-time snapshot that includes a copy of the character's *mutable*
+    state (HP, XP, inventory, spells, …). Loading a slot restores that state
+    back onto the live character and game save, letting the player rewind.
+    """
+    __tablename__ = "save_slots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_save_id = Column(Integer, ForeignKey("game_saves.id"), nullable=False, index=True)
+    slot_name = Column(String(100), nullable=False)
+
+    # Frozen copies of the live state at save time.
+    character_snapshot = Column(Text, default="{}")  # JSON: mutable character fields
+    game_state = Column(Text, default="{}")          # JSON: world/quest/location state
+    story_log = Column(Text, default="[]")           # JSON array of narration entries
+    current_act = Column(Integer, default=1)
+    xp = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    game_save = relationship("GameSave", back_populates="save_slots")

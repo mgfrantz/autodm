@@ -162,3 +162,29 @@ export interface TravelResult {
   encounter_triggered: boolean;
   encounter_danger: string | null;
 }
+
+// === Save / Load Types ===
+
+export interface SaveSlotSummary {
+  id: number;
+  game_save_id: number;
+  slot_name: string;
+  created_at: string | null;
+  current_act: number;
+  character_level: number | null;
+  character_hp: number | null;
+  character_max_hp: number | null;
+  xp: number;
+}
+
+export interface LoadSaveResult {
+  message: string;
+  slot_name: string;
+  restored_character: {
+    level: number | null;
+    current_hp: number | null;
+    max_hp: number | null;
+    xp: number | null;
+  };
+  story_log_entries: number;
+}
