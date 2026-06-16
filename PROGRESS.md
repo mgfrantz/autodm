@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ TEST SUITE FULLY GREEN (504 passing, 0 failing) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ TEST SUITE FULLY GREEN (592 passing, 0 failing) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -382,13 +382,53 @@
     removed stale committed `test_multiclass.db`.
   - Total: **504 tests, all passing, stable across repeated full-suite runs**
 
+- [x] **Add conditions/status-effects engine** — full DnD 5e condition mechanics in combat
+  - `conditions.py` engine: all 14 core conditions (blinded, charmed, deafened,
+    frightened, grappled, incapacitated, invisible, paralyzed, petrified,
+    poisoned, prone, restrained, stunned, unconscious) with PHB-accurate rules
+  - Mechanical effects modelled: own attack advantage/disadvantage, defense
+    advantage/disadvantage, incapacitation, melee auto-crits
+    (paralyzed/petrified/unconscious), damage resistance (petrified), speed-zero,
+    and prone's melee-vs-ranged nuance
+  - Timed durations (in rounds) with `tick_conditions` auto-expiry; permanent
+    conditions when no duration given
+  - Combat integration: `resolve_attack` applies condition-driven
+    advantage/disadvantage (adv+disadv cancel), fixes used-die crit/fumble
+    detection, applies melee auto-crits and damage halving; `next_turn` skips
+    incapacitated combatants and ticks timed conditions each new round
+  - `Attack` gains a `ranged` flag; `Combatant` gains `condition_durations`,
+    `is_incapacitated`/`effective_speed` props, and typed `add/remove/has_condition`
+    helpers — all backward-compatible serialization (legacy dicts still load)
+  - Combat API: `GET /combat/conditions`, `POST /combat/conditions/{id}`,
+    `DELETE /combat/conditions/{id}` (apply/remove, optional duration)
+  - Frontend: `CombatTracker` color-codes condition badges by severity
+    (incapacitating=red, harmful=amber, beneficial=arcane)
+  - 88 new tests (engine queries, management/durations, resolve_attack
+    integration via roll_d20 spy, next_turn skipping/ticking, serialization
+    round-trips, and REST API) — full suite now **592 passing, 0 failing**
+
 ## Next Priorities
-- [ ] **[FUTURE FEATURE]** — All core MVP and post-MVP features complete; test
-  suite fully green. Remaining DESIGN.md "Future" candidates (not yet started,
-  require new infrastructure/3rd-party services):
+- [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
+  candidates that require new infrastructure/3rd-party services (not yet started):
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
+
+- [ ] **[SELF-CONTAINED ENGINE ENHANCEMENTS]** — No external services required;
+  pick the top one each run:
+  - **Rest system** — short rest (spend hit dice to heal, recover some
+    resources) and long rest (full HP, recover spell slots + abilities,
+    clear short-term conditions like poisoned). Ties together the leveling
+    hit-die table, the spell slot recovery, and the new condition durations.
+  - **Saving throw engine** — per-ability saves (Str/Dex/Con/Int/Wis/Cha) with
+    class proficiency tracking; conditions already model auto-fail
+    (paralyzed/petrified/unconscious Str+Dex) and disadvantage (restrained Dex),
+    so a save engine would let spells/conditions resolve against targets.
+  - **Encounter difficulty / CR balancing** — challenge-rating XP budgets and
+    difficulty thresholds (easy/medium/hard/deadly) for the DM/world generator
+    to scale enemy counts to party level.
+  - **Expand content registries** — more spells, feats, and monster/enemy
+    templates (the combat engine currently builds attacks ad hoc per class).
 
 ## How to Use This File
 When you (the agent) work on the project:
