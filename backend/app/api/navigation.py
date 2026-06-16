@@ -48,13 +48,16 @@ def list_regions(game_id: int, db: Session = Depends(get_db)):
     """Return the regions of this game's world with visitation status."""
     _, world_map = _load_map(db, game_id)
     reachable = set(world_map.reachable_region_ids())
+    discovered = set(world_map.discovered_region_ids())
     return {
         "current_region_id": world_map.current_region_id,
+        "discovered_region_ids": world_map.discovered_region_ids(),
         "regions": [
             {
                 **node.to_dict(),
                 "visited": world_map.is_visited(node.id),
                 "reachable": node.id in reachable,
+                "discovered": node.id in discovered,
                 "current": node.id == world_map.current_region_id,
             }
             for node in world_map.regions.values()

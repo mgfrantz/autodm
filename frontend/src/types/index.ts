@@ -129,12 +129,24 @@ export interface CombatResult {
 
 // === Navigation / Map Types ===
 
+export interface TerrainVisual {
+  /** Base fill color (hex). */
+  fill: string;
+  /** Lighter center color for the radial-gradient highlight (hex). */
+  accent: string;
+  /** Border color (hex). */
+  stroke: string;
+  /** Decorative texture pattern id ('trees' | 'peaks' | 'waves' | …). */
+  pattern: string;
+}
+
 export interface RegionNode {
   id: string;
   name: string;
   description: string;
   terrain: string;
   icon: string;
+  visual: TerrainVisual;
   settlements: string[];
   dangers: string[];
   coordinates: [number, number];
@@ -143,13 +155,19 @@ export interface RegionNode {
   visited?: boolean;
   reachable?: boolean;
   current?: boolean;
+  /** Fog-of-war: visible to the player (visited or adjacent to a visited region). */
+  discovered?: boolean;
 }
 
 export interface WorldMapData {
   current_region_id: string;
   current_region: RegionNode;
   visited_region_ids: string[];
+  /** Regions revealed by the fog-of-war (visited + their neighbours). */
+  discovered_region_ids: string[];
   reachable_region_ids: string[];
+  /** Route geometry per reachable region id: array of [x, y] normalized points. */
+  routes: Record<string, [number, number][]>;
   regions: RegionNode[];
 }
 

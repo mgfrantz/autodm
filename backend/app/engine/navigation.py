@@ -59,6 +59,31 @@ TERRAIN_ICON: dict[str, str] = {
     "plains": "🌾",
 }
 
+# Visual rendering palette per terrain. The frontend uses these to paint each
+# region node with a terrain-tinted gradient + texture pattern, turning the flat
+# node-graph into a real "rendered" fantasy map. All colors are dark-theme hex.
+#   fill    – base fill color
+#   accent  – lighter center color for the radial gradient (highlight)
+#   stroke  – border color
+#   pattern – decorative texture type rendered over the node (svg pattern id)
+TERRAIN_VISUALS: dict[str, dict] = {
+    "forest":     {"fill": "#2d5a3d", "accent": "#4f8a5e", "stroke": "#1c3a28", "pattern": "trees"},
+    "mountain":   {"fill": "#6b5d4a", "accent": "#9a8a6e", "stroke": "#3d3528", "pattern": "peaks"},
+    "coast":      {"fill": "#2a4a6b", "accent": "#4f7fa3", "stroke": "#172e45", "pattern": "waves"},
+    "swamp":      {"fill": "#3d4a2d", "accent": "#5e6e3a", "stroke": "#232b18", "pattern": "ripples"},
+    "desert":     {"fill": "#a8895a", "accent": "#cba86a", "stroke": "#6e5838", "pattern": "dunes"},
+    "tundra":     {"fill": "#8a9bb0", "accent": "#c2d2e2", "stroke": "#5a6a80", "pattern": "snow"},
+    "underground":{"fill": "#3a2d4a", "accent": "#5e4a72", "stroke": "#241c30", "pattern": "cracks"},
+    "city":       {"fill": "#6b4a3d", "accent": "#9a6e54", "stroke": "#3d2a22", "pattern": "roofs"},
+    "plains":     {"fill": "#7a8a4a", "accent": "#a4b46a", "stroke": "#4d582e", "pattern": "grass"},
+}
+_DEFAULT_VISUAL = {"fill": "#5a5247", "accent": "#7a7060", "stroke": "#332e27", "pattern": "grass"}
+
+
+def terrain_visual(terrain: str) -> dict:
+    """Return the rendering palette for a terrain type (with safe defaults)."""
+    return TERRAIN_VISUALS.get(terrain, dict(_DEFAULT_VISUAL))
+
 
 def classify_terrain(text: str) -> str:
     """Infer a terrain type from a region's name + description."""
@@ -132,6 +157,7 @@ class RegionNode:
             "description": self.description,
             "terrain": self.terrain,
             "icon": self.icon,
+            "visual": terrain_visual(self.terrain),
             "settlements": self.settlements,
             "dangers": self.dangers,
             "coordinates": [round(self.coordinates[0], 4), round(self.coordinates[1], 4)],
@@ -376,6 +402,42 @@ class WorldMap:
     def can_travel(self, region_id: str) -> bool:
         return region_id in self.current_region().connections and region_id in self.regions
 
+    def discovered_region_ids(self) -> list[str]:
+        """Ids of regions visible to the player for fog-of-war rendering.
+
+        A region is "discovered" if the player has visited it OR it is directly
+        adjacent to a visited region (the classic "you can see the next area on
+        the horizon" reveal). Everything else stays shrouded in fog. The current
+        region and its immediate neighbours are always discovered.
+        """
+        discovered: set[str] = set()
+        # Visited regions are always revealed.
+        for rid in self.visited_region_ids:
+            if rid in self.regions:
+                discovered.add(rid)
+        # Plus every neighbour of a visited region.
+        for rid in list(discovered):
+            for conn in self.regions[rid].connections:
+                if conn in self.regions:
+                    discovered.add(conn)
+        return sorted(discovered)
+
+    def is_discovered(self, region_id: str) -> bool:
+        return region_id in self.discovered_region_ids()
+
+    def travel_route(self, region_id: str) -> list[list[float]] | None:
+        """Geometry (list of [x, y] coordinates) of the route from the current
+        region to ``region_id``, if travel is possible. Currently a straight
+        segment; returned as a list so the frontend can animate multi-point paths
+        if routes become curved/waypointed later. Returns ``None`` if the
+        destination is not reachable in one hop.
+        """
+        if not self.can_travel(region_id):
+            return None
+        frm = self.current_region().coordinates
+        to = self.regions[region_id].coordinates
+        return [[round(frm[0], 4), round(frm[1], 4)], [round(to[0], 4), round(to[1], 4)]]
+
     # -- actions ---------------------------------------------------------------
 
     def travel(self, region_id: str, rng: random.Random | None = None) -> TravelResult:
@@ -467,10 +529,15 @@ class WorldMap:
         }
 
     def to_dict(self) -> dict:
+        reachable = self.reachable_region_ids()
         return {
             "current_region_id": self.current_region_id,
             "current_region": self.current_region().to_dict(),
             "visited_region_ids": list(self.visited_region_ids),
-            "reachable_region_ids": self.reachable_region_ids(),
+            "discovered_region_ids": self.discovered_region_ids(),
+            "reachable_region_ids": reachable,
+            # Straight-line route geometry for each reachable destination, so the
+            # frontend can draw/animate the travel path without recomputing it.
+            "routes": {rid: self.travel_route(rid) for rid in reachable},
             "regions": [node.to_dict() for node in self.regions.values()],
         }

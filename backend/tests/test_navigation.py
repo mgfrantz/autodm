@@ -281,6 +281,94 @@ class TestWorldMapConstruction:
         assert wm.current_region_id in gs["visited_regions"]
 
 
+# --- Visual rendering & fog of war -------------------------------------------
+
+class TestVisualRendering:
+    def test_terrain_visual_for_each_terrain(self):
+        from app.engine.navigation import terrain_visual, TERRAIN_VISUALS
+        for terrain in ("underground", "tundra", "desert", "swamp", "mountain",
+                        "coast", "forest", "city", "plains"):
+            v = terrain_visual(terrain)
+            assert v is TERRAIN_VISUALS[terrain]
+            assert {"fill", "accent", "stroke", "pattern"} <= set(v)
+
+    def test_terrain_visual_default(self):
+        from app.engine.navigation import terrain_visual
+        v = terrain_visual("nonexistent-terrain")
+        assert {"fill", "accent", "stroke", "pattern"} <= set(v)
+
+    def test_region_to_dict_includes_visual(self):
+        node = RegionNode.from_raw({"name": "Dark Forest", "description": "wood"})
+        d = node.to_dict()
+        assert "visual" in d
+        assert d["visual"]["fill"]
+        assert d["visual"]["pattern"] == "trees"  # forest -> trees pattern
+
+    def test_map_to_dict_includes_discovered_and_routes(self):
+        wm = WorldMap.from_world_data(_world_data(), {})
+        d = wm.to_dict()
+        assert "discovered_region_ids" in d
+        assert "routes" in d
+        assert isinstance(d["discovered_region_ids"], list)
+        assert isinstance(d["routes"], dict)
+
+    def test_routes_keys_match_reachable(self):
+        wm = WorldMap.from_world_data(_world_data(), {})
+        d = wm.to_dict()
+        assert set(d["routes"]) == set(d["reachable_region_ids"])
+
+    def test_discovered_includes_current_and_neighbours(self):
+        wm = WorldMap.from_world_data(_world_data(), {})
+        discovered = set(wm.discovered_region_ids())
+        # Current region is always discovered.
+        assert wm.current_region_id in discovered
+        # All immediate neighbours of the (visited) current region are discovered.
+        for conn in wm.current_region().connections:
+            assert conn in discovered
+
+    def test_discovered_grows_after_travel(self):
+        wm = WorldMap.from_world_data(_world_data(), {})
+        before = set(wm.discovered_region_ids())
+        dest = wm.reachable_region_ids()[0]
+        wm.travel(dest, rng=random.Random(0))
+        after = set(wm.discovered_region_ids())
+        assert before <= after
+        assert dest in after
+        # New region's neighbours should now be revealed too.
+        for conn in wm.regions[dest].connections:
+            assert conn in after
+
+    def test_distant_region_not_discovered(self):
+        wm = WorldMap.from_world_data(_world_data(), {})
+        discovered = set(wm.discovered_region_ids())
+        non_adjacent = [
+            rid for rid in wm.regions
+            if rid not in discovered
+        ]
+        if non_adjacent:
+            assert not wm.is_discovered(non_adjacent[0])
+
+    def test_travel_route_reachable(self):
+        wm = WorldMap.from_world_data(_world_data(), {})
+        dest = wm.reachable_region_ids()[0]
+        route = wm.travel_route(dest)
+        assert route is not None
+        assert len(route) == 2
+        # First point is the current region, last is the destination.
+        frm = wm.current_region().coordinates
+        to = wm.regions[dest].coordinates
+        assert route[0] == [round(frm[0], 4), round(frm[1], 4)]
+        assert route[1] == [round(to[0], 4), round(to[1], 4)]
+
+    def test_travel_route_non_reachable_is_none(self):
+        wm = WorldMap.from_world_data(_world_data(), {})
+        non_adjacent = [rid for rid in wm.regions
+                        if rid not in wm.current_region().connections
+                        and rid != wm.current_region_id]
+        assert non_adjacent
+        assert wm.travel_route(non_adjacent[0]) is None
+
+
 # --- Travel mechanics ---------------------------------------------------------
 
 class TestTravel:
@@ -411,6 +499,11 @@ class TestNavigationAPI:
         assert len(data["regions"]) == 5
         assert "reachable_region_ids" in data
         assert data["reachable_region_ids"], "Starting region should have neighbours"
+        # Visual rendering fields.
+        assert "discovered_region_ids" in data
+        assert "routes" in data
+        assert data["current_region"]["visual"]["fill"]
+        assert "visual" in data["regions"][0]
 
     def test_list_regions(self, client: TestClient, game_save):
         r = client.get(f"/api/navigation/{game_save.id}/regions")
@@ -422,6 +515,9 @@ class TestNavigationAPI:
         assert current[0]["visited"] is True
         reachable = [rg for rg in data["regions"] if rg["reachable"]]
         assert reachable, "Some regions should be reachable"
+        # Fog-of-war: discovered set present and current region is discovered.
+        assert "discovered_region_ids" in data
+        assert current[0]["discovered"] is True
 
     def test_travel_endpoint(self, client: TestClient, game_save):
         # First get the map to find a reachable region.
