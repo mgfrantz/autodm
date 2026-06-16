@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -133,7 +133,7 @@
   - Migration script for new column
   - 16 context management tests (373 total)
 
-||- [x] **Add world state persistence** — NPC relationship tracking, faction reputation
+|||- [x] **Add world state persistence** — NPC relationship tracking, faction reputation
   - `NPCRelationship` dataclass: attitude (hostile/devoted), trust (-100 to 100), interaction history
   - `FactionReputation` dataclass: standing (hated/revered), reputation, quest completion/failure tracking
   - `WorldState` manager: persist in game_state JSON, backward compatible
@@ -141,6 +141,16 @@
   - All changes persist to game_state JSON field in GameSave
   - 41 new tests (29 engine + 12 API), all passing
   - Total: 414 tests
+
+|||- [x] **Add homebrew content support** — custom items creation and management
+  - `HomebrewItem` database model: stores custom items with full stats JSON
+  - API endpoints: create, list, get, update, delete custom items
+  - Supports all item types: weapons, armor, potions, scrolls, misc, quest items
+  - Validation: item type, rarity, armor type via existing enums
+  - Creator tracking: optional creator_name field for attribution
+  - Conversion: homebrew items convert to `Item` objects for use in-game
+  - 11 new API tests, all passing
+  - Total: 425 tests
 
 ## Next Priorities
 - [ ] **[NEW FEATURE TO BE DEFINED]**
