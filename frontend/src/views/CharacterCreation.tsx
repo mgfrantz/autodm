@@ -49,14 +49,14 @@ export default function CharacterCreation() {
   ]
 
   return (
-    <div className="max-w-2xl mx-auto p-8">
-      <h1 className="font-fantasy text-4xl text-parchment-200 mb-2">Create Your Hero</h1>
+    <div className="max-w-2xl mx-auto p-4 sm:p-8 view-enter">
+      <h1 className="font-fantasy text-3xl sm:text-4xl text-parchment-200 mb-2 animate-slide-up">Create Your Hero</h1>
 
       {/* Step indicator */}
-      <div className="flex gap-2 mb-8">
+      <div className="flex gap-2 mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         {steps.map((s, i) => (
-          <div key={s} className={`flex-1 text-center py-2 rounded-lg text-sm font-semibold transition-colors
-            ${i === step ? 'bg-blood-600 text-parchment-50' : i < step ? 'bg-parchment-600 text-parchment-100' : 'bg-parchment-800 text-parchment-500'}`}>
+          <div key={s} className={`flex-1 text-center py-2 px-1 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300
+            ${i === step ? 'bg-blood-600 text-parchment-50 scale-105 shadow-lg shadow-blood-900/40' : i < step ? 'bg-parchment-600 text-parchment-100' : 'bg-parchment-800 text-parchment-500'}`}>
             {i + 1}. {s}
           </div>
         ))}
@@ -64,7 +64,7 @@ export default function CharacterCreation() {
 
       {/* Step 0: Identity */}
       {step === 0 && (
-        <div className="panel space-y-4">
+        <div key="step-0" className="panel space-y-4 animate-slide-up">
           <div>
             <label className="block text-parchment-300 mb-2 font-semibold">Character Name</label>
             <input
@@ -76,13 +76,13 @@ export default function CharacterCreation() {
           </div>
           <div>
             <label className="block text-parchment-300 mb-2 font-semibold">Race</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {RACES.map((r) => (
                 <button
                   key={r}
                   onClick={() => update('race', r)}
-                  className={`py-2 rounded-lg text-sm transition-colors
-                    ${form.race === r ? 'bg-blood-600 text-parchment-50' : 'bg-parchment-700 text-parchment-300 hover:bg-parchment-600'}`}
+                  className={`py-2 rounded-lg text-sm transition-all duration-200
+                    ${form.race === r ? 'bg-blood-600 text-parchment-50 shadow-md shadow-blood-900/40' : 'bg-parchment-700 text-parchment-300 hover:bg-parchment-600 hover:-translate-y-0.5'}`}
                 >
                   {r}
                 </button>
@@ -91,13 +91,13 @@ export default function CharacterCreation() {
           </div>
           <div>
             <label className="block text-parchment-300 mb-2 font-semibold">Class</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CLASSES.map((c) => (
                 <button
                   key={c}
                   onClick={() => update('char_class', c)}
-                  className={`py-2 rounded-lg text-sm transition-colors
-                    ${form.char_class === c ? 'bg-blood-600 text-parchment-50' : 'bg-parchment-700 text-parchment-300 hover:bg-parchment-600'}`}
+                  className={`py-2 rounded-lg text-sm transition-all duration-200
+                    ${form.char_class === c ? 'bg-blood-600 text-parchment-50 shadow-md shadow-blood-900/40' : 'bg-parchment-700 text-parchment-300 hover:bg-parchment-600 hover:-translate-y-0.5'}`}
                 >
                   {c}
                 </button>
@@ -122,13 +122,13 @@ export default function CharacterCreation() {
 
       {/* Step 1: Abilities */}
       {step === 1 && (
-        <div className="panel space-y-4">
+        <div key="step-1" className="panel space-y-4 animate-slide-up">
           <p className="text-parchment-400 text-sm mb-4">
             Assign your ability scores. Standard Array: 15, 14, 13, 12, 10, 8
           </p>
           {abilityLabels.map(([label, key]) => (
-            <div key={key} className="flex items-center gap-4">
-              <span className="w-32 text-parchment-300 font-semibold">{label}</span>
+            <div key={key} className="flex items-center gap-2 sm:gap-4">
+              <span className="w-24 sm:w-32 text-parchment-300 font-semibold text-sm sm:text-base">{label}</span>
               <input
                 type="range"
                 min={3}
@@ -155,7 +155,7 @@ export default function CharacterCreation() {
 
       {/* Step 2: Story */}
       {step === 2 && (
-        <div className="panel space-y-4">
+        <div key="step-2" className="panel space-y-4 animate-slide-up">
           <div>
             <label className="block text-parchment-300 mb-2 font-semibold">Backstory (Optional)</label>
             <textarea

@@ -3,25 +3,103 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-parchment-900 text-parchment-100 font-body;
+  }
+
+  /* Themed scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-parchment-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-parchment-700 rounded-full border-2 border-parchment-900;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-parchment-600;
+  }
+
+  /* Range slider styling (character creation) */
+  input[type="range"] {
+    @apply h-2 cursor-pointer appearance-none rounded-full bg-parchment-700;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    @apply h-5 w-5 rounded-full bg-blood-600 border-2 border-parchment-300 transition-colors;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    @apply bg-blood-500;
+  }
+  input[type="range"]::-moz-range-thumb {
+    @apply h-5 w-5 rounded-full bg-blood-600 border-2 border-parchment-300;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blood-600 hover:bg-blood-700 text-parchment-50 font-semibold py-2 px-6 rounded-lg transition-colors;
+    @apply bg-blood-600 hover:bg-blood-700 text-parchment-50 font-semibold py-2 px-6 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blood-900/40 active:scale-95 disabled:opacity-50 disabled:hover:shadow-none disabled:active:scale-100;
   }
   .btn-secondary {
-    @apply bg-parchment-700 hover:bg-parchment-600 text-parchment-100 font-semibold py-2 px-6 rounded-lg transition-colors;
+    @apply bg-parchment-700 hover:bg-parchment-600 text-parchment-100 font-semibold py-2 px-6 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50;
   }
   .panel {
-    @apply bg-parchment-800/80 border border-parchment-700 rounded-xl p-6;
+    @apply bg-parchment-800/80 border border-parchment-700 rounded-xl p-6 transition-colors;
+  }
+  /* Interactive card variant with lift-on-hover */
+  .panel-hover {
+    @apply hover:border-parchment-600 hover:bg-parchment-800 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30 transition-all duration-200;
   }
   .input-field {
-    @apply bg-parchment-900 border border-parchment-600 rounded-lg px-4 py-2 text-parchment-100 focus:ring-2 focus:ring-arcane-500 focus:border-transparent;
+    @apply bg-parchment-900 border border-parchment-600 rounded-lg px-4 py-2 text-parchment-100 placeholder:text-parchment-600 focus:ring-2 focus:ring-arcane-500 focus:border-transparent transition-all duration-150;
   }
   .title-fantasy {
     @apply font-fantasy text-3xl text-parchment-200;
+  }
+}
+
+@layer utilities {
+  /* Subtle entrance for routed views */
+  .view-enter {
+    @apply animate-fade-in;
+  }
+  /* Shimmering skeleton placeholder */
+  .skeleton {
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0.06) 20%,
+      rgba(255, 255, 255, 0.12) 60%,
+      rgba(255, 255, 255, 0)
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite linear;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

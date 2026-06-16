@@ -46,7 +46,7 @@ export default function CombatTracker({
   if (!player) return null
 
   return (
-    <div className="panel">
+    <div className="panel animate-slide-in-right">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-fantasy text-lg text-parchment-200">⚔️ Combat Tracker</h2>
         <div className="text-parchment-400 text-sm">Round {roundNumber}</div>

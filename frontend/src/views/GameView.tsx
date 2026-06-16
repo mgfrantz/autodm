@@ -165,6 +165,9 @@ export default function GameView() {
   const isPlayerTurn = combatState?.encounter?.combatants.find(c => c.id === combatState.current_turn_id)?.side === 'player'
   const inCombat = combatState?.in_combat && combatState?.is_active
 
+  const hpColor = (pct: number) =>
+    pct > 50 ? 'bg-leaf-600' : pct > 25 ? 'bg-amber-600' : 'bg-blood-600'
+
   const handleOpenMap = async () => {
     setShowMap(true)
     setMapLoading(true)
@@ -270,24 +273,24 @@ export default function GameView() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row max-w-7xl mx-auto p-4 gap-4">
+    <div className="min-h-screen flex flex-col lg:flex-row max-w-7xl mx-auto p-2 sm:p-4 gap-4 view-enter">
       {/* Main Story Panel */}
       <div className={`flex flex-col ${inCombat ? 'lg:flex-[2]' : 'flex-1'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <Link to="/" className="text-parchment-400 hover:text-parchment-200 text-sm">
-            ← Leave Game
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <Link to="/" className="text-parchment-400 hover:text-parchment-200 text-sm shrink-0">
+            ← Leave
           </Link>
-          <h1 className="font-fantasy text-xl text-parchment-300">
+          <h1 className="font-fantasy text-lg sm:text-xl text-parchment-300 text-center flex-1 min-w-0 truncate">
             {gameState.world.name}
           </h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <button
               className="btn-primary text-sm px-3 py-1.5"
               onClick={handleOpenSaves}
               title="Save or load game"
             >
-              💾 Save
+              💾 <span className="hidden sm:inline">Save</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -295,7 +298,7 @@ export default function GameView() {
               disabled={inCombat}
               title={inCombat ? 'Cannot travel during combat' : 'Open the world map'}
             >
-              🗺️ Map
+              🗺️ <span className="hidden sm:inline">Map</span>
             </button>
           </div>
         </div>
@@ -306,7 +309,7 @@ export default function GameView() {
             {story.map((entry, i) => (
               <div
                 key={i}
-                className={`rounded-lg p-4 ${
+                className={`rounded-lg p-4 animate-slide-up ${
                   entry.role === 'dm'
                     ? 'bg-parchment-900/60 border-l-4 border-arcane-500'
                     : entry.role === 'system'
@@ -373,7 +376,7 @@ export default function GameView() {
                 <button
                   key={q}
                   onClick={() => setActionInput(q)}
-                  className="text-xs bg-parchment-700 hover:bg-parchment-600 text-parchment-300 px-3 py-1 rounded-full transition-colors"
+                  className="text-xs bg-parchment-700 hover:bg-parchment-600 text-parchment-300 px-3 py-1 rounded-full transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
                 >
                   {q}
                 </button>
@@ -384,8 +387,8 @@ export default function GameView() {
 
         {/* Combat indicator */}
         {inCombat && (
-          <div className="panel bg-blood-900/30 border border-blood-500">
-            <div className="text-center text-parchment-200 font-semibold">
+          <div className="panel bg-blood-900/30 border border-blood-500 animate-scale-in">
+            <div className="text-center text-parchment-200 font-semibold animate-glow-pulse">
               ⚔️ COMBAT IN PROGRESS ⚔️
             </div>
           </div>
@@ -411,8 +414,8 @@ export default function GameView() {
             </div>
             <div className="h-3 bg-parchment-900 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blood-600 transition-all"
-                style={{ width: `${(gameState.character.hp / gameState.character.max_hp) * 100}%` }}
+                className={`h-full ${hpColor((gameState.character.hp / gameState.character.max_hp) * 100)} transition-all duration-500 ease-out`}
+                style={{ width: `${Math.max(0, Math.min(100, (gameState.character.hp / gameState.character.max_hp) * 100))}%` }}
               />
             </div>
           </div>
@@ -424,9 +427,9 @@ export default function GameView() {
           </div>
 
           {/* Act & XP */}
-          <div className="flex justify-between mt-3 text-sm">
-            <span className="text-parchment-500">Act {gameState.current_act}</span>
-            <span className="text-parchment-500">{gameState.xp} XP</span>
+          <div className="flex justify-between items-center mt-3 text-sm">
+            <span className="bg-arcane-700/50 text-arcane-300 px-2 py-0.5 rounded-md text-xs font-semibold">Act {gameState.current_act}</span>
+            <span className="text-gold-400 font-semibold">✦ {gameState.xp} XP</span>
           </div>
         </div>
 
@@ -446,11 +449,11 @@ export default function GameView() {
       {/* World Map overlay */}
       {showMap && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
           onClick={() => !mapLoading && setShowMap(false)}
         >
           <div
-            className="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
@@ -480,11 +483,11 @@ export default function GameView() {
       {/* Save / Load overlay */}
       {showSaves && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
           onClick={() => !saveBusy && setShowSaves(false)}
         >
           <div
-            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
