@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -105,8 +105,23 @@
     overlay modal (create, load, delete, character-state previews per slot)
   - 18 save/load tests (357 total)
 
+- [x] **Add frontend polish** — animations, responsive design, color fixes
+  - Expanded Tailwind palette (leaf green, more arcane/blood shades, gold
+    accent) — fixed HP bars, DM typing cursor, and save buttons that referenced
+    previously-undefined colors (silent no-style bugs)
+  - Animation system: fade-in / slide-up / slide-in-right / scale-in /
+    overlay-in / glow-pulse keyframes + skeleton shimmer, registered as
+    `animate-*` Tailwind utilities
+  - Applied across all views: staggered view entrances, story entries slide
+    in as appended, modals fade+scale, combat banner pulses, combat tracker
+    slides in on combat start
+  - Responsive: mobile-friendly card grids (Home), collapsible header labels,
+    fluid padding, single-column tone grid, themed range sliders
+  - Themed scrollbars, button hover-lift/active-press, color-graded HP bar
+    with smooth transition, polished XP/Act badges; respects reduced-motion
+  - Verified: `tsc --noEmit` clean, `vite build` passes (107 modules)
+
 ## Next Priorities
-- [ ] **Frontend polish** — animations, transitions, responsive design
 - [ ] **Context window management** — smart summarization of story log
 - [ ] **World state persistence** — NPC relationship tracking, faction reputation
 
