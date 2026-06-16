@@ -14,6 +14,7 @@ from app.models.models import GameSave, Character, World
 from app.llm.orchestrator import orchestrator
 from app.prompts.dm_prompts import DM_SYSTEM_PROMPT, ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
+from app.engine.context import ContextManager, StorySummary, get_context_manager
 
 router = APIRouter()
 
@@ -199,14 +200,23 @@ async def player_action(game_id: int, action: PlayerAction, db: Session = Depend
     world = save.world
     game_state = json.loads(save.game_state)
     story_log = json.loads(save.story_log)
-
-    # Build context from recent story (last 10 entries)
-    recent_events = "\n".join(
-        f"[{entry.get('role', 'unknown')}]: {entry.get('content', '')[:200]}"
-        for entry in story_log[-10:]
+    
+    # Context management
+    context_manager = get_context_manager()
+    
+    # Load existing summary
+    summary = None
+    if save.story_summary and save.story_summary != "null":
+        summary_data = json.loads(save.story_summary)
+        summary = StorySummary.from_dict(summary_data)
+    
+    # Build context using context manager
+    recent_context = context_manager.build_context(
+        story_log=story_log,
+        summary=summary,
     )
-
-    context = f"""\
+    
+    base_context = f"""\
 Character: {character.name} (Level {character.level} {character.race} {character.char_class})
 HP: {character.current_hp}/{character.max_hp}
 AC: {character.armor_class}
@@ -214,19 +224,20 @@ Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
 """
 
-    user_prompt = ENCOUNTER_PROMPT.format(
+    user_prompt = f"""{ENCOUNTER_PROMPT.format(
         location=game_state.get("location", "Unknown"),
         hp=character.current_hp,
         max_hp=character.max_hp,
         conditions=", ".join(game_state.get("conditions", ["none"])),
-        recent_events=recent_events,
+        recent_events=recent_context,
         player_action=action.action,
-    )
+    )}
+
+{base_context}"""
 
     narration = await orchestrator.generate_narration(
         system_prompt=DM_SYSTEM_PROMPT,
         user_prompt=user_prompt,
-        context=context,
     )
 
     # Log the exchange
@@ -234,6 +245,16 @@ Conditions: {', '.join(game_state.get('conditions', ['none']))}
     story_log.append({"role": "dm", "content": narration, "timestamp": datetime.utcnow().isoformat()})
     save.story_log = json.dumps(story_log)
     save.updated_at = datetime.utcnow()
+    
+    # Check if we need to summarize
+    if context_manager.should_summarize(story_log, summary):
+        # Summarize asynchronously (we'll await it since this is already an async function)
+        new_summary = await context_manager.summarize_story(story_log, summary)
+        save.story_summary = json.dumps(new_summary.to_dict())
+        # Update current_act from summary if provided
+        if new_summary.current_act:
+            save.current_act = new_summary.current_act
+    
     db.commit()
 
     return DMResponse(
@@ -260,13 +281,23 @@ async def player_action_stream(game_id: int, action: PlayerAction, session_facto
         character = save.character
         game_state = json.loads(save.game_state)
         story_log = json.loads(save.story_log)
-
-        recent_events = "\n".join(
-            f"[{entry.get('role', 'unknown')}]: {entry.get('content', '')[:200]}"
-            for entry in story_log[-10:]
+        
+        # Context management
+        context_manager = get_context_manager()
+        
+        # Load existing summary
+        summary = None
+        if save.story_summary and save.story_summary != "null":
+            summary_data = json.loads(save.story_summary)
+            summary = StorySummary.from_dict(summary_data)
+        
+        # Build context using context manager
+        recent_context = context_manager.build_context(
+            story_log=story_log,
+            summary=summary,
         )
-
-        context = f"""\
+        
+        base_context = f"""\
 Character: {character.name} (Level {character.level} {character.race} {character.char_class})
 HP: {character.current_hp}/{character.max_hp}
 AC: {character.armor_class}
@@ -274,16 +305,23 @@ Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
 """
 
-        user_prompt = ENCOUNTER_PROMPT.format(
+        user_prompt = f"""{ENCOUNTER_PROMPT.format(
             location=game_state.get("location", "Unknown"),
             hp=character.current_hp,
             max_hp=character.max_hp,
             conditions=", ".join(game_state.get("conditions", ["none"])),
-            recent_events=recent_events,
+            recent_events=recent_context,
             player_action=action.action,
-        )
+        )}
+
+{base_context}"""
 
         combat_active = game_state.get("in_combat", False)
+        
+        # Store summary data for later use in the async stream
+        summary_data = None
+        if summary:
+            summary_data = summary.to_dict()
     finally:
         db.close()
 
@@ -293,7 +331,6 @@ Conditions: {', '.join(game_state.get('conditions', ['none']))}
             async for chunk in orchestrator.stream_narration(
                 system_prompt=DM_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
-                context=context,
             ):
                 collected.append(chunk)
                 yield _sse({"type": "chunk", "content": chunk})
@@ -314,6 +351,19 @@ Conditions: {', '.join(game_state.get('conditions', ['none']))}
                 log.append({"role": "dm", "content": narration, "timestamp": now})
                 save.story_log = json.dumps(log)
                 save.updated_at = datetime.utcnow()
+                
+                # Check if we need to summarize
+                local_summary = None
+                if save.story_summary and save.story_summary != "null":
+                    local_summary_data = json.loads(save.story_summary)
+                    local_summary = StorySummary.from_dict(local_summary_data)
+                
+                if context_manager.should_summarize(log, local_summary):
+                    new_summary = await context_manager.summarize_story(log, local_summary)
+                    save.story_summary = json.dumps(new_summary.to_dict())
+                    if new_summary.current_act:
+                        save.current_act = new_summary.current_act
+                
                 db.commit()
         finally:
             db.close()

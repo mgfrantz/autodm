@@ -78,6 +78,7 @@ class GameSave(Base):
     # Dynamic game state (location, quest progress, story log, etc.)
     game_state = Column(Text, default="{}")  # JSON
     story_log = Column(Text, default="[]")  # JSON array of narration entries
+    story_summary = Column(Text, default="null")  # JSON: StorySummary for context management
 
     # Progress
     current_act = Column(Integer, default=1)
@@ -114,6 +115,7 @@ class SaveSlot(Base):
     character_snapshot = Column(Text, default="{}")  # JSON: mutable character fields
     game_state = Column(Text, default="{}")          # JSON: world/quest/location state
     story_log = Column(Text, default="[]")           # JSON array of narration entries
+    story_summary = Column(Text, default="null")     # JSON: StorySummary for context management
     current_act = Column(Integer, default=1)
     xp = Column(Integer, default=0)
 

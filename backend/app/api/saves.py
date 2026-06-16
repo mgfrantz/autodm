@@ -103,6 +103,7 @@ def create_save(game_id: int, request: CreateSaveRequest, db: Session = Depends(
         character_snapshot=json.dumps(capture_character_snapshot(character)),
         game_state=save.game_state or "{}",
         story_log=save.story_log or "[]",
+        story_summary=save.story_summary or "null",
         current_act=save.current_act or 1,
         xp=save.xp or 0,
     )
@@ -151,6 +152,7 @@ def load_save(game_id: int, slot_id: int, db: Session = Depends(get_db)):
     # Restore the live GameSave from the snapshot.
     save.game_state = slot.game_state or "{}"
     save.story_log = slot.story_log or "[]"
+    save.story_summary = slot.story_summary or "null"
     save.current_act = slot.current_act or 1
     save.xp = slot.xp or 0
     save.updated_at = datetime.utcnow()
