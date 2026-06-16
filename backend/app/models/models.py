@@ -1,12 +1,38 @@
 """
 Database models using SQLAlchemy.
 """
+import json
 from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Integer, String, Text, ForeignKey
 from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base()
+
+# Valid item types
+class ItemType:
+    WEAPON = "weapon"
+    ARMOR = "armor"
+    POTION = "potion"
+    SCROLL = "scroll"
+    MISC = "misc"
+    QUEST = "quest"
+
+    @classmethod
+    def all(cls):
+        return [cls.WEAPON, cls.ARMOR, cls.POTION, cls.SCROLL, cls.MISC, cls.QUEST]
+
+# Valid rarities
+class Rarity:
+    COMMON = "common"
+    UNCOMMON = "uncommon"
+    RARE = "rare"
+    VERY_RARE = "very_rare"
+    LEGENDARY = "legendary"
+
+    @classmethod
+    def all(cls):
+        return [cls.COMMON, cls.UNCOMMON, cls.RARE, cls.VERY_RARE, cls.LEGENDARY]
 
 
 class Character(Base):
@@ -16,8 +42,9 @@ class Character(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     race = Column(String(50), nullable=False)
-    char_class = Column(String(50), nullable=False)
-    level = Column(Integer, default=1)
+    char_class = Column(String(50), nullable=False)  # Kept for backward compatibility
+    level = Column(Integer, default=1)  # Total level (sum of all class levels)
+    classes = Column(Text, default="{}")  # JSON: {"class_name": level, ...}
     background = Column(String(100), nullable=True)
 
     # Ability scores
@@ -47,6 +74,29 @@ class Character(Base):
 
     # Relationship
     saves = relationship("GameSave", back_populates="character")
+
+    @property
+    def primary_class(self) -> str:
+        """Get the class with the highest level (for display/UI)."""
+        try:
+            classes_dict = json.loads(self.classes or "{}")
+            if not classes_dict:
+                return (self.char_class or "commoner").lower()
+            return max(classes_dict.items(), key=lambda x: x[1])[0].lower()
+        except (json.JSONDecodeError, ValueError):
+            return (self.char_class or "commoner").lower()
+
+    @property
+    def classes_dict(self) -> dict[str, int]:
+        """Get classes as a dictionary."""
+        try:
+            classes_dict = json.loads(self.classes or "{}")
+            if not classes_dict:
+                # Backward compatibility
+                return {self.char_class.lower(): self.level or 1}
+            return classes_dict
+        except (json.JSONDecodeError, ValueError):
+            return {self.char_class.lower(): self.level or 1}
 
 
 class World(Base):

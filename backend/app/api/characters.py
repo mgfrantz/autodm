@@ -4,12 +4,20 @@ Character API — create, list, and manage player characters.
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.models.database import get_db
 from app.models.models import Character
 from app.engine.dice import ability_modifier
+from app.engine.multiclassing import (
+    parse_classes,
+    serialize_classes,
+    check_multiclass_requirements,
+    calculate_multiclass_hp,
+    calculate_proficiency_bonus,
+    build_multiclass_summary,
+)
 
 router = APIRouter()
 
@@ -30,11 +38,15 @@ class CharacterCreate(BaseModel):
 
 
 class CharacterResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     race: str
     char_class: str
     level: int
+    classes: dict[str, int]  # All classes with levels
+    primary_class: str  # The class with the highest level
     background: str | None
     strength: int
     dexterity: int
@@ -50,8 +62,35 @@ class CharacterResponse(BaseModel):
     asi_used: int
     backstory: str | None
 
-    class Config:
-        from_attributes = True
+    @field_validator('classes', mode='before')
+    @classmethod
+    def parse_classes_field(cls, v):
+        """Parse JSON string to dict if needed."""
+        if isinstance(v, str):
+            return parse_classes(v)
+        return v or {}
+
+    @field_validator('primary_class', mode='before')
+    @classmethod
+    def lower_primary_class(cls, v):
+        """Normalize primary_class to lowercase."""
+        return v.lower() if isinstance(v, str) else v
+
+
+class AddClassRequest(BaseModel):
+    """Request to add a multiclass to an existing character."""
+    new_class: str
+
+
+class AddClassResponse(BaseModel):
+    """Response when adding a multiclass."""
+    success: bool
+    message: str
+    classes: dict[str, int]
+    total_level: int
+    proficiency_bonus: int
+    hp_gained: int
+    max_hp: int
 
 
 # Starting HP by class (simplified — 5e hit die + CON mod)
@@ -94,6 +133,30 @@ RACE_SPEED = {
 }
 
 
+def _get_character_classes(character: Character) -> dict[str, int]:
+    """Get a character's classes from the JSON column, with fallback for single-class."""
+    classes = parse_classes(character.classes or "{}")
+    if not classes:
+        # Backward compatibility: use char_class and level
+        classes = {character.char_class.lower(): character.level or 1}
+    return classes
+
+
+def _set_character_classes(character: Character, classes: dict[str, int]):
+    """Set a character's classes JSON and update denormalized fields."""
+    character.classes = serialize_classes(classes)
+
+    # Update denormalized fields
+    character.level = sum(classes.values())
+    character.char_class = max(classes.items(), key=lambda x: x[1])[0]
+
+
+def _calculate_hp_for_classes(classes: dict[str, int], con_mod: int) -> int:
+    """Calculate max HP for a set of classes."""
+    total_hp, _ = calculate_multiclass_hp(classes, con_mod)
+    return total_hp
+
+
 @router.post("/", response_model=CharacterResponse)
 def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
     """Create a new player character with auto-calculated combat stats."""
@@ -109,11 +172,15 @@ def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
     base_ac = CLASS_BASE_AC.get(char_class_lower, 11)
     speed = RACE_SPEED.get(char_data.race.lower(), 30)
 
+    # Initialize classes dict
+    classes = {char_class_lower: char_data.level}
+
     character = Character(
         name=char_data.name,
         race=char_data.race,
         char_class=char_data.char_class,
         level=char_data.level,
+        classes=serialize_classes(classes),
         background=char_data.background,
         strength=char_data.strength,
         dexterity=char_data.dexterity,
@@ -158,3 +225,83 @@ def delete_character(character_id: int, db: Session = Depends(get_db)):
     db.delete(character)
     db.commit()
     return {"status": "deleted", "id": character_id}
+
+
+@router.post("/{character_id}/classes", response_model=AddClassResponse)
+def add_class(
+    character_id: int,
+    request: AddClassRequest,
+    db: Session = Depends(get_db),
+):
+    """Add a new class to an existing character (multiclassing).
+
+    Checks ability score prerequisites and prevents duplicate classes.
+    Raises the character to total level 2 (1 + 1) when adding first multiclass.
+    """
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    new_class_lower = request.new_class.lower()
+    classes = _get_character_classes(character)
+
+    # Limit to two classes total
+    if len(classes) >= 2:
+        current_classes_str = ", ".join(classes.keys())
+        raise HTTPException(
+            status_code=400,
+            detail=f"Character already has two classes: {current_classes_str}. Cannot add more."
+        )
+
+    # Check if character already has this class
+    if new_class_lower in classes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Character already has levels in {new_class_lower}"
+        )
+
+    # Check ability score prerequisites
+    abilities = {
+        "strength": character.strength or 10,
+        "dexterity": character.dexterity or 10,
+        "constitution": character.constitution or 10,
+        "intelligence": character.intelligence or 10,
+        "wisdom": character.wisdom or 10,
+        "charisma": character.charisma or 10,
+    }
+
+    check = check_multiclass_requirements(new_class_lower, abilities)
+    if not check.can_multiclass:
+        raise HTTPException(
+            status_code=400,
+            detail=check.message
+        )
+
+    # Add the class at level 1
+    classes[new_class_lower] = 1
+    _set_character_classes(character, classes)
+
+    # Recalculate HP with new class
+    con_mod = ability_modifier(character.constitution or 10)
+    new_max_hp = _calculate_hp_for_classes(classes, con_mod)
+    hp_gained = new_max_hp - (character.max_hp or 1)
+    character.max_hp = new_max_hp
+    character.current_hp = (character.current_hp or 1) + hp_gained
+
+    # Update proficiency bonus based on new total level
+    character.armor_class = CLASS_BASE_AC.get(new_class_lower, 11)  # Simplified AC recalc
+
+    db.commit()
+    db.refresh(character)
+
+    summary = build_multiclass_summary(classes, con_mod, character.asi_used or 0)
+
+    return AddClassResponse(
+        success=True,
+        message=f"Added {new_class_lower} as a second class at level 1",
+        classes=classes,
+        total_level=summary.total_level,
+        proficiency_bonus=summary.proficiency_bonus,
+        hp_gained=hp_gained,
+        max_hp=character.max_hp,
+    )

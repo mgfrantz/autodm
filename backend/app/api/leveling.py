@@ -33,6 +33,14 @@ from app.engine.leveling import (
     xp_for_level,
     MAX_ABILITY_SCORE,
 )
+from app.engine.multiclassing import (
+    parse_classes,
+    serialize_classes,
+    calculate_multiclass_hp,
+    calculate_proficiency_bonus,
+    calculate_multiclass_asi_status,
+    build_multiclass_summary,
+)
 
 router = APIRouter()
 
@@ -54,10 +62,13 @@ class LevelingProgress(BaseModel):
     asi_used: int
     asi_count_earned: int
     next_asi_level: int | None
+    classes: dict[str, int]  # All classes with levels
+    primary_class: str  # The class with the highest level
 
 
 class AwardXPRequest(BaseModel):
     xp: int  # amount to add (may be negative, e.g. XP adjustment)
+    target_class: str | None = None  # Optional: which class to level up (for multiclass)
 
 
 class AwardXPResponse(BaseModel):
@@ -76,6 +87,7 @@ class AwardXPResponse(BaseModel):
     asi_unlocked: bool
     asi_available: int
     new_features: list[dict]
+    classes: dict[str, int]  # Updated classes
     message: str
 
 
@@ -101,9 +113,8 @@ class ApplyASIResponse(BaseModel):
 
 
 class FeaturesResponse(BaseModel):
-    char_class: str
-    level: int
-    features: list[dict]
+    classes: dict[str, int]  # All classes with levels
+    features: dict[str, list[dict]]  # Features per class
     next_level_feature: dict | None
 
 
@@ -124,17 +135,15 @@ def _load_abilities(character: Character) -> dict[str, int]:
 def _recompute_max_hp(character: Character) -> None:
     """Recompute max_hp from CON when a CON ASI shifts the modifier.
 
-    This is an approximation: it recalculates max_hp as if every level used the
-    fixed-average gain plus the (possibly updated) CON mod. We only call this
-    after an ASI to CON, so the delta equals (con_mod_after - con_mod_before)
-    * character.level.
+    This now properly handles multiclassing by summing HP from all classes.
     """
-    con_mod = ability_modifier(character.constitution)
-    hd = hit_die_for_class(character.char_class)
-    base = hd + con_mod  # level 1 starting HP
-    per_level = (hd // 2 + 1) + con_mod
-    new_max = base + per_level * (character.level - 1)
-    # Floor at 1 and don't reduce current_hp below a sensible minimum.
+    con_mod = ability_modifier(character.constitution or 10)
+    classes = parse_classes(character.classes or "{}")
+    if not classes:
+        # Backward compatibility
+        classes = {character.char_class.lower(): character.level or 1}
+
+    new_max, _ = calculate_multiclass_hp(classes, con_mod)
     old_max = character.max_hp or 1
     character.max_hp = max(1, new_max)
     # Shift current HP by the same delta so a CON gain heals proportionally.
@@ -144,15 +153,29 @@ def _recompute_max_hp(character: Character) -> None:
 
 
 def _progress_for(character: Character) -> LevelingProgress:
-    cls = character.char_class
+    """Build leveling progress, handling multiclassing."""
+    classes = parse_classes(character.classes or "{}")
+    if not classes:
+        classes = {character.char_class.lower(): character.level or 1}
+
     progress = level_progress(character.xp or 0)
     from app.engine.leveling import asi_levels
-    earned = asi_count_through(character.level, cls)
-    used = character.asi_used or 0
-    avail = asi_available(character.level, cls, used)
 
-    all_asi = asi_levels(cls)
-    next_asi = next((lvl for lvl in all_asi if lvl > character.level), None)
+    # Calculate total ASIs across all classes
+    total_earned = 0
+    next_asi_level = None
+    for cls_name, cls_level in classes.items():
+        total_earned += len([lvl for lvl in asi_levels(cls_name) if lvl <= cls_level])
+        for lvl in asi_levels(cls_name):
+            if lvl > cls_level:
+                if next_asi_level is None or lvl < next_asi_level:
+                    next_asi_level = lvl
+                break
+
+    used = character.asi_used or 0
+    avail = max(0, total_earned - used)
+
+    primary_class = max(classes.items(), key=lambda x: x[1])[0] if classes else "commoner"
 
     return LevelingProgress(
         level=character.level,
@@ -162,11 +185,13 @@ def _progress_for(character: Character) -> LevelingProgress:
         xp_into_level=progress["xp_into_level"],
         xp_to_next=progress["xp_to_next"],
         progress=round(progress["progress"], 4),
-        proficiency_bonus=proficiency_bonus(character.level),
+        proficiency_bonus=calculate_proficiency_bonus(classes),
         asi_available=avail,
         asi_used=used,
-        asi_count_earned=earned,
-        next_asi_level=next_asi,
+        asi_count_earned=total_earned,
+        next_asi_level=next_asi_level,
+        classes=classes,
+        primary_class=primary_class,
     )
 
 
@@ -187,11 +212,13 @@ def get_leveling(character_id: int, db: Session = Depends(get_db)):
 def award_xp(character_id: int, request: AwardXPRequest, db: Session = Depends(get_db)):
     """Award XP to a character and automatically apply any level-ups.
 
-    On each level gained the character gains HP (fixed-average hit die + CON
-    mod) which is added to both max and current HP. Proficiency bonus is
-    derived from level everywhere else, so no separate update is needed.
+    For multiclass characters, the `target_class` field allows choosing which
+    class gets the level-up. If not specified, the primary class (highest level)
+    is used.
+
+    HP gains are calculated using the hit die of the class being leveled.
     Ability Score Improvements are *not* spent automatically — the response
-    reports ``asi_available`` so the player can choose (see ``apply-asi``).
+    reports `asi_available` so the player can choose (see `apply-asi`).
     """
     character = db.query(Character).filter(Character.id == character_id).first()
     if not character:
@@ -200,55 +227,135 @@ def award_xp(character_id: int, request: AwardXPRequest, db: Session = Depends(g
     xp_before = character.xp or 0
     xp_total = max(0, xp_before + request.xp)
 
-    con_mod = ability_modifier(character.constitution)
-    result = apply_xp(
-        char_class=character.char_class,
-        level=character.level,
-        xp_before=xp_before,
-        xp_after=xp_total,
+    con_mod = ability_modifier(character.constitution or 10)
+
+    # Get current classes
+    classes = parse_classes(character.classes or "{}")
+    if not classes:
+        classes = {character.char_class.lower(): character.level or 1}
+
+    # Determine which class to level up
+    target_class = request.target_class
+    if target_class is None:
+        # Default to primary class (highest level)
+        target_class = max(classes.items(), key=lambda x: x[1])[0]
+    else:
+        target_class = target_class.lower()
+        if target_class not in classes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Character does not have levels in {target_class}"
+            )
+
+    # Calculate current level for the target class
+    from_level_total = sum(classes.values())
+    to_level_total = level_for_xp(xp_total)
+
+    # Check if the character actually levels up
+    if to_level_total <= from_level_total:
+        # No level up, just update XP
+        character.xp = xp_total
+        character.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(character)
+
+        return AwardXPResponse(
+            success=True,
+            xp_awarded=request.xp,
+            xp_total=xp_total,
+            leveled_up=False,
+            from_level=from_level_total,
+            to_level=to_level_total,
+            levels_gained=0,
+            hp_gained=0,
+            max_hp=character.max_hp,
+            current_hp=character.current_hp,
+            proficiency_bonus=calculate_proficiency_bonus(classes),
+            proficiency_changed=False,
+            asi_unlocked=False,
+            asi_available=_progress_for(character).asi_available,
+            new_features=[],
+            classes=classes,
+            message=f"{character.name} gained {request.xp} XP ({xp_total} total).",
+        )
+
+    # Level up! Determine how many levels to add to the target class
+    levels_gained = to_level_total - from_level_total
+
+    # Add levels to the target class
+    old_target_level = classes[target_class]
+    classes[target_class] += levels_gained
+    new_target_level = classes[target_class]
+
+    # Calculate HP gained (only for the new levels in the target class)
+    from app.engine.leveling import hp_gained_for_levels
+    hp_gained = hp_gained_for_levels(
+        from_level=old_target_level,
+        to_level=new_target_level,
+        char_class=target_class,
         con_mod=con_mod,
-        asi_used=character.asi_used or 0,
     )
 
-    # Persist.
+    # Update character state
     character.xp = xp_total
-    if result.leveled_up:
-        character.level = result.to_level
-        if result.hp_gained:
-            character.max_hp = (character.max_hp or 0) + result.hp_gained
-            character.current_hp = (character.current_hp or 0) + result.hp_gained
+    character.level = to_level_total
+    character.classes = serialize_classes(classes)
+    character.char_class = max(classes.items(), key=lambda x: x[1])[0]
+
+    # Add HP gains
+    character.max_hp = (character.max_hp or 0) + hp_gained
+    character.current_hp = (character.current_hp or 0) + hp_gained
+
     character.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(character)
 
-    if result.leveled_up:
-        feats = ", ".join(f"Level {lvl}: {f}" for lvl, f in result.new_features)
-        asi_note = " ASI available — allocate ability scores!" if result.asi_unlocked else ""
-        message = (
-            f"{character.name} advanced from level {result.from_level} to "
-            f"{result.to_level}! Gained {result.hp_gained} HP."
-            + (f" New abilities: {feats}." if feats else "")
-            + asi_note
-        )
-    else:
-        message = f"{character.name} gained {request.xp} XP ({xp_total} total)."
+    # Get new features for the levels gained
+    new_features = []
+    for lvl in range(old_target_level + 1, new_target_level + 1):
+        feat = features_at_level(target_class, lvl)
+        if feat:
+            new_features.append({
+                "level": lvl,
+                "class": target_class,
+                "feature": feat,
+            })
+
+    # Check for ASI unlock
+    from app.engine.leveling import asi_levels
+    asi_lvls = asi_levels(target_class)
+    asi_unlocked = any(old_target_level < lvl <= new_target_level for lvl in asi_lvls)
+
+    # Get ASI status
+    summary = build_multiclass_summary(classes, con_mod, character.asi_used or 0)
+
+    # Build message
+    feats_str = ", ".join(f"{f['class']} L{f['level']}: {f['feature']}" for f in new_features)
+    asi_note = " ASI available — allocate ability scores!" if asi_unlocked else ""
+    message = (
+        f"{character.name} advanced from level {from_level_total} to "
+        f"{to_level_total}! Gained {hp_gained} HP in {target_class}."
+        + (f" New abilities: {feats_str}." if feats_str else "")
+        + asi_note
+    )
 
     return AwardXPResponse(
         success=True,
         xp_awarded=request.xp,
         xp_total=xp_total,
-        leveled_up=result.leveled_up,
-        from_level=result.from_level,
-        to_level=result.to_level,
-        levels_gained=result.levels_gained,
-        hp_gained=result.hp_gained,
+        leveled_up=True,
+        from_level=from_level_total,
+        to_level=to_level_total,
+        levels_gained=levels_gained,
+        hp_gained=hp_gained,
         max_hp=character.max_hp,
         current_hp=character.current_hp,
-        proficiency_bonus=proficiency_bonus(character.level),
-        proficiency_changed=result.proficiency_changed,
-        asi_unlocked=result.asi_unlocked,
-        asi_available=result.asi_available,
-        new_features=[{"level": lvl, "feature": f} for lvl, f in result.new_features],
+        proficiency_bonus=summary.proficiency_bonus,
+        proficiency_changed=proficiency_bonus(from_level_total) != summary.proficiency_bonus,
+        asi_unlocked=asi_unlocked,
+        asi_available=summary.asi_status.available,
+        new_features=new_features,
+        classes=classes,
         message=message,
     )
 
@@ -261,9 +368,11 @@ def apply_asi_endpoint(
 ):
     """Spend one Ability Score Improvement instance.
 
-    Body ``choices`` must total exactly 2 points (one ability +2, or two
+    Body `choices` must total exactly 2 points (one ability +2, or two
     abilities +1 each). Scores are clamped to 20. Raising CON also increases
     max HP retroactively (one CON mod step per level).
+
+    For multiclass characters, ASIs from any class can be spent freely.
     """
     character = db.query(Character).filter(Character.id == character_id).first()
     if not character:
@@ -274,11 +383,24 @@ def apply_asi_endpoint(
 
     choices = [ASIChoice(ability=c.ability, amount=c.amount) for c in request.choices]
 
+    # Get ASI status across all classes
+    classes = parse_classes(character.classes or "{}")
+    if not classes:
+        classes = {character.char_class.lower(): character.level or 1}
+
+    asi_status = calculate_multiclass_asi_status(classes, character.asi_used or 0)
+
+    if asi_status.available <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No ASIs available. Earned: {asi_status.earned}, Used: {asi_status.used}"
+        )
+
     result = apply_asi(
         abilities=_load_abilities(character),
         choices=choices,
-        level=character.level,
-        char_class=character.char_class,
+        level=character.level,  # Use total level
+        char_class=character.char_class,  # Use primary class for basic validation
         asi_used=character.asi_used or 0,
     )
 
@@ -300,12 +422,15 @@ def apply_asi_endpoint(
     db.commit()
     db.refresh(character)
 
+    # Recalculate ASI status
+    asi_status = calculate_multiclass_asi_status(classes, character.asi_used)
+
     return ApplyASIResponse(
         success=True,
         message=result.message,
         abilities=_load_abilities(character),
         asi_used=character.asi_used,
-        asi_available=asi_available(character.level, character.char_class, character.asi_used),
+        asi_available=asi_status.available,
         max_hp=character.max_hp,
         applied=[{"ability": c.ability, "amount": c.amount} for c in result.applied],
     )
@@ -318,17 +443,29 @@ def get_features(character_id: int, db: Session = Depends(get_db)):
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
-    earned = features_through_level(character.char_class, character.level)
+    classes = parse_classes(character.classes or "{}")
+    if not classes:
+        classes = {character.char_class.lower(): character.level or 1}
 
+    # Get features for each class
+    all_features = {}
+    for cls_name, cls_level in classes.items():
+        earned = features_through_level(cls_name, cls_level)
+        all_features[cls_name] = [{"level": lvl, "feature": f} for lvl, f in earned]
+
+    # Find the next level feature across all classes
     next_level = character.level + 1
     next_feature = None
     if next_level <= 20:
-        feat = features_at_level(character.char_class, next_level)
-        next_feature = {"level": next_level, "feature": feat} if feat else None
+        # Check if any class gets a feature at the next total level
+        for cls_name in classes.keys():
+            feat = features_at_level(cls_name, next_level)
+            if feat:
+                next_feature = {"level": next_level, "class": cls_name, "feature": feat}
+                break
 
     return FeaturesResponse(
-        char_class=character.char_class,
-        level=character.level,
-        features=[{"level": lvl, "feature": f} for lvl, f in earned],
+        classes=classes,
+        features=all_features,
         next_level_feature=next_feature,
     )
