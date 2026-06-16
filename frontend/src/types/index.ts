@@ -206,3 +206,74 @@ export interface LoadSaveResult {
   };
   story_log_entries: number;
 }
+
+// === Rest Types ===
+
+export interface RestInfo {
+  character_id: number;
+  character_name: string;
+  level: number;
+  primary_class: string;
+  constitution_modifier: number;
+  current_hp: number;
+  max_hp: number;
+  hit_dice_total: number;
+  hit_dice_available: number;
+  hit_dice_used: number;
+  hit_die_size: number;
+  is_caster: boolean;
+}
+
+export interface DieRoll {
+  faces: number;
+  roll: number;
+  modifier: number;
+  total: number;
+}
+
+export interface ShortRestResult {
+  type: 'short_rest';
+  success: boolean;
+  message: string;
+  hit_dice_spent: number;
+  hit_dice_available_after: number;
+  rolls: DieRoll[];
+  hp_before: number;
+  hp_healed: number;
+  hp_after: number;
+  max_hp: number;
+  character: {
+    current_hp: number;
+    max_hp: number;
+    hit_dice_used: number;
+  };
+}
+
+export interface SpellSlotOverview {
+  level: number;
+  max: number;
+  used: number;
+  available: number;
+}
+
+export interface LongRestResult {
+  type: 'long_rest';
+  success: boolean;
+  message: string;
+  hp_before: number;
+  hp_after: number;
+  hp_healed: number;
+  max_hp: number;
+  hit_dice_recovered: number;
+  hit_dice_available_after: number;
+  hit_dice_used_after: number;
+  slots_recovered: boolean;
+  conditions_cleared: string[];
+  character: {
+    current_hp: number;
+    max_hp: number;
+    hit_dice_used: number;
+  };
+  conditions: string[];
+  spell_slots: SpellSlotOverview[] | null;
+}

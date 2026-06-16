@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -261,4 +261,21 @@ export const loadSaveSlot = async (gameId: number, slotId: number): Promise<Load
 
 export const deleteSaveSlot = async (gameId: number, slotId: number): Promise<void> => {
   await API.delete(`/game/${gameId}/saves/${slotId}`);
+};
+
+// === Rest ===
+
+export const getRestInfo = async (gameId: number): Promise<RestInfo> => {
+  const res = await API.get<RestInfo>(`/game/${gameId}/rest`);
+  return res.data;
+};
+
+export const shortRest = async (gameId: number, numDice?: number): Promise<ShortRestResult> => {
+  const res = await API.post<ShortRestResult>(`/game/${gameId}/short-rest`, numDice != null ? { num_dice: numDice } : {});
+  return res.data;
+};
+
+export const longRest = async (gameId: number): Promise<LongRestResult> => {
+  const res = await API.post<LongRestResult>(`/game/${gameId}/long-rest`);
+  return res.data;
 };

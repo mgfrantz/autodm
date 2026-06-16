@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot } from '../stores/api'
+import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary } from '../types'
+import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo } from '../types'
 import CombatTracker from '../components/CombatTracker'
 import WorldMap from '../components/WorldMap'
 
@@ -21,6 +21,10 @@ export default function GameView() {
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>([])
   const [newSaveName, setNewSaveName] = useState('')
   const [saveBusy, setSaveBusy] = useState(false)
+  const [showRest, setShowRest] = useState(false)
+  const [restInfo, setRestInfo] = useState<RestInfo | null>(null)
+  const [restBusy, setRestBusy] = useState(false)
+  const [restResult, setRestResult] = useState<string | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Load game state and combat state
@@ -264,6 +268,60 @@ export default function GameView() {
     setSaveBusy(false)
   }
 
+  const handleOpenRest = async () => {
+    setShowRest(true)
+    setRestResult(null)
+    try {
+      const info = await getRestInfo(gid)
+      setRestInfo(info)
+    } catch {
+      setError('Failed to load rest info')
+    }
+  }
+
+  const refreshAfterRest = async () => {
+    const [state, info] = await Promise.all([getGameState(gid), getRestInfo(gid)])
+    setGameState(state)
+    setRestInfo(info)
+  }
+
+  const handleShortRest = async () => {
+    if (restBusy) return
+    setRestBusy(true)
+    setRestResult(null)
+    try {
+      const result = await shortRest(gid)
+      await refreshAfterRest()
+      if (result.success) {
+        const rollSummary = result.rolls
+          .map((r) => `d${r.faces}: ${r.roll}${r.modifier >= 0 ? '+' : ''}${r.modifier}=${r.total}`)
+          .join(', ')
+        setRestResult(`✦ ${result.message} (${rollSummary})`)
+        addToStory({ role: 'system', content: `campfire 🔥 Short rest — ${result.message}`, timestamp: new Date().toISOString() })
+      } else {
+        setRestResult(result.message)
+      }
+    } catch {
+      setError('Short rest failed')
+    }
+    setRestBusy(false)
+  }
+
+  const handleLongRest = async () => {
+    if (restBusy) return
+    setRestBusy(true)
+    setRestResult(null)
+    try {
+      const result = await longRest(gid)
+      await refreshAfterRest()
+      setRestResult(`✦ ${result.message}`)
+      addToStory({ role: 'system', content: `🌙 Long rest — ${result.message}`, timestamp: new Date().toISOString() })
+    } catch {
+      setError('Long rest failed')
+    }
+    setRestBusy(false)
+  }
+
   if (!gameState) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -291,6 +349,14 @@ export default function GameView() {
               title="Save or load game"
             >
               💾 <span className="hidden sm:inline">Save</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={handleOpenRest}
+              disabled={inCombat}
+              title={inCombat ? 'Cannot rest during combat' : 'Short or long rest'}
+            >
+              💤 <span className="hidden sm:inline">Rest</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -559,6 +625,87 @@ export default function GameView() {
             <p className="text-xs text-parchment-600 mt-3 text-center">
               Loading a save rewinds your character, inventory, and story to that moment.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Rest overlay */}
+      {showRest && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => !restBusy && setShowRest(false)}
+        >
+          <div
+            className="panel max-w-md w-full animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">💤 Rest</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowRest(false)}
+                disabled={restBusy}
+              >
+                ×
+              </button>
+            </div>
+
+            {restInfo ? (
+              <>
+                <div className="bg-parchment-900/60 rounded-lg p-3 mb-4 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-parchment-500">Health</span>
+                    <span className="text-parchment-200">{restInfo.current_hp} / {restInfo.max_hp} HP</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-parchment-500">Hit Dice</span>
+                    <span className="text-parchment-200">
+                      {restInfo.hit_dice_available} / {restInfo.hit_dice_total} × d{restInfo.hit_die_size}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-parchment-500">CON modifier</span>
+                    <span className="text-parchment-200">{restInfo.constitution_modifier >= 0 ? '+' : ''}{restInfo.constitution_modifier}</span>
+                  </div>
+                  {restInfo.is_caster && (
+                    <div className="flex justify-between">
+                      <span className="text-parchment-500">Spellcaster</span>
+                      <span className="text-arcane-300">Slots recover on long rest</span>
+                    </div>
+                  )}
+                </div>
+
+                {restResult && (
+                  <div className="bg-arcane-900/40 border border-arcane-700 rounded-lg p-3 mb-4 text-sm text-parchment-200">
+                    {restResult}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    className="btn-primary w-full"
+                    onClick={handleShortRest}
+                    disabled={restBusy || restInfo.hit_dice_available <= 0 || restInfo.current_hp >= restInfo.max_hp}
+                    title="Spend Hit Dice to heal (≥1 hour)"
+                  >
+                    🔥 Short Rest
+                  </button>
+                  <button
+                    className="btn-primary w-full bg-arcane-700 hover:bg-arcane-600"
+                    onClick={handleLongRest}
+                    disabled={restBusy}
+                    title="Full HP, recover Hit Dice + spell slots, clear conditions (≥8 hours)"
+                  >
+                    🌙 Long Rest
+                  </button>
+                </div>
+                <p className="text-xs text-parchment-600 mt-3 text-center">
+                  A short rest spends Hit Dice to heal. A long rest restores full HP and recovers half your Hit Dice.
+                </p>
+              </>
+            ) : (
+              <div className="text-parchment-400 animate-pulse text-center py-8">Gathering your strength…</div>
+            )}
           </div>
         </div>
       )}
