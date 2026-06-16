@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ TEST SUITE FULLY GREEN (592 passing, 0 failing) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ TEST SUITE FULLY GREEN (644 passing, 0 failing) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -407,6 +407,27 @@
     integration via roll_d20 spy, next_turn skipping/ticking, serialization
     round-trips, and REST API) — full suite now **592 passing, 0 failing**
 
+- [x] **Add rest system** — short rest (hit dice) and long rest (full recovery)
+  - `engine/rest.py` pure engine: Hit-Dice pool = character level; short rest
+    spends dice (roll hit-die + CON mod, min 1, clamped to remaining HP) and
+    *stops at full HP so no dice are wasted*; supports explicit `num_dice` and
+    deterministic `rolls` for testing
+  - Long rest: full HP, recover half Hit Dice (min 1, capped by how many were
+    actually spent), recover all spell slots, and clear "restable" conditions
+    (configurable `LONG_REST_CLEARABLE_CONDITIONS`: poisoned/frightened/charmed/
+    blinded/deafened/prone)
+  - `DieRoll`/`ShortRestResult`/`LongRestResult` dataclasses with `to_dict()`
+  - Character model: new `hit_dice_used` column + `migrations/add_hit_dice_column.py`
+  - `api/rest.py` router: `GET /{game_id}/rest` (pool/HP/caster overview),
+    `POST /{game_id}/short-rest`, `POST /{game_id}/long-rest` — guards against
+    resting in combat, logs each rest to the story log, recovers spellbook
+    slots via `Spellbook.long_rest()`, and removes cleared conditions from
+    game_state
+  - Frontend: `RestInfo`/`ShortRestResult`/`LongRestResult` types + API client;
+    GameView 💤 Rest button + overlay showing Hit-Dice pool, CON mod, caster
+    note, short/long-rest buttons with live roll summary and story logging
+  - 52 new tests (24 engine + 28 API); full suite now **644 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -416,10 +437,6 @@
 
 - [ ] **[SELF-CONTAINED ENGINE ENHANCEMENTS]** — No external services required;
   pick the top one each run:
-  - **Rest system** — short rest (spend hit dice to heal, recover some
-    resources) and long rest (full HP, recover spell slots + abilities,
-    clear short-term conditions like poisoned). Ties together the leveling
-    hit-die table, the spell slot recovery, and the new condition durations.
   - **Saving throw engine** — per-ability saves (Str/Dex/Con/Int/Wis/Cha) with
     class proficiency tracking; conditions already model auto-fail
     (paralyzed/petrified/unconscious Str+Dex) and disadvantage (restrained Dex),
