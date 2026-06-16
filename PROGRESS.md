@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -121,7 +121,7 @@
     with smooth transition, polished XP/Act badges; respects reduced-motion
   - Verified: `tsc --noEmit` clean, `vite build` passes (107 modules)
 
-|- [x] **Add context window management** — smart story summarization
+||- [x] **Add context window management** — smart story summarization
   - `ContextManager` engine with configurable thresholds (default: 20 entries triggers summary)
   - `StorySummary` dataclass: narrative summary, NPCs met, key locations, active/completed quests, current act, metadata
   - JSON serialization for database storage in new `story_summary` column
@@ -133,8 +133,17 @@
   - Migration script for new column
   - 16 context management tests (373 total)
 
+||- [x] **Add world state persistence** — NPC relationship tracking, faction reputation
+  - `NPCRelationship` dataclass: attitude (hostile/devoted), trust (-100 to 100), interaction history
+  - `FactionReputation` dataclass: standing (hated/revered), reputation, quest completion/failure tracking
+  - `WorldState` manager: persist in game_state JSON, backward compatible
+  - 7 API endpoints: get world state, update NPC/faction, complete/fail quests, DM context summary
+  - All changes persist to game_state JSON field in GameSave
+  - 41 new tests (29 engine + 12 API), all passing
+  - Total: 414 tests
+
 ## Next Priorities
-- [ ] **World state persistence** — NPC relationship tracking, faction reputation
+- [ ] **[NEW FEATURE TO BE DEFINED]**
 
 ## How to Use This File
 When you (the agent) work on the project:
