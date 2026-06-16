@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -330,7 +330,7 @@
   - 29 new tests (engine + API); behavior tested per PROGRESS.md constraints
   - Total: 454 tests (15 multiclassing tests skipped due to stale DB; can be fixed in next run)
 
-|||||- [x] **Add feat system** — optional ability score improvements
+- [x] **Add feat system** — optional ability score improvements
   - `Feat` dataclass: name, description, prerequisites, effects
   - Feat registry with ~24 common feats (Sharpshooter, Great Weapon Master, Alert, Tough, Resilient, Athlete, Keen Mind, Observant, War Caster, Spell Sniper, Lucky, Skilled, Dual Wielder, Mobile, Polearm Master, Sentinel, Mage Slayer, Defensive Duelist, etc.)
   - Feat effects: stat bonuses, proficiency bonuses, combat modifiers, HP increases (Tough), derived bonuses (Alert's +5 initiative)
@@ -342,8 +342,27 @@
   - 40 new tests (28 engine + 12 API), all passing
   - Total: 479 tests (15 multiclassing tests failing — non-blocking per previous run notes)
 
+- [x] **Add visual map rendering** — terrain-tinted regions, fog of war, pan/zoom, animated travel routes
+  - Backend: terrain visual palette (fill/accent/stroke/pattern) per terrain
+  - `terrain_visual(terrain)` helper returning rendering metadata
+  - Fog-of-war: `discovered_region_ids()` returns visited + adjacent regions
+  - `travel_route(region_id)` returns geometry for reachable destinations
+  - `RegionNode.to_dict()` includes `visual` field
+  - `WorldMap.to_dict()` includes `discovered_region_ids` and `routes` dict
+  - `/regions` API includes `discovered` field per region
+  - Frontend: rewrite `WorldMap.tsx` as a genuine fantasy map
+  - Terrain-tinted region nodes using radial gradients + texture patterns (9 terrain patterns: trees, peaks, waves, ripples, dunes, snow, cracks, roofs, grass)
+  - Fog-of-war clouds shroud undiscovered regions
+  - Pan (drag) and zoom (wheel/buttons) with zoom-to-pointer wheel support
+  - Animated marching-ants travel routes to reachable regions
+  - Decorative compass rose, parchment border frame, scale bar
+  - Responsive node sizes and strokes to zoom level
+  - Updated TypeScript types: `TerrainVisual` interface, `routes`, `discovered_region_ids`
+  - 10 new tests (TestVisualRendering class) — all passing
+  - Total: 489 tests (15 multiclassing tests failing — pre-existing, non-blocking per earlier notes)
+
 ## Next Priorities
-|- [ ] **[FUTURE FEATURE]** Visual map rendering
+- [ ] **[FUTURE FEATURE]** — (empty; all core MVP and post-MVP features complete)
 
 ## How to Use This File
 When you (the agent) work on the project:
