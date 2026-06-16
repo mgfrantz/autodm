@@ -1,15 +1,16 @@
 """
 Tests for multiclassing engine and API.
+
+The API tests use the shared ``client`` fixture from ``tests/conftest.py``, which
+wires the FastAPI app to a session-scoped test database and resets it between
+tests. Defining our own module-level DB / ``app.dependency_overrides`` would
+conflict with conftest (which clears the overrides on each fixture teardown),
+so we deliberately rely on the shared infrastructure. The pure-engine tests
+need no database at all.
 """
 import json
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.main import app
-from app.models.database import get_db
-from app.models.models import Base
 from app.engine.multiclassing import (
     check_multiclass_requirements,
     parse_classes,
@@ -24,35 +25,6 @@ from app.engine.multiclassing import (
     ASIStatus,
     MulticlassSummary,
 )
-
-# Test database
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_multiclass.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base.metadata.create_all(bind=engine)
-
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-@pytest.fixture
-def db_session():
-    """Create a fresh database session for each test."""
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 # ---------------------------------------------------------------------------
@@ -78,7 +50,12 @@ def test_check_multiclass_requirements_success():
 
 
 def test_check_multiclass_requirements_failure():
-    """Test failed multiclass prerequisite check."""
+    """Test failed multiclass prerequisite check.
+
+    Fighter requires BOTH Strength 13 AND Dexterity 13 (PHB). With Str 10 and
+    Dex 12, neither prerequisite is met, so both missing requirements are
+    reported.
+    """
     abilities = {
         "strength": 10,
         "dexterity": 12,
@@ -91,8 +68,7 @@ def test_check_multiclass_requirements_failure():
     # Fighter requires Str 13 AND Dex 13
     result = check_multiclass_requirements("fighter", abilities)
     assert result.can_multiclass is False
-    assert result.missing_requirements == {"strength": 13}
-    # Note: Only checks first missing requirement
+    assert result.missing_requirements == {"strength": 13, "dexterity": 13}
 
 
 def test_check_multiclass_requirements_partial():
@@ -163,11 +139,15 @@ def test_calculate_total_level():
 
 
 def test_calculate_proficiency_bonus():
-    """Test proficiency bonus from total level."""
-    assert calculate_proficiency_bonus({"wizard": 1, "fighter": 1}) == 2  # Level 2
-    assert calculate_proficiency_bonus({"wizard": 4, "fighter": 1}) == 2  # Level 5
-    assert calculate_proficiency_bonus({"wizard": 5, "fighter": 5}) == 3  # Level 10
-    assert calculate_proficiency_bonus({"wizard": 16, "fighter": 4}) == 5  # Level 20
+    """Test proficiency bonus from total level.
+
+    Uses the standard DnD 5e progression: ``proficiency_bonus = (level-1)//4 + 2``.
+    Levels 1-4 -> +2, 5-8 -> +3, 9-12 -> +4, 13-16 -> +5, 17-20 -> +6.
+    """
+    assert calculate_proficiency_bonus({"wizard": 1, "fighter": 1}) == 2  # Level 2  -> +2
+    assert calculate_proficiency_bonus({"wizard": 4, "fighter": 1}) == 3  # Level 5  -> +3
+    assert calculate_proficiency_bonus({"wizard": 5, "fighter": 5}) == 4  # Level 10 -> +4
+    assert calculate_proficiency_bonus({"wizard": 16, "fighter": 4}) == 6  # Level 20 -> +6
 
 
 def test_calculate_multiclass_hp_single_class():
@@ -197,17 +177,17 @@ def test_calculate_multiclass_hp_two_classes():
 
     total_hp, breakdown = calculate_multiclass_hp(classes, con_mod)
 
-    # Wizard: d6+2=8 (level 1) + 6*2=12 (levels 2-3) = 20
-    # Fighter: d10+2=12 (level 1) + 7*1=7 (level 2) = 19
-    # Total: 20 + 19 = 39
-    assert total_hp == 39
+    # Wizard (d6): level 1 = d6+2 = 8; levels 2-3 = (d6//2+1+2)*2 = 6*2 = 12 -> 20
+    # Fighter (d10): level 1 = d10+2 = 12; level 2 = (d10//2+1+2)*1 = 8*1 = 8 -> 20
+    # Total: 20 + 20 = 40
+    assert total_hp == 40
     assert len(breakdown) == 2
 
     wizard_hp = [b for b in breakdown if b.class_name == "wizard"][0]
     fighter_hp = [b for b in breakdown if b.class_name == "fighter"][0]
 
     assert wizard_hp.total_hp_gained == 20
-    assert fighter_hp.total_hp_gained == 19
+    assert fighter_hp.total_hp_gained == 20
 
 
 def test_calculate_multiclass_hp_negative_con():
@@ -284,7 +264,7 @@ def test_build_multiclass_summary():
 # API tests
 # ---------------------------------------------------------------------------
 
-def test_create_character_with_classes():
+def test_create_character_with_classes(client):
     """Test creating a character sets up the classes field."""
     response = client.post(
         "/api/characters/",
@@ -309,7 +289,7 @@ def test_create_character_with_classes():
     assert data["level"] == 3
 
 
-def test_get_character_includes_classes():
+def test_get_character_includes_classes(client):
     """Test that getting a character returns classes and primary_class."""
     # First create a character
     create_response = client.post(
@@ -341,7 +321,7 @@ def test_get_character_includes_classes():
     assert data["primary_class"] == "rogue"
 
 
-def test_add_class_success():
+def test_add_class_success(client):
     """Test successfully adding a second class."""
     # Create a character with good stats for multiclassing
     create_response = client.post(
@@ -379,7 +359,7 @@ def test_add_class_success():
     assert data["hp_gained"] > 0
 
 
-def test_add_class_prerequisite_failure():
+def test_add_class_prerequisite_failure(client):
     """Test that adding a class without meeting prerequisites fails."""
     # Create a character with poor stats
     create_response = client.post(
@@ -410,7 +390,7 @@ def test_add_class_prerequisite_failure():
     assert "requires" in response.json()["detail"].lower()
 
 
-def test_add_class_duplicate():
+def test_add_class_duplicate(client):
     """Test that adding an existing class fails."""
     create_response = client.post(
         "/api/characters/",
@@ -440,7 +420,7 @@ def test_add_class_duplicate():
     assert "already" in response.json()["detail"].lower()
 
 
-def test_add_class_limit_two_classes():
+def test_add_class_limit_two_classes(client):
     """Test that adding a third class is blocked."""
     # Create a character with two classes
     create_response = client.post(
@@ -474,7 +454,7 @@ def test_add_class_limit_two_classes():
     assert "two classes" in response.json()["detail"].lower()
 
 
-def test_leveling_with_multiclass():
+def test_leveling_with_multiclass(client):
     """Test awarding XP to a multiclass character."""
     # Create a wizard
     create_response = client.post(
@@ -495,26 +475,28 @@ def test_leveling_with_multiclass():
 
     char_id = create_response.json()["id"]
 
-    # Add fighter
+    # Add fighter -> wizard 1 / fighter 1 (total level 2)
     client.post(f"/api/characters/{char_id}/classes", json={"new_class": "fighter"})
 
-    # Award enough XP to level up (300 XP for level 2)
+    # The character is already total level 2 (two classes). Leveling is
+    # XP-driven by *total* level, so award enough XP to reach the level-3
+    # threshold (900 XP). The gained level should go to the target class.
     response = client.post(
         f"/api/characters/{char_id}/leveling/award-xp",
-        json={"xp": 300, "target_class": "wizard"},
+        json={"xp": 900, "target_class": "wizard"},
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data["leveled_up"] is True
-    assert data["to_level"] == 2
-    # Should level up wizard since that's the target class
+    assert data["to_level"] == 3
+    # The gained level went to wizard (the target class)
     assert data["classes"]["wizard"] == 2
     assert data["classes"]["fighter"] == 1
     assert data["hp_gained"] > 0
 
 
-def test_leveling_progress_includes_classes():
+def test_leveling_progress_includes_classes(client):
     """Test that leveling progress endpoint returns multiclass info."""
     # Create a wizard
     create_response = client.post(
@@ -551,7 +533,7 @@ def test_leveling_progress_includes_classes():
     assert data["proficiency_bonus"] == 2
 
 
-def test_apply_asi_multiclass():
+def test_apply_asi_multiclass(client):
     """Test applying ASI with multiclass character."""
     # Create a character at level 4 (earns ASI)
     create_response = client.post(
@@ -585,7 +567,7 @@ def test_apply_asi_multiclass():
     assert data["asi_used"] == 1
 
 
-def test_features_multiclass():
+def test_features_multiclass(client):
     """Test getting features for multiclass character."""
     # Create a character with two classes
     create_response = client.post(
@@ -627,7 +609,7 @@ def test_features_multiclass():
 # Edge cases and backward compatibility
 # ---------------------------------------------------------------------------
 
-def test_backward_compat_single_class():
+def test_backward_compat_single_class(client):
     """Test that single-class characters work with new multiclass system."""
     # Create a single-class character
     create_response = client.post(
@@ -654,12 +636,15 @@ def test_backward_compat_single_class():
 
 
 def test_empty_classes_json():
-    """Test handling of empty classes JSON in database."""
-    # This simulates a character with empty classes column
-    # (which should fall back to char_class/level)
+    """Test handling of empty classes JSON in database.
+
+    Simulates a character whose ``classes`` column is an empty-but-valid JSON
+    object (``"{}"``), which should fall back to ``char_class``/``level`` via
+    the model's computed properties. These properties are pure Python and need
+    no database session.
+    """
     from app.models.models import Character
 
-    db = TestingSessionLocal()
     char = Character(
         name="Empty Classes",
         race="Human",
@@ -678,8 +663,6 @@ def test_empty_classes_json():
     classes_dict = char.classes_dict
     assert classes_dict == {"wizard": 3}
     assert char.primary_class == "wizard"
-
-    db.close()
 
 
 if __name__ == "__main__":

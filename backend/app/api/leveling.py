@@ -64,6 +64,7 @@ class LevelingProgress(BaseModel):
     next_asi_level: int | None
     classes: dict[str, int]  # All classes with levels
     primary_class: str  # The class with the highest level
+    total_level: int  # Sum of all class levels (source of truth for multiclass)
 
 
 class AwardXPRequest(BaseModel):
@@ -158,6 +159,11 @@ def _progress_for(character: Character) -> LevelingProgress:
     if not classes:
         classes = {character.char_class.lower(): character.level or 1}
 
+    # The total level is the sum of all class levels — this is the source of
+    # truth for multiclass characters and is more reliable than the (possibly
+    # stale) ``character.level`` column.
+    total_level = sum(classes.values())
+
     progress = level_progress(character.xp or 0)
     from app.engine.leveling import asi_levels
 
@@ -178,7 +184,7 @@ def _progress_for(character: Character) -> LevelingProgress:
     primary_class = max(classes.items(), key=lambda x: x[1])[0] if classes else "commoner"
 
     return LevelingProgress(
-        level=character.level,
+        level=total_level,
         xp=character.xp or 0,
         level_start_xp=progress["level_start_xp"],
         next_level_xp=progress["next_level_xp"],
@@ -192,6 +198,7 @@ def _progress_for(character: Character) -> LevelingProgress:
         next_asi_level=next_asi_level,
         classes=classes,
         primary_class=primary_class,
+        total_level=total_level,
     )
 
 

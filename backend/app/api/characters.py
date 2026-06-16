@@ -305,6 +305,14 @@ def add_class(
 
     summary = build_multiclass_summary(classes, con_mod, character.asi_used or 0)
 
+    # Keep the stored ``level`` column in sync with the new total level so that
+    # every reader (UI, DM context, other endpoints) sees a consistent value
+    # without having to re-sum the ``classes`` JSON themselves.
+    if character.level != summary.total_level:
+        character.level = summary.total_level
+        db.commit()
+        db.refresh(character)
+
     return AddClassResponse(
         success=True,
         message=f"Added {new_class_lower} as a second class at level 1",

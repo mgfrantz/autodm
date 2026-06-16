@@ -114,15 +114,21 @@ def parse_classes(classes_json: str) -> dict[str, int]:
         classes_json: JSON string like '{"wizard": 5, "fighter": 2}'
 
     Returns:
-        Dict mapping class name -> level
+        Dict mapping class name -> level. Any non-dict payload (empty string,
+        JSON ``null``, etc.) is coerced to an empty dict.
     """
     import json
     if not classes_json or classes_json == "{}":
         return {}
     try:
-        return json.loads(classes_json)
+        parsed = json.loads(classes_json)
     except (json.JSONDecodeError, TypeError):
         return {}
+    # ``json.loads("null")`` -> None; defensively coerce anything that isn't a
+    # dict into an empty mapping so callers always receive a dict.
+    if not isinstance(parsed, dict):
+        return {}
+    return parsed
 
 
 def serialize_classes(classes: dict[str, int]) -> str:

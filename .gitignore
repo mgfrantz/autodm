@@ -4,6 +4,8 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/*.pyc
 backend/data/*.db
+backend/*.db
+backend/tests/*.db
 backend/.env
 
 # Frontend
