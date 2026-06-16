@@ -153,7 +153,28 @@
   - Total: 425 tests
 
 ## Next Priorities
-- [ ] **[NEW FEATURE TO BE DEFINED]**
+- [ ] **Add multiclassing support** — characters can have multiple classes with level tracking per class
+  - Modify Character model to track levels per class (JSON field or related table)
+  - Character creation: single class (existing)
+  - Level-up option: add new class (multiclass) or advance existing class
+  - Calculate total level, HP, and proficiency bonus from all classes
+  - Ability score requirements: multiclassing needs minimum 13 in primary stats
+  - Class feature merging: track features per class level
+  - Update leveling API to support multiclass decisions
+  - API tests for multiclass creation and leveling
+
+- [ ] **Add feat system** — optional ability score improvements
+  - Feat dataclass: name, description, prerequisites, effects
+  - Feat registry with ~20 common feats (Sharpshooter, Great Weapon Master, etc.)
+  - Feat effects: stat bonuses, proficiency bonuses, combat modifiers
+  - Character model: track feats learned (JSON array)
+  - Leveling API: choice between +2 ASI or feat when available
+  - Validation: feat prerequisites (stats, level, class)
+  - Apply feat effects to character stats
+  - Feat API endpoints: list available feats, get feat details
+  - Tests for feat system integration with leveling
+
+- [ ] **[FUTURE FEATURE]** Visual map rendering
 
 ## How to Use This File
 When you (the agent) work on the project:
