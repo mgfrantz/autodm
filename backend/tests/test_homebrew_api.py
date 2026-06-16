@@ -2,26 +2,9 @@
 Tests for homebrew content API.
 """
 import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
 
 
-client = TestClient(app)
-
-
-@pytest.fixture
-def db_session():
-    """Get database session."""
-    from app.models.database import SessionLocal
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def test_create_homebrew_weapon(db_session):
+def test_create_homebrew_weapon(client):
     """Test creating a homebrew weapon."""
     response = client.post(
         "/api/homebrew/items",
@@ -51,7 +34,7 @@ def test_create_homebrew_weapon(db_session):
     assert data["creator_name"] == "TestPlayer"
 
 
-def test_create_homebrew_armor(db_session):
+def test_create_homebrew_armor(client):
     """Test creating homebrew armor."""
     response = client.post(
         "/api/homebrew/items",
@@ -78,7 +61,7 @@ def test_create_homebrew_armor(db_session):
     assert data["stats"]["dex_limit"] == 2
 
 
-def test_create_homebrew_potion(db_session):
+def test_create_homebrew_potion(client):
     """Test creating a homebrew potion."""
     response = client.post(
         "/api/homebrew/items",
@@ -104,7 +87,7 @@ def test_create_homebrew_potion(db_session):
     assert data["stats"]["uses"] == 1
 
 
-def test_create_homebrew_item_invalid_type(db_session):
+def test_create_homebrew_item_invalid_type(client):
     """Test creating homebrew item with invalid type."""
     response = client.post(
         "/api/homebrew/items",
@@ -119,7 +102,7 @@ def test_create_homebrew_item_invalid_type(db_session):
     assert "Invalid item_type" in response.json()["detail"]
 
 
-def test_create_homebrew_item_invalid_rarity(db_session):
+def test_create_homebrew_item_invalid_rarity(client):
     """Test creating homebrew item with invalid rarity."""
     response = client.post(
         "/api/homebrew/items",
@@ -135,7 +118,7 @@ def test_create_homebrew_item_invalid_rarity(db_session):
     assert "Invalid rarity" in response.json()["detail"]
 
 
-def test_list_homebrew_items(db_session):
+def test_list_homebrew_items(client):
     """Test listing all homebrew items."""
     # Create some items
     client.post("/api/homebrew/items", json={
@@ -163,7 +146,7 @@ def test_list_homebrew_items(db_session):
     assert all(item["item_type"] == "weapon" for item in items)
 
 
-def test_get_homebrew_item(db_session):
+def test_get_homebrew_item(client):
     """Test getting a specific homebrew item."""
     # Create item
     create_response = client.post(
@@ -189,13 +172,13 @@ def test_get_homebrew_item(db_session):
     assert data["rarity"] == "legendary"
 
 
-def test_get_homebrew_item_not_found(db_session):
+def test_get_homebrew_item_not_found(client):
     """Test getting a non-existent item."""
     response = client.get("/api/homebrew/items/99999")
     assert response.status_code == 404
 
 
-def test_update_homebrew_item(db_session):
+def test_update_homebrew_item(client):
     """Test updating a homebrew item."""
     # Create item
     create_response = client.post(
@@ -227,7 +210,7 @@ def test_update_homebrew_item(db_session):
     assert data["stats"]["damage_dice_sides"] == 8
 
 
-def test_delete_homebrew_item(db_session):
+def test_delete_homebrew_item(client):
     """Test deleting a homebrew item."""
     # Create item
     create_response = client.post(
@@ -250,7 +233,7 @@ def test_delete_homebrew_item(db_session):
     assert response.status_code == 404
 
 
-def test_homebrew_item_to_item_conversion(db_session):
+def test_homebrew_item_to_item_conversion(client):
     """Test that homebrew items can be converted to Item objects."""
     from app.engine.inventory import Item
 

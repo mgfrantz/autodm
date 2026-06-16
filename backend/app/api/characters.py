@@ -60,6 +60,7 @@ class CharacterResponse(BaseModel):
     speed: int
     xp: int
     asi_used: int
+    feats: list[dict]  # Learned feats
     backstory: str | None
 
     @field_validator('classes', mode='before')
@@ -69,6 +70,14 @@ class CharacterResponse(BaseModel):
         if isinstance(v, str):
             return parse_classes(v)
         return v or {}
+
+    @field_validator('feats', mode='before')
+    @classmethod
+    def parse_feats_field(cls, v):
+        """Parse JSON string to list if needed."""
+        if isinstance(v, str):
+            return json.loads(v) if v else []
+        return v or []
 
     @field_validator('primary_class', mode='before')
     @classmethod

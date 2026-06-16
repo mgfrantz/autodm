@@ -253,8 +253,9 @@ class TestGetFeatures:
         r = client.get(f"/api/characters/{char.id}/leveling/features")
         assert r.status_code == 200
         data = r.json()
-        assert data["char_class"] == "Fighter"
-        levels = [f["level"] for f in data["features"]]
+        # After multiclassing, response uses `classes` dict, not `char_class`
+        assert "fighter" in data["classes"]
+        levels = [f["level"] for f in data["features"].get("fighter", [])]
         assert 1 in levels  # Fighting Style, Second Wind
 
     def test_features_next_level_preview(self, client: TestClient, db_session):

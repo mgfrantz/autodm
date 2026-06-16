@@ -35,6 +35,7 @@ MUTABLE_CHARACTER_FIELDS = (
     "level",
     "xp",
     "asi_used",
+    "feats",
     "strength",
     "dexterity",
     "constitution",
@@ -58,17 +59,17 @@ class CreateSaveRequest(BaseModel):
 def capture_character_snapshot(character: Character) -> dict:
     """Capture the mutable character state into a plain dict for storage.
 
-    Inventory/spells are stored as JSON text on the character row, so they are
+    Inventory/spells/feats are stored as JSON text on the character row, so they are
     parsed here so the snapshot stores structured data (not nested JSON strings).
     """
     snapshot: dict = {}
     for field in MUTABLE_CHARACTER_FIELDS:
         value = getattr(character, field)
-        if field in ("inventory", "spells"):
+        if field in ("inventory", "spells", "feats"):
             try:
-                value = json.loads(value) if value else ([] if field == "inventory" else {})
+                value = json.loads(value) if value else ([] if field in ("inventory", "feats") else {})
             except (TypeError, json.JSONDecodeError):
-                value = [] if field == "inventory" else {}
+                value = [] if field in ("inventory", "feats") else {}
         snapshot[field] = value
     return snapshot
 
@@ -76,14 +77,14 @@ def capture_character_snapshot(character: Character) -> dict:
 def apply_character_snapshot(character: Character, snapshot: dict) -> None:
     """Restore mutable character state from a snapshot dict.
 
-    Inventory/spells are written back as JSON text to match the column type.
+    Inventory/spells/feats are written back as JSON text to match the column type.
     Unknown/missing keys are skipped defensively.
     """
     for field in MUTABLE_CHARACTER_FIELDS:
         if field not in snapshot:
             continue
         value = snapshot[field]
-        if field in ("inventory", "spells"):
+        if field in ("inventory", "spells", "feats"):
             value = json.dumps(value)
         setattr(character, field, value)
 
@@ -99,13 +100,12 @@ def create_save(game_id: int, request: CreateSaveRequest, db: Session = Depends(
 
     slot = SaveSlot(
         game_save_id=game_id,
-        slot_name=request.slot_name,
+        name=request.slot_name,
         character_snapshot=json.dumps(capture_character_snapshot(character)),
         game_state=save.game_state or "{}",
         story_log=save.story_log or "[]",
         story_summary=save.story_summary or "null",
         current_act=save.current_act or 1,
-        xp=save.xp or 0,
     )
     db.add(slot)
     db.commit()
@@ -154,7 +154,8 @@ def load_save(game_id: int, slot_id: int, db: Session = Depends(get_db)):
     save.story_log = slot.story_log or "[]"
     save.story_summary = slot.story_summary or "null"
     save.current_act = slot.current_act or 1
-    save.xp = slot.xp or 0
+    # Restore XP from the character snapshot
+    save.xp = json.loads(slot.character_snapshot or "{}").get("xp", 0)
     save.updated_at = datetime.utcnow()
 
     # Restore the live character's mutable state.
@@ -166,7 +167,7 @@ def load_save(game_id: int, slot_id: int, db: Session = Depends(get_db)):
     snapshot_char = json.loads(slot.character_snapshot or "{}")
     return {
         "message": "Game loaded",
-        "slot_name": slot.slot_name,
+        "slot_name": slot.name,
         "restored_character": {
             "level": snapshot_char.get("level"),
             "current_hp": snapshot_char.get("current_hp"),
@@ -207,11 +208,11 @@ def _slot_summary(slot: SaveSlot) -> dict:
     return {
         "id": slot.id,
         "game_save_id": slot.game_save_id,
-        "slot_name": slot.slot_name,
+        "slot_name": slot.name,
         "created_at": slot.created_at.isoformat() if slot.created_at else None,
         "current_act": slot.current_act,
         "character_level": snapshot.get("level"),
         "character_hp": snapshot.get("current_hp"),
         "character_max_hp": snapshot.get("max_hp"),
-        "xp": slot.xp,
+        "xp": snapshot.get("xp"),
     }

@@ -64,6 +64,7 @@ class Character(Base):
     # Progression
     xp = Column(Integer, default=0)
     asi_used = Column(Integer, default=0)  # Ability Score Improvement instances spent
+    feats = Column(Text, default="[]")  # JSON array of learned feat dicts
 
     # Story
     backstory = Column(Text, nullable=True)
