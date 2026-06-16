@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -59,7 +59,7 @@
   - Spells API: get, initialize, learn, prepare, cast, rest
   - 65 spell tests (206 total)
 
-- [x] **Add XP/leveling** — automatic level-up, stat increases
+|- [x] **Add XP/leveling** — automatic level-up, stat increases
   - `leveling.py` engine: DnD 5e XP threshold table (levels 1-20),
     level-for-XP resolution, level progress (XP into level, % to next)
   - HP growth (fixed-average hit die + CON mod per level, optional rolled);
@@ -73,7 +73,7 @@
   - Combat API: enemy kills award XP with auto level-up (HP reflected in-combat)
   - 81 leveling tests (287 total)
 
-- [x] **Add map/region navigation** — visual region explorer + overland travel
+|- [x] **Add map/region navigation** — visual region explorer + overland travel
   - `navigation.py` engine: derives a connected region graph from world data
     (auto-layout coordinates, nearest-neighbour + bridge connectivity, terrain
     classification by keywords, terrain-based encounter rates)
@@ -89,7 +89,7 @@
   - World schema: optional region terrain/coordinates/connections for richer maps
   - 52 navigation tests (339 total)
 
-- [x] **Add save/load** — named snapshots with full state restoration
+|- [x] **Add save/load** — named snapshots with full state restoration
   - `SaveSlot` model: frozen point-in-time snapshot of the full mutable game
     state (character_snapshot + game_state + story_log + current_act),
     cascade-deletes with its GameSave
@@ -105,7 +105,7 @@
     overlay modal (create, load, delete, character-state previews per slot)
   - 18 save/load tests (357 total)
 
-- [x] **Add frontend polish** — animations, responsive design, color fixes
+|- [x] **Add frontend polish** — animations, responsive design, color fixes
   - Expanded Tailwind palette (leaf green, more arcane/blood shades, gold
     accent) — fixed HP bars, DM typing cursor, and save buttons that referenced
     previously-undefined colors (silent no-style bugs)
@@ -121,8 +121,19 @@
     with smooth transition, polished XP/Act badges; respects reduced-motion
   - Verified: `tsc --noEmit` clean, `vite build` passes (107 modules)
 
+|- [x] **Add context window management** — smart story summarization
+  - `ContextManager` engine with configurable thresholds (default: 20 entries triggers summary)
+  - `StorySummary` dataclass: narrative summary, NPCs met, key locations, active/completed quests, current act, metadata
+  - JSON serialization for database storage in new `story_summary` column
+  - Auto-generates summaries when threshold reached, merges with existing summaries
+  - Builds context from summary + recent raw entries (keeps last N entries)
+  - Updated GameSave and SaveSlot models with `story_summary` column
+  - Updated game API (`/action` and `/action/stream`) to use context manager
+  - Updated save/load API to preserve story_summary
+  - Migration script for new column
+  - 16 context management tests (373 total)
+
 ## Next Priorities
-- [ ] **Context window management** — smart summarization of story log
 - [ ] **World state persistence** — NPC relationship tracking, faction reputation
 
 ## How to Use This File
