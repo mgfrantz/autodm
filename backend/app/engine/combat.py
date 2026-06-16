@@ -16,6 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
+from app.engine import conditions as conditions_mod
 from app.engine.dice import roll_d20, roll_dice
 
 
@@ -29,6 +30,7 @@ class Attack:
     damage_dice_sides: int = 6
     damage_bonus: int = 0
     damage_type: str = "slashing"
+    ranged: bool = False  # distinguishes melee vs ranged for prone/cover rules
 
     def roll_damage(self, critical: bool = False) -> int:
         """Roll damage. On a critical hit the damage dice are doubled (5e rule)."""
@@ -69,6 +71,7 @@ class Combatant:
     current_hp: int = 0
     initiative: int = 0
     conditions: list[str] = field(default_factory=list)
+    condition_durations: dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         # Default current HP to max when not explicitly set.
@@ -78,6 +81,16 @@ class Combatant:
     @property
     def is_alive(self) -> bool:
         return self.current_hp > 0
+
+    @property
+    def is_incapacitated(self) -> bool:
+        """True if the combatant cannot act due to a condition (e.g. stunned)."""
+        return conditions_mod.is_incapacitated(self)
+
+    @property
+    def effective_speed(self) -> int:
+        """Speed, reduced to 0 by conditions such as grappled or restrained."""
+        return conditions_mod.effective_speed(self)
 
     def take_damage(self, amount: int) -> int:
         """Apply damage (min 0). Returns the new current HP."""
@@ -95,15 +108,21 @@ class Combatant:
         self.initiative = result.total
         return self.initiative
 
-    def add_condition(self, condition: str) -> None:
-        """Add a condition (e.g. 'poisoned') if not already present."""
-        if condition not in self.conditions:
-            self.conditions.append(condition)
+    def add_condition(self, condition: str, duration: Optional[int] = None) -> None:
+        """Add a condition (e.g. 'poisoned') if not already present.
 
-    def remove_condition(self, condition: str) -> None:
-        """Remove a condition if present."""
-        if condition in self.conditions:
-            self.conditions.remove(condition)
+        An optional *duration* (in rounds) makes the condition expire at the end
+        of future rounds.
+        """
+        conditions_mod.apply_condition(self, condition, duration=duration)
+
+    def remove_condition(self, condition: str) -> bool:
+        """Remove a condition if present. Returns whether it was removed."""
+        return conditions_mod.remove_condition(self, condition)
+
+    def has_condition(self, condition: str) -> bool:
+        """True if the combatant currently suffers from *condition*."""
+        return conditions_mod.has_condition(self, condition)
 
     def to_dict(self) -> dict:
         return {
@@ -117,6 +136,7 @@ class Combatant:
             "initiative": self.initiative,
             "speed": self.speed,
             "conditions": list(self.conditions),
+            "condition_durations": dict(self.condition_durations),
             "attacks": [
                 {
                     "name": a.name,
@@ -125,6 +145,7 @@ class Combatant:
                     "damage_dice_sides": a.damage_dice_sides,
                     "damage_bonus": a.damage_bonus,
                     "damage_type": a.damage_type,
+                    "ranged": a.ranged,
                 }
                 for a in self.attacks
             ],
@@ -143,6 +164,7 @@ class Combatant:
             initiative=data.get("initiative", 0),
             speed=data.get("speed", 30),
             conditions=list(data.get("conditions", [])),
+            condition_durations=dict(data.get("condition_durations", {})),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
@@ -201,27 +223,49 @@ class Encounter:
         return self.turn_order[self.current_turn_index % len(self.turn_order)]
 
     def next_turn(self) -> Optional[Combatant]:
-        """Advance to the next living combatant's turn.
+        """Advance to the next combatant's turn.
 
-        Returns the combatant whose turn is now active, or None if combat ended.
+        Dead combatants and incapacitated combatants (e.g. stunned, paralyzed)
+        are skipped — they cannot take actions. When the turn order wraps around
+        to a new round, timed conditions on every combatant tick down and any
+        that expire are removed.
+
+        Returns the combatant whose turn is now active, or None if no living,
+        non-incapacitated combatant remains.
         """
         if not self.started:
             raise RuntimeError("Combat has not started")
 
-        # Skip dead combatants while advancing.
+        # Skip dead or incapacitated combatants while advancing.
         for _ in range(len(self.turn_order)):
             self.current_turn_index += 1
             if self.current_turn_index >= len(self.turn_order):
-                # Wrapped around — new round.
+                # Wrapped around — new round: tick timed conditions first.
                 self.current_turn_index = 0
                 self.round_number += 1
+                self._tick_round()
                 self.log.append(f"--- Round {self.round_number} ---")
-            if self.current_combatant and self.current_combatant.is_alive:
-                return self.current_combatant
+            candidate = self.current_combatant
+            if candidate and candidate.is_alive and not candidate.is_incapacitated:
+                return candidate
+            if candidate and candidate.is_alive and candidate.is_incapacitated:
+                self.log.append(
+                    f"{candidate.name} is incapacitated and loses their turn."
+                )
 
-        # Everyone is dead — shouldn't normally happen for the player's side,
-        # but guard against it anyway.
+        # Everyone is dead or incapacitated — combat cannot continue normally.
         return None
+
+    def _tick_round(self) -> None:
+        """Advance timed conditions by one round for every combatant."""
+        for combatant in self.combatants:
+            if not combatant.is_alive:
+                continue
+            expired = conditions_mod.tick_conditions(combatant)
+            for name in expired:
+                self.log.append(
+                    f"{combatant.name} is no longer {name}."
+                )
 
     def alive_combatants(self, side: Optional[str] = None) -> list[Combatant]:
         """Return living combatants, optionally filtered by side."""
@@ -262,16 +306,49 @@ class Encounter:
     ) -> AttackResult:
         """Resolve an attack: roll to hit against AC, then roll damage.
 
+        Implements the full DnD 5e to-hit and damage loop, including
+        condition-driven modifiers:
+
+        - The attacker's own conditions may grant advantage/disadvantage
+          (e.g. poisoned → disadvantage, invisible → advantage).
+        - The target's conditions may make it easier or harder to hit
+          (e.g. stunned → attacks against have advantage; prone melee vs ranged).
         - Natural 20 = critical hit (double damage dice).
         - Natural 1 = critical miss (automatic miss).
-        - Otherwise total >= target AC = hit.
+        - A paralyzed/petrified/unconscious target hit by a melee attack within
+          5 ft takes a critical hit.
+        - A petrified target has resistance to all damage (halved).
+
+        Advantage and disadvantage cancel out per 5e rules: if a creature would
+        have both, it rolls a single d20.
         """
-        roll = roll_d20(attack.attack_bonus, advantage=advantage, disadvantage=disadvantage)
-        d20_value = roll.rolls[0]
+        ranged = bool(getattr(attack, "ranged", False))
+
+        # --- Assemble net advantage / disadvantage from conditions + request ---
+        att_adv = advantage or conditions_mod.attack_roll_advantage(attacker)
+        att_dis = disadvantage or conditions_mod.attack_roll_disadvantage(attacker)
+        tgt_adv = conditions_mod.attacks_against_have_advantage(target, ranged=ranged)
+        tgt_dis = conditions_mod.attacks_against_have_disadvantage(target, ranged=ranged)
+
+        net_adv = att_adv or tgt_adv
+        net_dis = att_dis or tgt_dis
+        # roll_d20 already cancels simultaneous advantage+disadvantage.
+        roll = roll_d20(attack.attack_bonus, advantage=net_adv, disadvantage=net_dis)
+
+        # Determine the "used" die for natural-20/natural-1 detection. With
+        # advantage we keep the higher die; with disadvantage the lower; a
+        # straight (or cancelled) roll uses the single die.
+        if net_adv and not net_dis:
+            used_die = max(roll.rolls)
+        elif net_dis and not net_adv:
+            used_die = min(roll.rolls)
+        else:
+            used_die = roll.rolls[0]
+
         attack_total = roll.total
 
-        critical = d20_value == 20
-        critical_miss = d20_value == 1
+        critical = used_die == 20
+        critical_miss = used_die == 1
         hit = (not critical_miss) and (critical or attack_total >= target.armor_class)
 
         if not hit:
@@ -289,7 +366,15 @@ class Encounter:
                 description=description,
             )
 
+        # A melee hit within 5 ft against a paralyzed/petrified/unconscious
+        # target is always a critical hit.
+        if not critical and conditions_mod.melee_auto_crit(target) and not ranged:
+            critical = True
+
         damage = attack.roll_damage(critical=critical)
+        # Resistance to all damage (e.g. petrified) halves the total, rounding down.
+        if conditions_mod.has_damage_resistance(target):
+            damage = damage // 2
         remaining = target.take_damage(damage)
 
         crit_label = "CRITICAL HIT! " if critical else ""

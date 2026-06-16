@@ -43,6 +43,23 @@ export default function CombatTracker({
     return 'bg-blood-600'
   }
 
+  // Color-code condition badges by severity so players can read combat state at a glance.
+  const INCAPACITATING = new Set([
+    'incapacitated', 'paralyzed', 'petrified', 'stunned', 'unconscious',
+  ])
+  const HARMFUL = new Set([
+    'blinded', 'deafened', 'frightened', 'grappled', 'poisoned', 'prone', 'restrained',
+  ])
+  const BENEFICIAL = new Set(['invisible'])
+
+  const getConditionStyle = (cond: string) => {
+    const c = cond.toLowerCase()
+    if (INCAPACITATING.has(c)) return 'bg-blood-800 text-blood-100'
+    if (HARMFUL.has(c)) return 'bg-amber-800/80 text-amber-100'
+    if (BENEFICIAL.has(c)) return 'bg-arcane-800/80 text-arcane-100'
+    return 'bg-parchment-700 text-parchment-300'
+  }
+
   if (!player) return null
 
   return (
@@ -87,7 +104,7 @@ export default function CombatTracker({
             {player.conditions.map((cond) => (
               <span
                 key={cond}
-                className="text-xs bg-parchment-700 text-parchment-300 px-2 py-0.5 rounded"
+                className={`text-xs px-2 py-0.5 rounded ${getConditionStyle(cond)}`}
               >
                 {cond}
               </span>
@@ -123,7 +140,7 @@ export default function CombatTracker({
                 {enemy.conditions.map((cond) => (
                   <span
                     key={cond}
-                    className="text-xs bg-parchment-700 text-parchment-300 px-2 py-0.5 rounded"
+                    className={`text-xs px-2 py-0.5 rounded ${getConditionStyle(cond)}`}
                   >
                     {cond}
                   </span>

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.models.database import get_db
 from app.models.models import GameSave, Character
 from app.engine.combat import Encounter, Combatant, Attack, AttackResult
+from app.engine import conditions as conditions_mod
 from app.engine.dice import ability_modifier
 from app.engine.leveling import apply_xp
 
@@ -31,6 +32,12 @@ class AttackRequest(BaseModel):
     attack_name: str  # Name of the attack to use
     advantage: bool = False
     disadvantage: bool = False
+
+
+class ConditionRequest(BaseModel):
+    """Request to apply or remove a condition on a combatant."""
+    condition: str
+    duration: int | None = None  # rounds; None = permanent until removed
 
 
 @router.post("/{game_id}/combat/start")
@@ -283,6 +290,102 @@ def end_combat(game_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Combat ended manually"}
+
+
+@router.get("/{game_id}/combat/conditions")
+def list_conditions(game_id: int, db: Session = Depends(get_db)):
+    """List all known DnD 5e conditions with their mechanical effects."""
+    save = db.query(GameSave).filter(GameSave.id == game_id).first()
+    if not save:
+        raise HTTPException(status_code=404, detail="Game not found")
+    return {"conditions": [conditions_mod.get_condition_info(name) for name in conditions_mod.list_conditions()]}
+
+
+def _load_active_encounter(save: GameSave) -> tuple[dict, Encounter]:
+    """Parse a game save's combat state into the raw dict and Encounter."""
+    game_state = json.loads(save.game_state)
+    if not game_state.get("in_combat", False):
+        raise HTTPException(status_code=400, detail="Not in combat")
+    encounter = Encounter.from_dict(game_state.get("combat", {}))
+    return game_state, encounter
+
+
+def _persist_encounter(save: GameSave, game_state: dict, encounter: Encounter, db: Session) -> None:
+    """Write the encounter back to the save and mirror player HP to the character."""
+    game_state["combat"] = encounter.to_dict()
+    player_combatant = next((c for c in encounter.combatants if c.id == "player"), None)
+    if player_combatant is not None:
+        save.character.current_hp = player_combatant.current_hp
+    save.game_state = json.dumps(game_state)
+    save.updated_at = datetime.utcnow()
+    db.commit()
+
+
+@router.post("/{game_id}/combat/conditions/{combatant_id}")
+def apply_condition(
+    game_id: int,
+    combatant_id: str,
+    request: ConditionRequest,
+    db: Session = Depends(get_db),
+):
+    """Apply a condition to a combatant in the active encounter.
+
+    An optional ``duration`` (in rounds) makes the condition expire; omit it for
+    a permanent condition that lasts until removed or the encounter ends.
+    """
+    save = db.query(GameSave).filter(GameSave.id == game_id).first()
+    if not save:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if not conditions_mod.is_valid_condition(request.condition):
+        raise HTTPException(status_code=400, detail=f"Unknown condition: {request.condition}")
+
+    game_state, encounter = _load_active_encounter(save)
+    combatant = next((c for c in encounter.combatants if c.id == combatant_id), None)
+    if not combatant:
+        raise HTTPException(status_code=404, detail=f"Combatant {combatant_id} not found")
+
+    added = conditions_mod.apply_condition(combatant, request.condition, duration=request.duration)
+    _persist_encounter(save, game_state, encounter, db)
+
+    return {
+        "message": (
+            f"{combatant.name} is now {request.condition}"
+            if added
+            else f"{combatant.name} remains {request.condition} (duration refreshed)"
+        ),
+        "combatant": combatant.to_dict(),
+    }
+
+
+@router.delete("/{game_id}/combat/conditions/{combatant_id}")
+def remove_condition(
+    game_id: int,
+    combatant_id: str,
+    request: ConditionRequest,
+    db: Session = Depends(get_db),
+):
+    """Remove a condition from a combatant in the active encounter."""
+    save = db.query(GameSave).filter(GameSave.id == game_id).first()
+    if not save:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    game_state, encounter = _load_active_encounter(save)
+    combatant = next((c for c in encounter.combatants if c.id == combatant_id), None)
+    if not combatant:
+        raise HTTPException(status_code=404, detail=f"Combatant {combatant_id} not found")
+
+    removed = conditions_mod.remove_condition(combatant, request.condition)
+    _persist_encounter(save, game_state, encounter, db)
+
+    return {
+        "message": (
+            f"{combatant.name} is no longer {request.condition}"
+            if removed
+            else f"{combatant.name} did not have {request.condition}"
+        ),
+        "combatant": combatant.to_dict(),
+    }
 
 
 def _build_attacks_for_class(char_class: str, level: int) -> list[Attack]:
