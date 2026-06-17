@@ -1,6 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ TEST SUITE FULLY GREEN (904 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ COMPREHENSIVE README.md ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅
+## TEST SUITE FULLY GREEN (974 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -582,6 +583,45 @@
     combat banner during the player's turn; `tsc` clean, `vite build` passes (109 modules)
   - 57 new tests (43 engine + 14 API); full suite now **904 passing, 0 failing**
 
+- [x] **Add equipment-driven combat** — weapon attacks, armor/shield AC, magic bonuses
+  - `engine/equipment.py` (new, pure engine ~600 lines): bridges the inventory
+    `Item` model and the combat `Attack`/armor_class concepts so equipped gear
+    drives combat stats instead of hardcoded per-class attack lists
+  - `WEAPON_PROFILES` registry: every standard DnD 5e weapon with accurate
+    properties (finesse/ranged/light/two-handed/reach/thrown/versatile/heavy/
+    ammunition); enchantment prefix/suffix + "of" suffix stripping for lookup
+    (e.g. "+2 longsword", "longsword of wounding"); heuristic fallback for
+    unknown/homebrew weapons
+  - `build_attack_from_weapon`: attack_bonus = ability + proficiency + magic;
+    damage dice/type from the weapon; damage_bonus = ability + flat + magic;
+    finesse weapons use best of Str/Dex, ranged weapons use Dex
+  - `weapon_magic_bonus`: magic weapons (uncommon+) grant their enhancement to
+    BOTH attack and damage (DnD 5e rule); mundane (common) gear normalised to 0
+    so legacy starting gear's static attack_bonus is never double-counted
+  - `calculate_armor_class`: body armor + shield + unarmored defense
+    (barbarian Con / monk Wis when unarmored); respects light/medium/heavy Dex
+    caps; magic armor/shield bonuses honoured
+  - `compute_equipment_combat_stats`: full AC + attacks summary with
+    extra-attack progression by class/level; `EquipmentCombatStats.to_dict()`
+  - `unarmed_strike_attack` with monk martial-arts die scaling (d4→d6→d8→d10)
+  - `engine/inventory.py`: shields are now a SEPARATE equip slot from body
+    armor (armor + shield coexist); `equipped_body_armor`/`equipped_shield`
+    properties; `create_shield()` helper; shields added to fighter & paladin
+    starting gear; `equipped_armor` excludes shields (backward compatible)
+  - `api/combat.py`: `start_combat` builds the player's attacks from the
+    equipped weapon and AC from equipped armor + shield via the equipment
+    engine, with a safe fallback to the legacy class-based stats for
+    unequipped characters (preserves all existing combat-API test behaviour)
+  - `api/inventory.py`: new `GET /{id}/combat-stats` endpoint; equip/unequip/
+    initialize recompute AC through the equipment engine (shields now count);
+    **bug fix** — `_load_inventory` now tolerates the model's `"[]"` default
+    (previously crashed the inventory API on any freshly-created character);
+    `equipped_shield` surfaced in inventory responses
+  - Frontend: `EquipmentCombatStats` types + `getEquipmentCombatStats` API
+    client; GameView sidebar shows live Armor Class, equipped weapon/armor/
+    shield, and the derived attack list; `tsc --noEmit` clean
+  - 70 new tests (61 engine + 9 API); full suite now **974 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -590,11 +630,11 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Equipment-driven combat (weapon damage dice from equipped weapon, armor AC
-    integration into the combat engine, magic weapon bonuses)
   - Shop / economy system (merchants, buy/sell, trade loot for gold)
   - Loot tables (randomized loot drops from defeated enemies)
   - Stealth / hiding mechanics integration with the new skill system
+  - Frontend inventory management panel (equip/unequip weapons, armor, shields
+    via the UI — the backend equipment + combat-stats endpoints now exist)
 
 ## How to Use This File
 When you (the agent) work on the project:
