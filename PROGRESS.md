@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ TEST SUITE FULLY GREEN (644 passing, 0 failing) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ TEST SUITE FULLY GREEN (695 passing, 0 failing) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -407,7 +407,7 @@
     integration via roll_d20 spy, next_turn skipping/ticking, serialization
     round-trips, and REST API) — full suite now **592 passing, 0 failing**
 
-- [x] **Add rest system** — short rest (hit dice) and long rest (full recovery)
+|- [x] **Add rest system** — short rest (hit dice) and long rest (full HP, slot/dice recovery, condition clearing)
   - `engine/rest.py` pure engine: Hit-Dice pool = character level; short rest
     spends dice (roll hit-die + CON mod, min 1, clamped to remaining HP) and
     *stops at full HP so no dice are wasted*; supports explicit `num_dice` and
@@ -428,6 +428,23 @@
     note, short/long-rest buttons with live roll summary and story logging
   - 52 new tests (24 engine + 28 API); full suite now **644 passing, 0 failing**
 
+|- [x] **Add saving throw engine** — per-ability saves with class proficiency tracking
+  - Full DnD 5e saving throw mechanics (6 abilities, 12 core classes)
+  - Class proficiency: each class proficient in 2 saves (e.g., Fighter: Str/Con,
+    Wizard: Int/Wis, Rogue: Dex/Int, Cleric: Wis/Cha, Barbarian: Str/Con, etc.)
+  - Multiclassing: union of all class proficiencies
+  - Feat integration: Resilient feat grants proficiency in one saving throw
+  - Save formula: d20 + proficiency_bonus (if proficient) + ability_modifier
+  - Condition effects: paralyzed/petrified/unconscious auto-fail Strength and
+    Dexterity saves; restrained imposes disadvantage on Dexterity saves
+  - Save DC calculation: 8 + proficiency_bonus + ability_modifier + bonus
+  - `engine/saving_throws.py` pure engine (330 lines): class proficiency tables,
+    multiclass union, feat parsing, bonus calculation, save execution with
+    advantage/disadvantage/auto-fail logic, DC calculation
+  - `api/saving_throws.py` REST API (120 lines): GET proficiencies, POST roll,
+    GET DC
+  - 51 new tests (engine + API); full suite now **695 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -437,10 +454,6 @@
 
 - [ ] **[SELF-CONTAINED ENGINE ENHANCEMENTS]** — No external services required;
   pick the top one each run:
-  - **Saving throw engine** — per-ability saves (Str/Dex/Con/Int/Wis/Cha) with
-    class proficiency tracking; conditions already model auto-fail
-    (paralyzed/petrified/unconscious Str+Dex) and disadvantage (restrained Dex),
-    so a save engine would let spells/conditions resolve against targets.
   - **Encounter difficulty / CR balancing** — challenge-rating XP budgets and
     difficulty thresholds (easy/medium/hard/deadly) for the DM/world generator
     to scale enemy counts to party level.
