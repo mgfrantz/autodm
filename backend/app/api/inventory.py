@@ -26,6 +26,7 @@ from app.engine.inventory import (
     create_armor,
     create_potion,
 )
+from app.engine.dice import ability_modifier
 
 router = APIRouter()
 
@@ -95,6 +96,7 @@ class InventoryResponse(BaseModel):
     total_value: int
     equipped_armor: ItemResponse | None
     equipped_weapon: ItemResponse | None
+    equipped_shield: ItemResponse | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -107,12 +109,36 @@ def _load_inventory(character: Character) -> Inventory:
         data = json.loads(character.inventory)
     except (json.JSONDecodeError, TypeError):
         data = {"slots": []}
+    # The model default is "[]" (a bare JSON list); tolerate both the list and
+    # the canonical {"slots": [...]} dict forms.
+    if isinstance(data, list):
+        data = {"slots": data}
+    if not isinstance(data, dict):
+        data = {"slots": []}
     return Inventory.from_dict(data)
 
 
 def _save_inventory(character: Character, inventory: Inventory) -> None:
     """Save inventory to character's JSON storage."""
     character.inventory = json.dumps(inventory.to_dict())
+
+
+def _recalc_armor_class(character: Character, inventory: Inventory) -> None:
+    """Recompute the character's Armor Class from equipped armor + shield.
+
+    Delegates to the equipment engine so that worn body armor *and* an equipped
+    shield both contribute, light/medium/heavy Dex caps are respected, and
+    unarmored-defense features (barbarian Con, monk Wis) apply when unarmored.
+    """
+    from app.engine.equipment import calculate_armor_class
+
+    character.armor_class = calculate_armor_class(
+        inventory,
+        dex_mod=ability_modifier(character.dexterity),
+        char_class=character.char_class or "commoner",
+        constitution=character.constitution or 10,
+        wisdom=character.wisdom or 10,
+    )
 
 
 def _item_to_response(item: Item) -> ItemResponse:
@@ -155,6 +181,7 @@ def _inventory_to_response(inventory: Inventory) -> InventoryResponse:
         total_value=inventory.total_value,
         equipped_armor=_item_to_response(inventory.equipped_armor) if inventory.equipped_armor else None,
         equipped_weapon=_item_to_response(inventory.equipped_weapon) if inventory.equipped_weapon else None,
+        equipped_shield=_item_to_response(inventory.equipped_shield) if inventory.equipped_shield else None,
     )
 
 
@@ -269,19 +296,14 @@ def equip_item(character_id: int, item_id: str, db: Session = Depends(get_db)):
     
     if not equipped:
         raise HTTPException(status_code=400, detail="Item not found or not equippable")
-    
-    # Update character AC based on equipped armor
-    equipped_armor = inventory.equipped_armor
-    if equipped_armor:
-        from app.engine.dice import ability_modifier
-        dex_mod = ability_modifier(character.dexterity)
-        new_ac = equipped_armor.get_ac_bonus(dex_mod)
-        character.armor_class = new_ac
-    
+
+    # Recompute AC from the full equipped set (armor + shield + unarmored defense).
+    _recalc_armor_class(character, inventory)
+
     _save_inventory(character, inventory)
     character.updated_at = datetime.utcnow()
     db.commit()
-    
+
     return _inventory_to_response(inventory)
 
 
@@ -291,41 +313,20 @@ def unequip_item(character_id: int, item_id: str, db: Session = Depends(get_db))
     character = db.query(Character).filter(Character.id == character_id).first()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
-    
+
     inventory = _load_inventory(character)
     success = inventory.unequip_item(item_id)
-    
+
     if not success:
         raise HTTPException(status_code=400, detail="Item not found")
-    
-    # Recalculate AC without armor
-    equipped_armor = inventory.equipped_armor
-    if equipped_armor:
-        from app.engine.dice import ability_modifier
-        dex_mod = ability_modifier(character.dexterity)
-        new_ac = equipped_armor.get_ac_bonus(dex_mod)
-        character.armor_class = new_ac
-    else:
-        # No armor - base AC (10 + Dex mod, or unarmored defense for monks/barbarians)
-        from app.engine.dice import ability_modifier
-        dex_mod = ability_modifier(character.dexterity)
-        char_class_lower = character.char_class.lower()
-        if char_class_lower == "monk":
-            # Unarmored defense: 10 + Dex + Wis
-            wis_mod = ability_modifier(character.wisdom)
-            character.armor_class = 10 + dex_mod + wis_mod
-        elif char_class_lower == "barbarian":
-            # Unarmored defense: 10 + Dex + Con
-            con_mod = ability_modifier(character.constitution)
-            character.armor_class = 10 + dex_mod + con_mod
-        else:
-            # Standard: 10 + Dex
-            character.armor_class = 10 + dex_mod
-    
+
+    # Recompute AC without the unequipped item (handles armor, shield, unarmored).
+    _recalc_armor_class(character, inventory)
+
     _save_inventory(character, inventory)
     character.updated_at = datetime.utcnow()
     db.commit()
-    
+
     return _inventory_to_response(inventory)
 
 
@@ -372,14 +373,10 @@ def initialize_inventory(character_id: int, db: Session = Depends(get_db)):
     
     from app.engine.inventory import get_starting_inventory
     inventory = get_starting_inventory(character.char_class)
-    
-    # Update AC based on starting armor
-    equipped_armor = inventory.equipped_armor
-    if equipped_armor:
-        from app.engine.dice import ability_modifier
-        dex_mod = ability_modifier(character.dexterity)
-        character.armor_class = equipped_armor.get_ac_bonus(dex_mod)
-    
+
+    # Recompute AC from starting equipment (armor + shield + unarmored defense).
+    _recalc_armor_class(character, inventory)
+
     _save_inventory(character, inventory)
     character.updated_at = datetime.utcnow()
     db.commit()
@@ -389,3 +386,35 @@ def initialize_inventory(character_id: int, db: Session = Depends(get_db)):
         "items_count": len(inventory.slots),
         "inventory": _inventory_to_response(inventory),
     }
+
+
+@router.get("/{character_id}/combat-stats")
+def get_equipment_combat_stats(character_id: int, db: Session = Depends(get_db)):
+    """Preview the combat stats derived from a character's equipped gear.
+
+    Returns the Armor Class (armor + shield + unarmored defense), the attack
+    list (weapon damage dice + ability/proficiency/magic bonuses), and weapon
+    metadata (properties, magic bonus). This is exactly what combat uses when an
+    encounter starts, surfaced so the UI can show "as-equipped" combat readiness
+    without entering combat.
+    """
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    from app.engine.dice import proficiency_bonus as prof_for_level
+    from app.engine.equipment import compute_equipment_combat_stats
+
+    inventory = _load_inventory(character)
+    cls = (character.char_class or "commoner")
+    stats = compute_equipment_combat_stats(
+        inventory,
+        strength=character.strength or 10,
+        dexterity=character.dexterity or 10,
+        constitution=character.constitution or 10,
+        wisdom=character.wisdom or 10,
+        proficiency=prof_for_level(character.level or 1),
+        char_class=cls,
+        level=character.level or 1,
+    )
+    return stats.to_dict()

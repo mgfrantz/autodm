@@ -371,3 +371,37 @@ export interface SkillCheckResult {
   disadvantage: boolean;
   description: string;
 }
+
+// === Equipment-driven combat stats ===
+
+export interface EquipmentAttack {
+  name: string;
+  attack_bonus: number;
+  damage_dice_count: number;
+  damage_dice_sides: number;
+  damage_bonus: number;
+  damage_type: string;
+  ranged: boolean;
+}
+
+export interface WeaponProperties {
+  ranged: boolean;
+  finesse: boolean;
+  light: boolean;
+  two_handed: boolean;
+  reach: boolean;
+  thrown: boolean;
+  heavy: boolean;
+  versatile: boolean;
+  ammunition: boolean;
+}
+
+export interface EquipmentCombatStats {
+  armor_class: number;
+  attacks: EquipmentAttack[];
+  weapon: string | null;
+  body_armor: string | null;
+  shield: string | null;
+  weapon_properties: WeaponProperties | null;
+  weapon_magic_bonus: number;
+}

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -325,5 +325,12 @@ export const rollSkillCheck = async (
     disadvantage,
     conditions,
   });
+  return res.data;
+};
+
+// === Equipment-driven combat stats ===
+
+export const getEquipmentCombatStats = async (characterId: number): Promise<EquipmentCombatStats> => {
+  const res = await API.get<EquipmentCombatStats>(`/characters/${characterId}/combat-stats`);
   return res.data;
 };

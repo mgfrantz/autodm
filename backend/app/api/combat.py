@@ -58,6 +58,10 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
     # Build the encounter
     encounter = Encounter()
 
+    # Derive the player's attacks and Armor Class from their equipped gear.
+    # Falls back to class-based stats for characters with no equipment.
+    player_attacks, player_ac = _build_player_combat_stats(character)
+
     # Add the player character
     player_combatant = Combatant(
         id="player",
@@ -65,7 +69,7 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
         side="player",
         max_hp=character.max_hp,
         current_hp=character.current_hp,
-        armor_class=character.armor_class,
+        armor_class=player_ac,
         initiative_bonus=(character.dexterity - 10) // 2,  # Dex mod
         speed=character.speed,
         # Ability scores + skill bonuses power grapple/shove contests.
@@ -73,8 +77,9 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
         dexterity=character.dexterity,
         athletics_bonus=_skill_bonus_for_character(character, "athletics"),
         acrobatics_bonus=_skill_bonus_for_character(character, "acrobatics"),
-        # Build attacks based on class (simplified for MVP)
-        attacks=_build_attacks_for_class(character.char_class, character.level),
+        # Attacks derived from the equipped weapon (equipment-driven combat),
+        # or a class-based fallback when no weapon is equipped.
+        attacks=player_attacks,
     )
     encounter.add_combatant(player_combatant)
 
@@ -411,6 +416,59 @@ def _skill_bonus_for_character(character: Character, skill: str) -> int:
         ability = "strength" if skill == "athletics" else "dexterity"
         score = getattr(character, ability, 10) or 10
         return ability_modifier(score)
+
+
+def _load_character_inventory(character: Character):
+    """Load a character's inventory, tolerating missing/corrupt JSON."""
+    try:
+        data = json.loads(character.inventory)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    if not data:
+        return None
+    from app.engine.inventory import Inventory
+    return Inventory.from_dict(data)
+
+
+def _build_player_combat_stats(character: Character) -> tuple[list[Attack], int]:
+    """Derive the player's combat attacks and Armor Class from equipped gear.
+
+    When the character has an equipped weapon, the equipment engine produces
+    attacks whose damage dice, attack/damage bonuses, and ranged flag come from
+    the actual weapon (plus ability + proficiency + magic enhancement), and the
+    Armor Class reflects worn body armor + shield + unarmored defense.
+
+    Characters with no equipped gear fall back to the legacy class-based attack
+    list and the character's stored ``armor_class``, preserving the behaviour
+    every existing combat test relies on.
+    """
+    fallback_attacks = _build_attacks_for_class(character.char_class, character.level)
+    inventory = _load_character_inventory(character)
+    if inventory is None or not inventory.equipped_items:
+        # No equipment at all → use the legacy hardcoded stats.
+        return fallback_attacks, character.armor_class
+
+    try:
+        from app.engine.dice import proficiency_bonus as prof_for_level
+        from app.engine.equipment import compute_equipment_combat_stats
+
+        cls = character.primary_class or character.char_class or "commoner"
+        stats = compute_equipment_combat_stats(
+            inventory,
+            strength=character.strength or 10,
+            dexterity=character.dexterity or 10,
+            constitution=character.constitution or 10,
+            wisdom=character.wisdom or 10,
+            proficiency=prof_for_level(character.level or 1),
+            char_class=cls,
+            level=character.level or 1,
+        )
+        # If a weapon is equipped, use the equipment-derived attacks; otherwise
+        # keep the class-based list but still honour the gear-derived AC.
+        attacks = stats.attacks if stats.weapon is not None else fallback_attacks
+        return attacks, stats.armor_class
+    except Exception:
+        return fallback_attacks, character.armor_class
 
 
 def _build_attacks_for_class(char_class: str, level: int) -> list[Attack]:

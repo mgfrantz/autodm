@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest } from '../stores/api'
+import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest, getEquipmentCombatStats } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult } from '../types'
+import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats } from '../types'
 import CombatTracker from '../components/CombatTracker'
 import WorldMap from '../components/WorldMap'
 import SkillsPanel from '../components/SkillsPanel'
@@ -29,6 +29,7 @@ export default function GameView() {
   const [restResult, setRestResult] = useState<string | null>(null)
   const [showSkills, setShowSkills] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Load game state and combat state
@@ -59,6 +60,15 @@ export default function GameView() {
   useEffect(() => {
     storyEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [story, streamingText])
+
+  // Fetch equipment-derived combat stats (AC, weapon attacks) once the
+  // character is known. These reflect the character's equipped gear.
+  useEffect(() => {
+    if (!gameState?.character?.id) return
+    getEquipmentCombatStats(gameState.character.id)
+      .then(setEquipmentStats)
+      .catch(() => { /* equipment stats are informational; ignore failures */ })
+  }, [gameState?.character?.id])
 
   const handleStart = async () => {
     setLoading(true)
@@ -545,6 +555,51 @@ export default function GameView() {
             <span className="text-gold-400 font-semibold">✦ {gameState.xp} XP</span>
           </div>
         </div>
+
+        {/* Equipment & Combat Stats */}
+        {equipmentStats && (
+          <div className="panel">
+            <h3 className="font-fantasy text-base text-parchment-200 mb-2">⚔️ Equipment</h3>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-parchment-500">Armor Class</span>
+              <span className="text-xl font-bold text-arcane-300">{equipmentStats.armor_class}</span>
+            </div>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-parchment-500">Weapon</span>
+                <span className="text-parchment-200 text-right">
+                  {equipmentStats.weapon ?? '—'}
+                  {equipmentStats.weapon_magic_bonus > 0 && (
+                    <span className="text-gold-400"> +{equipmentStats.weapon_magic_bonus}</span>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-parchment-500">Armor</span>
+                <span className="text-parchment-200">{equipmentStats.body_armor ?? 'Unarmored'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-parchment-500">Shield</span>
+                <span className="text-parchment-200">{equipmentStats.shield ?? '—'}</span>
+              </div>
+            </div>
+            {equipmentStats.attacks.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-parchment-800/60 space-y-1">
+                <span className="text-xs text-parchment-500">Attacks</span>
+                {equipmentStats.attacks.map((atk, i) => (
+                  <div key={i} className="flex justify-between text-xs text-parchment-300">
+                    <span>{atk.ranged ? '🏹 ' : '🗡️ '}{atk.name}</span>
+                    <span className="font-mono">
+                      +{atk.attack_bonus} · {atk.damage_dice_count > 0
+                        ? `${atk.damage_dice_count}d${atk.damage_dice_sides}${atk.damage_bonus >= 0 ? '+' : ''}${atk.damage_bonus}`
+                        : `${atk.damage_bonus}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Combat Tracker - Only show during combat */}
         {inCombat && combatState?.encounter && (

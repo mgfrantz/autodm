@@ -227,12 +227,31 @@ class Inventory:
     
     @property
     def equipped_armor(self) -> Optional[Item]:
-        """Get the currently equipped armor."""
+        """Get the currently equipped body armor (excludes shields).
+
+        Shields occupy their own slot; use :attr:`equipped_shield` for those.
+        Kept for backward compatibility — returns worn body armor only.
+        """
         for slot in self.slots:
             if slot.equipped and slot.item.item_type == ItemType.ARMOR:
-                return slot.item
+                if slot.item.armor_type != ArmorType.SHIELD:
+                    return slot.item
         return None
-    
+
+    @property
+    def equipped_body_armor(self) -> Optional[Item]:
+        """The currently equipped worn-body armor (not a shield)."""
+        return self.equipped_armor
+
+    @property
+    def equipped_shield(self) -> Optional[Item]:
+        """Get the currently equipped shield, if any."""
+        for slot in self.slots:
+            if slot.equipped and slot.item.item_type == ItemType.ARMOR:
+                if slot.item.armor_type == ArmorType.SHIELD:
+                    return slot.item
+        return None
+
     @property
     def equipped_weapon(self) -> Optional[Item]:
         """Get the currently equipped weapon."""
@@ -285,21 +304,33 @@ class Inventory:
         return None
     
     def equip_item(self, item_id: str) -> Optional[Item]:
-        """Equip an item. Unequip conflicting items. Returns the equipped item."""
+        """Equip an item. Unequip conflicting items. Returns the equipped item.
+
+        Equipment slots are mutually exclusive *within a slot type*:
+
+        - **Weapon** — equipping a weapon unequips any other weapon.
+        - **Body armor** — equipping worn armor (light/medium/heavy) unequips
+          any other worn body armor, but *not* a shield.
+        - **Shield** — equipping a shield unequips any other shield, but *not*
+          body armor. A character can thus wear armor *and* wield a shield.
+        """
         slot = next((s for s in self.slots if s.item.id == item_id), None)
         if not slot or not slot.item.is_equippable:
             return None
         
         item = slot.item
-        
-        # Unequip existing items of the same type
+
         if item.item_type == ItemType.WEAPON:
             for s in self.slots:
                 if s.equipped and s.item.item_type == ItemType.WEAPON:
                     s.equipped = False
         elif item.item_type == ItemType.ARMOR:
+            is_shield = item.armor_type == ArmorType.SHIELD
             for s in self.slots:
-                if s.equipped and s.item.item_type == ItemType.ARMOR:
+                if not s.equipped or s.item.item_type != ItemType.ARMOR:
+                    continue
+                # Only swap out items in the same armor sub-slot (shield vs body).
+                if (s.item.armor_type == ArmorType.SHIELD) == is_shield:
                     s.equipped = False
         
         slot.equipped = True
@@ -410,6 +441,32 @@ def create_armor(
     )
 
 
+def create_shield(
+    name: str = "Shield",
+    armor_bonus: int = 2,
+    rarity: Rarity = Rarity.COMMON,
+    value: int = 10,
+    weight: float = 6.0,
+) -> Item:
+    """Create a shield item (a distinct equip slot from worn body armor).
+
+    A mundane shield grants +2 AC — :meth:`Item.get_ac_bonus` returns a shield's
+    ``armor_bonus`` directly, so the default is ``2`` (the PHB shield value).
+    Pass a higher ``armor_bonus`` (e.g. ``3``) for a magic +1 shield.
+    """
+    return Item(
+        id="",  # Will be auto-generated
+        name=name,
+        item_type=ItemType.ARMOR,
+        description=f"A {name.lower()}.",
+        rarity=rarity,
+        value=value,
+        weight=weight,
+        armor_type=ArmorType.SHIELD,
+        armor_bonus=armor_bonus,
+    )
+
+
 def create_potion(
     name: str,
     effect: str,
@@ -441,6 +498,7 @@ STARTING_EQUIPMENT = {
     "fighter": [
         create_weapon("Longsword", "1d8", "slashing", 2, Rarity.COMMON, 15, 3),
         create_armor("Chain Mail", ArmorType.HEAVY, 0, None, Rarity.COMMON, 75, 55),
+        create_shield("Shield", 2, Rarity.COMMON, 10, 6),
         create_potion("Potion of Healing", "Restores 2d4+2 HP", 1, Rarity.COMMON, 50),
     ],
     "wizard": [
@@ -468,6 +526,7 @@ STARTING_EQUIPMENT = {
     "paladin": [
         create_weapon("Longsword", "1d8", "slashing", 3, Rarity.COMMON, 15, 3),
         create_armor("Chain Mail", ArmorType.HEAVY, 0, None, Rarity.COMMON, 75, 55),
+        create_shield("Shield", 2, Rarity.COMMON, 10, 6),
         create_potion("Potion of Healing", "Restores 2d4+2 HP", 1, Rarity.COMMON, 50),
     ],
     "barbarian": [
