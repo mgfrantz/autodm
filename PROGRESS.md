@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ TEST SUITE FULLY GREEN (749 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats)
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ TEST SUITE FULLY GREEN (749 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅ COMPREHENSIVE README.md ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -508,6 +508,18 @@
   - Feats: 23 (unchanged - already good coverage)
   - All content follows DnD 5e rules with accurate CR, AC, HP, and attack bonuses
   - All 749 tests passing
+
+## Completed
+- [x] **Add comprehensive README.md** — project overview, features, quick start guide, and development instructions
+  - Full feature list with all implemented systems (character creation, combat, spells, navigation, etc.)
+  - Quick start guide for macOS/Linux/Windows
+  - LLM provider configuration (OpenAI, Anthropic, local models)
+  - Development instructions (running tests, type checking)
+  - Project structure overview
+  - Game rules coverage documentation
+  - Current status and known limitations
+  - Future plans and acknowledgments
+  - 8,122 characters of comprehensive documentation
 
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
