@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ TEST SUITE FULLY GREEN (749 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅ COMPREHENSIVE README.md ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ TEST SUITE FULLY GREEN (847 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅ COMPREHENSIVE README.md ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -521,12 +521,50 @@
   - Future plans and acknowledgments
   - 8,122 characters of comprehensive documentation
 
+- [x] **Add skill system** — DnD 5e skills, proficiency, expertise, checks, passive scores
+  - `engine/skills.py` pure engine (~520 lines): all 18 core skills mapped to
+    abilities (Athletics/Str, Stealth/Dex, Arcana/Int, Perception/Wis,
+    Persuasion/Cha, etc.)
+  - Class skill proficiency: candidate lists + choice counts for all 12 classes
+    (Rogue 4-of-11, Fighter 2-of-8, Bard any-3, Ranger 3-of-8, etc.)
+  - Background skill proficiency (Soldier, Sage, Criminal, Noble, etc.)
+  - Expertise: Rogue (levels 1 & 6) and Bard (levels 3 & 10) double proficiency,
+    tracked per-class level for multiclassing
+  - Skill modifier = ability_mod + proficiency_bonus (×2 if Expertise); full
+    breakdown dataclass for UI
+  - Skill checks vs DC with advantage/disadvantage + condition effects:
+    poisoned → disadvantage on all; restrained → Dex skills; blinded/deafened →
+    Perception; adv+disadv cancel
+  - Passive scores (Perception/Investigation/Insight) with ±5 for adv/disadv
+  - Feat integration (Skilled, Skill Expert grant proficiency/expertise)
+  - Backward-compatible: auto-derives default proficiencies if columns unset
+  - Character model: new `skill_proficiencies` + `skill_expertise` JSON columns
+    + `migrations/add_skill_columns.py`; exposed in CharacterResponse; wired
+    into save/load snapshot capture/restore
+  - `api/skills.py` REST API (6 endpoints): GET /skills (all + modifiers +
+    passive), GET /skills/candidates, POST /skills/proficiencies (validated),
+    POST /skills/expertise (eligibility-validated), POST /skills/check,
+    GET /skills/passive
+  - Frontend: `SkillsPanel` component (skills grouped by ability,
+    proficiency/expertise badges, passive scores, click-to-roll with DC presets
+    + advantage toggles + live result); GameView 📜 Skills button + overlay
+  - 98 new tests (engine + API); full suite now **847 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
+- [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
+  gameplay depth candidates (pick one next run):
+  - Combat actions beyond basic attacks (Grapple, Shove, Dodge/Dash/Disengage,
+    two-weapon fighting, unarmed strikes, help action)
+  - Equipment-driven combat (weapon damage dice from equipped weapon, armor AC
+    integration into the combat engine, magic weapon bonuses)
+  - Shop / economy system (merchants, buy/sell, trade loot for gold)
+  - Loot tables (randomized loot drops from defeated enemies)
+  - Stealth / hiding mechanics integration with the new skill system
 
 ## How to Use This File
 When you (the agent) work on the project:
