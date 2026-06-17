@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo } from '../types'
+import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult } from '../types'
 import CombatTracker from '../components/CombatTracker'
 import WorldMap from '../components/WorldMap'
 import SkillsPanel from '../components/SkillsPanel'
+import CombatActionsPanel from '../components/CombatActionsPanel'
 
 export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
@@ -27,6 +28,7 @@ export default function GameView() {
   const [restBusy, setRestBusy] = useState(false)
   const [restResult, setRestResult] = useState<string | null>(null)
   const [showSkills, setShowSkills] = useState(false)
+  const [showActions, setShowActions] = useState(false)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Load game state and combat state
@@ -170,6 +172,31 @@ export default function GameView() {
 
   const isPlayerTurn = combatState?.encounter?.combatants.find(c => c.id === combatState.current_turn_id)?.side === 'player'
   const inCombat = combatState?.in_combat && combatState?.is_active
+
+  // Handle a combat action result (Grapple, Shove, Dodge, etc.): update the
+  // story log and refresh combat state from the returned encounter.
+  const handleCombatAction = (result: CombatActionResult) => {
+    addToStory({
+      role: 'system',
+      content: result.result.description,
+      timestamp: new Date().toISOString(),
+    })
+    setCombatState({
+      in_combat: result.combat_active,
+      is_active: result.combat_active,
+      winner: result.winner,
+      encounter: result.encounter,
+    })
+    if (!result.combat_active && result.winner) {
+      addToStory({
+        role: 'system',
+        content: result.winner === 'player'
+          ? '🎉 Victory! You have defeated all enemies!'
+          : '💀 You have been defeated...',
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }
 
   const hpColor = (pct: number) =>
     pct > 50 ? 'bg-leaf-600' : pct > 25 ? 'bg-amber-600' : 'bg-blood-600'
@@ -463,8 +490,19 @@ export default function GameView() {
         {/* Combat indicator */}
         {inCombat && (
           <div className="panel bg-blood-900/30 border border-blood-500 animate-scale-in">
-            <div className="text-center text-parchment-200 font-semibold animate-glow-pulse">
-              ⚔️ COMBAT IN PROGRESS ⚔️
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-center text-parchment-200 font-semibold animate-glow-pulse flex-1">
+                ⚔️ COMBAT IN PROGRESS ⚔️
+              </div>
+              {isPlayerTurn && combatState?.encounter && (
+                <button
+                  className="btn-primary text-sm px-3 py-1.5 shrink-0"
+                  onClick={() => setShowActions(true)}
+                  title="Grapple, Shove, Dodge, Dash, Disengage, Help, and more"
+                >
+                  🎯 <span className="hidden sm:inline">Actions</span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -742,6 +780,21 @@ export default function GameView() {
           </div>
         </div>
       )}
+
+      {showActions && combatState?.encounter && (() => {
+        const player = combatState.encounter.combatants.find((c) => c.id === 'player')
+        const enemies = combatState.encounter.combatants.filter((c) => c.side === 'enemy')
+        if (!player) return null
+        return (
+          <CombatActionsPanel
+            gameId={gid}
+            player={player}
+            enemies={enemies}
+            onResult={handleCombatAction}
+            onClose={() => setShowActions(false)}
+          />
+        )
+      })()}
     </div>
   )
 }

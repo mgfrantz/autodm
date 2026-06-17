@@ -82,6 +82,17 @@ export interface Combatant {
   speed: number;
   conditions: string[];
   attacks: Attack[];
+  // Extended combat-action fields (optional for backward compatibility).
+  size?: string;
+  strength?: number;
+  dexterity?: number;
+  athletics_bonus?: number | null;
+  acrobatics_bonus?: number | null;
+  dodging?: boolean;
+  disengaging?: boolean;
+  bonus_movement?: number;
+  movement_used?: number;
+  grappled_by?: string | null;
 }
 
 export interface Attack {
@@ -100,6 +111,7 @@ export interface Encounter {
   round_number: number;
   started: boolean;
   log: string[];
+  help_advantage_targets?: string[];
 }
 
 export interface CombatState {
@@ -124,6 +136,49 @@ export interface CombatResult {
     target_remaining_hp: number;
     description: string;
   };
+  encounter: Encounter;
+  combat_active: boolean;
+  winner?: 'player' | 'enemy' | null;
+}
+
+// === Combat Actions (DnD 5e Actions in Combat) ===
+
+export type CombatActionKey =
+  | 'grapple'
+  | 'shove'
+  | 'dash'
+  | 'disengage'
+  | 'dodge'
+  | 'help'
+  | 'unarmed-strike'
+  | 'off-hand-attack'
+  | 'escape'
+  | 'opportunity-attack';
+
+export interface CombatActionInfo {
+  key: CombatActionKey;
+  name: string;
+  description: string;
+  cost: 'one action' | 'one attack' | 'bonus action' | 'reaction';
+  requires_target: boolean;
+}
+
+export interface ActionResultSummary {
+  action: string;
+  success: boolean;
+  description: string;
+  details?: Record<string, unknown>;
+}
+
+export interface CombatActionResult {
+  result: ActionResultSummary;
+  attack_result?: {
+    hit: boolean;
+    critical: boolean;
+    critical_miss: boolean;
+    damage: number;
+    target_remaining_hp: number;
+  } | null;
   encounter: Encounter;
   combat_active: boolean;
   winner?: 'player' | 'enemy' | null;

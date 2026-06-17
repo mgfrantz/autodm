@@ -72,6 +72,20 @@ class Combatant:
     initiative: int = 0
     conditions: list[str] = field(default_factory=list)
     condition_durations: dict[str, int] = field(default_factory=dict)
+    # --- Extended combat-action fields (all default for backward compat) ---
+    size: str = "medium"  # tiny/small/medium/large/huge/gargantuan
+    strength: int = 10
+    dexterity: int = 10
+    # Optional pre-computed skill bonuses (Str Athletics / Dex Acrobatics).
+    # When None, the action engine derives them from the ability score.
+    athletics_bonus: Optional[int] = None
+    acrobatics_bonus: Optional[int] = None
+    # Ephemeral turn-scoped action state (serialized so mid-round saves persist).
+    dodging: bool = False
+    disengaging: bool = False
+    bonus_movement: int = 0   # extra movement granted by Dash this turn
+    movement_used: int = 0    # movement spent this turn
+    grappled_by: Optional[str] = None  # id of the combatant grappling this one
 
     def __post_init__(self) -> None:
         # Default current HP to max when not explicitly set.
@@ -91,6 +105,32 @@ class Combatant:
     def effective_speed(self) -> int:
         """Speed, reduced to 0 by conditions such as grappled or restrained."""
         return conditions_mod.effective_speed(self)
+
+    @property
+    def available_movement(self) -> int:
+        """Movement the combatant may still spend this turn.
+
+        Equals effective speed + any Dash bonus, minus movement already spent.
+        A grappled/restrained creature has speed 0 and cannot move.
+        """
+        return max(0, self.effective_speed + self.bonus_movement - self.movement_used)
+
+    def start_turn(self) -> None:
+        """Called when this combatant's turn begins.
+
+        Dodge lasts *until the start of your next turn*, so it is cleared here.
+        """
+        self.dodging = False
+
+    def end_turn(self) -> None:
+        """Called when this combatant's turn ends.
+
+        Disengage only lasts for the rest of *your* turn, and Dash's extra
+        movement does not carry over, so both are reset here.
+        """
+        self.disengaging = False
+        self.bonus_movement = 0
+        self.movement_used = 0
 
     def take_damage(self, amount: int) -> int:
         """Apply damage (min 0). Returns the new current HP."""
@@ -137,6 +177,16 @@ class Combatant:
             "speed": self.speed,
             "conditions": list(self.conditions),
             "condition_durations": dict(self.condition_durations),
+            "size": self.size,
+            "strength": self.strength,
+            "dexterity": self.dexterity,
+            "athletics_bonus": self.athletics_bonus,
+            "acrobatics_bonus": self.acrobatics_bonus,
+            "dodging": self.dodging,
+            "disengaging": self.disengaging,
+            "bonus_movement": self.bonus_movement,
+            "movement_used": self.movement_used,
+            "grappled_by": self.grappled_by,
             "attacks": [
                 {
                     "name": a.name,
@@ -165,6 +215,16 @@ class Combatant:
             speed=data.get("speed", 30),
             conditions=list(data.get("conditions", [])),
             condition_durations=dict(data.get("condition_durations", {})),
+            size=data.get("size", "medium"),
+            strength=data.get("strength", 10),
+            dexterity=data.get("dexterity", 10),
+            athletics_bonus=data.get("athletics_bonus"),
+            acrobatics_bonus=data.get("acrobatics_bonus"),
+            dodging=data.get("dodging", False),
+            disengaging=data.get("disengaging", False),
+            bonus_movement=data.get("bonus_movement", 0),
+            movement_used=data.get("movement_used", 0),
+            grappled_by=data.get("grappled_by"),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
@@ -180,6 +240,9 @@ class Encounter:
         self.round_number: int = 0
         self.started: bool = False
         self.log: list[str] = []
+        # Target ids that currently grant advantage on the *next* attack roll
+        # against them (set by the Help action; consumed on first attack).
+        self.help_advantage_targets: list[str] = []
 
     def add_combatant(self, combatant: Combatant) -> None:
         """Add a combatant before initiative is rolled."""
@@ -236,6 +299,12 @@ class Encounter:
         if not self.started:
             raise RuntimeError("Combat has not started")
 
+        # The combatant whose turn is ending winds down turn-scoped effects
+        # (Disengage, Dash movement) before the spotlight moves on.
+        prev = self.current_combatant
+        if prev is not None:
+            prev.end_turn()
+
         # Skip dead or incapacitated combatants while advancing.
         for _ in range(len(self.turn_order)):
             self.current_turn_index += 1
@@ -247,6 +316,9 @@ class Encounter:
                 self.log.append(f"--- Round {self.round_number} ---")
             candidate = self.current_combatant
             if candidate and candidate.is_alive and not candidate.is_incapacitated:
+                # The new combatant's turn begins: their Dodge from last round
+                # (which lasted "until the start of your next turn") now ends.
+                candidate.start_turn()
                 return candidate
             if candidate and candidate.is_alive and candidate.is_incapacitated:
                 self.log.append(
@@ -330,6 +402,18 @@ class Encounter:
         tgt_adv = conditions_mod.attacks_against_have_advantage(target, ranged=ranged)
         tgt_dis = conditions_mod.attacks_against_have_disadvantage(target, ranged=ranged)
 
+        # Help action: the *next* attack roll against this target has advantage.
+        # Consume the help regardless of other advantage sources.
+        if target.id in self.help_advantage_targets:
+            tgt_adv = True
+            self.help_advantage_targets.remove(target.id)
+
+        # Dodge action: attacks against the dodger have disadvantage — but the
+        # dodger loses this benefit while incapacitated or unable to move.
+        if getattr(target, "dodging", False):
+            if not target.is_incapacitated and target.effective_speed > 0:
+                tgt_dis = True
+
         net_adv = att_adv or tgt_adv
         net_dis = att_dis or tgt_dis
         # roll_d20 already cancels simultaneous advantage+disadvantage.
@@ -407,6 +491,7 @@ class Encounter:
             "round_number": self.round_number,
             "started": self.started,
             "log": list(self.log),
+            "help_advantage_targets": list(self.help_advantage_targets),
         }
 
     @classmethod
@@ -421,4 +506,5 @@ class Encounter:
         encounter.round_number = data.get("round_number", 0)
         encounter.started = data.get("started", False)
         encounter.log = list(data.get("log", []))
+        encounter.help_advantage_targets = list(data.get("help_advantage_targets", []))
         return encounter

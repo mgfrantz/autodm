@@ -16,6 +16,7 @@ from app.engine.combat import Encounter, Combatant, Attack, AttackResult
 from app.engine import conditions as conditions_mod
 from app.engine.dice import ability_modifier
 from app.engine.leveling import apply_xp
+from app.engine.skills import calculate_skill_modifier
 
 router = APIRouter()
 
@@ -67,6 +68,11 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
         armor_class=character.armor_class,
         initiative_bonus=(character.dexterity - 10) // 2,  # Dex mod
         speed=character.speed,
+        # Ability scores + skill bonuses power grapple/shove contests.
+        strength=character.strength,
+        dexterity=character.dexterity,
+        athletics_bonus=_skill_bonus_for_character(character, "athletics"),
+        acrobatics_bonus=_skill_bonus_for_character(character, "acrobatics"),
         # Build attacks based on class (simplified for MVP)
         attacks=_build_attacks_for_class(character.char_class, character.level),
     )
@@ -85,6 +91,11 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
             speed=enemy_data.get("speed", 30),
             attacks=enemy_attacks,
             current_hp=enemy_data.get("current_hp", enemy_data["max_hp"]),
+            size=enemy_data.get("size", "medium"),
+            strength=enemy_data.get("strength", 10),
+            dexterity=enemy_data.get("dexterity", 10),
+            athletics_bonus=enemy_data.get("athletics_bonus"),
+            acrobatics_bonus=enemy_data.get("acrobatics_bonus"),
         )
         encounter.add_combatant(enemy)
 
@@ -386,6 +397,20 @@ def remove_condition(
         ),
         "combatant": combatant.to_dict(),
     }
+
+
+def _skill_bonus_for_character(character: Character, skill: str) -> int:
+    """Compute a skill check bonus (athletics/acrobatics) for a character.
+
+    Delegates to the skills engine so proficiency + expertise are respected,
+    with a safe fallback to the plain ability modifier.
+    """
+    try:
+        return calculate_skill_modifier(skill, character)
+    except Exception:
+        ability = "strength" if skill == "athletics" else "dexterity"
+        score = getattr(character, ability, 10) or 10
+        return ability_modifier(score)
 
 
 def _build_attacks_for_class(char_class: str, level: int) -> list[Attack]:

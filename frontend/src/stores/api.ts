@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -227,6 +227,29 @@ export const makeAttack = async (
 
 export const endCombat = async (gameId: number) => {
   const res = await API.post(`/game/${gameId}/combat/end`);
+  return res.data;
+};
+
+// === Combat Actions (Grapple, Shove, Dash, Disengage, Dodge, Help, etc.) ===
+
+export const listCombatActions = async (gameId: number): Promise<CombatActionInfo[]> => {
+  const res = await API.get<{ actions: CombatActionInfo[] }>(`/game/${gameId}/combat/actions`);
+  return res.data.actions;
+};
+
+export const performCombatAction = async (
+  gameId: number,
+  combatantId: string,
+  action: CombatActionKey,
+  targetId?: string,
+  option?: string,
+): Promise<CombatActionResult> => {
+  const res = await API.post<CombatActionResult>(`/game/${gameId}/combat/action`, {
+    combatant_id: combatantId,
+    action,
+    target_id: targetId ?? null,
+    option: option ?? null,
+  });
   return res.data;
 };
 

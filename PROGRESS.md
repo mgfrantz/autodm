@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ TEST SUITE FULLY GREEN (847 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅ COMPREHENSIVE README.md ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ TEST SUITE FULLY GREEN (904 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ COMPREHENSIVE README.md ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -550,6 +550,38 @@
     + advantage toggles + live result); GameView 📜 Skills button + overlay
   - 98 new tests (engine + API); full suite now **847 passing, 0 failing**
 
+- [x] **Add combat actions beyond basic attacks** — full DnD 5e "Actions in Combat"
+  - `engine/combat_actions.py` pure engine (~560 lines): Grapple, Shove, Dash,
+    Disengage, Dodge, Help, Escape Grapple, Unarmed Strike, Two-Weapon Fighting
+    (off-hand attack), Opportunity Attack
+  - Opposed-check core: `run_contest` (ties favour the defender per PHB);
+    Athletics/Acrobatics bonus derivation from ability scores or explicit
+    skill bonuses; creature-size categories enforce the grapple/shove "no more
+    than one size larger" rule
+  - Grapple/Shove: Str (Athletics) vs target's best of Athletics/Acrobatics;
+    success applies the *grappled* condition (records grappler) or knocks
+    *prone*/pushes 5 ft; `escape_grapple` action for the grappled creature
+  - Dodge: attacks against have disadvantage + Dex-save advantage until your
+    next turn (integrated into `resolve_attack`); lost while incapacitated/speed 0
+  - Help: next attack against the target gains advantage (tracked on the
+    encounter, consumed on first attack in `resolve_attack`)
+  - Dash (bonus movement), Disengage (no opportunity attacks this turn) with
+    correct turn-lifecycle expiry (start_turn clears Dodge; end_turn clears
+    Disengage/Dash movement) wired into `Encounter.next_turn`
+  - Unarmed strike (1 + Str, configurable monk die) and Two-Weapon Fighting
+    off-hand attack (no ability mod to damage unless Two-Weapon style)
+  - Opportunity attack (reaction melee; blocked by Disengage; unarmed fallback)
+  - `Combatant` extended (size/strength/dexterity/athletics/acrobatics/dodging/
+    disengaging/bonus_movement/movement_used/grappled_by) — all backward-compatible
+    (from_dict defaults; old saves load); `Encounter.help_advantage_targets` persisted
+  - `api/combat_actions.py` REST API: `GET /combat/actions` (discovery),
+    `POST /combat/action` (dispatch); combat start now populates the player's
+    skill bonuses from the skills engine so contests are meaningful
+  - Frontend: `CombatActionsPanel` overlay (action grid, target + shove-option
+    selectors, live status badges, result feedback); 🎯 Actions button in the
+    combat banner during the player's turn; `tsc` clean, `vite build` passes (109 modules)
+  - 57 new tests (43 engine + 14 API); full suite now **904 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -558,8 +590,6 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Combat actions beyond basic attacks (Grapple, Shove, Dodge/Dash/Disengage,
-    two-weapon fighting, unarmed strikes, help action)
   - Equipment-driven combat (weapon damage dice from equipped weapon, armor AC
     integration into the combat engine, magic weapon bonuses)
   - Shop / economy system (merchants, buy/sell, trade loot for gold)
