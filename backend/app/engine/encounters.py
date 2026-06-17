@@ -434,38 +434,147 @@ COMMON_ENEMIES = {
     # CR 0 (10 XP)
     "Crate": EnemyTemplate(name="Crate", cr=0, armor_class=10, hp=5, attack_bonus=0),
     "Rat": EnemyTemplate(name="Rat", cr=0, armor_class=10, hp=1, attack_bonus=0),
-    
+    "Commoner": EnemyTemplate(name="Commoner", cr=0, armor_class=10, hp=4, attack_bonus=2),
+
     # CR 1/8 (25 XP)
     "Goblin": EnemyTemplate(name="Goblin", cr=1/8, armor_class=15, hp=7, attack_bonus=4),
     "Skeleton": EnemyTemplate(name="Skeleton", cr=1/8, armor_class=13, hp=13, attack_bonus=4),
-    
+    "Bat": EnemyTemplate(name="Bat", cr=1/8, armor_class=12, hp=1, attack_bonus=0),
+    "Cat": EnemyTemplate(name="Cat", cr=1/8, armor_class=12, hp=2, attack_bonus=0),
+    "Crawling Claw": EnemyTemplate(name="Crawling Claw", cr=1/8, armor_class=12, hp=3, attack_bonus=4),
+
     # CR 1/4 (50 XP)
     "Giant Rat": EnemyTemplate(name="Giant Rat", cr=1/4, armor_class=12, hp=7, attack_bonus=4),
     "Kobold": EnemyTemplate(name="Kobold", cr=1/4, armor_class=12, hp=5, attack_bonus=4),
-    
+    "Giant Centipede": EnemyTemplate(name="Giant Centipede", cr=1/4, armor_class=13, hp=2, attack_bonus=2),
+    "Flying Snake": EnemyTemplate(name="Flying Snake", cr=1/4, armor_class=14, hp=5, attack_bonus=4),
+    "Stirge": EnemyTemplate(name="Stirge", cr=1/4, armor_class=14, hp=2, attack_bonus=5),
+
     # CR 1/2 (100 XP)
     "Bandit": EnemyTemplate(name="Bandit", cr=1/2, armor_class=12, hp=11, attack_bonus=3),
     "Giant Wolf Spider": EnemyTemplate(name="Giant Wolf Spider", cr=1/2, armor_class=13, hp=26, attack_bonus=4),
-    
+    "Giant Poisonous Snake": EnemyTemplate(name="Giant Poisonous Snake", cr=1/2, armor_class=14, hp=11, attack_bonus=6),
+    "Skeleton Warrior": EnemyTemplate(name="Skeleton Warrior", cr=1/2, armor_class=13, hp=20, attack_bonus=4),
+    "Swarm of Bats": EnemyTemplate(name="Swarm of Bats", cr=1/2, armor_class=12, hp=22, attack_bonus=4),
+    "Swarm of Rats": EnemyTemplate(name="Swarm of Rats", cr=1/2, armor_class=12, hp=18, attack_bonus=4),
+
     # CR 1 (200 XP)
     "Bugbear": EnemyTemplate(name="Bugbear", cr=1, armor_class=16, hp=27, attack_bonus=4),
     "Dire Wolf": EnemyTemplate(name="Dire Wolf", cr=1, armor_class=14, hp=37, attack_bonus=5),
-    
+    "Giant Boar": EnemyTemplate(name="Giant Boar", cr=1, armor_class=12, hp=42, attack_bonus=6),
+    "Giant Spider": EnemyTemplate(name="Giant Spider", cr=1, armor_class=14, hp=26, attack_bonus=5),
+    "Goblin Boss": EnemyTemplate(name="Goblin Boss", cr=1, armor_class=17, hp=21, attack_bonus=4),
+    "Hobgoblin": EnemyTemplate(name="Hobgoblin", cr=1, armor_class=18, hp=11, attack_bonus=3),
+    "Pteranodon": EnemyTemplate(name="Pteranodon", cr=1, armor_class=13, hp=13, attack_bonus=3),
+    "Zombie": EnemyTemplate(name="Zombie", cr=1, armor_class=8, hp=22, attack_bonus=3),
+
     # CR 2 (450 XP)
     "Ogre": EnemyTemplate(name="Ogre", cr=2, armor_class=11, hp=59, attack_bonus=7),
     "Gelatinous Cube": EnemyTemplate(name="Gelatinous Cube", cr=2, armor_class=6, hp=84, attack_bonus=4),
-    
+    "Giant Ape": EnemyTemplate(name="Giant Ape", cr=2, armor_class=12, hp=76, attack_bonus=7),
+    "Giant Constrictor Snake": EnemyTemplate(name="Giant Constrictor Snake", cr=2, armor_class=12, hp=60, attack_bonus=6),
+    "Guard": EnemyTemplate(name="Guard", cr=2, armor_class=16, hp=11, attack_bonus=3),
+    "Knight": EnemyTemplate(name="Knight", cr=2, armor_class=18, hp=52, attack_bonus=5),
+    "Minotaur Skeleton": EnemyTemplate(name="Minotaur Skeleton", cr=2, armor_class=15, hp=67, attack_bonus=6),
+    "Pegasus": EnemyTemplate(name="Pegasus", cr=2, armor_class=12, hp=59, attack_bonus=5),
+    "Phase Spider": EnemyTemplate(name="Phase Spider", cr=2, armor_class=15, hp=32, attack_bonus=4),
+    "Werewolf": EnemyTemplate(name="Werewolf", cr=2, armor_class=13, hp=58, attack_bonus=4),
+
     # CR 3 (700 XP)
     "Owlbear": EnemyTemplate(name="Owlbear", cr=3, armor_class=13, hp=59, attack_bonus=7),
     "Minotaur": EnemyTemplate(name="Minotaur", cr=3, armor_class=14, hp=76, attack_bonus=6),
-    
+    "Ankheg": EnemyTemplate(name="Ankheg", cr=3, armor_class=14, hp=39, attack_bonus=5),
+    "Bugbear Chief": EnemyTemplate(name="Bugbear Chief", cr=3, armor_class=16, hp=65, attack_bonus=5),
+    "Centaur": EnemyTemplate(name="Centaur", cr=3, armor_class=14, hp=49, attack_bonus=5),
+    "Druid": EnemyTemplate(name="Druid", cr=3, armor_class=13, hp=27, attack_bonus=5),
+    "Giant Scorpion": EnemyTemplate(name="Giant Scorpion", cr=3, armor_class=15, hp=52, attack_bonus=6),
+    "Gargoyle": EnemyTemplate(name="Gargoyle", cr=3, armor_class=15, hp=52, attack_bonus=4),
+    "Grick": EnemyTemplate(name="Grick", cr=3, armor_class=14, hp=27, attack_bonus=4),
+    "Giant Vulture": EnemyTemplate(name="Giant Vulture", cr=3, armor_class=10, hp=30, attack_bonus=5),
+
     # CR 4 (1100 XP)
     "Young Red Dragon": EnemyTemplate(name="Young Red Dragon", cr=4, armor_class=18, hp=75, attack_bonus=7),
     "Wight": EnemyTemplate(name="Wight", cr=4, armor_class=14, hp=45, attack_bonus=4),
-    
+    "Basilisk": EnemyTemplate(name="Basilisk", cr=4, armor_class=15, hp=52, attack_bonus=5),
+    "Blackguard": EnemyTemplate(name="Blackguard", cr=4, armor_class=18, hp=60, attack_bonus=7),
+    "Bulette": EnemyTemplate(name="Bulette", cr=4, armor_class=17, hp=94, attack_bonus=7),
+    "Carrion Crawler": EnemyTemplate(name="Carrion Crawler", cr=4, armor_class=13, hp=51, attack_bonus=4),
+    "Chimera": EnemyTemplate(name="Chimera", cr=4, armor_class=14, hp=81, attack_bonus=6),
+    "Gorgon": EnemyTemplate(name="Gorgon", cr=4, armor_class=19, hp=76, attack_bonus=7),
+    "Hook Horror": EnemyTemplate(name="Hook Horror", cr=4, armor_class=15, hp=75, attack_bonus=6),
+    "Ogre Zombie": EnemyTemplate(name="Ogre Zombie", cr=4, armor_class=8, hp=85, attack_bonus=7),
+
     # CR 5 (1800 XP)
     "Hill Giant": EnemyTemplate(name="Hill Giant", cr=5, armor_class=13, hp=105, attack_bonus=8),
     "Werewolf": EnemyTemplate(name="Werewolf", cr=5, armor_class=14, hp=58, attack_bonus=7),
+    "Bandit Captain": EnemyTemplate(name="Bandit Captain", cr=5, armor_class=15, hp=65, attack_bonus=4),
+    "Berbalang": EnemyTemplate(name="Berbalang", cr=5, armor_class=13, hp=75, attack_bonus=5),
+    "Berserker": EnemyTemplate(name="Berserker", cr=5, armor_class=13, hp=67, attack_bonus=5),
+    "Brown Bear": EnemyTemplate(name="Brown Bear", cr=5, armor_class=11, hp=34, attack_bonus=6),
+    "Frost Giant": EnemyTemplate(name="Frost Giant", cr=5, armor_class=15, hp=126, attack_bonus=9),
+    "Gladiator": EnemyTemplate(name="Gladiator", cr=5, armor_class=16, hp=112, attack_bonus=7),
+    "Giant Hydra": EnemyTemplate(name="Giant Hydra", cr=5, armor_class=15, hp=76, attack_bonus=6),
+    "Revenant": EnemyTemplate(name="Revenant", cr=5, armor_class=13, hp=82, attack_bonus=7),
+
+    # CR 6 (2300 XP)
+    "Young Blue Dragon": EnemyTemplate(name="Young Blue Dragon", cr=6, armor_class=18, hp=110, attack_bonus=9),
+    "Air Elemental": EnemyTemplate(name="Air Elemental", cr=6, armor_class=15, hp=90, attack_bonus=8),
+    "Baby White Dragon": EnemyTemplate(name="Baby White Dragon", cr=6, armor_class=17, hp=99, attack_bonus=9),
+    "Bearded Devil": EnemyTemplate(name="Bearded Devil", cr=6, armor_class=13, hp=52, attack_bonus=5),
+    "Behir": EnemyTemplate(name="Behir", cr=6, armor_class=17, hp=168, attack_bonus=7),
+    "Dire Troll": EnemyTemplate(name="Dire Troll", cr=6, armor_class=15, hp=84, attack_bonus=7),
+    "Drider": EnemyTemplate(name="Drider", cr=6, armor_class=16, hp=71, attack_bonus=7),
+    "Earth Elemental": EnemyTemplate(name="Earth Elemental", cr=6, armor_class=17, hp=126, attack_bonus=8),
+    "Fire Elemental": EnemyTemplate(name="Fire Elemental", cr=6, armor_class=13, hp=102, attack_bonus=7),
+    "Gargoyle Protector": EnemyTemplate(name="Gargoyle Protector", cr=6, armor_class=15, hp=110, attack_bonus=6),
+
+    # CR 7 (2900 XP)
+    "Adult Black Dragon": EnemyTemplate(name="Adult Black Dragon", cr=7, armor_class=19, hp=147, attack_bonus=10),
+    "Bodak": EnemyTemplate(name="Bodak", cr=7, armor_class=16, hp=72, attack_bonus=8),
+    "Bone Devil": EnemyTemplate(name="Bone Devil", cr=7, armor_class=19, hp=100, attack_bonus=8),
+    "Couatl": EnemyTemplate(name="Couatl", cr=7, armor_class=19, hp=97, attack_bonus=8),
+    "Derro Savant": EnemyTemplate(name="Derro Savant", cr=7, armor_class=15, hp=70, attack_bonus=7),
+    "Fire Giant": EnemyTemplate(name="Fire Giant", cr=7, armor_class=21, hp=162, attack_bonus=10),
+    "Formorian": EnemyTemplate(name="Formorian", cr=7, armor_class=17, hp=170, attack_bonus=9),
+    "Gargoyle Sentinel": EnemyTemplate(name="Gargoyle Sentinel", cr=7, armor_class=17, hp=137, attack_bonus=7),
+    "Ghost": EnemyTemplate(name="Ghost", cr=7, armor_class=11, hp=45, attack_bonus=6),
+    "Giant Octopus": EnemyTemplate(name="Giant Octopus", cr=7, armor_class=11, hp=52, attack_bonus=6),
+
+    # CR 8 (3900 XP)
+    "Adult Brass Dragon": EnemyTemplate(name="Adult Brass Dragon", cr=8, armor_class=19, hp=172, attack_bonus=10),
+    "Devourer": EnemyTemplate(name="Devourer", cr=8, armor_class=16, hp=141, attack_bonus=10),
+    "Glabrezu": EnemyTemplate(name="Glabrezu", cr=8, armor_class=16, hp=157, attack_bonus=9),
+    "Hezrou": EnemyTemplate(name="Hezrou", cr=8, armor_class=19, hp=136, attack_bonus=7),
+    "Ice Devil": EnemyTemplate(name="Ice Devil", cr=8, armor_class=18, hp=180, attack_bonus=8),
+    "Medusa": EnemyTemplate(name="Medusa", cr=8, armor_class=15, hp=127, attack_bonus=5),
+    "Minotaur King": EnemyTemplate(name="Minotaur King", cr=8, armor_class=18, hp=161, attack_bonus=9),
+    "Shadow Demon": EnemyTemplate(name="Shadow Demon", cr=8, armor_class=16, hp=66, attack_bonus=7),
+    "Veteran Knight": EnemyTemplate(name="Veteran Knight", cr=8, armor_class=18, hp=112, attack_bonus=9),
+    "Young Copper Dragon": EnemyTemplate(name="Young Copper Dragon", cr=8, armor_class=16, hp=119, attack_bonus=8),
+
+    # CR 9 (5000 XP)
+    "Adult Green Dragon": EnemyTemplate(name="Adult Green Dragon", cr=9, armor_class=19, hp=178, attack_bonus=11),
+    "Ancient Bronze Dragon": EnemyTemplate(name="Ancient Bronze Dragon", cr=9, armor_class=22, hp=212, attack_bonus=12),
+    "Bone Devil Commander": EnemyTemplate(name="Bone Devil Commander", cr=9, armor_class=20, hp=130, attack_bonus=9),
+    "Cloud Giant": EnemyTemplate(name="Cloud Giant", cr=9, armor_class=14, hp=200, attack_bonus=11),
+    "Djinni": EnemyTemplate(name="Djinni", cr=9, armor_class=17, hp=161, attack_bonus=10),
+    "Efreeti": EnemyTemplate(name="Efreeti", cr=9, armor_class=15, hp=200, attack_bonus=11),
+    "Frost Giant King": EnemyTemplate(name="Frost Giant King", cr=9, armor_class=18, hp=189, attack_bonus=11),
+    "Giant Skeleton Lord": EnemyTemplate(name="Giant Skeleton Lord", cr=9, armor_class=15, hp=135, attack_bonus=9),
+    "Hydra": EnemyTemplate(name="Hydra", cr=9, armor_class=15, hp=119, attack_bonus=8),
+    "Stone Giant": EnemyTemplate(name="Stone Giant", cr=9, armor_class=17, hp=126, attack_bonus=10),
+
+    # CR 10 (5900 XP)
+    "Young Gold Dragon": EnemyTemplate(name="Young Gold Dragon", cr=10, armor_class=18, hp=178, attack_bonus=10),
+    "Adult Copper Dragon": EnemyTemplate(name="Adult Copper Dragon", cr=10, armor_class=17, hp=212, attack_bonus=11),
+    "Babau": EnemyTemplate(name="Babau", cr=10, armor_class=16, hp=82, attack_bonus=7),
+    "Barbed Devil": EnemyTemplate(name="Barbed Devil", cr=10, armor_class=15, hp=110, attack_bonus=6),
+    "Copper Dragon Wyrmling": EnemyTemplate(name="Copper Dragon Wyrmling", cr=10, armor_class=17, hp=135, attack_bonus=9),
+    "Kraken Spawn": EnemyTemplate(name="Kraken Spawn", cr=10, armor_class=18, hp=157, attack_bonus=10),
+    "Lich": EnemyTemplate(name="Lich", cr=10, armor_class=17, hp=135, attack_bonus=10),
+    "Marilith": EnemyTemplate(name="Marilith", cr=10, armor_class=18, hp=189, attack_bonus=9),
+    "Mummy Lord": EnemyTemplate(name="Mummy Lord", cr=10, armor_class=17, hp=97, attack_bonus=7),
+    "Nalfeshnee": EnemyTemplate(name="Nalfeshnee", cr=10, armor_class=18, hp=212, attack_bonus=10),
 }
 
 

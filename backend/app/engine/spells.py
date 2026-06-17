@@ -433,9 +433,45 @@ register_spell(Spell("Shatter", 2, SpellSchool.EVOCATION,
     casting_time="1 action", range="60 feet", components="V, S, M",
     save_ability="con", damage_dice_count=3, damage_dice_sides=8,
     damage_type="thunder", at_higher_levels_dice=1))
-register_spell(Spell("Cure Wounds II", 2, SpellSchool.EVOCATION,
-    description="(Marker) — not registered separately.",
-    healing_dice_count=2, healing_dice_sides=8))
+register_spell(Spell("Web", 2, SpellSchool.CONJURATION,
+    description="Webs restrain creatures in an area. Dex save.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="dex", concentration=True))
+register_spell(Spell("Invisibility", 2, SpellSchool.ILLUSION,
+    description="A creature becomes invisible until it attacks or casts a spell.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Misty Step", 2, SpellSchool.CONJURATION,
+    description="Briefly surround yourself with mist and teleport.",
+    casting_time="1 bonus action", range="self", components="V"))
+register_spell(Spell("Hold Person", 2, SpellSchool.ENCHANTMENT,
+    description="Paralyze a humanoid. Wis save each turn.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="wis", concentration=True))
+register_spell(Spell("Blindness/Deafness", 2, SpellSchool.NECROMANCY,
+    description="A target becomes blind or deaf. Con save.",
+    casting_time="1 action", range="30 feet", components="V",
+    save_ability="con", concentration=True))
+register_spell(Spell("Flaming Sphere", 2, SpellSchool.EVOCATION,
+    description="A 5-foot-diameter sphere of fire damages nearby creatures.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    damage_dice_count=2, damage_dice_sides=6, damage_type="fire",
+    concentration=True))
+register_spell(Spell("Mirror Image", 2, SpellSchool.ILLUSION,
+    description="Three illusory duplicates distract attacks.",
+    casting_time="1 action", range="self", components="V, S"))
+register_spell(Spell("Ray of Enfeeblement", 2, SpellSchool.NECROMANCY,
+    description="Target's weapon attacks deal half damage. Con save.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="con", concentration=True))
+register_spell(Spell("Spider Climb", 2, SpellSchool.TRANSMUTATION,
+    description="Target gains a climbing speed equal to walking speed.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Suggestion", 2, SpellSchool.ENCHANTMENT,
+    description="Suggest a course of activity to a creature. Wis save.",
+    casting_time="1 action", range="30 feet", components="V, M",
+    save_ability="wis", concentration=True))
 
 # --- Level 3 ---------------------------------------------------------------
 register_spell(Spell("Fireball", 3, SpellSchool.EVOCATION,
@@ -453,6 +489,234 @@ register_spell(Spell("Healing Spirit", 3, SpellSchool.CONJURATION,
     casting_time="1 bonus action", range="60 feet", components="V, S",
     healing_dice_count=1, healing_dice_sides=6, healing_bonus=0,
     concentration=True, at_higher_levels_dice=1))
+register_spell(Spell("Revivify", 3, SpellSchool.NECROMANCY,
+    description="Bring a creature back from death instantly.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    healing_dice_count=0, healing_dice_sides=0, healing_bonus=1))
+register_spell(Spell("Counterspell", 3, SpellSchool.ABJURATION,
+    description="Attempt to interrupt a creature in the process of casting a spell.",
+    casting_time="1 reaction", range="60 feet", components="S"))
+register_spell(Spell("Dispel Magic", 3, SpellSchool.ABJURATION,
+    description="End a spell on a target or area.",
+    casting_time="1 action", range="120 feet", components="V, S"))
+register_spell(Spell("Fly", 3, SpellSchool.TRANSMUTATION,
+    description="Target gains flying speed. Con check if restrained.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Haste", 3, SpellSchool.TRANSMUTATION,
+    description="Choose a willing creature. Doubles speed, +2 AC, extra action.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Hypnotic Pattern", 3, SpellSchool.ILLUSION,
+    description="Create a pattern of colors that charms creatures. Wis save.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="wis", concentration=True))
+register_spell(Spell("Spirit Guardians", 3, SpellSchool.CONJURATION,
+    description="Spirits protect you and damage nearby enemies. Wis save.",
+    casting_time="1 action", range="self (15-foot radius)", components="V, S, M",
+    save_ability="wis", damage_dice_count=3, damage_dice_sides=8,
+    damage_type="radiant", concentration=True))
+register_spell(Spell("Stinking Cloud", 3, SpellSchool.CONJURATION,
+    description="Poisonous gas sickens creatures. Con save for retching.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="con", concentration=True))
+register_spell(Spell("Thunderwave", 3, SpellSchool.EVOCATION,
+    description="A wave of thunderous force. Con save or pushed + damage.",
+    casting_time="1 action", range="self (15-foot cube)", components="V, S",
+    save_ability="con", damage_dice_count=2, damage_dice_sides=8,
+    damage_type="thunder", at_higher_levels_dice=1))
+
+# --- Level 4 ---------------------------------------------------------------
+register_spell(Spell("Polymorph", 4, SpellSchool.TRANSMUTATION,
+    description="Transform a creature into a beast. Con save to resist.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="con", concentration=True))
+register_spell(Spell("Fire Shield", 4, SpellSchool.EVOCATION,
+    description="Shield from cold/fire and damage attackers.",
+    casting_time="1 action", range="self", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Ice Storm", 4, SpellSchool.EVOCATION,
+    description="Hailstones pound creatures and objects. Dex save for half.",
+    casting_time="1 action", range="300 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=5, damage_dice_sides=6,
+    damage_type="cold"))
+register_spell(Spell("Blight", 4, SpellSchool.NECROMANCY,
+    description="Necrotic energy damages a plant creature. Con save.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    save_ability="con", damage_dice_count=8, damage_dice_sides=8,
+    damage_type="necrotic"))
+register_spell(Spell("Greater Invisibility", 4, SpellSchool.ILLUSION,
+    description="You or another creature becomes invisible for 1 minute.",
+    casting_time="1 action", range="touch", components="V, S",
+    concentration=True))
+register_spell(Spell("Dimension Door", 4, SpellSchool.CONJURATION,
+    description="Teleport yourself and another creature instantly.",
+    casting_time="1 action", range="500 feet", components="V"))
+register_spell(Spell("Stoneskin", 4, SpellSchool.ABJURATION,
+    description="Grants resistance to nonmagical bludgeoning/piercing/slashing.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Phantasmal Killer", 4, SpellSchool.ILLUSION,
+    description="Tap into nightmares. Wis save each round or take psychic damage.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    save_ability="wis", damage_dice_count=4, damage_dice_sides=10,
+    damage_type="psychic", concentration=True))
+
+# --- Level 5 ---------------------------------------------------------------
+register_spell(Spell("Cone of Cold", 5, SpellSchool.EVOCATION,
+    description="Freezing cold sprays from your hands. Dex save for half.",
+    casting_time="1 action", range="self (60-foot cone)", components="V, S, M",
+    save_ability="dex", damage_dice_count=8, damage_dice_sides=8,
+    damage_type="cold"))
+register_spell(Spell("Scrying", 5, SpellSchool.DIVINATION,
+    description="Spy on a creature from a distance. Wis save.",
+    casting_time="10 minutes", range="self", components="V, S, M",
+    save_ability="wis", concentration=True))
+register_spell(Spell("Cloudkill", 5, SpellSchool.CONJURATION,
+    description="Heavy cloud of poison kills creatures in area.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    save_ability="con", damage_dice_count=5, damage_dice_sides=8,
+    damage_type="poison", concentration=True))
+register_spell(Spell("Animate Objects", 5, SpellSchool.TRANSMUTATION,
+    description="Objects come to life and fight for you.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    concentration=True))
+register_spell(Spell("Flame Strike", 5, SpellSchool.EVOCATION,
+    description="Searing flame in a column. Dex save for half.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=4, damage_dice_sides=6,
+    damage_type="fire"))
+register_spell(Spell("Hold Monster", 5, SpellSchool.ENCHANTMENT,
+    description="Paralyze a creature. Wis save each turn.",
+    casting_time="1 action", range="90 feet", components="V, S, M",
+    save_ability="wis", concentration=True))
+register_spell(Spell("Wall of Stone", 5, SpellSchool.EVOCATION,
+    description="Create a stone wall that blocks passage.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Bigby's Hand", 5, SpellSchool.EVOCATION,
+    description="A spectral hand grapples, pushes, or strikes foes.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    concentration=True))
+
+# --- Level 6 ---------------------------------------------------------------
+register_spell(Spell("Disintegrate", 6, SpellSchool.TRANSMUTATION,
+    description="Thin green ray reduces target to dust. Dex save.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=10, damage_dice_sides=6,
+    damage_type="force"))
+register_spell(Spell("Chain Lightning", 6, SpellSchool.EVOCATION,
+    description="Lightning arcs to multiple targets. Dex save for half.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=10, damage_dice_sides=6,
+    damage_type="lightning"))
+register_spell(Spell("Sunbeam", 6, SpellSchool.EVOCATION,
+    description="Brilliant sunlight blinds and damages. Con save for half.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="con", damage_dice_count=8, damage_dice_sides=8,
+    damage_type="radiant", concentration=True))
+register_spell(Spell("Heal", 6, SpellSchool.EVOCATION,
+    description="Massive healing and cures blindness/deafness/diseases.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    healing_dice_count=0, healing_dice_sides=0, healing_bonus=70))
+register_spell(Spell("Globe of Invulnerability", 6, SpellSchool.ABJURATION,
+    description="Barrier stops spells of 5th level and lower.",
+    casting_time="1 action", range="self (10-foot radius)", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Flesh to Stone", 6, SpellSchool.TRANSMUTATION,
+    description="Turn a creature to stone. Con save each round.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="con", concentration=True))
+register_spell(Spell("True Seeing", 6, SpellSchool.DIVINATION,
+    description="See through illusions, shapechangers, invisibility.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True))
+
+# --- Level 7 ---------------------------------------------------------------
+register_spell(Spell("Finger of Death", 7, SpellSchool.NECROMANCY,
+    description="Necrotic energy kills instantly if reduced to 0 HP.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="con", damage_dice_count=8, damage_dice_sides=8,
+    damage_type="necrotic"))
+register_spell(Spell("Fire Storm", 7, SpellSchool.EVOCATION,
+    description="Storm of fire and smoke fills an area. Dex save for half.",
+    casting_time="1 action", range="150 feet", components="V, S",
+    save_ability="dex", damage_dice_count=10, damage_dice_sides=6,
+    damage_type="fire"))
+register_spell(Spell("Forcecage", 7, SpellSchool.EVOCATION,
+    description="Imprison a creature in a cage of force. No save.",
+    casting_time="1 action", range="100 feet", components="V, S, M"))
+register_spell(Spell("Plane Shift", 7, SpellSchool.CONJURATION,
+    description="Travel to another plane of existence.",
+    casting_time="1 action", range="touch", components="V, S, M"))
+register_spell(Spell("Simulacrum", 7, SpellSchool.ILLUSION,
+    description="Create a duplicate of yourself from snow and ice.",
+    casting_time="12 hours", range="touch", components="V, S, M"))
+register_spell(Spell("Regenerate", 7, SpellSchool.EVOCATION,
+    description="Target regrows severed limbs and regains HP.",
+    casting_time="1 minute", range="touch", components="V, S, M",
+    healing_dice_count=1, healing_dice_sides=4, healing_bonus=15,
+    concentration=True))
+register_spell(Spell("Teleport", 7, SpellSchool.CONJURATION,
+    description="Instantly transport to a known location.",
+    casting_time="1 action", range="10 feet", components="V"))
+
+# --- Level 8 ---------------------------------------------------------------
+register_spell(Spell("Power Word Stun", 8, SpellSchool.ENCHANTMENT,
+    description="Creature with 150 HP or less is stunned. No save.",
+    casting_time="1 action", range="60 feet", components="V"))
+register_spell(Spell("Dominate Monster", 8, SpellSchool.ENCHANTMENT,
+    description="Control a creature. Wis save each turn.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="wis", concentration=True))
+register_spell(Spell("Maze", 8, SpellSchool.ENCHANTMENT,
+    description="Trap a creature in an extradimensional maze. Int check.",
+    casting_time="1 action", range="60 feet", components="V"))
+register_spell(Spell("Sunburst", 8, SpellSchool.EVOCATION,
+    description="Brilliant flash blinds and deals radiant damage. Con save.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    save_ability="con", damage_dice_count=12, damage_dice_sides=6,
+    damage_type="radiant"))
+register_spell(Spell("Earthquake", 8, SpellSchool.EVOCATION,
+    description="Powerful tremor shakes ground in a large area.",
+    casting_time="1 action", range="500 feet", components="V, S, M"))
+register_spell(Spell("Feeblemind", 8, SpellSchool.ENCHANTMENT,
+    description="Target's INT and CHA become 1. Int save.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    save_ability="int"))
+register_spell(Spell("Abi-Dalzim's Horrid Wilting", 8, SpellSchool.NECROMANCY,
+    description="Draw moisture from creatures. Con save for half.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    save_ability="con", damage_dice_count=12, damage_dice_sides=8,
+    damage_type="necrotic"))
+
+# --- Level 9 ---------------------------------------------------------------
+register_spell(Spell("Power Word Kill", 9, SpellSchool.ENCHANTMENT,
+    description="Creature with 100 HP or less dies instantly. No save.",
+    casting_time="1 action", range="60 feet", components="V"))
+register_spell(Spell("Meteor Swarm", 9, SpellSchool.EVOCATION,
+    description="Flaming meteors pummel a massive area. Dex save for half.",
+    casting_time="1 action", range="1 mile", components="V, S",
+    save_ability="dex", damage_dice_count=20, damage_dice_sides=6,
+    damage_type="fire"))
+register_spell(Spell("Wish", 9, SpellSchool.EVOCATION,
+    description="Rewrite reality itself. Can duplicate any spell or create effects.",
+    casting_time="1 action", range="self", components="V"))
+register_spell(Spell("Time Stop", 9, SpellSchool.TRANSMUTATION,
+    description="You freeze time for 1d4+1 rounds while you can act freely.",
+    casting_time="1 action", range="self", components="V"))
+register_spell(Spell("True Polymorph", 9, SpellSchool.TRANSMUTATION,
+    description="Transform a creature into any other creature permanently.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    concentration=True))
+register_spell(Spell("Power Word Heal", 9, SpellSchool.EVOCATION,
+    description="Target returns to full HP and is freed from charms/fear/etc.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    healing_dice_count=0, healing_dice_sides=0, healing_bonus=9999))
+register_spell(Spell("Foresight", 9, SpellSchool.DIVINATION,
+    description="You glimpse the future and gain advantage on attacks/saves.",
+    casting_time="1 minute", range="touch", components="V, S, M",
+    concentration=True))
 
 
 # ---------------------------------------------------------------------------
