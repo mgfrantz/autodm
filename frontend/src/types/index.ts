@@ -16,6 +16,7 @@ export interface Character {
   armor_class: number;
   speed: number;
   backstory: string | null;
+  gold?: number;
   skill_proficiencies?: string[];
   skill_expertise?: string[];
 }
@@ -404,4 +405,91 @@ export interface EquipmentCombatStats {
   shield: string | null;
   weapon_properties: WeaponProperties | null;
   weapon_magic_bonus: number;
+}
+
+// === Shop / Economy Types ===
+
+export interface ShopMerchantSummary {
+  merchant_type: string;
+  label: string;
+  description: string;
+  visited: boolean;
+}
+
+export interface ShopOverview {
+  character_id: number;
+  character_name: string;
+  gold: number;
+  settlement_tier: string;
+  merchants: ShopMerchantSummary[];
+}
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  item_type: string;
+  description?: string;
+  rarity: string;
+  value: number;
+  weight?: number;
+  damage_dice_count?: number;
+  damage_dice_sides?: number;
+  damage_bonus?: number;
+  damage_type?: string;
+  attack_bonus?: number;
+  armor_type?: string | null;
+  armor_bonus?: number;
+  dex_limit?: number | null;
+  uses?: number;
+  max_uses?: number;
+  quantity?: number;
+}
+
+export interface ShopStockEntry {
+  item: ShopItem;
+  quantity: number;
+  buy_price: number;
+}
+
+export interface ShopSellEntry {
+  item: ShopItem;
+  quantity: number;
+  equipped: boolean;
+  merchant_buys: boolean;
+  sell_price: number;
+}
+
+export interface ShopMerchant {
+  name: string;
+  merchant_type: string;
+  label: string;
+  description: string;
+  settlement_tier: string;
+  gold: number;
+  stock: ShopStockEntry[];
+  player_inventory?: ShopSellEntry[];
+}
+
+export interface ShopTransactionResult {
+  success: boolean;
+  message: string;
+  transaction_type: 'buy' | 'sell';
+  item_name: string;
+  item_id: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  gold_after: number;
+  merchant_gold_after: number;
+  gold: number;
+  inventory?: { slots: unknown[] };
+}
+
+export interface ShopRestockResult {
+  merchant_type: string;
+  restocked_lines: number;
+  gold_restored: boolean;
+  gold: number;
+  name: string;
+  merchant: ShopMerchant;
 }

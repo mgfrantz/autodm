@@ -6,6 +6,7 @@ import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, Comba
 import CombatTracker from '../components/CombatTracker'
 import WorldMap from '../components/WorldMap'
 import SkillsPanel from '../components/SkillsPanel'
+import ShopPanel from '../components/ShopPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 
 export default function GameView() {
@@ -28,6 +29,7 @@ export default function GameView() {
   const [restBusy, setRestBusy] = useState(false)
   const [restResult, setRestResult] = useState<string | null>(null)
   const [showSkills, setShowSkills] = useState(false)
+  const [showShop, setShowShop] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -388,6 +390,14 @@ export default function GameView() {
               title="View skills & roll checks"
             >
               📜 <span className="hidden sm:inline">Skills</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowShop(true)}
+              disabled={inCombat}
+              title={inCombat ? 'Cannot trade during combat' : 'Visit the market & trade'}
+            >
+              🛍️ <span className="hidden sm:inline">Shop</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -832,6 +842,30 @@ export default function GameView() {
               </button>
             </div>
             <SkillsPanel characterId={gameState.character.id} />
+          </div>
+        </div>
+      )}
+
+      {/* Shop overlay */}
+      {showShop && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowShop(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🛍️ Market</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowShop(false)}
+              >
+                ×
+              </button>
+            </div>
+            <ShopPanel gameId={gameState.game_id} />
           </div>
         </div>
       )}

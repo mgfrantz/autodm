@@ -35,6 +35,7 @@ MUTABLE_CHARACTER_FIELDS = (
     "level",
     "xp",
     "asi_used",
+    "gold",
     "feats",
     "strength",
     "dexterity",

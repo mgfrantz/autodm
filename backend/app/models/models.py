@@ -64,6 +64,7 @@ class Character(Base):
     # Progression
     xp = Column(Integer, default=0)
     asi_used = Column(Integer, default=0)  # Ability Score Improvement instances spent
+    gold = Column(Integer, default=0)  # Wealth in gold pieces (economy system)
     feats = Column(Text, default="[]")  # JSON array of learned feat dicts
     hit_dice_used = Column(Integer, default=0)  # Hit Dice spent since last long rest
 

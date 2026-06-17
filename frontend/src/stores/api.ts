@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -332,5 +332,48 @@ export const rollSkillCheck = async (
 
 export const getEquipmentCombatStats = async (characterId: number): Promise<EquipmentCombatStats> => {
   const res = await API.get<EquipmentCombatStats>(`/characters/${characterId}/combat-stats`);
+  return res.data;
+};
+
+// === Shop / Economy ===
+
+export const getShopOverview = async (gameId: number): Promise<ShopOverview> => {
+  const res = await API.get<ShopOverview>(`/game/${gameId}/shop`);
+  return res.data;
+};
+
+export const getMerchant = async (gameId: number, merchantType: string): Promise<ShopMerchant> => {
+  const res = await API.get<ShopMerchant>(`/game/${gameId}/shop/${merchantType}`);
+  return res.data;
+};
+
+export const buyFromMerchant = async (
+  gameId: number,
+  merchantType: string,
+  itemId: string,
+  quantity = 1,
+): Promise<ShopTransactionResult> => {
+  const res = await API.post<ShopTransactionResult>(`/game/${gameId}/shop/${merchantType}/buy`, {
+    item_id: itemId,
+    quantity,
+  });
+  return res.data;
+};
+
+export const sellToMerchant = async (
+  gameId: number,
+  merchantType: string,
+  itemId: string,
+  quantity = 1,
+): Promise<ShopTransactionResult> => {
+  const res = await API.post<ShopTransactionResult>(`/game/${gameId}/shop/${merchantType}/sell`, {
+    item_id: itemId,
+    quantity,
+  });
+  return res.data;
+};
+
+export const restockMerchant = async (gameId: number, merchantType: string): Promise<ShopRestockResult> => {
+  const res = await API.post<ShopRestockResult>(`/game/${gameId}/shop/${merchantType}/restock`);
   return res.data;
 };

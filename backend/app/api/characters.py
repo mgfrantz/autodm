@@ -60,6 +60,7 @@ class CharacterResponse(BaseModel):
     speed: int
     xp: int
     asi_used: int
+    gold: int = 0  # Wealth in gold pieces
     feats: list[dict]  # Learned feats
     skill_proficiencies: list[str] = []  # Chosen skill proficiencies
     skill_expertise: list[str] = []  # Expertise skills
@@ -144,6 +145,23 @@ CLASS_BASE_AC = {
     "wizard": 11,
 }
 
+# Starting gold by class (simplified — gives every new character a little
+# spending money so they can engage with the shop/economy system right away).
+CLASS_STARTING_GOLD = {
+    "barbarian": 40,
+    "fighter": 60,
+    "paladin": 60,
+    "ranger": 50,
+    "bard": 50,
+    "cleric": 50,
+    "druid": 40,
+    "monk": 15,
+    "rogue": 60,
+    "warlock": 50,
+    "sorcerer": 40,
+    "wizard": 40,
+}
+
 # Race speed
 RACE_SPEED = {
     "human": 30, "elf": 30, "dwarf": 25, "halfling": 25,
@@ -190,6 +208,7 @@ def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
 
     base_ac = CLASS_BASE_AC.get(char_class_lower, 11)
     speed = RACE_SPEED.get(char_data.race.lower(), 30)
+    starting_gold = CLASS_STARTING_GOLD.get(char_class_lower, 25)
 
     # Initialize classes dict
     classes = {char_class_lower: char_data.level}
@@ -211,6 +230,7 @@ def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
         current_hp=starting_hp,
         armor_class=base_ac,
         speed=speed,
+        gold=starting_gold,
         backstory=char_data.backstory,
     )
 
