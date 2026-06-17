@@ -67,6 +67,10 @@ class Character(Base):
     feats = Column(Text, default="[]")  # JSON array of learned feat dicts
     hit_dice_used = Column(Integer, default=0)  # Hit Dice spent since last long rest
 
+    # Skills
+    skill_proficiencies = Column(Text, default="[]")  # JSON array of chosen skill names
+    skill_expertise = Column(Text, default="[]")  # JSON array of Expertise skill names
+
     # Story
     backstory = Column(Text, nullable=True)
     inventory = Column(Text, default="[]")  # JSON array

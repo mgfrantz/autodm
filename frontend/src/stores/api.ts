@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -277,5 +277,30 @@ export const shortRest = async (gameId: number, numDice?: number): Promise<Short
 
 export const longRest = async (gameId: number): Promise<LongRestResult> => {
   const res = await API.post<LongRestResult>(`/game/${gameId}/long-rest`);
+  return res.data;
+};
+
+// === Skills ===
+
+export const getSkills = async (characterId: number): Promise<SkillsResponse> => {
+  const res = await API.get<SkillsResponse>(`/characters/${characterId}/skills`);
+  return res.data;
+};
+
+export const rollSkillCheck = async (
+  characterId: number,
+  skill: string,
+  dc: number,
+  advantage = false,
+  disadvantage = false,
+  conditions: string[] = [],
+): Promise<SkillCheckResult> => {
+  const res = await API.post<SkillCheckResult>(`/characters/${characterId}/skills/check`, {
+    skill,
+    dc,
+    advantage,
+    disadvantage,
+    conditions,
+  });
   return res.data;
 };

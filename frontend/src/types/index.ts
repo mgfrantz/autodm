@@ -16,6 +16,8 @@ export interface Character {
   armor_class: number;
   speed: number;
   backstory: string | null;
+  skill_proficiencies?: string[];
+  skill_expertise?: string[];
 }
 
 export interface World {
@@ -276,4 +278,41 @@ export interface LongRestResult {
   };
   conditions: string[];
   spell_slots: SpellSlotOverview[] | null;
+}
+
+// === Skill Types ===
+
+export interface SkillInfo {
+  skill: string;
+  ability: string;
+  ability_score: number;
+  ability_modifier: number;
+  proficient: boolean;
+  expertise: boolean;
+  proficiency_bonus: number; // 0, pb, or 2*pb
+  modifier: number; // total skill modifier
+}
+
+export interface SkillsResponse {
+  character_id: number;
+  proficiencies: string[];
+  expertise: string[];
+  skills: SkillInfo[];
+  passive_scores: Record<string, number>;
+}
+
+export interface SkillCheckResult {
+  skill: string;
+  ability: string;
+  roll: string;
+  rolls: number[];
+  modifier: number;
+  total: number;
+  success: boolean;
+  dc: number;
+  proficient: boolean;
+  expertise: boolean;
+  advantage: boolean;
+  disadvantage: boolean;
+  description: string;
 }

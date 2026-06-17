@@ -5,6 +5,7 @@ import { useGameStore } from '../stores/gameStore'
 import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo } from '../types'
 import CombatTracker from '../components/CombatTracker'
 import WorldMap from '../components/WorldMap'
+import SkillsPanel from '../components/SkillsPanel'
 
 export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
@@ -25,6 +26,7 @@ export default function GameView() {
   const [restInfo, setRestInfo] = useState<RestInfo | null>(null)
   const [restBusy, setRestBusy] = useState(false)
   const [restResult, setRestResult] = useState<string | null>(null)
+  const [showSkills, setShowSkills] = useState(false)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Load game state and combat state
@@ -343,6 +345,13 @@ export default function GameView() {
             {gameState.world.name}
           </h1>
           <div className="flex gap-2 shrink-0">
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowSkills(true)}
+              title="View skills & roll checks"
+            >
+              📜 <span className="hidden sm:inline">Skills</span>
+            </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
               onClick={handleOpenSaves}
@@ -706,6 +715,30 @@ export default function GameView() {
             ) : (
               <div className="text-parchment-400 animate-pulse text-center py-8">Gathering your strength…</div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Skills overlay */}
+      {showSkills && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowSkills(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">📜 Skills</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowSkills(false)}
+              >
+                ×
+              </button>
+            </div>
+            <SkillsPanel characterId={gameState.character.id} />
           </div>
         </div>
       )}
