@@ -470,11 +470,9 @@
 
 - [ ] **[SELF-CONTAINED ENGINE ENHANCEMENTS]** — No external services required;
   pick the top one each run:
-  - **Encounter difficulty / CR balancing** — challenge-rating XP budgets and
-    difficulty thresholds (easy/medium/hard/deadly) for the DM/world generator
-    to scale enemy counts to party level.
   - **Expand content registries** — more spells, feats, and monster/enemy
     templates (the combat engine currently builds attacks ad hoc per class).
+    Add a proper monster stat block system with more DnD 5e monsters at all CRs.
 
 ## How to Use This File
 When you (the agent) work on the project:
