@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ TEST SUITE FULLY GREEN (695 passing, 0 failing) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ TEST SUITE FULLY GREEN (749 passing, 0 failing) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -444,6 +444,22 @@
   - `api/saving_throws.py` REST API (120 lines): GET proficiencies, POST roll,
     GET DC
   - 51 new tests (engine + API); full suite now **695 passing, 0 failing**
+
+- [x] **Add encounter difficulty / CR balancing** — challenge-rating XP budgets
+  - `engine/encounters.py` pure engine (~450 lines): CR-to-XP mapping (0-30),
+    XP thresholds per level (easy/medium/hard/deadly), group multipliers for
+    swarm tactics, party budget calculations, encounter difficulty analysis,
+    enemy template registry with ~20 common monsters (Goblin, Skeleton, Bugbear,
+    Ogre, Hill Giant, etc.)
+  - Difficulty calculation: raw XP × group multiplier → adjusted XP,
+    compared against party thresholds to classify as easy/medium/hard/deadly/impossible
+  - EncounterBudget dataclass: budgets for all difficulties + recommendations
+    for enemy counts at each CR
+  - EncounterDifficulty dataclass: analysis with description string for DM
+  - `api/encounters.py` REST API (9 endpoints): CR-to-XP conversion, party budget,
+    encounter analysis, budget building, template listing/lookup, CR filtering,
+    appropriate enemies for party level
+  - 54 new tests (engine + complex scenarios); full suite now **749 passing, 0 failing**
 
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
