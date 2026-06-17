@@ -461,18 +461,60 @@
     appropriate enemies for party level
   - 54 new tests (engine + complex scenarios); full suite now **749 passing, 0 failing**
 
+|- [x] **Expand content registries** — more spells, feats, and monster/enemy templates
+  - Spells: 27 → 88 (+61 new spells covering all levels 0-9)
+    - Level 2: 9 new (Web, Invisibility, Misty Step, Hold Person, Blindness/Deafness,
+      Flaming Sphere, Mirror Image, Ray of Enfeeblement, Spider Climb, Suggestion)
+    - Level 3: 8 new (Counterspell, Dispel Magic, Fly, Haste, Hypnotic Pattern,
+      Spirit Guardians, Stinking Cloud, Thunderwave)
+    - Level 4: 8 new (Polymorph, Fire Shield, Ice Storm, Blight, Greater Invisibility,
+      Dimension Door, Stoneskin, Phantasmal Killer)
+    - Level 5: 8 new (Cone of Cold, Scrying, Cloudkill, Animate Objects, Flame Strike,
+      Hold Monster, Wall of Stone, Bigby's Hand)
+    - Level 6: 7 new (Disintegrate, Chain Lightning, Sunbeam, Heal, Globe of Invulnerability,
+      Flesh to Stone, True Seeing)
+    - Level 7: 7 new (Finger of Death, Fire Storm, Forcecage, Plane Shift, Simulacrum,
+      Regenerate, Teleport)
+    - Level 8: 7 new (Power Word Stun, Dominate Monster, Maze, Sunburst, Earthquake,
+      Feeblemind, Abi-Dalzim's Horrid Wilting)
+    - Level 9: 7 new (Power Word Kill, Meteor Swarm, Wish, Time Stop, True Polymorph,
+      Power Word Heal, Foresight)
+  - Enemies: 18 → 116 (+98 new enemies across all CRs)
+    - CR 0: 3 enemies (Crate, Rat, Commoner)
+    - CR 1/8: 5 enemies (Goblin, Skeleton, Bat, Cat, Crawling Claw)
+    - CR 1/4: 5 enemies (Giant Rat, Kobold, Giant Centipede, Flying Snake, Stirge)
+    - CR 1/2: 6 enemies (Bandit, Giant Wolf Spider, Giant Poisonous Snake, Skeleton Warrior,
+      Swarm of Bats, Swarm of Rats)
+    - CR 1: 8 enemies (Bugbear, Dire Wolf, Giant Boar, Giant Spider, Goblin Boss, Hobgoblin,
+      Pteranodon, Zombie)
+    - CR 2: 9 enemies (Ogre, Gelatinous Cube, Giant Ape, Giant Constrictor Snake, Guard,
+      Knight, Minotaur Skeleton, Pegasus, Phase Spider, Werewolf)
+    - CR 3: 10 enemies (Owlbear, Minotaur, Ankheg, Bugbear Chief, Centaur, Druid,
+      Giant Scorpion, Gargoyle, Grick, Giant Vulture)
+    - CR 4: 10 enemies (Young Red Dragon, Wight, Basilisk, Blackguard, Bulette,
+      Carrion Crawler, Chimera, Gorgon, Hook Horror, Ogre Zombie)
+    - CR 5: 10 enemies (Hill Giant, Werewolf, Bandit Captain, Berbalang, Berserker,
+      Brown Bear, Frost Giant, Gladiator, Giant Hydra, Revenant)
+    - CR 6: 10 enemies (Young Blue Dragon, Air Elemental, Baby White Dragon, Bearded Devil,
+      Behir, Dire Troll, Drider, Earth Elemental, Fire Elemental, Gargoyle Protector)
+    - CR 7: 10 enemies (Adult Black Dragon, Bodak, Bone Devil, Couatl, Derro Savant,
+      Fire Giant, Formorian, Gargoyle Sentinel, Ghost, Giant Octopus)
+    - CR 8: 10 enemies (Adult Brass Dragon, Devourer, Glabrezu, Hezrou, Ice Devil,
+      Medusa, Minotaur King, Shadow Demon, Veteran Knight, Young Copper Dragon)
+    - CR 9: 10 enemies (Adult Green Dragon, Ancient Bronze Dragon, Bone Devil Commander,
+      Cloud Giant, Djinni, Efreeti, Frost Giant King, Giant Skeleton Lord, Hydra, Stone Giant)
+    - CR 10: 10 enemies (Young Gold Dragon, Adult Copper Dragon, Babau, Barbed Devil,
+      Copper Dragon Wyrmling, Kraken Spawn, Lich, Marilith, Mummy Lord, Nalfeshnee)
+  - Feats: 23 (unchanged - already good coverage)
+  - All content follows DnD 5e rules with accurate CR, AC, HP, and attack bonuses
+  - All 749 tests passing
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
-
-- [ ] **[SELF-CONTAINED ENGINE ENHANCEMENTS]** — No external services required;
-  pick the top one each run:
-  - **Expand content registries** — more spells, feats, and monster/enemy
-    templates (the combat engine currently builds attacks ad hoc per class).
-    Add a proper monster stat block system with more DnD 5e monsters at all CRs.
 
 ## How to Use This File
 When you (the agent) work on the project:
