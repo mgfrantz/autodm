@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅
-## TEST SUITE FULLY GREEN (974 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅
+## TEST SUITE FULLY GREEN (1121 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -681,6 +681,21 @@
   - Registered stealth router in `app/main.py`
   - 13 new tests (engine + combat integration); full suite now **1119 passing, 0 failing**
 
+- [x] **Add frontend inventory management panel** — equip/unequip weapons, armor, shields via UI
+  - New `InventoryPanel` component (~250 lines):
+    * Equipment slots summary (weapon, armor, shield) with visual state
+    * Full item list with equip/unequip/use/drop actions
+    * Consumable usage with HP refresh integration
+    * Rarity color-coding and item type icons
+    * Weight/value summary
+  - Added inventory types to frontend (InventoryItem, InventoryData, UseItemResult)
+  - Added inventory API client functions (get, equip, unequip, use, remove)
+  - Fixed route conflict: added explicit `GET /{character_id}/inventory` endpoint
+    (the bare `GET /{character_id}` in inventory router is shadowed by characters router)
+  - Integrated into GameView: 🎒 Inventory button + overlay modal
+  - Refreshes equipment stats and game state after inventory changes
+  - 2 new API tests for explicit inventory endpoint; full suite now **1121 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -689,8 +704,13 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Frontend inventory management panel (equip/unequip weapons, armor, shields
-    via the UI — the backend equipment + combat-stats endpoints now exist)
+  - Concentration mechanics for sustained spells (breaking concentration, check DC)
+  - Spell components (verbal/somatic/material) in spell descriptions + casting requirements
+  - Magic item attunement system (attune in rest, limited slots, benefit gating)
+  - Tool proficiencies (thieves' tools, instruments, artisan tools) + proficiency bonuses
+  - Environmental conditions (weather, lighting, terrain) with gameplay effects
+  - Character background system (feature, equipment, skill proficiencies per background)
+  - Alignment system (good/evil, lawful/chaotic, neutral) for roleplay hooks
 
 ## How to Use This File
 When you (the agent) work on the project:
