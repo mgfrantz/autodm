@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -332,6 +332,35 @@ export const rollSkillCheck = async (
 
 export const getEquipmentCombatStats = async (characterId: number): Promise<EquipmentCombatStats> => {
   const res = await API.get<EquipmentCombatStats>(`/characters/${characterId}/combat-stats`);
+  return res.data;
+};
+
+// === Inventory / Equipment Management ===
+
+export const getInventory = async (characterId: number): Promise<InventoryData> => {
+  const res = await API.get<InventoryData>(`/characters/${characterId}/inventory`);
+  return res.data;
+};
+
+export const equipItem = async (characterId: number, itemId: string): Promise<InventoryData> => {
+  const res = await API.post<InventoryData>(`/characters/${characterId}/equip/${itemId}`);
+  return res.data;
+};
+
+export const unequipItem = async (characterId: number, itemId: string): Promise<InventoryData> => {
+  const res = await API.post<InventoryData>(`/characters/${characterId}/unequip/${itemId}`);
+  return res.data;
+};
+
+export const useInventoryItem = async (characterId: number, itemId: string): Promise<UseItemResult> => {
+  const res = await API.post<UseItemResult>(`/characters/${characterId}/use/${itemId}`);
+  return res.data;
+};
+
+export const removeInventoryItem = async (characterId: number, itemId: string, quantity = 1): Promise<InventoryData> => {
+  const res = await API.delete<InventoryData>(`/characters/${characterId}/items/${itemId}`, {
+    params: { quantity },
+  });
   return res.data;
 };
 

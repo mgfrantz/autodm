@@ -241,7 +241,23 @@ def get_inventory(character_id: int, db: Session = Depends(get_db)):
     character = db.query(Character).filter(Character.id == character_id).first()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
-    
+
+    inventory = _load_inventory(character)
+    return _inventory_to_response(inventory)
+
+
+@router.get("/{character_id}/inventory", response_model=InventoryResponse)
+def get_inventory_explicit(character_id: int, db: Session = Depends(get_db)):
+    """Get a character's full inventory (unambiguous path).
+
+    The bare ``GET /{character_id}`` route above is shadowed by the characters
+    router (registered first on the same ``/api/characters`` prefix), so this
+    explicit ``/inventory`` path is the one the frontend should use.
+    """
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
     inventory = _load_inventory(character)
     return _inventory_to_response(inventory)
 

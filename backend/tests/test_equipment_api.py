@@ -300,3 +300,48 @@ class TestCombatStartUsesEquipment:
         # The character's stored AC should reflect armor + shield.
         db_session.refresh(char)
         assert char.armor_class == 18
+
+
+# --------------------------------------------------------------------------- #
+# Explicit inventory endpoint
+# --------------------------------------------------------------------------- #
+
+class TestInventoryExplicitEndpoint:
+    def test_explicit_inventory_path_matches_base(self, client: TestClient, db_session):
+        """The new GET /{character_id}/inventory path returns the same data
+        as the base endpoint (now shadowed by the characters router)."""
+        char = _make_character(db_session, strength=16, dexterity=14)
+        db_session.commit()
+
+        # Add a few items to have something to show.
+        client.post(
+            f"/api/characters/{char.id}/items",
+            json={"name": "Sword", "item_type": "weapon", "damage_dice": "1d8", "damage_type": "slashing"},
+        )
+        client.post(
+            f"/api/characters/{char.id}/items",
+            json={"name": "Potion", "item_type": "potion", "uses": 1},
+        )
+
+        # Get via the explicit path (unambiguous).
+        resp = client.get(f"/api/characters/{char.id}/inventory")
+        assert resp.status_code == 200
+        data = resp.json()
+
+        # Expected structure.
+        assert "slots" in data
+        assert "total_weight" in data
+        assert "total_value" in data
+        assert "equipped_weapon" in data
+        assert "equipped_armor" in data
+        assert "equipped_shield" in data
+
+        # Should have 2 items.
+        assert len(data["slots"]) == 2
+        names = {s["item"]["name"] for s in data["slots"]}
+        assert "Sword" in names
+        assert "Potion" in names
+
+    def test_explicit_inventory_path_404(self, client: TestClient, db_session):
+        resp = client.get("/api/characters/999999/inventory")
+        assert resp.status_code == 404

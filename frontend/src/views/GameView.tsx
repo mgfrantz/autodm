@@ -7,6 +7,7 @@ import CombatTracker from '../components/CombatTracker'
 import WorldMap from '../components/WorldMap'
 import SkillsPanel from '../components/SkillsPanel'
 import ShopPanel from '../components/ShopPanel'
+import InventoryPanel from '../components/InventoryPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 
 export default function GameView() {
@@ -30,6 +31,7 @@ export default function GameView() {
   const [restResult, setRestResult] = useState<string | null>(null)
   const [showSkills, setShowSkills] = useState(false)
   const [showShop, setShowShop] = useState(false)
+  const [showInventory, setShowInventory] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -71,6 +73,18 @@ export default function GameView() {
       .then(setEquipmentStats)
       .catch(() => { /* equipment stats are informational; ignore failures */ })
   }, [gameState?.character?.id])
+
+  // Re-fetch equipment stats after inventory changes (equip/unequip/use) so
+  // the sidebar AC + weapon reflect the new loadout.
+  const refreshEquipmentStats = async () => {
+    if (!gameState?.character?.id) return
+    try {
+      const stats = await getEquipmentCombatStats(gameState.character.id)
+      setEquipmentStats(stats)
+    } catch {
+      /* informational */
+    }
+  }
 
   const handleStart = async () => {
     setLoading(true)
@@ -390,6 +404,13 @@ export default function GameView() {
               title="View skills & roll checks"
             >
               📜 <span className="hidden sm:inline">Skills</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowInventory(true)}
+              title="Manage inventory & equipment"
+            >
+              🎒 <span className="hidden sm:inline">Inventory</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -866,6 +887,43 @@ export default function GameView() {
               </button>
             </div>
             <ShopPanel gameId={gameState.game_id} />
+          </div>
+        </div>
+      )}
+
+      {/* Inventory overlay */}
+      {showInventory && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => {
+            setShowInventory(false)
+            refreshEquipmentStats()
+          }}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🎒 Inventory</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => {
+                  setShowInventory(false)
+                  refreshEquipmentStats()
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <InventoryPanel
+              characterId={gameState.character.id}
+              onHpChange={async () => {
+                // Potion use changed HP; refresh game state.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
           </div>
         </div>
       )}

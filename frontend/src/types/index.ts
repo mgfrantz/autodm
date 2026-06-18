@@ -407,6 +407,50 @@ export interface EquipmentCombatStats {
   weapon_magic_bonus: number;
 }
 
+// === Inventory / Equipment Types ===
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  item_type: string; // weapon | armor | potion | scroll | misc | quest
+  description: string;
+  rarity: string;
+  value: number;
+  weight: number;
+  damage_dice_count: number;
+  damage_dice_sides: number;
+  damage_bonus: number;
+  damage_type: string;
+  attack_bonus: number;
+  armor_type: string | null; // light | medium | heavy | shield
+  armor_bonus: number;
+  dex_limit: number | null;
+  uses: number;
+  max_uses: number;
+  quantity: number;
+}
+
+export interface InventorySlotEntry {
+  item: InventoryItem;
+  equipped: boolean;
+}
+
+export interface InventoryData {
+  slots: InventorySlotEntry[];
+  total_weight: number;
+  total_value: number;
+  equipped_armor: InventoryItem | null;
+  equipped_weapon: InventoryItem | null;
+  equipped_shield: InventoryItem | null;
+}
+
+export interface UseItemResult {
+  success: boolean;
+  message: string;
+  current_hp: number;
+  max_hp: number;
+}
+
 // === Shop / Economy Types ===
 
 export interface ShopMerchantSummary {
