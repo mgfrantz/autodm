@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅
-## TEST SUITE FULLY GREEN (1377 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅
+## TEST SUITE FULLY GREEN (1419 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -815,6 +815,47 @@
   - Registered router in `app/main.py`
   - 87 new tests (62 engine + 25 API); full suite now **1377 passing, 0 failing**
 
+- [x] **Add character background system** — feature, equipment, languages, skills, tools per background
+  - `engine/backgrounds.py` (~860 lines): canonical registry of all 13 PHB
+    backgrounds plus 5 common variants (**18 total**: Acolyte, Charlatan,
+    Criminal, Spy, Entertainer, Gladiator, Folk Hero, Guild Artisan, Guild
+    Merchant, Hermit, Noble, Knight, Outlander, Sage, Sailor, Pirate, Soldier,
+    Urchin). Each defines description, 2 skill proficiencies, tool grants
+    (fixed + choice), languages + extra-language choices, starting equipment
+    (mundane gear modelled as MISC items), a gold pouch, a signature
+    **Feature** (Shelter of the Faithful, Military Rank, Wanderer, By Popular
+    Demand, Criminal Contact, Position of Privilege, Rustic Hospitality,
+    Researcher, Ship's Passage, City Secrets, Guild Membership, Discovery,
+    False Identity + variant features Retainers/Bad Reputation), and
+    suggested characteristics (personality traits / ideals / bonds / flaws)
+    for roleplay inspiration and DM hooks.
+  - `Background` / `BackgroundFeature` dataclasses with `to_dict()`; accessors
+    (`get_background`, `list_backgrounds`, `get_background_feature`,
+    `get_background_skills`, `get_background_tool_grants`,
+    `get_background_languages`, `get_background_equipment` — returns fresh
+    non-aliasing items, `get_background_equipment_gold`, `background_summary`);
+    case/space-insensitive name normalization.
+  - **Single source of truth**: `skills.py` (`_BACKGROUND_SKILLS`) and
+    `tools.py` (`_BACKGROUND_TOOLS`) now derive their per-background tables
+    from the backgrounds registry (cycle-free import), so the three engines
+    can never drift. Verified zero behavior change vs the prior inline tables.
+  - `api/backgrounds.py`: `GET /backgrounds` (summary list), `GET
+    /backgrounds/{name}` (full detail), `GET /characters/{id}/background`
+    (resolve a character's background), `POST /characters/{id}/background`
+    (set/change + optionally grant starting equipment & gold; idempotent on
+    repeat calls so the same background isn't granted twice).
+  - Registered router in `app/main.py`.
+  - Frontend: `BackgroundDetail`/`BackgroundSummary`/`CharacterBackground`/
+    `SetBackgroundResult` types + `listBackgrounds`/`getBackground`/
+    `getCharacterBackground`/`setCharacterBackground` API client;
+    `CharacterCreation` wizard now loads all 18 backgrounds from the API,
+    shows a live feature/skills/languages/equipment/gold preview for the
+    selection, and grants the background starting package on creation
+    (create-without-background then apply via the dedicated endpoint).
+  - 42 new tests (engine registry/completeness/accessors/source-of-truth
+    contract + REST API incl. equipment grant, idempotency, switch, 404/400);
+    full suite now **1419 passing, 0 failing**. Frontend `tsc --noEmit` clean.
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -824,9 +865,10 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Character background system (feature, equipment, skill proficiencies per background)
   - Alignment system (good/evil, lawful/chaotic, neutral) for roleplay hooks
   - Environment combat integration (wire environment modifiers into `Encounter.resolve_attack`)
+  - Languages/race system (formalize racial languages + the background extra-language choices)
+  - In-game background panel (GameView overlay to view/change background + claim starting equipment)
 
 ## How to Use This File
 When you (the agent) work on the project:
