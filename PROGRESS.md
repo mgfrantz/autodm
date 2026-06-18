@@ -662,15 +662,33 @@
     * Gold conversion follows DMG rates; story log updated on collection
   - 48 new tests (engine); full suite now **1106 passing, 0 failing**
 
+- [x] **Add stealth/hiding mechanics** — DnD 5e stealth integration with skills/combat
+  - `engine/stealth.py` (~290 lines, pure engine):
+    * `attempt_hide`: Dexterity (Stealth) check with proficiency/expertise, stealth_roll, stealth DC
+    * `check_detection`: hidden combatants detected when observer passive Perception ≥ stealth DC
+    * `reveal`: clears hidden/stealth_roll/stealth_dc
+    * `get_stealth_status`, `is_hidden`, `get_stealth_dc`, `list_visible_enemies` helpers
+    * Full breakdown dataclass (ability, modifier, proficiency, expertise)
+  - Combat integration:
+    * `Combatant` extended with `hidden`, `stealth_roll`, `stealth_dc` fields (default False/0/0)
+    * `resolve_attack` reveals the attacker (clears stealth state) on both hit and miss
+  - `api/stealth.py` (~220 lines, REST API):
+    * `POST /{game_id}/combat/stealth/hide` — attempt to hide (skill system integration)
+    * `GET /{game_id}/combat/stealth/visible` — list enemies with detection status
+    * `GET /{game_id}/combat/stealth/status/{id}` — stealth status for a combatant
+    * `POST /{game_id}/combat/stealth/detect` — active Perception check vs hidden enemies
+    * `POST /{game_id}/combat/stealth/reveal` — manually reveal a combatant
+  - Registered stealth router in `app/main.py`
+  - 13 new tests (engine + combat integration); full suite now **1119 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
-|- [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
+- [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Stealth / hiding mechanics integration with the new skill system
   - Frontend inventory management panel (equip/unequip weapons, armor, shields
     via the UI — the backend equipment + combat-stats endpoints now exist)
 
