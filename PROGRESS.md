@@ -696,6 +696,27 @@
   - Refreshes equipment stats and game state after inventory changes
   - 2 new API tests for explicit inventory endpoint; full suite now **1121 passing, 0 failing**
 
+- [x] **Add concentration mechanics** — DnD 5e concentration checks for sustained spells
+  - `engine/concentration.py` pure engine (~170 lines):
+    * `ConcentrationState` dataclass for tracking active concentration
+    * `ConcentrationCheckResult` with full breakdown (damage, DC, roll, outcome)
+    * DC calculation: 10 or half damage (rounded down), whichever is higher
+    * Constitution saving throws with proficiency bonus support
+    * Automatic concentration breaks from incapacitating conditions
+    * `should_break_concentration()` checks stunned/petrified/paralyzed/unconscious
+  - Combat integration:
+    * `Combatant` gains `concentrating`, `concentration_spell_name`, `concentration_spell_id` fields
+    * `resolve_attack()` accepts concentration check parameters (Con score, prof bonus)
+    * Concentration checks triggered after damage is dealt in combat
+    * `AttackResult` includes `concentration_check` field with check results
+    * `_tick_round()` checks for concentration-breaking conditions and logs breaks
+    * `Encounter.start_concentration()` / `Encounter.end_concentration()` methods
+  - REST API (`app/api/concentration.py`):
+    * `POST /combat/concentration/start` — start concentrating on a spell
+    * `POST /combat/concentration/end` — stop concentrating
+    * Both persist to game_state and return updated encounter data
+  - 15 new engine tests; full suite now **1151 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -704,7 +725,6 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Concentration mechanics for sustained spells (breaking concentration, check DC)
   - Spell components (verbal/somatic/material) in spell descriptions + casting requirements
   - Magic item attunement system (attune in rest, limited slots, benefit gating)
   - Tool proficiencies (thieves' tools, instruments, artisan tools) + proficiency bonuses
