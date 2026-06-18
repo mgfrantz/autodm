@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅
-## TEST SUITE FULLY GREEN (1176 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅
+## TEST SUITE FULLY GREEN (1290 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -749,6 +749,28 @@
   - 26 engine tests (all passing)
   - Full test suite now **1176 passing, 0 failing**
 
+- [x] **Add tool proficiency system** — DnD 5e tools, proficiency, and checks
+  - `engine/tools.py` pure engine (~620 lines): 47 tools across 5 categories
+    (16 artisan's tools, 4 gaming sets, 19 musical instruments, 6 kits,
+    2 vehicles), each with a default check ability + description
+  - Class tool grants (fixed + choice): Bard → 3 musical instruments,
+    Rogue → thieves' tools, Monk → 1 artisan's tool or instrument,
+    Druid → herbalism kit
+  - Background tool grants (fixed + choice) for all PHB backgrounds
+    (Criminal, Sailor, Soldier, Entertainer, Guild Artisan, Charlatan, etc.)
+  - Tool id normalization ("Thieves' Tools" → thieves_tools, aliases)
+  - Tool modifier = ability_mod + proficiency_bonus; ability override support
+  - Tool checks vs DC with advantage/disadvantage + condition effects
+    (poisoned → disadvantage on all; restrained → Dex)
+  - Xanathar's combined skill+tool check advantage helper
+  - Feat integration (tool_proficiency/tool_proficiencies effects)
+  - Auto-derive defaults from fixed class/background grants for legacy chars
+  - Character.tool_proficiencies JSON column + migration (idempotent, verified)
+  - CharacterResponse exposes tool_proficiencies; save/load snapshot round-trips it
+  - `api/tools.py` REST API (6 endpoints): GET /tools, /tools/candidates,
+    POST /tools/proficiencies, POST /tools/check, GET /tools/registry
+  - 99 new tests (engine + API + save/load); full suite now **1290 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -757,7 +779,6 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Tool proficiencies (thieves' tools, instruments, artisan tools) + proficiency bonuses
   - Environmental conditions (weather, lighting, terrain) with gameplay effects
   - Character background system (feature, equipment, skill proficiencies per background)
   - Alignment system (good/evil, lawful/chaotic, neutral) for roleplay hooks
