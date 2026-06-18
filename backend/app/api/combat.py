@@ -101,6 +101,7 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
             dexterity=enemy_data.get("dexterity", 10),
             athletics_bonus=enemy_data.get("athletics_bonus"),
             acrobatics_bonus=enemy_data.get("acrobatics_bonus"),
+            cr=enemy_data.get("cr", 0.0),
         )
         encounter.add_combatant(enemy)
 
@@ -238,6 +239,7 @@ def make_attack(game_id: int, request: AttackRequest, db: Session = Depends(get_
     game_state["combat"] = encounter.to_dict()
 
     # Update character HP if player was damaged
+    loot_drop = None
     if target.id == "player":
         save.character.current_hp = target.current_hp
     elif attacker.id == "player" and not target.is_alive:
@@ -264,12 +266,17 @@ def make_attack(game_id: int, request: AttackRequest, db: Session = Depends(get_
                 # Reflect the HP increase on the in-combat player combatant too.
                 attacker.max_hp = char.max_hp
                 attacker.current_hp = char.current_hp
+        # Roll individual treasure loot for the slain enemy (CR-driven) and
+        # stage it as pending loot for the player to collect after combat.
+        loot_drop = _roll_kill_loot(target)
+        if loot_drop is not None:
+            _stage_pending_loot(game_state, loot_drop)
 
     save.game_state = json.dumps(game_state)
     save.updated_at = datetime.utcnow()
     db.commit()
 
-    return {
+    response = {
         "result": {
             "attacker": attacker.name,
             "target": target.name,
@@ -285,6 +292,10 @@ def make_attack(game_id: int, request: AttackRequest, db: Session = Depends(get_
         "combat_active": encounter.is_active,
         "winner": encounter.winner if not encounter.is_active else None,
     }
+    # Surface any loot dropped by the kill so the UI can celebrate it.
+    if loot_drop is not None and not loot_drop.is_empty:
+        response["loot"] = loot_drop.to_dict()
+    return response
 
 
 @router.post("/{game_id}/combat/end")
@@ -428,6 +439,45 @@ def _load_character_inventory(character: Character):
         return None
     from app.engine.inventory import Inventory
     return Inventory.from_dict(data)
+
+
+def _roll_kill_loot(target):
+    """Roll individual treasure for a slain enemy, keyed by its CR.
+
+    Returns a ``LootResult`` (possibly empty) or ``None`` when the enemy has no
+    CR recorded (preserving legacy "no loot" behaviour for CR-less encounters).
+    """
+    cr = getattr(target, "cr", 0.0) or 0.0
+    if cr <= 0:
+        return None
+    from app.engine.loot import roll_individual_loot
+    return roll_individual_loot(cr)
+
+
+def _stage_pending_loot(game_state: dict, loot_result) -> None:
+    """Accumulate a loot drop into the game's ``pending_loot`` ledger.
+
+    The player collects the staged coins/items via the loot API after combat.
+    Empty results are ignored so the ledger stays clean.
+    """
+    if loot_result.is_empty:
+        return
+    pending = game_state.get("pending_loot")
+    if not isinstance(pending, dict):
+        pending = {
+            "coins": {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0},
+            "items": [],
+        }
+    coins = loot_result.coins
+    pc = pending["coins"]
+    pc["cp"] = pc.get("cp", 0) + coins.cp
+    pc["sp"] = pc.get("sp", 0) + coins.sp
+    pc["ep"] = pc.get("ep", 0) + coins.ep
+    pc["gp"] = pc.get("gp", 0) + coins.gp
+    pc["pp"] = pc.get("pp", 0) + coins.pp
+    for item in loot_result.items:
+        pending["items"].append(item.to_dict())
+    game_state["pending_loot"] = pending
 
 
 def _build_player_combat_stats(character: Character) -> tuple[list[Attack], int]:

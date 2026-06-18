@@ -86,6 +86,8 @@ class Combatant:
     bonus_movement: int = 0   # extra movement granted by Dash this turn
     movement_used: int = 0    # movement spent this turn
     grappled_by: Optional[str] = None  # id of the combatant grappling this one
+    # Challenge Rating (for enemies) — drives loot generation on death.
+    cr: float = 0.0
 
     def __post_init__(self) -> None:
         # Default current HP to max when not explicitly set.
@@ -187,6 +189,7 @@ class Combatant:
             "bonus_movement": self.bonus_movement,
             "movement_used": self.movement_used,
             "grappled_by": self.grappled_by,
+            "cr": self.cr,
             "attacks": [
                 {
                     "name": a.name,
@@ -225,6 +228,7 @@ class Combatant:
             bonus_movement=data.get("bonus_movement", 0),
             movement_used=data.get("movement_used", 0),
             grappled_by=data.get("grappled_by"),
+            cr=data.get("cr", 0.0),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
