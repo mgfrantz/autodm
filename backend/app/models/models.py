@@ -46,6 +46,7 @@ class Character(Base):
     level = Column(Integer, default=1)  # Total level (sum of all class levels)
     classes = Column(Text, default="{}")  # JSON: {"class_name": level, ...}
     background = Column(String(100), nullable=True)
+    alignment = Column(String(50), nullable=True)  # DnD 5e alignment (lawful_good, etc.)
 
     # Ability scores
     strength = Column(Integer, default=10)

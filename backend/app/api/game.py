@@ -100,6 +100,7 @@ Starting Location: {world_data.get('starting_settlement', {}).get('name', '')}
 Hook: {world_data.get('hook', '')}
 
 Character: {character.name}, a level {character.level} {character.race} {character.char_class}.
+Alignment: {_alignment_for_dm(character.alignment)}
 
 Narrate the opening scene. Set the mood, introduce the setting, and present the hook.
 End with 2-3 clear choices for the player.
@@ -117,6 +118,15 @@ End with 2-3 clear choices for the player.
     db.commit()
 
     return {"narration": narration}
+
+
+def _alignment_for_dm(alignment: str | None) -> str:
+    """Render a character's alignment for DM context (id known or 'Unaligned')."""
+    if not alignment:
+        return "Unaligned"
+    from app.engine.alignment import alignment_context
+    ctx = alignment_context(alignment)
+    return ctx or "Unaligned"
 
 
 @router.post("/{game_id}/start/stream")
@@ -146,6 +156,7 @@ Starting Location: {world_data.get('starting_settlement', {}).get('name', '')}
 Hook: {world_data.get('hook', '')}
 
 Character: {character.name}, a level {character.level} {character.race} {character.char_class}.
+Alignment: {_alignment_for_dm(character.alignment)}
 
 Narrate the opening scene. Set the mood, introduce the setting, and present the hook.
 End with 2-3 clear choices for the player.
@@ -218,6 +229,7 @@ async def player_action(game_id: int, action: PlayerAction, db: Session = Depend
     
     base_context = f"""\
 Character: {character.name} (Level {character.level} {character.race} {character.char_class})
+Alignment: {_alignment_for_dm(character.alignment)}
 HP: {character.current_hp}/{character.max_hp}
 AC: {character.armor_class}
 Location: {game_state.get('location', 'Unknown')}
@@ -299,6 +311,7 @@ async def player_action_stream(game_id: int, action: PlayerAction, session_facto
         
         base_context = f"""\
 Character: {character.name} (Level {character.level} {character.race} {character.char_class})
+Alignment: {_alignment_for_dm(character.alignment)}
 HP: {character.current_hp}/{character.max_hp}
 AC: {character.armor_class}
 Location: {game_state.get('location', 'Unknown')}
@@ -391,6 +404,7 @@ def get_game_state(game_id: int, db: Session = Depends(get_db)):
             "level": save.character.level,
             "hp": save.character.current_hp,
             "max_hp": save.character.max_hp,
+            "alignment": save.character.alignment,
         },
         "world": {
             "id": save.world.id,

@@ -5,6 +5,7 @@ export interface Character {
   char_class: string;
   level: number;
   background: string | null;
+  alignment: string | null;
   strength: number;
   dexterity: number;
   constitution: number;
@@ -45,6 +46,7 @@ export interface GameState {
     level: number;
     hp: number;
     max_hp: number;
+    alignment?: string | null;
   };
   world: {
     id: number;
@@ -605,4 +607,66 @@ export interface SetBackgroundResult {
   equipment_granted: string[];
   gold_granted: number;
   total_gold: number;
+}
+
+// === Alignment ===
+
+export interface AlignmentDetail {
+  id: string;
+  name: string;
+  abbreviation: string;
+  ethics: 'lawful' | 'neutral' | 'chaotic';
+  morals: 'good' | 'neutral' | 'evil';
+  description: string;
+  roleplay_hooks: string[];
+}
+
+export interface AlignmentSummary {
+  id: string;
+  name: string;
+  abbreviation: string;
+  ethics: string;
+  morals: string;
+  description: string;
+}
+
+export interface AlignmentRelationship {
+  other_id: string;
+  other_name: string;
+  ethics_delta: number;
+  morals_delta: number;
+  total_distance: number;
+  disposition: 'friendly' | 'cordial' | 'wary' | 'tense' | 'hostile';
+  description: string;
+}
+
+export interface AlignmentCompatibility {
+  alignment_a: string | null;
+  alignment_b: string | null;
+  relationship: AlignmentRelationship | null;
+}
+
+export interface CharacterAlignment {
+  character_id: number;
+  character_name: string;
+  alignment: string | null;
+  alignment_known: boolean;
+  detail: AlignmentDetail | null;
+}
+
+export interface SetAlignmentResult {
+  success: boolean;
+  character_id: number;
+  alignment: string;
+  name: string;
+  abbreviation: string;
+}
+
+export interface SuggestedAlignments {
+  character_id: number;
+  race: string | null;
+  char_class: string | null;
+  suggested: string[];
+  race_tendencies: string[];
+  class_tendencies: string[];
 }

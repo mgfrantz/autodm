@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -12,6 +12,7 @@ export const createCharacter = async (data: {
   char_class: string;
   level?: number;
   background?: string;
+  alignment?: string;
   strength: number;
   dexterity: number;
   constitution: number;
@@ -433,5 +434,40 @@ export const setCharacterBackground = async (
     background,
     apply_equipment: applyEquipment,
   });
+  return res.data;
+};
+
+// === Alignment ===
+
+export const listAlignments = async (): Promise<AlignmentSummary[]> => {
+  const res = await API.get<AlignmentSummary[]>('/alignment');
+  return res.data;
+};
+
+export const getAlignment = async (name: string): Promise<AlignmentDetail> => {
+  const res = await API.get<AlignmentDetail>(`/alignment/${encodeURIComponent(name)}`);
+  return res.data;
+};
+
+export const getAlignmentCompatibility = async (a: string, b: string): Promise<AlignmentCompatibility> => {
+  const res = await API.get<AlignmentCompatibility>('/alignment/compatibility', { params: { a, b } });
+  return res.data;
+};
+
+export const getCharacterAlignment = async (characterId: number): Promise<CharacterAlignment> => {
+  const res = await API.get<CharacterAlignment>(`/characters/${characterId}/alignment`);
+  return res.data;
+};
+
+export const setCharacterAlignment = async (
+  characterId: number,
+  alignment: string,
+): Promise<SetAlignmentResult> => {
+  const res = await API.post<SetAlignmentResult>(`/characters/${characterId}/alignment`, { alignment });
+  return res.data;
+};
+
+export const getSuggestedAlignments = async (characterId: number): Promise<SuggestedAlignments> => {
+  const res = await API.get<SuggestedAlignments>(`/characters/${characterId}/alignment/suggested`);
   return res.data;
 };

@@ -1,12 +1,31 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createCharacter, listBackgrounds, getBackground, setCharacterBackground } from '../stores/api'
-import type { BackgroundSummary, BackgroundDetail } from '../types'
+import { createCharacter, listBackgrounds, getBackground, setCharacterBackground, listAlignments } from '../stores/api'
+import type { BackgroundSummary, BackgroundDetail, AlignmentSummary } from '../types'
 
 const RACES = ['Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Elf', 'Half-Orc', 'Tiefling', 'Dragonborn']
 const CLASSES = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 'Sorcerer', 'Warlock', 'Wizard']
 // Fallback if the backgrounds API is unreachable.
 const FALLBACK_BACKGROUNDS = ['Acolyte', 'Criminal', 'Folk Hero', 'Noble', 'Sage', 'Soldier', 'Urchin', 'Outlander', 'Charlatan', 'Entertainer']
+// Fallback nine alignments if the alignment API is unreachable.
+const FALLBACK_ALIGNMENTS: AlignmentSummary[] = [
+  { id: 'lawful_good', name: 'Lawful Good', abbreviation: 'LG', ethics: 'lawful', morals: 'good', description: 'Honors the spirit and letter of the law.' },
+  { id: 'neutral_good', name: 'Neutral Good', abbreviation: 'NG', ethics: 'neutral', morals: 'good', description: 'Driven by conscience above law or chaos.' },
+  { id: 'chaotic_good', name: 'Chaotic Good', abbreviation: 'CG', ethics: 'chaotic', morals: 'good', description: 'Follows their conscience with little regard for law.' },
+  { id: 'lawful_neutral', name: 'Lawful Neutral', abbreviation: 'LN', ethics: 'lawful', morals: 'neutral', description: 'Acts by law, tradition, or personal code.' },
+  { id: 'neutral', name: 'True Neutral', abbreviation: 'N', ethics: 'neutral', morals: 'neutral', description: 'Acts naturally, without prejudice or compulsion.' },
+  { id: 'chaotic_neutral', name: 'Chaotic Neutral', abbreviation: 'CN', ethics: 'chaotic', morals: 'neutral', description: 'Follows their whims; freedom above all else.' },
+  { id: 'lawful_evil', name: 'Lawful Evil', abbreviation: 'LE', ethics: 'lawful', morals: 'evil', description: 'Takes what they want within a code of order.' },
+  { id: 'neutral_evil', name: 'Neutral Evil', abbreviation: 'NE', ethics: 'neutral', morals: 'evil', description: 'Pure, uncompromising selfishness.' },
+  { id: 'chaotic_evil', name: 'Chaotic Evil', abbreviation: 'CE', ethics: 'chaotic', morals: 'evil', description: 'Acts with arbitrary violence and bloodlust.' },
+]
+
+// Tailwind text-color class per morals axis for the alignment grid.
+const MORALS_COLOR: Record<string, string> = {
+  good: 'text-leaf-400',
+  neutral: 'text-parchment-300',
+  evil: 'text-blood-400',
+}
 
 const SKILL_LABELS: Record<string, string> = {
   athletics: 'Athletics', acrobatics: 'Acrobatics', sleight_of_hand: 'Sleight of Hand', stealth: 'Stealth',
@@ -25,6 +44,7 @@ export default function CharacterCreation() {
     race: 'Human',
     char_class: 'Fighter',
     background: 'Soldier',
+    alignment: 'lawful_good',
     strength: 15,
     dexterity: 14,
     constitution: 13,
@@ -39,6 +59,9 @@ export default function CharacterCreation() {
   const [bgDetail, setBgDetail] = useState<BackgroundDetail | null>(null)
   const [bgLoading, setBgLoading] = useState(false)
 
+  // Alignment registry (nine alignments for the classic 3x3 grid)
+  const [alignments, setAlignments] = useState<AlignmentSummary[]>(FALLBACK_ALIGNMENTS)
+
   useEffect(() => {
     let cancelled = false
     listBackgrounds()
@@ -51,6 +74,15 @@ export default function CharacterCreation() {
         const ordered = [...primary, ...variants]
         if (ordered.length) setBackgrounds(ordered)
       })
+      .catch(() => { /* keep fallback */ })
+    return () => { cancelled = true }
+  }, [])
+
+  // Fetch the nine-alignment registry once for the picker grid
+  useEffect(() => {
+    let cancelled = false
+    listAlignments()
+      .then((list: AlignmentSummary[]) => { if (!cancelled && list.length) setAlignments(list) })
       .catch(() => { /* keep fallback */ })
     return () => { cancelled = true }
   }, [])
@@ -201,6 +233,45 @@ export default function CharacterCreation() {
               )}
             </div>
           ) : null}
+
+          <div>
+            <label className="block text-parchment-300 mb-2 font-semibold">Alignment</label>
+            <p className="text-parchment-500 text-xs mb-2">
+              The classic nine alignments. This shapes how the DM portrays your hero and how the world reacts.
+            </p>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              {alignments.map((a) => {
+                const selected = form.alignment === a.id
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => update('alignment', a.id)}
+                    title={a.description}
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg text-center transition-all duration-200 border
+                      ${selected
+                        ? 'bg-blood-600 text-parchment-50 border-blood-400 shadow-md shadow-blood-900/40 scale-105'
+                        : 'bg-parchment-800/60 text-parchment-400 border-parchment-700/40 hover:bg-parchment-700 hover:-translate-y-0.5'}`}
+                  >
+                    <span className={`font-fantasy text-sm sm:text-base ${selected ? 'text-parchment-50' : MORALS_COLOR[a.morals] ?? 'text-parchment-300'}`}>
+                      {a.abbreviation}
+                    </span>
+                    <span className="text-[10px] sm:text-xs leading-tight mt-0.5">
+                      {a.name === 'True Neutral' ? 'Neutral' : a.name.split(' ').length === 2 ? a.name.split(' ')[0] : 'Neutral'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            {(() => {
+              const sel = alignments.find((a) => a.id === form.alignment)
+              return sel ? (
+                <p className="text-parchment-400 text-xs mt-2 italic leading-relaxed">
+                  <span className={`font-semibold not-italic ${MORALS_COLOR[sel.morals] ?? 'text-parchment-300'}`}>{sel.name}.</span>{' '}
+                  {sel.description}
+                </p>
+              ) : null
+            })()}
+          </div>
 
           <button className="btn-primary w-full" onClick={() => setStep(1)} disabled={!form.name}>
             Next: Abilities →

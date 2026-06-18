@@ -28,6 +28,7 @@ class CharacterCreate(BaseModel):
     char_class: str
     level: int = 1
     background: str | None = None
+    alignment: str | None = None
     strength: int = 10
     dexterity: int = 10
     constitution: int = 10
@@ -48,6 +49,7 @@ class CharacterResponse(BaseModel):
     classes: dict[str, int]  # All classes with levels
     primary_class: str  # The class with the highest level
     background: str | None
+    alignment: str | None = None  # DnD 5e alignment id (e.g. "lawful_good")
     strength: int
     dexterity: int
     constitution: int
@@ -211,6 +213,14 @@ def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
     speed = RACE_SPEED.get(char_data.race.lower(), 30)
     starting_gold = CLASS_STARTING_GOLD.get(char_class_lower, 25)
 
+    # Normalize alignment to its canonical id if provided (store the id form).
+    from app.engine.alignment import get_alignment
+    alignment_id: str | None = None
+    if char_data.alignment:
+        resolved = get_alignment(char_data.alignment)
+        if resolved:
+            alignment_id = resolved.id
+
     # Initialize classes dict
     classes = {char_class_lower: char_data.level}
 
@@ -221,6 +231,7 @@ def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
         level=char_data.level,
         classes=serialize_classes(classes),
         background=char_data.background,
+        alignment=alignment_id,
         strength=char_data.strength,
         dexterity=char_data.dexterity,
         constitution=char_data.constitution,

@@ -10,6 +10,19 @@ import ShopPanel from '../components/ShopPanel'
 import InventoryPanel from '../components/InventoryPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 
+// Display labels for the canonical nine alignment ids (for the sidebar).
+const ALIGNMENT_LABELS: Record<string, string> = {
+  lawful_good: 'Lawful Good',
+  neutral_good: 'Neutral Good',
+  chaotic_good: 'Chaotic Good',
+  lawful_neutral: 'Lawful Neutral',
+  neutral: 'True Neutral',
+  chaotic_neutral: 'Chaotic Neutral',
+  lawful_evil: 'Lawful Evil',
+  neutral_evil: 'Neutral Evil',
+  chaotic_evil: 'Chaotic Evil',
+}
+
 export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
   const gid = parseInt(gameId || '0')
@@ -558,6 +571,9 @@ export default function GameView() {
           </h2>
           <div className="text-parchment-400 text-sm mb-4">
             Level {gameState.character.level} {gameState.character.race} {gameState.character.char_class}
+            {gameState.character.alignment && (
+              <span className="text-parchment-500"> · {ALIGNMENT_LABELS[gameState.character.alignment] ?? gameState.character.alignment}</span>
+            )}
           </div>
 
           {/* HP Bar */}
