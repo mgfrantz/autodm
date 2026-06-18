@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -404,5 +404,34 @@ export const sellToMerchant = async (
 
 export const restockMerchant = async (gameId: number, merchantType: string): Promise<ShopRestockResult> => {
   const res = await API.post<ShopRestockResult>(`/game/${gameId}/shop/${merchantType}/restock`);
+  return res.data;
+};
+
+// === Backgrounds ===
+
+export const listBackgrounds = async (): Promise<BackgroundSummary[]> => {
+  const res = await API.get<BackgroundSummary[]>('/backgrounds');
+  return res.data;
+};
+
+export const getBackground = async (name: string): Promise<BackgroundDetail> => {
+  const res = await API.get<BackgroundDetail>(`/backgrounds/${encodeURIComponent(name)}`);
+  return res.data;
+};
+
+export const getCharacterBackground = async (characterId: number): Promise<CharacterBackground> => {
+  const res = await API.get<CharacterBackground>(`/characters/${characterId}/background`);
+  return res.data;
+};
+
+export const setCharacterBackground = async (
+  characterId: number,
+  background: string,
+  applyEquipment = true,
+): Promise<SetBackgroundResult> => {
+  const res = await API.post<SetBackgroundResult>(`/characters/${characterId}/background`, {
+    background,
+    apply_equipment: applyEquipment,
+  });
   return res.data;
 };

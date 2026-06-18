@@ -1,10 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createCharacter } from '../stores/api'
+import { createCharacter, listBackgrounds, getBackground, setCharacterBackground } from '../stores/api'
+import type { BackgroundSummary, BackgroundDetail } from '../types'
 
 const RACES = ['Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Elf', 'Half-Orc', 'Tiefling', 'Dragonborn']
 const CLASSES = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 'Sorcerer', 'Warlock', 'Wizard']
-const BACKGROUNDS = ['Acolyte', 'Criminal', 'Folk Hero', 'Noble', 'Sage', 'Soldier', 'Urchin', 'Outlander', 'Charlatan', 'Entertainer']
+// Fallback if the backgrounds API is unreachable.
+const FALLBACK_BACKGROUNDS = ['Acolyte', 'Criminal', 'Folk Hero', 'Noble', 'Sage', 'Soldier', 'Urchin', 'Outlander', 'Charlatan', 'Entertainer']
+
+const SKILL_LABELS: Record<string, string> = {
+  athletics: 'Athletics', acrobatics: 'Acrobatics', sleight_of_hand: 'Sleight of Hand', stealth: 'Stealth',
+  arcana: 'Arcana', history: 'History', investigation: 'Investigation', nature: 'Nature', religion: 'Religion',
+  animal_handling: 'Animal Handling', insight: 'Insight', medicine: 'Medicine', perception: 'Perception', survival: 'Survival',
+  deception: 'Deception', intimidation: 'Intimidation', performance: 'Performance', persuasion: 'Persuasion',
+}
 
 export default function CharacterCreation() {
   const navigate = useNavigate()
@@ -25,12 +34,54 @@ export default function CharacterCreation() {
     backstory: '',
   })
 
+  // Background registry + live detail preview
+  const [backgrounds, setBackgrounds] = useState<string[]>(FALLBACK_BACKGROUNDS)
+  const [bgDetail, setBgDetail] = useState<BackgroundDetail | null>(null)
+  const [bgLoading, setBgLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    listBackgrounds()
+      .then((list: BackgroundSummary[]) => {
+        if (cancelled) return
+        // Show canonical (non-variant) backgrounds first for a clean picker,
+        // then variants — keeps the list complete but tidy.
+        const primary = list.filter((b) => !b.variant_of).map((b) => b.name)
+        const variants = list.filter((b) => b.variant_of).map((b) => b.name)
+        const ordered = [...primary, ...variants]
+        if (ordered.length) setBackgrounds(ordered)
+      })
+      .catch(() => { /* keep fallback */ })
+    return () => { cancelled = true }
+  }, [])
+
+  // Fetch detail for the selected background to show a live preview
+  useEffect(() => {
+    let cancelled = false
+    setBgLoading(true)
+    getBackground(form.background)
+      .then((d: BackgroundDetail) => { if (!cancelled) setBgDetail(d) })
+      .catch(() => { if (!cancelled) setBgDetail(null) })
+      .finally(() => { if (!cancelled) setBgLoading(false) })
+    return () => { cancelled = true }
+  }, [form.background])
+
   const update = (key: string, value: any) => setForm({ ...form, [key]: value })
 
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      const character = await createCharacter(form)
+      // Create the character without a background, then apply the background
+      // via its dedicated endpoint so the starting equipment + gold pouch are
+      // granted (the create endpoint only stores the background string).
+      const { background: _bg, ...createPayload } = form
+      void _bg
+      const character = await createCharacter(createPayload)
+      try {
+        await setCharacterBackground(character.id, form.background, true)
+      } catch {
+        // Equipment grant is best-effort; the character is still valid.
+      }
       navigate('/world/new', { state: { characterId: character.id } })
     } catch (err) {
       alert('Failed to create character. Is the backend running?')
@@ -111,9 +162,46 @@ export default function CharacterCreation() {
               value={form.background}
               onChange={(e) => update('background', e.target.value)}
             >
-              {BACKGROUNDS.map((b) => <option key={b} value={b}>{b}</option>)}
+              {backgrounds.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
+
+          {/* Live background preview */}
+          {bgLoading ? (
+            <div className="text-parchment-500 text-xs italic">Loading background…</div>
+          ) : bgDetail ? (
+            <div className="rounded-lg border border-arcane-700/40 bg-arcane-900/20 p-3 space-y-2 animate-fade-in">
+              {bgDetail.feature && (
+                <div>
+                  <div className="text-arcane-300 font-semibold text-sm flex items-center gap-1">
+                    <span>✦</span> Feature: {bgDetail.feature.name}
+                  </div>
+                  <p className="text-parchment-400 text-xs mt-1 leading-relaxed">{bgDetail.feature.description}</p>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs pt-1">
+                <span className="text-parchment-300">
+                  <span className="text-parchment-500">Skills:</span>{' '}
+                  {bgDetail.skill_proficiencies.map((s) => SKILL_LABELS[s] ?? s).join(', ') || '—'}
+                </span>
+                {bgDetail.extra_languages > 0 && (
+                  <span className="text-parchment-300">
+                    <span className="text-parchment-500">Languages:</span> +{bgDetail.extra_languages} of choice
+                  </span>
+                )}
+                <span className="text-gold-400">
+                  <span className="text-parchment-500">Gold:</span> {bgDetail.equipment_gold} gp
+                </span>
+              </div>
+              {bgDetail.equipment.length > 0 && (
+                <div className="text-xs text-parchment-400">
+                  <span className="text-parchment-500">Equipment:</span>{' '}
+                  {bgDetail.equipment.map((e) => (e.quantity > 1 ? `${e.name} ×${e.quantity}` : e.name)).join(', ')}
+                </div>
+              )}
+            </div>
+          ) : null}
+
           <button className="btn-primary w-full" onClick={() => setStep(1)} disabled={!form.name}>
             Next: Abilities →
           </button>
@@ -171,7 +259,7 @@ export default function CharacterCreation() {
           <div className="flex gap-4">
             <button className="btn-secondary flex-1" onClick={() => setStep(1)}>← Back</button>
             <button
-              className="btn-primary flex-1"
+              className="btn-primary"
               onClick={handleSubmit}
               disabled={loading}
             >

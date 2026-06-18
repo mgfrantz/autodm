@@ -137,27 +137,16 @@ def get_class_skill_count(char_class: str) -> int:
 # --------------------------------------------------------------------------- #
 # Background skill proficiency
 # --------------------------------------------------------------------------- #
+# Derived from the canonical backgrounds registry (app.engine.backgrounds) so
+# the skill table never drifts from the full background definitions. The
+# module-level dict is retained for backward compatibility (tests iterate it
+# directly). Importing backgrounds here is cycle-free: backgrounds imports only
+# the inventory engine, which has no engine-layer dependencies.
+from app.engine.backgrounds import BACKGROUNDS as _BACKGROUNDS_REGISTRY
 
 _BACKGROUND_SKILLS: dict[str, list[str]] = {
-    "acolyte": ["insight", "religion"],
-    "charlatan": ["deception", "sleight_of_hand"],
-    "criminal": ["deception", "stealth"],
-    "spy": ["deception", "stealth"],
-    "entertainer": ["acrobatics", "performance"],
-    "gladiator": ["acrobatics", "performance"],
-    "folk hero": ["animal_handling", "survival"],
-    "guild artisan": ["insight", "persuasion"],
-    "guild merchant": ["insight", "persuasion"],
-    "hermit": ["medicine", "religion"],
-    "noble": ["history", "persuasion"],
-    "knight": ["history", "persuasion"],
-    "outlander": ["athletics", "survival"],
-    "sage": ["arcana", "history"],
-    "sailor": ["athletics", "perception"],
-    "pirate": ["athletics", "perception"],
-    "soldier": ["athletics", "intimidation"],
-    "urchin": ["sleight_of_hand", "stealth"],
-    "haunted one": [],  # variant — choose 2
+    bg_id: list(bg.skill_proficiencies)
+    for bg_id, bg in _BACKGROUNDS_REGISTRY.items()
 }
 
 

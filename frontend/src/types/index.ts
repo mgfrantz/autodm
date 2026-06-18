@@ -537,3 +537,72 @@ export interface ShopRestockResult {
   name: string;
   merchant: ShopMerchant;
 }
+
+// === Backgrounds ===
+
+export interface BackgroundFeature {
+  name: string;
+  description: string;
+}
+
+export interface BackgroundEquipmentItem {
+  name: string;
+  item_type: string;
+  description: string;
+  rarity: string;
+  value: number;
+  weight: number;
+  quantity: number;
+}
+
+export interface BackgroundToolChoice {
+  count: number;
+  categories: string[];
+}
+
+export interface BackgroundDetail {
+  id: string;
+  name: string;
+  description: string;
+  skill_proficiencies: string[];
+  tool_proficiencies_fixed: string[];
+  tool_proficiencies_choice: BackgroundToolChoice | null;
+  languages: string[];
+  extra_languages: number;
+  equipment: BackgroundEquipmentItem[];
+  equipment_gold: number;
+  feature: BackgroundFeature | null;
+  personality_traits: string[];
+  ideals: string[];
+  bonds: string[];
+  flaws: string[];
+  variant_of: string | null;
+}
+
+export interface BackgroundSummary {
+  id: string;
+  name: string;
+  description: string;
+  skill_proficiencies: string[];
+  feature: string | null;
+  variant_of: string | null;
+}
+
+export interface CharacterBackground {
+  character_id: number;
+  character_name: string;
+  background: string | null;
+  background_known: boolean;
+  detail: BackgroundDetail | null;
+}
+
+export interface SetBackgroundResult {
+  success: boolean;
+  character_id: number;
+  background: string;
+  background_id: string;
+  feature: string | null;
+  equipment_granted: string[];
+  gold_granted: number;
+  total_gold: number;
+}

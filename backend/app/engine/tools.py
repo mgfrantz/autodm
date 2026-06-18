@@ -284,64 +284,17 @@ def get_class_tool_choice(char_class: str) -> Optional[dict]:
 # --------------------------------------------------------------------------- #
 # Background tool proficiency
 # --------------------------------------------------------------------------- #
+# Derived from the canonical backgrounds registry (app.engine.backgrounds) so
+# the tool table never drifts from the full background definitions. Importing
+# backgrounds here is cycle-free (it depends only on the inventory engine).
+from app.engine.backgrounds import BACKGROUNDS as _BACKGROUNDS_REGISTRY
 
 _BACKGROUND_TOOLS: dict[str, dict] = {
-    "acolyte": {"fixed": [], "choice": None},
-    "charlatan": {"fixed": ["disguise_kit", "forgery_kit"], "choice": None},
-    "criminal": {
-        "fixed": ["thieves_tools"],
-        "choice": {"count": 1, "categories": ["gaming_set"]},
-    },
-    "spy": {
-        "fixed": ["thieves_tools"],
-        "choice": {"count": 1, "categories": ["gaming_set"]},
-    },
-    "entertainer": {
-        "fixed": ["disguise_kit"],
-        "choice": {"count": 1, "categories": ["musical_instrument"]},
-    },
-    "gladiator": {
-        "fixed": ["disguise_kit"],
-        "choice": {"count": 1, "categories": ["musical_instrument"]},
-    },
-    "folk hero": {
-        "fixed": ["land_vehicle"],
-        "choice": {"count": 1, "categories": ["artisan"]},
-    },
-    "guild artisan": {
-        "fixed": [],
-        "choice": {"count": 1, "categories": ["artisan"]},
-    },
-    "guild merchant": {
-        "fixed": [],
-        "choice": {"count": 1, "categories": ["artisan"]},
-    },
-    "hermit": {"fixed": ["herbalism_kit"], "choice": None},
-    "noble": {
-        "fixed": [],
-        "choice": {"count": 1, "categories": ["gaming_set"]},
-    },
-    "knight": {
-        "fixed": [],
-        "choice": {"count": 1, "categories": ["gaming_set"]},
-    },
-    "outlander": {
-        "fixed": [],
-        "choice": {"count": 1, "categories": ["musical_instrument"]},
-    },
-    "sage": {"fixed": [], "choice": None},
-    "sailor": {"fixed": ["navigator_tools", "water_vehicle"], "choice": None},
-    "pirate": {"fixed": ["navigator_tools", "water_vehicle"], "choice": None},
-    "soldier": {
-        "fixed": ["land_vehicle"],
-        "choice": {"count": 1, "categories": ["gaming_set"]},
-    },
-    "urchin": {"fixed": ["disguise_kit", "forgery_kit"], "choice": None},
-    "haunted one": {
-        # Variant background — pick any one tool set; model as a broad choice.
-        "fixed": [],
-        "choice": {"count": 1, "categories": ["artisan", "kit", "musical_instrument", "gaming_set"]},
-    },
+    bg_id: {
+        "fixed": list(bg.tool_fixed),
+        "choice": dict(bg.tool_choice) if bg.tool_choice else None,
+    }
+    for bg_id, bg in _BACKGROUNDS_REGISTRY.items()
 }
 
 
