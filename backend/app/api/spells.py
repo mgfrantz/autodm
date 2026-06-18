@@ -43,6 +43,7 @@ class SpellResponse(BaseModel):
     casting_time: str
     range: str
     components: str
+    material_description: str = ""
     duration: str
     concentration: bool
     ritual: bool
@@ -56,6 +57,7 @@ class SpellResponse(BaseModel):
     healing_dice_sides: int
     healing_bonus: int
     at_higher_levels_dice: int
+    parsed_components: dict
 
 
 class SpellSlotResponse(BaseModel):
@@ -83,6 +85,7 @@ class CastSpellRequest(BaseModel):
     caster_mod: int = 0  # ability modifier for casting (e.g., INT, WIS, CHA)
     target_ac: int | None = None  # for attack-roll spells
     target_save_total: int | None = None  # for saving-throw spells
+    active_conditions: list[str] = []  # active conditions affecting the caster
 
 
 class CastSpellResponse(BaseModel):
@@ -140,6 +143,7 @@ def _spell_to_response(spell: Spell) -> SpellResponse:
         casting_time=spell.casting_time,
         range=spell.range,
         components=spell.components,
+        material_description=spell.material_description,
         duration=spell.duration,
         concentration=spell.concentration,
         ritual=spell.ritual,
@@ -153,6 +157,7 @@ def _spell_to_response(spell: Spell) -> SpellResponse:
         healing_dice_sides=spell.healing_dice_sides,
         healing_bonus=spell.healing_bonus,
         at_higher_levels_dice=spell.at_higher_levels_dice,
+        parsed_components=spell.parsed_components.to_dict(),
     )
 
 
@@ -281,6 +286,7 @@ def cast_spell(character_id: int, request: CastSpellRequest, db: Session = Depen
         caster_mod=request.caster_mod,
         target_ac=request.target_ac,
         target_save_total=request.target_save_total,
+        active_conditions=request.active_conditions,
     )
 
     if not outcome.success:

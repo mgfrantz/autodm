@@ -19,6 +19,7 @@ code can serialize a Spellbook via ``Spellbook.to_dict`` and rebuild it with
 from __future__ import annotations
 
 import math
+import re
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
@@ -69,6 +70,117 @@ class CastingStyle(str, Enum):
     KNOWN = "known"
     PREPARED = "prepared"
     NONE = "none"
+
+
+# ---------------------------------------------------------------------------
+# Spell Components — parsed and structured
+# ---------------------------------------------------------------------------
+
+@dataclass
+class SpellComponents:
+    """Parsed spell components with material details."""
+    verbal: bool = False
+    somatic: bool = False
+    material: bool = False
+    material_description: str = ""
+    material_cost_gp: float = 0.0
+    material_consumed: bool = True
+
+    def has_verbal(self) -> bool:
+        return self.verbal
+
+    def has_somatic(self) -> bool:
+        return self.somatic
+
+    def has_material(self) -> bool:
+        return self.material
+
+    def to_dict(self) -> dict:
+        return {
+            "verbal": self.verbal,
+            "somatic": self.somatic,
+            "material": self.material,
+            "material_description": self.material_description,
+            "material_cost_gp": self.material_cost_gp,
+            "material_consumed": self.material_consumed,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "SpellComponents":
+        return cls(
+            verbal=data.get("verbal", False),
+            somatic=data.get("somatic", False),
+            material=data.get("material", False),
+            material_description=data.get("material_description", ""),
+            material_cost_gp=data.get("material_cost_gp", 0.0),
+            material_consumed=data.get("material_consumed", True),
+        )
+
+
+def parse_components(components_str: str, material_desc: str = "") -> SpellComponents:
+    """Parse a components string into structured data.
+
+    Args:
+        components_str: e.g., "V", "V, S", "V, S, M", "V, M"
+        material_desc: Optional material component description and cost, e.g.,
+            "a tiny piece of phosphor" or "a diamond worth at least 300 gp"
+
+    Returns:
+        SpellComponents with parsed flags and material details.
+    """
+    comp = SpellComponents()
+    parts = [p.strip().upper() for p in components_str.split(",")]
+    comp.verbal = "V" in parts
+    comp.somatic = "S" in parts
+    comp.material = "M" in parts
+
+    if comp.material and material_desc:
+        comp.material_description = material_desc.strip()
+
+        # Parse gold cost if present (e.g., "a diamond worth at least 300 gp")
+        cost_match = re.search(r"(\d+(?:\.\d+)?)\s*gp", material_desc.lower())
+        if cost_match:
+            comp.material_cost_gp = float(cost_match.group(1))
+
+    return comp
+
+
+# Conditions that prevent verbal components (speech not possible)
+SILENCED_CONDITIONS = frozenset([
+    "paralyzed",      # can't speak (per PHB)
+    "petrified",      # can't speak (per PHB)
+    "unconscious",    # can't speak (per PHB)
+    "stunned",        # can speak only falteringly - effectively no verbal spells
+])
+
+# Conditions that prevent somatic components (no hand gestures possible)
+NO_SOMATIC_CONDITIONS = frozenset([
+    "paralyzed",      # can't move
+    "petrified",      # can't move
+    "unconscious",    # can't move
+])
+
+
+def can_cast_with_conditions(
+    components: SpellComponents,
+    active_conditions: list[str],
+) -> tuple[bool, str]:
+    """Check if spell can be cast given current conditions.
+
+    Returns:
+        (can_cast, reason) where reason is empty if can_cast is True.
+    """
+    if components.has_verbal():
+        blocked = any(c in active_conditions for c in SILENCED_CONDITIONS)
+        if blocked:
+            return False, "Cannot cast spells with verbal components while silenced or unable to speak"
+
+    if components.has_somatic():
+        blocked = any(c in active_conditions for c in NO_SOMATIC_CONDITIONS)
+        if blocked:
+            return False, "Cannot cast spells with somatic components while unable to move"
+
+    return True, ""
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +300,9 @@ class Spell:
     concentration: bool = False
     ritual: bool = False
 
+    # Material component description (for M components), e.g., "a tiny piece of phosphor"
+    material_description: str = ""
+
     # Mechanics ------------------------------------------------------------
     requires_attack_roll: bool = False       # ranged/melee spell attack vs AC
     save_ability: Optional[str] = None       # e.g. "dex" -> target rolls save
@@ -201,9 +316,14 @@ class Spell:
     # Extra dice added per slot level above the spell's base level (upcasting).
     at_higher_levels_dice: int = 0
 
+    # Parsed components (auto-populated from components + material_description)
+    _parsed_components: SpellComponents = field(init=False, repr=False)
+
     def __post_init__(self) -> None:
         if isinstance(self.school, str):
             object.__setattr__(self, "school", SpellSchool(self.school))
+        # Parse components
+        object.__setattr__(self, "_parsed_components", parse_components(self.components, self.material_description))
 
     @property
     def id(self) -> str:
@@ -221,6 +341,11 @@ class Spell:
     @property
     def heals(self) -> bool:
         return self.healing_dice_count > 0 and self.healing_dice_sides > 0
+
+    @property
+    def parsed_components(self) -> SpellComponents:
+        """The parsed components data."""
+        return self._parsed_components
 
     def roll_damage(self, caster_level: int, slot_level: Optional[int] = None) -> int:
         """Roll the spell's damage, applying cantrip scaling and upcasting.
@@ -265,6 +390,7 @@ class Spell:
             "casting_time": self.casting_time,
             "range": self.range,
             "components": self.components,
+            "material_description": self.material_description,
             "duration": self.duration,
             "concentration": self.concentration,
             "ritual": self.ritual,
@@ -278,6 +404,7 @@ class Spell:
             "healing_dice_sides": self.healing_dice_sides,
             "healing_bonus": self.healing_bonus,
             "at_higher_levels_dice": self.at_higher_levels_dice,
+            "parsed_components": self._parsed_components.to_dict(),
         }
 
     @classmethod
@@ -290,6 +417,7 @@ class Spell:
             casting_time=data.get("casting_time", "1 action"),
             range=data.get("range", "self"),
             components=data.get("components", "V, S"),
+            material_description=data.get("material_description", ""),
             duration=data.get("duration", "instantaneous"),
             concentration=data.get("concentration", False),
             ritual=data.get("ritual", False),
@@ -1088,11 +1216,16 @@ class Spellbook:
         caster_mod: int = 0,
         target_ac: Optional[int] = None,
         target_save_total: Optional[int] = None,
+        active_conditions: Optional[list[str]] = None,
     ) -> CastOutcome:
         """Attempt to cast a spell, consuming a slot if needed.
 
         Returns a CastOutcome whose ``effect`` (if not None) can be applied to a
         target by the caller (combat engine / API).
+
+        Args:
+            active_conditions: List of active condition names (e.g., ['stunned', 'grappled'])
+                that may prevent spellcasting due to component restrictions.
         """
         sid = _norm(spell_id)
         spell = get_spell(sid)
@@ -1103,6 +1236,12 @@ class Spellbook:
         if spell not in self.castable_spells():
             return CastOutcome(False, f"{spell.name} is not available to cast "
                                       "(not known/prepared)")
+
+        # Check component restrictions
+        conditions = active_conditions or []
+        can_cast, reason = can_cast_with_conditions(spell.parsed_components, conditions)
+        if not can_cast:
+            return CastOutcome(False, reason)
 
         if spell.is_cantrip:
             used_level = 0
