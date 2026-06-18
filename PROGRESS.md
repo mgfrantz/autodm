@@ -717,6 +717,21 @@
     * Both persist to game_state and return updated encounter data
   - 15 new engine tests; full suite now **1151 passing, 0 failing**
 
+|- [x] **Add spell components parsing and casting requirements**
+  - `SpellComponents` dataclass: verbal, somatic, material flags
+  - Material component description and cost (gp) tracking
+  - `parse_components()` parser: converts "V, S, M" strings to structured data
+  - `can_cast_with_conditions()` helper: checks if conditions block casting
+  - Conditions blocking:
+    * Paralyzed, petrified, unconscious: block both verbal and somatic
+    * Stunned: blocks verbal (can't speak coherently), allows somatic
+  - `Spell` class: added `material_description` field, `parsed_components` property
+  - `Spellbook.cast()`: accepts `active_conditions` parameter
+  - API updates: `SpellResponse` includes `material_description` and `parsed_components`
+  - `CastSpellRequest` accepts `active_conditions` list
+  - 29 new tests (component parsing, condition checks, integration)
+  - Full test suite now **1179 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -725,7 +740,6 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Spell components (verbal/somatic/material) in spell descriptions + casting requirements
   - Magic item attunement system (attune in rest, limited slots, benefit gating)
   - Tool proficiencies (thieves' tools, instruments, artisan tools) + proficiency bonuses
   - Environmental conditions (weather, lighting, terrain) with gameplay effects
