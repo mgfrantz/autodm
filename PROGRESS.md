@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅
-## TEST SUITE FULLY GREEN (1478 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅
+## TEST SUITE FULLY GREEN (1500 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -894,6 +894,40 @@
     API + cross-system character-creation round-trip); full suite now **1478
     passing, 0 failing**. `tsc --noEmit` clean, `vite build` clean (111 modules)
 
+- [x] **Wire environment modifiers into combat** — weather/lighting/terrain now drive attack rolls
+  - Closes the gap between the (already-shipped) environment engine and the
+    combat engine: `Encounter.resolve_attack` now folds scene-wide
+    environmental situational modifiers into the advantage/disadvantage pool.
+  - `combat_modifiers()` (environment engine) gains `attacker_unseen_advantage`:
+    in a heavily obscured scene (darkness/fog/storm/heavy rain) the attacker
+    gains advantage for being an *unseen attacker* (PHB "Unseen Attackers and
+    Targets"), which cancels its own disadvantage from not seeing the target →
+    a straight roll — the correct 5e outcome for two blind combatants.
+  - `Encounter` stores a scene environment (`set_environment`) and applies it in
+    `resolve_attack`; an optional `environment=` arg overrides the stored scene
+    for a single attack (handy for tests / one-off resolution). `None` scene =
+    no modifiers (fully backward compatible — every pre-existing resolve_attack
+    call path is unchanged).
+  - **Net effects**: strong wind / storm / blizzard → ranged-weapon
+    disadvantage; darkness / fog / heavy obscurement → mutual blindness
+    (straight roll); any advantage cancels all disadvantage per 5e.
+  - Attack descriptions annotate when the environment bites ("wind disrupts the
+    shot", "poor visibility hampers the strike", "unseen attacker strikes from
+    the gloom"); advantage+disadvantage cancels are not logged (no spam).
+  - Environment round-trips through `Encounter.to_dict`/`from_dict` so a
+    mid-combat save/load preserves the scene.
+  - Combat API refreshes the scene from `game_state["environment"]` on combat
+    start **and** every attack, so DM weather/light changes take effect
+    immediately mid-combat; the combat-actions API (off-hand / opportunity /
+    unarmed attacks) honours the scene too.
+  - Frontend `Encounter` type gains an optional `environment` field (+ a new
+    `SceneEnvironment` interface) so future UI can surface the active scene.
+  - 22 new tests (19 engine integration via a `roll_d20` flag-spy, incl. the
+    mutual-blindness cancellation and serialization round-trips; 3 REST API
+    tests proving the scene is persisted, drives modifiers through the HTTP
+    layer, and refreshes on a mid-combat weather change). Full suite now
+    **1500 passing, 0 failing**. `tsc --noEmit` clean.
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -903,10 +937,10 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Environment combat integration (wire environment modifiers into `Encounter.resolve_attack`)
   - Languages/race system (formalize racial languages + the background extra-language choices)
   - In-game background panel (GameView overlay to view/change background + claim starting equipment)
   - In-game alignment panel (GameView overlay to view/change alignment mid-campaign)
+  - In-game environment panel (GameView overlay to view/change weather/light/terrain + live combat-modifier preview)
 
 ## How to Use This File
 When you (the agent) work on the project:
