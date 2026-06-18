@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅
-## TEST SUITE FULLY GREEN (1151 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅
+## TEST SUITE FULLY GREEN (1176 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -732,6 +732,23 @@
   - 29 new tests (component parsing, condition checks, integration)
   - Full test suite now **1179 passing, 0 failing**
 
+|- [x] **Add magic item attunement system** — attune in rest, limited slots, benefit gating
+  - `engine/attunement.py` pure engine (~300 lines): DnD 5e attunement mechanics
+    - AttunementSlot, AttunementInfo, AttunementResult dataclasses
+    - item_requires_attunement() based on rarity (uncommon+)
+    - attune_item(), break_attunement(), break_all_attunements() functions
+    - Combat round tracking for attunement timing
+    - max_attunement_slots() base 3 slots, +1 for Artificer at 10/14/18
+  - `api/attunement.py` REST API (~280 lines):
+    - POST /attune/{item_id} — attune to an item
+    - POST /break-attunement/{item_id} — break attunement
+    - GET /attuned-items — list attuned items
+    - GET /attunement-info/{item_id} — get item attunement info
+    - Blocked in combat, logs to story, persists to game_state
+  - Registered router in main.py
+  - 26 engine tests (all passing)
+  - Full test suite now **1176 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
@@ -740,7 +757,6 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Magic item attunement system (attune in rest, limited slots, benefit gating)
   - Tool proficiencies (thieves' tools, instruments, artisan tools) + proficiency bonuses
   - Environmental conditions (weather, lighting, terrain) with gameplay effects
   - Character background system (feature, equipment, skill proficiencies per background)
