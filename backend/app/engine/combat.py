@@ -18,6 +18,12 @@ from typing import Optional
 
 from app.engine import conditions as conditions_mod
 from app.engine.dice import roll_d20, roll_dice
+from app.engine.concentration import (
+    check_concentration,
+    should_break_concentration,
+    end_concentration,
+    ConcentrationCheckResult,
+)
 
 
 @dataclass
@@ -54,6 +60,7 @@ class AttackResult:
     damage: int
     target_remaining_hp: int
     description: str
+    concentration_check: Optional[ConcentrationCheckResult] = None
 
 
 @dataclass
@@ -92,8 +99,12 @@ class Combatant:
     hidden: bool = False
     stealth_roll: int = 0
     stealth_dc: int = 0
-
+    # --- Concentration tracking ---
+    concentrating: bool = False
+    concentration_spell_name: str = ""
+    concentration_spell_id: str = ""
     def __post_init__(self) -> None:
+        # Default current HP to max when not explicitly set.
         # Default current HP to max when not explicitly set.
         if self.current_hp == 0:
             self.current_hp = self.max_hp
@@ -197,6 +208,9 @@ class Combatant:
             "hidden": self.hidden,
             "stealth_roll": self.stealth_roll,
             "stealth_dc": self.stealth_dc,
+            "concentrating": self.concentrating,
+            "concentration_spell_name": self.concentration_spell_name,
+            "concentration_spell_id": self.concentration_spell_id,
             "attacks": [
                 {
                     "name": a.name,
@@ -239,6 +253,9 @@ class Combatant:
             hidden=data.get("hidden", False),
             stealth_roll=data.get("stealth_roll", 0),
             stealth_dc=data.get("stealth_dc", 0),
+            concentrating=data.get("concentrating", False),
+            concentration_spell_name=data.get("concentration_spell_name", ""),
+            concentration_spell_id=data.get("concentration_spell_id", ""),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
@@ -352,6 +369,16 @@ class Encounter:
                 self.log.append(
                     f"{combatant.name} is no longer {name}."
                 )
+            # Check if concentration should break due to conditions
+            if combatant.concentrating and should_break_concentration(combatant.conditions):
+                spell_name = combatant.concentration_spell_name
+                combatant.concentrating = False
+                combatant.concentration_spell_name = ""
+                combatant.concentration_spell_id = ""
+                self.log.append(
+                    f"{combatant.name} loses concentration on {spell_name} "
+                    f"due to {', '.join(combatant.conditions)}."
+                )
 
     def alive_combatants(self, side: Optional[str] = None) -> list[Combatant]:
         """Return living combatants, optionally filtered by side."""
@@ -359,6 +386,32 @@ class Encounter:
             c for c in self.combatants
             if c.is_alive and (side is None or c.side == side)
         ]
+
+    def start_concentration(self, combatant_id: str, spell_name: str, spell_id: str) -> bool:
+        """Start concentrating on a spell. Returns True if successful."""
+        for combatant in self.combatants:
+            if combatant.id == combatant_id:
+                if combatant.concentrating:
+                    # Already concentrating - must stop first
+                    return False
+                combatant.concentrating = True
+                combatant.concentration_spell_name = spell_name
+                combatant.concentration_spell_id = spell_id
+                self.log.append(f"{combatant.name} starts concentrating on {spell_name}.")
+                return True
+        return False
+
+    def end_concentration(self, combatant_id: str) -> bool:
+        """Stop concentrating. Returns True if was concentrating."""
+        for combatant in self.combatants:
+            if combatant.id == combatant_id and combatant.concentrating:
+                spell_name = combatant.concentration_spell_name
+                combatant.concentrating = False
+                combatant.concentration_spell_name = ""
+                combatant.concentration_spell_id = ""
+                self.log.append(f"{combatant.name} stops concentrating on {spell_name}.")
+                return True
+        return False
 
     @property
     def is_active(self) -> bool:
@@ -389,6 +442,10 @@ class Encounter:
         attack: Attack,
         advantage: bool = False,
         disadvantage: bool = False,
+        # Concentration check parameters (for the target)
+        con_score: int = 10,
+        proficiency_bonus: int = 2,
+        con_proficient: bool = False,
     ) -> AttackResult:
         """Resolve an attack: roll to hit against AC, then roll damage.
 
@@ -406,6 +463,8 @@ class Encounter:
         - A paralyzed/petrified/unconscious target hit by a melee attack within
           5 ft takes a critical hit.
         - A petrified target has resistance to all damage (halved).
+        - Concentration checks: if target is concentrating, make a Con save
+          when damage is taken (DC = 10 or half damage, whichever is higher).
 
         Advantage and disadvantage cancel out per 5e rules: if a creature would
         have both, it rolls a single d20.
@@ -506,6 +565,33 @@ class Encounter:
             attacker.stealth_roll = 0
             attacker.stealth_dc = 0
 
+        # --- Concentration check ---
+        concentration_check_result = None
+        if target.concentrating:
+            from app.engine.concentration import ConcentrationState
+            conc_state = ConcentrationState(
+                spell_name=target.concentration_spell_name,
+                spell_id=target.concentration_spell_id,
+                is_concentrating=True,
+            )
+            concentration_check_result = check_concentration(
+                conc_state,
+                damage,
+                con_score,
+                proficiency_bonus,
+                con_proficient,
+            )
+            if concentration_check_result.concentration_lost:
+                target.concentrating = False
+                target.concentration_spell_name = ""
+                target.concentration_spell_id = ""
+                self.log.append(
+                    f"{target.name} loses concentration on {conc_state.spell_name}!"
+                )
+                self.log.append(
+                    f"  Concentration check: {concentration_check_result.reason}"
+                )
+
         crit_label = "CRITICAL HIT! " if critical else ""
         description = (
             f"{crit_label}{attacker.name} hits {target.name} with {attack.name} "
@@ -513,6 +599,10 @@ class Encounter:
             f"(rolled {attack_total} vs AC {target.armor_class}). "
             f"{target.name} has {remaining} HP remaining."
         )
+
+        # Add concentration info to description
+        if concentration_check_result and concentration_check_result.concentration_lost:
+            description += f" {target.name} lost concentration!"
 
         if not target.is_alive:
             description += f" {target.name} is defeated!"
@@ -526,6 +616,7 @@ class Encounter:
             damage=damage,
             target_remaining_hp=remaining,
             description=description,
+            concentration_check=concentration_check_result,
         )
 
     def to_dict(self) -> dict:
