@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅
-## TEST SUITE FULLY GREEN (1290 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅
+## TEST SUITE FULLY GREEN (1377 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -771,17 +771,62 @@
     POST /tools/proficiencies, POST /tools/check, GET /tools/registry
   - 99 new tests (engine + API + save/load); full suite now **1290 passing, 0 failing**
 
+- [x] **Add environmental conditions engine** — weather, lighting, terrain, temperature with gameplay effects
+  - `engine/environment.py` pure engine (~700 lines): DnD 5e environmental rules
+    (PHB ch.5 "The Environment"; DMG ch.5)
+    * Light levels (bright/dim/darkness) -> obscurement; dim = lightly obscured
+      (disadvantage on sight-based Perception), darkness = heavily obscured
+      (creatures without special senses are effectively blinded)
+    * Weather registry (9 types: clear, light/heavy rain, light/heavy snow,
+      blizzard, fog, strong_wind, storm) -> obscurement, ranged-attack
+      disadvantage (wind/storm/blizzard), flame extinguishing, listen
+      disadvantage
+    * Terrain registry (8 types: normal, difficult, heavy_difficult, ice,
+      rubble, undergrowth, water, cliff) -> movement-cost multiplier (x2 for
+      difficult), slippery (ice), swim_required (water), climb_required (cliff)
+    * Temperature registry (5 levels): extreme_cold/extreme_heat require a
+      Constitution save (DC 10) per hour of exposure or one level of exhaustion
+    * Time-of-day -> ambient light derivation (dawn/dusk=dim, day=bright,
+      night=darkness)
+    * `derive_obscurement()` combines light + weather (weather never improves
+      visibility — always takes the worse)
+    * `compute_effects()` -> EnvironmentEffects dataclass (obscurement,
+      perception/ranged/listen disadvantage, effective_blinded, movement-cost
+      multiplier, difficult_terrain, slippery/swim/climb, exhaustion_save,
+      human-readable summary + active_effects list)
+    * Targeted queries: `sight_perception_disadvantage`, `is_effectively_blinded`,
+      `ranged_attack_disadvantage`, `effective_speed` (halved in difficult
+      terrain), `exhaustion_save`
+    * `combat_modifiers()` -> situational advantage/disadvantage bundle for the
+      PHB unseen-attacker rules (attacker blinded / target hidden by environment)
+    * Procedural weather + temperature tables by climate (temperate/cold/desert/
+      arctic) x season (spring/summer/autumn/winter) with deterministic seeded
+      RNG; `roll_environment()` full snapshot; 15% chance of a one-step
+      extreme-temperature swing
+    * Registry accessors (`list_weather/terrain/light/temperatures/times_of_day`)
+      for UI discovery
+  - `api/environment.py`: 6 REST endpoints — `GET /environment/registry` (all
+    options + climates/seasons), `GET /{id}/environment` (current + effects),
+    `PUT /{id}/environment` (full + partial, validated), `POST /{id}/environment/
+    effects` (preview without persisting), `POST /{id}/environment/roll`
+    (procedural weather, optional seed, preserves terrain/notes), `POST /{id}/
+    environment/combat-modifiers`; persists to `game_state['environment']`;
+    backward-compatible defaults when the key is absent
+  - Registered router in `app/main.py`
+  - 87 new tests (62 engine + 25 API); full suite now **1377 passing, 0 failing**
+
 ## Next Priorities
-- [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
-  candidates that require new infrastructure/3rd-party services (not yet started):
+- [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
+  that require new infrastructure/3rd-party services not yet provisioned
+  (skipped this run; revisit when a provider is configured):
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Environmental conditions (weather, lighting, terrain) with gameplay effects
   - Character background system (feature, equipment, skill proficiencies per background)
   - Alignment system (good/evil, lawful/chaotic, neutral) for roleplay hooks
+  - Environment combat integration (wire environment modifiers into `Encounter.resolve_attack`)
 
 ## How to Use This File
 When you (the agent) work on the project:
