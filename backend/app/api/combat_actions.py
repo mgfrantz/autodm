@@ -37,6 +37,15 @@ def _load_active_encounter(save: GameSave) -> tuple[dict, Encounter]:
     if not game_state.get("in_combat", False):
         raise HTTPException(status_code=400, detail="Not in combat")
     encounter = Encounter.from_dict(game_state.get("combat", {}))
+    # Refresh the scene environment so action attacks (off-hand / opportunity /
+    # unarmed) honour the current weather and lighting.
+    raw_env = game_state.get("environment")
+    if raw_env:
+        try:
+            from app.engine import environment as environment_mod
+            encounter.set_environment(environment_mod.Environment.from_dict(raw_env))
+        except Exception:
+            pass
     return game_state, encounter
 
 

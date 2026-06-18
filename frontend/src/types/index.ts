@@ -107,6 +107,15 @@ export interface Attack {
   damage_type: string;
 }
 
+export interface SceneEnvironment {
+  light: string;
+  weather: string;
+  terrain: string;
+  temperature: string;
+  time_of_day: string;
+  notes?: string;
+}
+
 export interface Encounter {
   combatants: Combatant[];
   turn_order_ids: string[];
@@ -115,6 +124,8 @@ export interface Encounter {
   started: boolean;
   log: string[];
   help_advantage_targets?: string[];
+  /** Active scene environment driving combat situational modifiers, if any. */
+  environment?: SceneEnvironment | null;
 }
 
 export interface CombatState {

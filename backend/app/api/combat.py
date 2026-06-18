@@ -14,11 +14,27 @@ from app.models.database import get_db
 from app.models.models import GameSave, Character
 from app.engine.combat import Encounter, Combatant, Attack, AttackResult
 from app.engine import conditions as conditions_mod
+from app.engine import environment as environment_mod
 from app.engine.dice import ability_modifier
 from app.engine.leveling import apply_xp
 from app.engine.skills import calculate_skill_modifier
 
 router = APIRouter()
+
+
+def _environment_from_state(game_state: dict) -> environment_mod.Environment | None:
+    """Load the scene environment from ``game_state`` if one is recorded.
+
+    Returns ``None`` when no environment is stored, which leaves the encounter's
+    environment untouched (no modifiers applied) — fully backward compatible.
+    """
+    raw = game_state.get("environment")
+    if not raw:
+        return None
+    try:
+        return environment_mod.Environment.from_dict(raw)
+    except Exception:
+        return None
 
 
 class StartCombatRequest(BaseModel):
@@ -107,6 +123,9 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
 
     # Roll initiative and start
     turn_order = encounter.start()
+
+    # Attach the current scene environment so combat respects weather/light.
+    encounter.set_environment(_environment_from_state(game_state))
 
     # Update game state
     game_state["in_combat"] = True
@@ -211,6 +230,8 @@ def make_attack(game_id: int, request: AttackRequest, db: Session = Depends(get_
         raise HTTPException(status_code=400, detail="Not in combat")
 
     encounter = Encounter.from_dict(game_state.get("combat", {}))
+    # Refresh the scene environment so DM weather/light changes apply this turn.
+    encounter.set_environment(_environment_from_state(game_state))
 
     # Find combatants
     attacker = next((c for c in encounter.combatants if c.id == request.attacker_id), None)

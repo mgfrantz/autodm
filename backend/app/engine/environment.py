@@ -669,6 +669,13 @@ class CombatModifiers:
     attacker_melee_disadvantage: bool = False
     attacker_cannot_see_target: bool = False  # attacker blinded by environment
     target_unseen_by_attacker: bool = False  # target hidden by environment
+    #: The attacker is unseen by the target (heavily obscured scene), so per the
+    #: PHB "Unseen Attackers and Targets" rule the attacker gains *advantage*.
+    #: In scene-wide darkness both combatants are effectively blinded, so this
+    #: advantage cancels the attacker's own disadvantage from not seeing the
+    #: target (``attacker_cannot_see_target``) → a straight roll, which is the
+    #: correct 5e result for two blind combatants.
+    attacker_unseen_advantage: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -676,6 +683,7 @@ class CombatModifiers:
             "attacker_melee_disadvantage": self.attacker_melee_disadvantage,
             "attacker_cannot_see_target": self.attacker_cannot_see_target,
             "target_unseen_by_attacker": self.target_unseen_by_attacker,
+            "attacker_unseen_advantage": self.attacker_unseen_advantage,
         }
 
 
@@ -683,9 +691,14 @@ def combat_modifiers(env: Environment, *, attack_is_ranged: bool = False) -> Com
     """Compute the environment's effect on a single attack.
 
     Per the PHB's rules for *unseen attackers*: when a creature can't see its
-    target (because the target is heavily obscured) the attacker has
+    target (because the scene is heavily obscured) the attacker has
     disadvantage, and when the attacker itself is effectively blinded it also
-    has disadvantage on the attack roll.
+    has disadvantage on the attack roll. Symmetrically, if the attacker is also
+    unseen by the target (the typical case in a scene-wide heavily obscured
+    area such as pitch darkness or dense fog) the attacker gains advantage —
+    cancelling the disadvantage for a straight roll, exactly as 5e intends for
+    two blind combatants. Strong wind imposes a *ranged-only* disadvantage that
+    is not cancelled by obscurement unless the area is also heavily obscured.
     """
     heavily = is_effectively_blinded(env)
     mods = CombatModifiers(
@@ -693,6 +706,7 @@ def combat_modifiers(env: Environment, *, attack_is_ranged: bool = False) -> Com
         attacker_melee_disadvantage=heavily,
         attacker_cannot_see_target=heavily,
         target_unseen_by_attacker=heavily,
+        attacker_unseen_advantage=heavily,
     )
     return mods
 

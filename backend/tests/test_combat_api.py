@@ -723,3 +723,131 @@ class TestCombatEnd:
         response = client.post(f"/api/game/{save.id}/combat/end")
         assert response.status_code == 400
         assert "Not in combat" in response.json()["detail"]
+
+
+class TestCombatEnvironmentIntegration:
+    """The combat API must thread the scene environment into attack resolution."""
+
+    def _make_game(self, db_session, environment: dict):
+        char = Character(
+            name="Wind Archer",
+            race="Human",
+            char_class="Fighter",
+            level=1,
+            strength=16,
+            dexterity=12,
+            constitution=14,
+            intelligence=10,
+            wisdom=10,
+            charisma=10,
+            max_hp=12,
+            current_hp=12,
+            armor_class=16,
+            speed=30,
+        )
+        db_session.add(char)
+        db_session.flush()
+        w = World(
+            name="Test World",
+            description="A world for testing.",
+            world_data='{"starting_settlement": {"name": "Test Town"}}',
+            tone="heroic fantasy",
+        )
+        db_session.add(w)
+        db_session.flush()
+        # Seed the scene environment into game_state.
+        game_state = {"location": "Test Town", "environment": environment}
+        save = GameSave(
+            name="Env Game",
+            character_id=char.id,
+            world_id=w.id,
+            game_state=json.dumps(game_state),
+            story_log="[]",
+            current_act=1,
+            xp=0,
+        )
+        db_session.add(save)
+        db_session.commit()
+        return save
+
+    def _start_combat(self, client, save_id):
+        return client.post(
+            f"/api/game/{save_id}/combat/start",
+            json={
+                "enemies": [
+                    {
+                        "name": "Goblin",
+                        "max_hp": 7,
+                        "armor_class": 15,
+                        "initiative_bonus": 2,
+                        "attacks": [],
+                    }
+                ]
+            },
+        )
+
+    def test_environment_persisted_on_encounter(self, client, db_session):
+        save = self._make_game(db_session, {"light": "darkness", "weather": "fog"})
+        resp = self._start_combat(client, save.id)
+        assert resp.status_code == 200
+        encounter = resp.json()["encounter"]
+        assert encounter["environment"]["light"] == "darkness"
+        assert encounter["environment"]["weather"] == "fog"
+
+    def test_darkness_drives_attack_modifiers_via_api(self, client, db_session, monkeypatch):
+        """An attack made through the API honours the stored environment."""
+        save = self._make_game(db_session, {"light": "darkness"})
+        self._start_combat(client, save.id)
+
+        # Spy on the combat engine's roll_d20 to capture the adv/disadv flags.
+        import app.engine.combat as combat_mod
+        from app.engine.dice import roll_d20 as real_roll
+
+        captured = {}
+
+        def spy(modifier=0, advantage=False, disadvantage=False):
+            captured["advantage"] = advantage
+            captured["disadvantage"] = disadvantage
+            return real_roll(modifier, advantage=advantage, disadvantage=disadvantage)
+
+        monkeypatch.setattr(combat_mod, "roll_d20", spy)
+
+        response = client.post(
+            f"/api/game/{save.id}/combat/attack",
+            json={
+                "attacker_id": "player",
+                "target_id": "enemy_1",
+                "attack_name": "Longsword",
+            },
+        )
+        assert response.status_code == 200
+        # Darkness → mutual blindness: both advantage and disadvantage are set
+        # (they cancel inside roll_d20 for a straight roll).
+        assert captured.get("advantage") is True
+        assert captured.get("disadvantage") is True
+
+    def test_environment_can_be_changed_mid_combat(self, client, db_session):
+        """DM weather changes apply on the very next attack (refresh each call)."""
+        save = self._make_game(db_session, {"weather": "clear"})
+        self._start_combat(client, save.id)
+
+        # Change the scene to strong wind via the environment API.
+        wind = client.put(
+            f"/api/game/{save.id}/environment",
+            json={"weather": "strong_wind"},
+        )
+        assert wind.status_code == 200
+        assert wind.json()["environment"]["weather"] == "strong_wind"
+
+        # The encounter dict returned by the next attack reflects the new scene.
+        response = client.post(
+            f"/api/game/{save.id}/combat/attack",
+            json={
+                "attacker_id": "player",
+                "target_id": "enemy_1",
+                "attack_name": "Longsword",
+            },
+        )
+        assert response.status_code == 200
+        encounter = response.json()["encounter"]
+        assert encounter["environment"]["weather"] == "strong_wind"

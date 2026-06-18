@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from app.engine import conditions as conditions_mod
+from app.engine import environment as environment_mod
 from app.engine.dice import roll_d20, roll_dice
 from app.engine.concentration import (
     check_concentration,
@@ -274,6 +275,20 @@ class Encounter:
         # Target ids that currently grant advantage on the *next* attack roll
         # against them (set by the Help action; consumed on first attack).
         self.help_advantage_targets: list[str] = []
+        # Scene environment (weather/light/terrain). When set, ``resolve_attack``
+        # folds the environment's situational modifiers into every attack roll.
+        # ``None`` means "no environmental effect" (backward compatible).
+        self.environment: Optional[environment_mod.Environment] = None
+
+    def set_environment(self, environment: Optional[environment_mod.Environment]) -> None:
+        """Attach (or clear) the scene environment for this encounter.
+
+        The environment drives situational modifiers inside ``resolve_attack``
+        (e.g. strong wind disadvantages ranged attacks, darkness blinds both
+        sides). The combat API refreshes this from ``game_state`` on every
+        request so DM weather changes take effect immediately mid-combat.
+        """
+        self.environment = environment
 
     def add_combatant(self, combatant: Combatant) -> None:
         """Add a combatant before initiative is rolled."""
@@ -442,6 +457,9 @@ class Encounter:
         attack: Attack,
         advantage: bool = False,
         disadvantage: bool = False,
+        # Scene environment — when provided, overrides ``self.environment`` for
+        # this attack (useful for tests / one-off resolution).
+        environment: Optional[environment_mod.Environment] = None,
         # Concentration check parameters (for the target)
         con_score: int = 10,
         proficiency_bonus: int = 2,
@@ -494,6 +512,43 @@ class Encounter:
         tgt_adv = conditions_mod.attacks_against_have_advantage(target, ranged=ranged)
         tgt_dis = conditions_mod.attacks_against_have_disadvantage(target, ranged=ranged)
 
+        # --- Environmental situational modifiers (weather/light/terrain) ---
+        # The scene-wide environment (if any) adds its own advantage/disadvantage
+        # sources on top of conditions, per the PHB "Unseen Attackers and
+        # Targets" rules. A provided ``environment`` argument overrides the
+        # encounter's stored scene so tests can resolve a single attack in any
+        # conditions without mutating the encounter.
+        active_env = environment if environment is not None else self.environment
+        env_note = ""
+        if active_env is not None:
+            env_mods = environment_mod.combat_modifiers(active_env, attack_is_ranged=ranged)
+            # The attacker can't see the target → disadvantage (melee or ranged).
+            if env_mods.attacker_cannot_see_target:
+                att_dis = True
+            # Strong wind / storm / blizzard → ranged weapon disadvantage only.
+            if ranged and env_mods.attacker_ranged_disadvantage:
+                att_dis = True
+            # The attacker is itself unseen by the target → advantage. In a
+            # scene-wide heavily obscured area this cancels the disadvantage
+            # above (a straight roll), which is the correct 5e outcome.
+            if env_mods.attacker_unseen_advantage:
+                att_adv = True
+            # Build a short narrative note when the environment actually bites.
+            # Only mention it when it produces a *net* effect, not when adv+dis
+            # cancel to nothing (avoid spamming the log).
+            net_env_adv = env_mods.attacker_unseen_advantage
+            net_env_dis = (
+                env_mods.attacker_cannot_see_target
+                or (ranged and env_mods.attacker_ranged_disadvantage)
+            )
+            if net_env_dis and not net_env_adv:
+                if env_mods.attacker_cannot_see_target:
+                    env_note = " (poor visibility hampers the strike)"
+                elif ranged and env_mods.attacker_ranged_disadvantage:
+                    env_note = " (wind disrupts the shot)"
+            elif net_env_adv and not net_env_dis:
+                env_note = " (unseen attacker strikes from the gloom)"
+
         # Help action: the *next* attack roll against this target has advantage.
         # Consume the help regardless of other advantage sources.
         if target.id in self.help_advantage_targets:
@@ -537,6 +592,7 @@ class Encounter:
             description = (
                 f"{attacker.name} attacks {target.name} with {attack.name} "
                 f"but misses (rolled {attack_total} vs AC {target.armor_class})."
+                f"{env_note}"
             )
             return AttackResult(
                 attack_total=attack_total,
@@ -597,7 +653,7 @@ class Encounter:
             f"{crit_label}{attacker.name} hits {target.name} with {attack.name} "
             f"for {damage} {attack.damage_type} damage "
             f"(rolled {attack_total} vs AC {target.armor_class}). "
-            f"{target.name} has {remaining} HP remaining."
+            f"{target.name} has {remaining} HP remaining.{env_note}"
         )
 
         # Add concentration info to description
@@ -628,6 +684,7 @@ class Encounter:
             "started": self.started,
             "log": list(self.log),
             "help_advantage_targets": list(self.help_advantage_targets),
+            "environment": self.environment.to_dict() if self.environment else None,
         }
 
     @classmethod
@@ -643,4 +700,7 @@ class Encounter:
         encounter.started = data.get("started", False)
         encounter.log = list(data.get("log", []))
         encounter.help_advantage_targets = list(data.get("help_advantage_targets", []))
+        env_data = data.get("environment")
+        if env_data:
+            encounter.environment = environment_mod.Environment.from_dict(env_data)
         return encounter
