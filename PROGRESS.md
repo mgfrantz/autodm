@@ -622,16 +622,54 @@
     shield, and the derived attack list; `tsc --noEmit` clean
   - 70 new tests (61 engine + 9 API); full suite now **974 passing, 0 failing**
 
+- [x] **Add shop/economy system** — merchants, buy/sell, gold, starting wealth
+  - `engine/shop.py` (~630 lines): 5 merchant archetypes (blacksmith/alchemist/
+    general/arcane/fletcher), 5 settlement tiers (hamlet/village/town/city/
+    metropolis) governing gold reserves and stock depth, DnD 5e pricing (buy at
+    markup, sell at 50% / lower for magic), finite economy (merchant gold +
+    stock depletion), buy/sell transactions with full failure modes, restock
+  - `api/shop.py` (~340 lines): GET /shop overview, GET /shop/{type}
+    (lazy-generate merchant plus player sellables with per-merchant prices),
+    POST buy/sell, POST restock; merchant state persists in game_state;
+    blocked in combat; logs to story
+  - Character.gold column plus migration; starting gold by class on creation;
+    CharacterResponse and save/load snapshot include gold
+  - Frontend: ShopPanel (merchant picker, buy/sell tabs, live gold, feedback),
+    GameView Shop button plus overlay; types plus API client; tsc and vite build clean
+  - 84 new tests (57 engine + 27 API); full suite now **1058 passing, 0 failing**
+
+- [x] **Add DnD DMG-style loot tables** — individual treasure, hoards, chests, combat integration
+  - `engine/loot.py` (~680 lines): DMG p.136-139 tables
+    * Individual treasure per CR tier (coins only)
+    * Hoard loot per CR tier (coins + gems/art objects + magic items)
+    * Chest loot per difficulty tier (common/uncommon/rare/legendary)
+    * CoinPurse dataclass with gold conversion
+    * Magic item tables A-F with item builders
+    * Deterministic RNG support for tests
+  - Combat integration:
+    * Added Combatant.cr field (float, default 0.0) with full serialization
+    * Enemy kills trigger individual loot roll based on CR
+    * Loot staged to game_state.pending_loot ledger
+    * Attack response includes loot drop if any
+    * Collect blocked during combat
+  - Loot API (`api/loot.py`, ~310 lines):
+    * GET /loot/tables — inspect loot table structure (DM info)
+    * GET /{game_id}/loot/pending — view staged combat loot
+    * POST /{game_id}/loot/collect — claim loot into inventory + gold
+    * POST /{game_id}/loot/individual — ad-hoc individual roll
+    * POST /{game_id}/loot/hoard — hoard roll (bosses/chests)
+    * POST /{game_id}/loot/chest — standalone chest roll by tier
+    * Gold conversion follows DMG rates; story log updated on collection
+  - 48 new tests (engine); full suite now **1106 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[FUTURE FEATURE — external services]** — Remaining DESIGN.md "Future"
   candidates that require new infrastructure/3rd-party services (not yet started):
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
-- [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
+|- [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Shop / economy system (merchants, buy/sell, trade loot for gold)
-  - Loot tables (randomized loot drops from defeated enemies)
   - Stealth / hiding mechanics integration with the new skill system
   - Frontend inventory management panel (equip/unequip weapons, armor, shields
     via the UI — the backend equipment + combat-stats endpoints now exist)
