@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.main import app
 from app.models.database import get_db, get_session_factory
-from app.models.models import Base
+from app.models.models import Base, Character, World, GameSave
 
 # Add the backend directory to Python path so app module can be imported
 backend_dir = Path(__file__).parent.parent
@@ -67,3 +67,47 @@ def client(db_session):
     test_client = TestClient(app)
     yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+def character(db_session):
+    """Create a test character."""
+    char = Character(
+        name="Test Character",
+        race="Human",
+        char_class="fighter",
+        level=5,
+        classes='{"fighter": 5}',
+        strength=16,
+        dexterity=14,
+        constitution=14,
+        intelligence=10,
+        wisdom=12,
+        charisma=10,
+        max_hp=45,
+        current_hp=45,
+        armor_class=16,
+        speed=30,
+        xp=6500,
+        inventory='[]',
+        spells='{}',
+    )
+    db_session.add(char)
+    db_session.commit()
+    db_session.refresh(char)
+    return char
+
+
+@pytest.fixture(scope="function")
+def world(db_session):
+    """Create a test world."""
+    w = World(
+        name="Test World",
+        description="A test world for testing.",
+        world_data='{"regions": [{"name": "Test Region", "description": "A test region."}]}',
+        tone="heroic fantasy",
+    )
+    db_session.add(w)
+    db_session.commit()
+    db_session.refresh(w)
+    return w
