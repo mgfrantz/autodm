@@ -72,6 +72,9 @@ class Character(Base):
     skill_proficiencies = Column(Text, default="[]")  # JSON array of chosen skill names
     skill_expertise = Column(Text, default="[]")  # JSON array of Expertise skill names
 
+    # Tools
+    tool_proficiencies = Column(Text, default="[]")  # JSON array of chosen tool ids
+
     # Story
     backstory = Column(Text, nullable=True)
     inventory = Column(Text, default="[]")  # JSON array

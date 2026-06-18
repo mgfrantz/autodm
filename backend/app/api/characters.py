@@ -64,6 +64,7 @@ class CharacterResponse(BaseModel):
     feats: list[dict]  # Learned feats
     skill_proficiencies: list[str] = []  # Chosen skill proficiencies
     skill_expertise: list[str] = []  # Expertise skills
+    tool_proficiencies: list[str] = []  # Chosen tool proficiencies
     backstory: str | None
 
     @field_validator('classes', mode='before')
@@ -82,7 +83,7 @@ class CharacterResponse(BaseModel):
             return json.loads(v) if v else []
         return v or []
 
-    @field_validator('skill_proficiencies', 'skill_expertise', mode='before')
+    @field_validator('skill_proficiencies', 'skill_expertise', 'tool_proficiencies', mode='before')
     @classmethod
     def parse_skill_list_field(cls, v):
         """Parse JSON string to list if needed."""
