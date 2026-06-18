@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅
-## TEST SUITE FULLY GREEN (1419 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅
+## TEST SUITE FULLY GREEN (1478 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -856,6 +856,44 @@
     contract + REST API incl. equipment grant, idempotency, switch, 404/400);
     full suite now **1419 passing, 0 failing**. Frontend `tsc --noEmit` clean.
 
+- [x] **Add alignment system** — the classic nine alignments for roleplay & DM hooks
+  - `engine/alignment.py` (~600 lines, pure engine): the canonical nine
+    alignments (Lawful Good → Chaotic Evil) built from two independent axes —
+    *ethics* (lawful/neutral/chaotic) and *morals* (good/neutral/evil) — each
+    with a PHB-accurate one-paragraph description and 4 roleplay hooks
+  - Forgiving lookup: resolves by id, name ("Lawful Good"), or abbreviation
+    ("LG"), case/space/underscore insensitive; unknown → None (or True Neutral
+    via `get_alignment_or_default`)
+  - **Relationship/conflict scoring**: per-axis step deltas + total grid
+    distance (0-4) mapped to dispositions (friendly/cordial/wary/tense/hostile),
+    plus `are_opposed` / `share_axis` quick checks for DM NPC-reaction hooks
+  - **Tendencies**: per-race and per-class suggested alignments (pure flavour,
+    never 5e restrictions); `suggested_alignments()` merges both, ranking
+    alignments that race AND class agree on first; handles hyphenated races
+    (half-orc / Half-Orc / half orc) uniformly
+  - DM-context helpers: `alignment_context` (rich), `dm_prompt_summary`
+    (one-line), and `npc_reaction_summary` for colouring social encounters
+  - `Character.alignment` column (String, nullable) + idempotent
+    `migrations/add_alignment_column.py`; treated as identity (consistent with
+    `background`, so not part of the save/load snapshot)
+  - `api/alignment.py` (REST): `GET /alignment` (9), `GET /alignment/{name}`,
+    `GET /alignment/compatibility?a=&b=` (relationship), `GET /characters/{id}/
+    alignment`, `POST /characters/{id}/alignment` (set, normalized to id),
+    `GET /characters/{id}/alignment/suggested`; router registered in main.py
+  - Character create normalizes the alignment string to its canonical id;
+    `CharacterResponse` + the game-state character object expose it
+  - DM integration: alignment now feeds the LLM context in `game.py`
+    (`/start`, `/action`, `/action/stream`) via `_alignment_for_dm()` so the DM
+    portrays the hero in-character and can colour NPC reactions
+  - Frontend: `AlignmentDetail`/`AlignmentSummary`/`AlignmentCompatibility`/
+    `CharacterAlignment`/`SetAlignmentResult`/`SuggestedAlignments` types +
+    6 API client fns; `CharacterCreation` gains a 3×3 alignment grid with
+    morals-coded colours and a live description preview; `GameView` sidebar
+    shows the alignment label
+  - 59 new tests (registry/lookup/relationship/tendencies/DM-context + REST
+    API + cross-system character-creation round-trip); full suite now **1478
+    passing, 0 failing**. `tsc --noEmit` clean, `vite build` clean (111 modules)
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -865,10 +903,10 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Alignment system (good/evil, lawful/chaotic, neutral) for roleplay hooks
   - Environment combat integration (wire environment modifiers into `Encounter.resolve_attack`)
   - Languages/race system (formalize racial languages + the background extra-language choices)
   - In-game background panel (GameView overlay to view/change background + claim starting equipment)
+  - In-game alignment panel (GameView overlay to view/change alignment mid-campaign)
 
 ## How to Use This File
 When you (the agent) work on the project:
