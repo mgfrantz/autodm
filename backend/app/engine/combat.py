@@ -88,6 +88,10 @@ class Combatant:
     grappled_by: Optional[str] = None  # id of the combatant grappling this one
     # Challenge Rating (for enemies) — drives loot generation on death.
     cr: float = 0.0
+    # --- Stealth / hiding fields ---
+    hidden: bool = False
+    stealth_roll: int = 0
+    stealth_dc: int = 0
 
     def __post_init__(self) -> None:
         # Default current HP to max when not explicitly set.
@@ -190,6 +194,9 @@ class Combatant:
             "movement_used": self.movement_used,
             "grappled_by": self.grappled_by,
             "cr": self.cr,
+            "hidden": self.hidden,
+            "stealth_roll": self.stealth_roll,
+            "stealth_dc": self.stealth_dc,
             "attacks": [
                 {
                     "name": a.name,
@@ -229,6 +236,9 @@ class Combatant:
             movement_used=data.get("movement_used", 0),
             grappled_by=data.get("grappled_by"),
             cr=data.get("cr", 0.0),
+            hidden=data.get("hidden", False),
+            stealth_roll=data.get("stealth_roll", 0),
+            stealth_dc=data.get("stealth_dc", 0),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
@@ -383,12 +393,14 @@ class Encounter:
         """Resolve an attack: roll to hit against AC, then roll damage.
 
         Implements the full DnD 5e to-hit and damage loop, including
-        condition-driven modifiers:
+        condition-driven modifiers and stealth mechanics:
 
         - The attacker's own conditions may grant advantage/disadvantage
           (e.g. poisoned → disadvantage, invisible → advantage).
+        - Hidden attackers gain advantage and are revealed on attack.
         - The target's conditions may make it easier or harder to hit
           (e.g. stunned → attacks against have advantage; prone melee vs ranged).
+        - Hidden targets (undetected) impose disadvantage on attacks against them.
         - Natural 20 = critical hit (double damage dice).
         - Natural 1 = critical miss (automatic miss).
         - A paralyzed/petrified/unconscious target hit by a melee attack within
@@ -399,6 +411,23 @@ class Encounter:
         have both, it rolls a single d20.
         """
         ranged = bool(getattr(attack, "ranged", False))
+
+        # --- Stealth: hidden attacker gains advantage ---
+        # Attacker reveals when making an attack
+        attacker_hidden = getattr(attacker, "hidden", False)
+        if attacker_hidden:
+            advantage = True
+            # Attacker reveals themselves on attack (PHB: "If you are hidden...")
+            # Note: We clear hidden state AFTER the attack completes
+            # for proper logging
+
+        # --- Stealth: hidden target imposes disadvantage ---
+        # A target is effectively hidden if they have the hidden flag AND
+        # the attacker doesn't have a way to detect them (e.g. blind sight)
+        # For now, we just check the hidden flag
+        target_hidden = getattr(target, "hidden", False)
+        if target_hidden:
+            disadvantage = True
 
         # --- Assemble net advantage / disadvantage from conditions + request ---
         att_adv = advantage or conditions_mod.attack_roll_advantage(attacker)
@@ -440,6 +469,12 @@ class Encounter:
         hit = (not critical_miss) and (critical or attack_total >= target.armor_class)
 
         if not hit:
+            # Attacker reveals themselves even on a miss
+            if attacker_hidden:
+                attacker.hidden = False
+                attacker.stealth_roll = 0
+                attacker.stealth_dc = 0
+
             description = (
                 f"{attacker.name} attacks {target.name} with {attack.name} "
                 f"but misses (rolled {attack_total} vs AC {target.armor_class})."
@@ -464,6 +499,12 @@ class Encounter:
         if conditions_mod.has_damage_resistance(target):
             damage = damage // 2
         remaining = target.take_damage(damage)
+
+        # Attacker reveals themselves on hit
+        if attacker_hidden:
+            attacker.hidden = False
+            attacker.stealth_roll = 0
+            attacker.stealth_dc = 0
 
         crit_label = "CRITICAL HIT! " if critical else ""
         description = (
