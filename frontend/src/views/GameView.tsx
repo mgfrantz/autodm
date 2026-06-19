@@ -10,6 +10,7 @@ import ShopPanel from '../components/ShopPanel'
 import InventoryPanel from '../components/InventoryPanel'
 import BackgroundPanel from '../components/BackgroundPanel'
 import AlignmentPanel from '../components/AlignmentPanel'
+import EnvironmentPanel from '../components/EnvironmentPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
@@ -49,6 +50,7 @@ export default function GameView() {
   const [showInventory, setShowInventory] = useState(false)
   const [showBackground, setShowBackground] = useState(false)
   const [showAlignment, setShowAlignment] = useState(false)
+  const [showEnvironment, setShowEnvironment] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -435,6 +437,13 @@ export default function GameView() {
               title="View or change alignment (3×3 grid with relationship preview)"
             >
               ⚖️ <span className="hidden sm:inline">Alignment</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowEnvironment(true)}
+              title="View or change weather, lighting, terrain & temperature (live combat-modifier preview)"
+            >
+              🌤️ <span className="hidden sm:inline">Scene</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -964,6 +973,37 @@ export default function GameView() {
               characterId={gameState.character.id}
               onChanged={async () => {
                 // The sidebar alignment label + DM context depend on this.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Environment overlay */}
+      {showEnvironment && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowEnvironment(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🌤️ Scene &amp; Weather</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowEnvironment(false)}
+              >
+                ×
+              </button>
+            </div>
+            <EnvironmentPanel
+              gameId={gameState.game_id}
+              onChanged={async () => {
+                // The scene drives combat modifiers; refresh game state.
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}

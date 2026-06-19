@@ -682,3 +682,90 @@ export interface SuggestedAlignments {
   race_tendencies: string[];
   class_tendencies: string[];
 }
+
+// === Environment (weather / lighting / terrain / temperature / time) ===
+
+/** All mechanical effects derived from a scene's environment. */
+export interface EnvironmentEffects {
+  obscurement: string;
+  lightly_obscured: boolean;
+  heavily_obscured: boolean;
+  perception_disadvantage: boolean;
+  effective_blinded: boolean;
+  ranged_attack_disadvantage: boolean;
+  flames_extinguished: boolean;
+  listen_disadvantage: boolean;
+  movement_cost_multiplier: number;
+  difficult_terrain: boolean;
+  slippery: boolean;
+  swim_required: boolean;
+  climb_required: boolean;
+  exhaustion_save: {
+    ability: string;
+    dc: number;
+    frequency: string;
+    reason: string;
+  } | null;
+  active_effects: string[];
+  summary: string;
+}
+
+/** Registry entry for a single light/weather/terrain/temperature option. */
+export interface EnvironmentRule {
+  name: string;
+  description: string;
+  obscurement?: string | null;
+  ranged_attack_disadvantage?: boolean;
+  flames_extinguished?: boolean;
+  listen_disadvantage?: boolean;
+  movement_cost?: number;
+  slippery?: boolean;
+  swim_required?: boolean;
+  climb_required?: boolean;
+  exhaustion_save?: {
+    ability: string;
+    dc: number;
+    frequency: string;
+    reason: string;
+  } | null;
+}
+
+export interface TimeOfDayOption {
+  name: string;
+  light: string;
+}
+
+export interface EnvironmentRegistry {
+  light_levels: EnvironmentRule[];
+  weather: EnvironmentRule[];
+  terrain: EnvironmentRule[];
+  temperature: EnvironmentRule[];
+  time_of_day: TimeOfDayOption[];
+  climates: string[];
+  seasons: string[];
+}
+
+export interface EnvironmentResponse {
+  environment: SceneEnvironment;
+  effects: EnvironmentEffects;
+}
+
+export interface EnvironmentRollResult {
+  message: string;
+  environment: SceneEnvironment;
+  effects: EnvironmentEffects;
+}
+
+/** How the environment reshapes a single attack's advantage/disadvantage. */
+export interface EnvironmentCombatModifiers {
+  attacker_ranged_disadvantage: boolean;
+  attacker_melee_disadvantage: boolean;
+  attacker_cannot_see_target: boolean;
+  target_unseen_by_attacker: boolean;
+  attacker_unseen_advantage: boolean;
+}
+
+export interface EnvironmentModifiersResponse {
+  modifiers: EnvironmentCombatModifiers;
+  environment: SceneEnvironment;
+}

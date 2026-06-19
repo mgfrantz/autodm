@@ -20,7 +20,18 @@ from app.engine.stealth import (
     list_visible_enemies,
     reveal,
 )
+from app.engine import combat as combat_mod
 from app.engine.combat import Combatant, Attack, Encounter
+from app.engine.dice import RollResult
+
+
+def _roll_d20_spy(die: int):
+    """Return a fixed RollResult ignoring randomness (mirrors test_conditions.py)."""
+
+    def _spy(modifier=0, advantage=False, disadvantage=False):
+        return RollResult(rolls=[die], modifier=modifier, total=die + modifier, description="spy")
+
+    return _spy
 
 
 # --------------------------------------------------------------------------- #
@@ -233,7 +244,7 @@ class TestStealthEngine:
     # --------------------------------------------------------------------------- #
     # Combat integration tests (hidden in same class for simplicity)
     # --------------------------------------------------------------------------- #
-    def test_attacker_revealed_on_hit(self):
+    def test_attacker_revealed_on_hit(self, monkeypatch):
         """Attacker should be revealed when making an attack (hit)."""
         player = Combatant(
             id="player",
@@ -255,7 +266,9 @@ class TestStealthEngine:
 
         encounter = Encounter(combatants=[player, enemy])
 
-        # Make a hit (high attack bonus vs low AC)
+        # Force a natural 20 so the attack is guaranteed to hit regardless of
+        # the random die roll (nat-20 auto-hit per 5e rules).
+        monkeypatch.setattr(combat_mod, "roll_d20", _roll_d20_spy(die=20))
         result = encounter.resolve_attack(player, enemy, player.attacks[0])
 
         assert result.hit is True
@@ -263,7 +276,7 @@ class TestStealthEngine:
         assert player.stealth_roll == 0
         assert player.stealth_dc == 0
 
-    def test_attacker_revealed_on_miss(self):
+    def test_attacker_revealed_on_miss(self, monkeypatch):
         """Attacker should be revealed when making an attack (miss)."""
         player = Combatant(
             id="player",
@@ -285,6 +298,9 @@ class TestStealthEngine:
 
         encounter = Encounter(combatants=[player, enemy])
 
+        # Force a low die so the attack is guaranteed to miss (a natural 20
+        # would auto-hit per 5e rules, defeating the -20 attack bonus).
+        monkeypatch.setattr(combat_mod, "roll_d20", _roll_d20_spy(die=2))
         result = encounter.resolve_attack(player, enemy, player.attacks[0])
 
         assert result.hit is False

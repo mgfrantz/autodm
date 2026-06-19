@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -469,5 +469,68 @@ export const setCharacterAlignment = async (
 
 export const getSuggestedAlignments = async (characterId: number): Promise<SuggestedAlignments> => {
   const res = await API.get<SuggestedAlignments>(`/characters/${characterId}/alignment/suggested`);
+  return res.data;
+};
+
+// === Environment ===
+
+export const getEnvironmentRegistry = async (): Promise<EnvironmentRegistry> => {
+  const res = await API.get<EnvironmentRegistry>('/game/environment/registry');
+  return res.data;
+};
+
+export const getEnvironment = async (gameId: number): Promise<EnvironmentResponse> => {
+  const res = await API.get<EnvironmentResponse>(`/game/${gameId}/environment`);
+  return res.data;
+};
+
+export const setEnvironment = async (
+  gameId: number,
+  update: Partial<{
+    light: string;
+    weather: string;
+    terrain: string;
+    temperature: string;
+    time_of_day: string;
+    notes: string;
+  }>,
+): Promise<EnvironmentResponse> => {
+  const res = await API.put<EnvironmentResponse>(`/game/${gameId}/environment`, update);
+  return res.data;
+};
+
+export const previewEnvironmentEffects = async (
+  gameId: number,
+  probe: { light: string; weather: string; terrain: string; temperature: string; time_of_day: string },
+): Promise<EnvironmentResponse> => {
+  const res = await API.post<EnvironmentResponse>(`/game/${gameId}/environment/effects`, probe);
+  return res.data;
+};
+
+export const rollEnvironmentWeather = async (
+  gameId: number,
+  climate: string,
+  season: string,
+  timeOfDay: string,
+  seed?: number,
+): Promise<EnvironmentRollResult> => {
+  const res = await API.post<EnvironmentRollResult>(`/game/${gameId}/environment/roll`, {
+    climate,
+    season,
+    time_of_day: timeOfDay,
+    ...(seed != null ? { seed } : {}),
+  });
+  return res.data;
+};
+
+export const getEnvironmentCombatModifiers = async (
+  gameId: number,
+  attackIsRanged = false,
+): Promise<EnvironmentModifiersResponse> => {
+  const res = await API.post<EnvironmentModifiersResponse>(
+    `/game/${gameId}/environment/combat-modifiers`,
+    {},
+    { params: { attack_is_ranged: attackIsRanged } },
+  );
   return res.data;
 };
