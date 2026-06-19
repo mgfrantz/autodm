@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅
 ## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
@@ -1018,6 +1018,46 @@
     no new backend tests — this is a UI layer over the existing,
     already-tested alignment API)
 
+- [x] **Add in-game spells panel** — full spellbook UI: cast, prepare, learn & manage spell slots (closes the major gap that casters had zero in-game UI)
+  - New `SpellsPanel.tsx` component (~990 lines), a genuine spellcasting console:
+    * **Caster overview card** — caster type (full/half/third), casting style
+      (known/prepared), casting ability + modifier, spell attack bonus, and save
+      DC, all computed client-side to mirror the backend engine exactly
+      (`proficiency_bonus = (level-1)//4+2`, `ability_mod = (score-10)//2`,
+      `dc = 8 + atk_bonus`)
+    * **Spell-slot tracker** — per-level pip rows (1st–9th) showing
+      available/expended slots with arcane-glow pips; flags "all expended —
+      rest to recover"
+    * **Castable spells** grouped by level (cantrips → 9th); each `SpellCard`
+      shows name, school badge (colour-coded per school), concentration/ritual
+      tags, a one-line effect summary (damage/heal/save/attack), range &
+      casting time, and an expandable full-description drawer
+    * **Cast console** — opens inline for the chosen spell: upcasting slot-level
+      picker (only valid ≥ base-level slots with availability, ↑-marked for
+      upcasts), target-AC input for attack-roll spells, target-save-total input
+      for saving-throw spells (with the live DC), then resolves and reports
+      attack roll vs AC (hit/miss), save result (full/half), damage, healing
+    * **Prepared-spell management** — prepared casters get prep/unprep toggles
+      on castable cards plus a "Known but Unprepared" chip list to add spells
+      to the daily prepared set
+    * **Empty/non-caster handling** — offers one-click "Initialize Starting
+      Spells" for a caster with no spells; shows a clear "non-caster" message
+      for martial classes
+    * **Learnable spell library** — collapsible, filterable (by level 0–9 +
+      school + text search) browser over all 88 registry spells with a "+ Learn"
+      action per unknown spell
+  - New frontend types: `SpellComponents`, `SpellDetail`, `SpellbookResponse`,
+    `CastSpellResult`, `SpellRegistryResponse`
+  - 7 new API client fns: `getCharacter`, `getSpellbook`,
+    `initializeSpellbook`, `learnSpell`, `togglePrepareSpell`, `castSpell`,
+    `getSpellRegistry`
+  - `GameView`: 🔮 Spells button in the header bar + overlay modal; passes the
+    scene's active conditions so component-blocked spells (silenced/gagged) are
+    enforced; refreshes game state after cast/learn so slots/HP stay in sync
+  - Verified: `tsc --noEmit` clean, `vite build` clean (116 modules); full
+    backend suite **1554 passing, 0 failing** (frontend-only UI layer over the
+    already-tested spells API)
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -1025,8 +1065,14 @@
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
+- [ ] **Add in-game feats panel** — view learned feats, ASI status, and learn
+  available feats (the backend feats API + leveling/ASI exist with no frontend
+  UI yet; mirrors the spells/languages panels)
 
 ## Completed This Run
+- [x] **Add in-game spells panel** — full spellbook UI: cast, prepare, learn & manage spell slots (details above)
+
+## Previous Run (for reference)
 - [x] **Add in-game languages panel** — view & change known languages with racial/background/class grants and extra-choice tracking
   - New `LanguagesPanel.tsx` component (~470 lines):
     * **Current-state card** showing total known-language count, the character's
@@ -1057,45 +1103,6 @@
   - Verified: `tsc --noEmit` clean, `vite build` clean (115 modules); full
     backend suite **1554 passing, 0 failing** (frontend-only change over the
     already-tested language API)
-
-## Previous Run (for reference)
-- [x] **Add in-game environment panel** — view/change weather, lighting, terrain & temperature with a live combat-modifier preview
-  - New `EnvironmentPanel.tsx` component (~640 lines):
-    * Current-scene summary card (time of day / lighting / weather / terrain /
-      temperature + notes) with iconography per option, plus the derived list
-      of active mechanical effects (obscurement, difficult terrain, exhaustion
-      saves, etc.) straight from the engine's `EnvironmentEffects`
-    * Inline editor with 5 dropdowns + a notes textarea; a debounced (300 ms)
-      `/environment/effects` probe drives a **live preview** of the effects of
-      your unsaved changes before you commit them
-    * **Live attack-modifier preview** with a Melee/Ranged toggle: the net
-      advantage/disadvantage/straight/normal outcome is derived client-side
-      from the `EnvironmentEffects` booleans, faithfully mirroring the backend
-      `environment.combat_modifiers()` + `combat.resolve_attack` net-dis logic
-      (heavily obscured -> mutual blindness cancels to a straight roll; strong
-      wind/storm -> ranged-only disadvantage). Badges annotate the contributing
-      factors using the engine's own narrative wording
-    * **Procedural weather roller** (climate x season x time-of-day + optional
-      numeric seed for reproducible rolls) using the existing `/environment/roll`
-      endpoint; preserves terrain & notes
-  - Frontend types: `EnvironmentEffects`, `EnvironmentRule`, `TimeOfDayOption`,
-    `EnvironmentRegistry`, `EnvironmentResponse`, `EnvironmentRollResult`,
-    `EnvironmentCombatModifiers`, `EnvironmentModifiersResponse` (the pre-existing
-    `SceneEnvironment` is reused unchanged)
-  - 6 new API client fns: `getEnvironmentRegistry`, `getEnvironment`,
-    `setEnvironment`, `previewEnvironmentEffects`, `rollEnvironmentWeather`,
-    `getEnvironmentCombatModifiers`
-  - `GameView`: Scene header button + overlay modal; refreshes game state after
-    a scene change so the combat engine picks up the new weather/light on the
-    next attack
-  - **Bug fix — flaky stealth test**: `test_attacker_revealed_on_hit` (flaked on
-    a nat-1) and `test_attacker_revealed_on_miss` (flaked ~5% on a nat-20, which
-    auto-hits per 5e rules despite the -20 attack bonus) now spy `roll_d20` via
-    the established `test_conditions.py` pattern for deterministic outcomes.
-    Suite is now reliably **1554 passing, 0 failing** (was intermittently 1553)
-  - Verified: `tsc --noEmit` clean, `vite build` clean (114 modules); no new
-    backend tests because this is a UI layer over the already-tested
-    environment API
 
 ## How to Use This File
 When you (the agent) work on the project:
