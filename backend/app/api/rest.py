@@ -181,6 +181,7 @@ def long_rest(game_id: int, db: Session = Depends(get_db)):
 
     is_caster = _is_caster(save)
     current_conditions = list(game_state.get("conditions", []) or [])
+    current_exhaustion = int(game_state.get("exhaustion", 0) or 0)
 
     result: LongRestResult = rest_engine.long_rest(
         char_class=_primary_class(save),
@@ -190,6 +191,7 @@ def long_rest(game_id: int, db: Session = Depends(get_db)):
         hit_dice_used=character.hit_dice_used or 0,
         is_caster=is_caster,
         conditions=current_conditions,
+        exhaustion=current_exhaustion,
     )
 
     # --- Apply HP ---------------------------------------------------------
@@ -208,6 +210,12 @@ def long_rest(game_id: int, db: Session = Depends(get_db)):
     if result.conditions_cleared:
         remaining = [c for c in current_conditions if c not in result.conditions_cleared]
         game_state["conditions"] = remaining
+
+    # --- Reduce exhaustion by one level (PHB long-rest recovery) ---------
+    if result.exhaustion_reduced:
+        game_state["exhaustion"] = result.exhaustion_after
+
+    if result.conditions_cleared or result.exhaustion_reduced:
         save.game_state = json.dumps(game_state)
 
     character.updated_at = datetime.utcnow()
@@ -225,5 +233,6 @@ def long_rest(game_id: int, db: Session = Depends(get_db)):
             "hit_dice_used": character.hit_dice_used,
         },
         "conditions": game_state.get("conditions", []),
+        "exhaustion": game_state.get("exhaustion", 0),
         "spell_slots": slots_overview,
     }

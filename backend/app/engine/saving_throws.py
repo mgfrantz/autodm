@@ -203,13 +203,21 @@ def check_save_auto_fail(ability: str, conditions: list[str]) -> bool:
     return any(c in auto_fail_conditions for c in conditions)
 
 
-def check_save_disadvantage(ability: str, conditions: list[str]) -> bool:
-    """Check if a saving throw has disadvantage due to conditions.
+def check_save_disadvantage(
+    ability: str,
+    conditions: list[str],
+    exhaustion: int = 0,
+) -> bool:
+    """Check if a saving throw has disadvantage due to conditions or exhaustion.
 
-    Restrained imposes disadvantage on Dexterity saving throws.
+    Restrained imposes disadvantage on Dexterity saving throws. Exhaustion
+    level 3+ imposes disadvantage on *all* saving throws (the cumulative effect
+    of the Exhaustion special state).
     """
     ability = ability.lower()
     if ability == "dexterity" and "restrained" in conditions:
+        return True
+    if exhaustion >= 3:
         return True
     return False
 
@@ -247,6 +255,7 @@ def roll_saving_throw(
     disadvantage: bool = False,
     conditions: Optional[list[str]] = None,
     proficiencies: Optional[set[str]] = None,
+    exhaustion: int = 0,
 ) -> SaveResult:
     """Roll a saving throw for a character against a DC.
 
@@ -258,6 +267,7 @@ def roll_saving_throw(
         disadvantage: Explicit disadvantage override.
         conditions: List of active conditions (for auto-fail/disadvantage).
         proficiencies: Pre-computed proficiency set (optional optimization).
+        exhaustion: Exhaustion level (3+ imposes disadvantage on all saves).
 
     Returns:
         A :class:`SaveResult` with the roll, modifier, total, and success.
@@ -291,10 +301,10 @@ def roll_saving_throw(
             description=f"{ability.capitalize()} save auto-failed due to conditions",
         )
 
-    # Check for disadvantage from conditions (stacks with explicit disadvantage)
-    if check_save_disadvantage(ability, conditions):
+    # Check for disadvantage from conditions + exhaustion (stacks with explicit).
+    if check_save_disadvantage(ability, conditions, exhaustion):
         has_disadvantage = True
-        has_advantage = False  # Condition disadvantage overrides explicit advantage
+        has_advantage = False  # Condition/exhaustion disadvantage overrides explicit advantage
 
     # Calculate bonus
     bonus = calculate_save_bonus(ability, character, proficiencies)

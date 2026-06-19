@@ -18,6 +18,7 @@ from typing import Optional
 
 from app.engine import conditions as conditions_mod
 from app.engine import environment as environment_mod
+from app.engine import exhaustion as exhaustion_mod
 from app.engine.dice import roll_d20, roll_dice
 from app.engine.concentration import (
     check_concentration,
@@ -104,6 +105,12 @@ class Combatant:
     concentrating: bool = False
     concentration_spell_name: str = ""
     concentration_spell_id: str = ""
+    # --- Exhaustion (DnD 5e Special State) ---
+    # 0–6 stacking levels (6 = death). Driven by hazards (extreme heat/cold,
+    # starvation) and reduced by 1 per long rest. Applied in resolve_attack
+    # (attack disadvantage at 3+), effective_speed (halved at 2, zero at 5),
+    # effective_max_hp (halved at 4), and is_alive (dead at 6).
+    exhaustion: int = 0
     def __post_init__(self) -> None:
         # Default current HP to max when not explicitly set.
         # Default current HP to max when not explicitly set.
@@ -112,6 +119,9 @@ class Combatant:
 
     @property
     def is_alive(self) -> bool:
+        # Exhaustion level 6 is death, regardless of remaining HP.
+        if exhaustion_mod.is_dead(self):
+            return False
         return self.current_hp > 0
 
     @property
@@ -121,8 +131,18 @@ class Combatant:
 
     @property
     def effective_speed(self) -> int:
-        """Speed, reduced to 0 by conditions such as grappled or restrained."""
-        return conditions_mod.effective_speed(self)
+        """Speed, reduced by conditions (grappled/restrained → 0) and exhaustion.
+
+        Exhaustion halves speed at level 2 and zeroes it at level 5+, applied
+        on top of any condition-driven reduction.
+        """
+        cond_speed = conditions_mod.effective_speed(self)
+        return exhaustion_mod.effective_speed(cond_speed, self.exhaustion)
+
+    @property
+    def effective_max_hp(self) -> int:
+        """Hit-point maximum, halved at exhaustion level 4+ (rounded down, min 1)."""
+        return exhaustion_mod.effective_max_hp(self.max_hp, self.exhaustion)
 
     @property
     def available_movement(self) -> int:
@@ -156,8 +176,12 @@ class Combatant:
         return self.current_hp
 
     def heal(self, amount: int) -> int:
-        """Restore HP (capped at max). Returns the new current HP."""
-        self.current_hp = min(self.max_hp, self.current_hp + amount)
+        """Restore HP (capped at the effective maximum). Returns the new HP.
+
+        The cap respects exhaustion's max-HP halving (level 4+), so healing a
+        deeply exhausted combatant cannot push them past their reduced ceiling.
+        """
+        self.current_hp = min(self.effective_max_hp, self.current_hp + amount)
         return self.current_hp
 
     def roll_initiative(self) -> int:
@@ -212,6 +236,7 @@ class Combatant:
             "concentrating": self.concentrating,
             "concentration_spell_name": self.concentration_spell_name,
             "concentration_spell_id": self.concentration_spell_id,
+            "exhaustion": self.exhaustion,
             "attacks": [
                 {
                     "name": a.name,
@@ -257,6 +282,7 @@ class Combatant:
             concentrating=data.get("concentrating", False),
             concentration_spell_name=data.get("concentration_spell_name", ""),
             concentration_spell_id=data.get("concentration_spell_id", ""),
+            exhaustion=data.get("exhaustion", 0),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
@@ -508,7 +534,11 @@ class Encounter:
 
         # --- Assemble net advantage / disadvantage from conditions + request ---
         att_adv = advantage or conditions_mod.attack_roll_advantage(attacker)
-        att_dis = disadvantage or conditions_mod.attack_roll_disadvantage(attacker)
+        att_dis = (
+            disadvantage
+            or conditions_mod.attack_roll_disadvantage(attacker)
+            or exhaustion_mod.disadvantage_attack_rolls(attacker)  # exhaustion 3+
+        )
         tgt_adv = conditions_mod.attacks_against_have_advantage(target, ranged=ranged)
         tgt_dis = conditions_mod.attacks_against_have_disadvantage(target, ranged=ranged)
 

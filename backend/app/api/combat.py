@@ -96,6 +96,9 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
         # Attacks derived from the equipped weapon (equipment-driven combat),
         # or a class-based fallback when no weapon is equipped.
         attacks=player_attacks,
+        # Carry the character's current exhaustion level into the encounter so
+        # its combat effects (speed/attack/max-HP/death) apply from round 1.
+        exhaustion=int(game_state.get("exhaustion", 0) or 0),
     )
     encounter.add_combatant(player_combatant)
 

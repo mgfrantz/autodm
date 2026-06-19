@@ -139,6 +139,9 @@ class LongRestResult:
     hit_dice_used_after: int = 0
     slots_recovered: bool = False
     conditions_cleared: list[str] = field(default_factory=list)
+    exhaustion_before: int = 0
+    exhaustion_after: int = 0          # one level lower than before (min 0)
+    exhaustion_reduced: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -153,6 +156,9 @@ class LongRestResult:
             "hit_dice_used_after": self.hit_dice_used_after,
             "slots_recovered": self.slots_recovered,
             "conditions_cleared": list(self.conditions_cleared),
+            "exhaustion_before": self.exhaustion_before,
+            "exhaustion_after": self.exhaustion_after,
+            "exhaustion_reduced": self.exhaustion_reduced,
         }
 
 
@@ -293,6 +299,7 @@ def long_rest(
     hit_dice_used: int,
     is_caster: bool,
     conditions: Optional[list[str]] = None,
+    exhaustion: int = 0,
 ) -> LongRestResult:
     """Resolve a long rest: full HP, recover Hit Dice, clear restable conditions.
 
@@ -305,6 +312,10 @@ def long_rest(
         The player's current conditions (out-of-combat). Any that are in
         :data:`LONG_REST_CLEARABLE_CONDITIONS` are reported as cleared for the
         caller to remove from game state.
+    exhaustion
+        The player's current exhaustion level (0–6). A long rest reduces it by
+        one level (provided the creature has eaten and drunk — assumed true).
+        Level 6 is death and so cannot rest; the caller should not reach here.
 
     A long rest always succeeds. HP is restored to ``max_hp``; Hit Dice recover
     up to half the total (minimum 1), but never more than were actually spent.
@@ -317,12 +328,21 @@ def long_rest(
     cleared = [c for c in conditions if is_clearable_by_long_rest(c)]
     hp_healed = max(0, max_hp - current_hp)
 
+    # Exhaustion recovers by one level per long rest (PHB). Fatal level 6
+    # cannot rest, but we still clamp defensively so the engine stays pure.
+    from app.engine.exhaustion import MAX_EXHAUSTION
+    exhaustion_before = max(0, min(MAX_EXHAUSTION, int(exhaustion)))
+    exhaustion_after = max(0, exhaustion_before - 1) if exhaustion_before < MAX_EXHAUSTION else exhaustion_before
+    exhaustion_reduced = exhaustion_after < exhaustion_before
+
     bits = [f"recovered {hp_healed} HP"]
     bits.append(f"regained {dice_regained} Hit Die(s)")
     if is_caster:
         bits.append("recovered all spell slots")
     if cleared:
         bits.append(f"cleared {', '.join(cleared)}")
+    if exhaustion_reduced:
+        bits.append(f"recovered 1 exhaustion level (now {exhaustion_after})")
     message = "Long rest complete: " + "; ".join(bits) + "."
 
     return LongRestResult(
@@ -337,4 +357,7 @@ def long_rest(
         hit_dice_used_after=new_used,
         slots_recovered=is_caster,
         conditions_cleared=cleared,
+        exhaustion_before=exhaustion_before,
+        exhaustion_after=exhaustion_after,
+        exhaustion_reduced=exhaustion_reduced,
     )

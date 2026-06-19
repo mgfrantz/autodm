@@ -129,6 +129,25 @@ def _alignment_for_dm(alignment: str | None) -> str:
     return ctx or "Unaligned"
 
 
+def _exhaustion_for_dm(level) -> str:
+    """Render a character's exhaustion level for DM context.
+
+    Returns 'none' at level 0, otherwise 'level N (<short effects>)'. The DM
+    needs to know exhaustion so it can narrate its debilitating effects and
+    adjudicate hazards that add levels.
+    """
+    try:
+        lvl = int(level or 0)
+    except (TypeError, ValueError):
+        lvl = 0
+    if lvl <= 0:
+        return "none"
+    from app.engine import exhaustion as exhaust
+    effects = exhaust.level_effects(lvl)
+    return f"level {lvl} ({'; '.join(effects['active_effects']) or 'afflicted'})"
+
+
+
 @router.post("/{game_id}/start/stream")
 async def start_adventure_stream(game_id: int, session_factory=Depends(get_session_factory)):
     """Stream the opening narration to the client via Server-Sent Events.
@@ -234,6 +253,7 @@ HP: {character.current_hp}/{character.max_hp}
 AC: {character.armor_class}
 Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
+Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -316,6 +336,7 @@ HP: {character.current_hp}/{character.max_hp}
 AC: {character.armor_class}
 Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
+Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(
