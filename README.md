@@ -133,13 +133,18 @@ LLM_API_KEY=your-api-key-here
 ### Running Tests
 
 ```bash
-# Backend tests
+# Backend tests (game engine: dice, combat, spells, leveling, …)
 cd backend
 source venv/bin/activate
 pytest tests/ -v
 
 # Check test coverage
 pytest tests/ --cov=app --cov-report=html
+
+# Frontend tests (React component integration tests via Vitest)
+cd frontend
+npm test                 # run once
+npm run test:watch       # watch mode
 ```
 
 ### Type Checking (Frontend)
