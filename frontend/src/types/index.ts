@@ -683,6 +683,47 @@ export interface SuggestedAlignments {
   class_tendencies: string[];
 }
 
+// === Languages (DnD 5e language system) ===
+
+/** Single language registry entry. */
+export interface LanguageDetail {
+  id: string;
+  name: string;
+  type: 'standard' | 'exotic' | 'secret';
+  typical_speakers: string;
+  script: string | null;
+}
+
+/** Full language registry grouped by type. */
+export interface LanguagesResponse {
+  standard: LanguageDetail[];
+  exotic: LanguageDetail[];
+  secret: LanguageDetail[];
+  all: LanguageDetail[];
+}
+
+/** A character's language state + valid choices. */
+export interface CharacterLanguageInfo {
+  character_id: number;
+  race: string;
+  background: string | null;
+  known_languages: string[];
+  automatic_languages: string[]; // From race/background/class
+  extra_languages: string[]; // Chosen beyond automatic
+  remaining_choices: number;
+  available_choices: string[];
+  summary: string;
+}
+
+/** Result of validating a proposed language set (no save). */
+export interface LanguageValidationResult {
+  valid: boolean;
+  error: string | null;
+  known_languages: string[];
+  automatic_languages: string[];
+  extra_languages: string[];
+}
+
 // === Environment (weather / lighting / terrain / temperature / time) ===
 
 /** All mechanical effects derived from a scene's environment. */

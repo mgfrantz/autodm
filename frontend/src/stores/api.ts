@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -469,6 +469,42 @@ export const setCharacterAlignment = async (
 
 export const getSuggestedAlignments = async (characterId: number): Promise<SuggestedAlignments> => {
   const res = await API.get<SuggestedAlignments>(`/characters/${characterId}/alignment/suggested`);
+  return res.data;
+};
+
+// === Languages ===
+
+export const getLanguagesRegistry = async (): Promise<LanguagesResponse> => {
+  const res = await API.get<LanguagesResponse>('/languages/registry');
+  return res.data;
+};
+
+export const getLanguageInfo = async (languageId: string): Promise<LanguageDetail> => {
+  const res = await API.get<LanguageDetail>(`/languages/info/${encodeURIComponent(languageId)}`);
+  return res.data;
+};
+
+export const getCharacterLanguages = async (characterId: number): Promise<CharacterLanguageInfo> => {
+  const res = await API.get<CharacterLanguageInfo>(`/characters/${characterId}/languages/choices`);
+  return res.data;
+};
+
+export const setCharacterLanguages = async (
+  characterId: number,
+  languages: string[],
+): Promise<CharacterLanguageInfo> => {
+  const res = await API.post<CharacterLanguageInfo>(`/characters/${characterId}/languages`, { languages });
+  return res.data;
+};
+
+export const validateCharacterLanguages = async (
+  characterId: number,
+  languages: string[],
+): Promise<LanguageValidationResult> => {
+  const res = await API.post<LanguageValidationResult>(
+    `/characters/${characterId}/languages/validate`,
+    { languages },
+  );
   return res.data;
 };
 

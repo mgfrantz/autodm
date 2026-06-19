@@ -10,6 +10,7 @@ import ShopPanel from '../components/ShopPanel'
 import InventoryPanel from '../components/InventoryPanel'
 import BackgroundPanel from '../components/BackgroundPanel'
 import AlignmentPanel from '../components/AlignmentPanel'
+import LanguagesPanel from '../components/LanguagesPanel'
 import EnvironmentPanel from '../components/EnvironmentPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 
@@ -50,6 +51,7 @@ export default function GameView() {
   const [showInventory, setShowInventory] = useState(false)
   const [showBackground, setShowBackground] = useState(false)
   const [showAlignment, setShowAlignment] = useState(false)
+  const [showLanguages, setShowLanguages] = useState(false)
   const [showEnvironment, setShowEnvironment] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
@@ -437,6 +439,13 @@ export default function GameView() {
               title="View or change alignment (3×3 grid with relationship preview)"
             >
               ⚖️ <span className="hidden sm:inline">Alignment</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowLanguages(true)}
+              title="View or change known languages (racial/background grants + extra choices)"
+            >
+              🗣️ <span className="hidden sm:inline">Tongues</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -973,6 +982,37 @@ export default function GameView() {
               characterId={gameState.character.id}
               onChanged={async () => {
                 // The sidebar alignment label + DM context depend on this.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Languages overlay */}
+      {showLanguages && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowLanguages(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🗣️ Languages</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowLanguages(false)}
+              >
+                ×
+              </button>
+            </div>
+            <LanguagesPanel
+              characterId={gameState.character.id}
+              onChanged={async () => {
+                // Languages shape DM narration & comprehension checks.
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}
