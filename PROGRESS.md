@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅
 ## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
@@ -1025,11 +1025,40 @@
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
-- [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
-  gameplay depth candidates (pick one next run):
-  - In-game languages panel (GameView overlay to view/change languages + racial/automatic tracking)
 
 ## Completed This Run
+- [x] **Add in-game languages panel** — view & change known languages with racial/background/class grants and extra-choice tracking
+  - New `LanguagesPanel.tsx` component (~470 lines):
+    * **Current-state card** showing total known-language count, the character's
+      race/background, and known languages split into:
+      - **Automatic** (locked 🔒, green) — granted by race/background/class;
+        hover shows typical speakers + script
+      - **Chosen extras** (gold) — typed/colour-coded by language category
+      - A **remaining-choices** summary line ("N language choices remaining"
+        with a pulsing "choose below" hint, or "all choices spent")
+    * **Extra-language editor** (shown only when the race grants a budget > 0):
+      toggle chips from the selectable pool (union of current extras + the
+      backend's `available_choices`); a budget progress bar tracks
+      `used/total slots`; client-side budget enforcement prevents over-selection;
+      a **debounced (300 ms) `/languages/validate` probe** gives authoritative
+      live validity feedback (✓ valid / ⚠ error with the exact rule message);
+      Save + Reset buttons (Save disabled until there's a valid change)
+    * **Language reference browser** (collapsible): the full registry grouped &
+      filterable by Standard / Exotic / Secret, each entry showing name, type
+      badge, typical speakers, and script; known languages are highlighted with
+      a ✓ badge; legend ties the colour dots to categories
+  - Frontend types: `LanguageDetail`, `LanguagesResponse`,
+    `CharacterLanguageInfo`, `LanguageValidationResult`
+  - 5 new API client fns: `getLanguagesRegistry`, `getLanguageInfo`,
+    `getCharacterLanguages`, `setCharacterLanguages`, `validateCharacterLanguages`
+  - `GameView`: 🗣️ Tongues button in the header bar + overlay modal; refreshes
+    game state after a change so DM narration/comprehension picks up the new
+    tongues
+  - Verified: `tsc --noEmit` clean, `vite build` clean (115 modules); full
+    backend suite **1554 passing, 0 failing** (frontend-only change over the
+    already-tested language API)
+
+## Previous Run (for reference)
 - [x] **Add in-game environment panel** — view/change weather, lighting, terrain & temperature with a live combat-modifier preview
   - New `EnvironmentPanel.tsx` component (~640 lines):
     * Current-scene summary card (time of day / lighting / weather / terrain /
