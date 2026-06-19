@@ -241,7 +241,7 @@ def validate_languages(
 
     return LanguageValidationResult(
         valid=is_valid,
-        error=error,
+        error=error or None,
         known_languages=normalized,
         automatic_languages=derived["all_automatic"],
         extra_languages=[l for l in normalized if l not in auto_set],
