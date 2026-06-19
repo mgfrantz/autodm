@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅
 ## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
@@ -990,6 +990,34 @@
     this run is purely a frontend UI layer over the existing, already-tested
     background API; the one backend change is a single additive JSON key)
 
+- [x] **Add in-game alignment panel** — view/change alignment mid-campaign via a 3x3 grid with relationship preview
+  - New `AlignmentPanel.tsx` component (~470 lines): a current-alignment
+    card showing the name, abbreviation, ethics/morals axes with
+    plain-English glosses (e.g. "lawful = order & tradition"), PHB
+    description, roleplay hooks, and a row of race/class typical-alignment
+    chips (from the existing `/alignment/suggested` endpoint)
+  - The classic **3x3 alignment grid** (rows = good/neutral/evil,
+    cols = lawful/neutral/chaotic) with column and row headers, current
+    (green check) and typical-for-race/class (gold star) badges, and a
+    legend
+  - **Relationship preview** computed client-side (mirrors the backend
+    engine math exactly): selecting a candidate shows its disposition
+    relative to the current alignment (friendly/cordial/wary/tense/hostile),
+    a human-readable explanation, the per-axis step deltas
+    (law-chaos / good-evil), and the total grid distance (0-4) — no network
+    round-trip on hover; the `/alignment/compatibility` endpoint remains
+    available for other consumers
+  - Apply flow calls `setCharacterAlignment`, then refreshes both the
+    resolved character alignment and the suggested list
+  - `GameView`: ⚖️ Alignment button in the header bar + overlay modal;
+    refreshes game state after a change so the sidebar label and DM
+    context update (no backend change — alignment was already in the
+    game-state response and the sidebar already rendered it)
+  - Verified: `tsc --noEmit` clean, `vite build` clean (113 modules),
+    full backend suite **1554 passing, 0 failing** (frontend-only change;
+    no new backend tests — this is a UI layer over the existing,
+    already-tested alignment API)
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -999,7 +1027,6 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - In-game alignment panel (GameView overlay to view/change alignment mid-campaign, 3×3 grid with relationship preview)
   - In-game environment panel (GameView overlay to view/change weather/light/terrain + live combat-modifier preview)
   - In-game languages panel (GameView overlay to view/change languages + racial/automatic tracking)
 
