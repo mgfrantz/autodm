@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅
-## TEST SUITE FULLY GREEN (1539 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
+## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -956,7 +956,18 @@
   - Save/load snapshot round-trips languages
   - 39 engine tests (registry, normalization, race grants, character operations,
     validation, summaries) — full suite now **1539 passing, 0 failing**
-  - Note: API tests need fixture session fixes (13 tests currently skipped)
+  - **FIXED: language API tests + unmounted character routes** (this run)
+    - The language character endpoints (`char_router`, prefix
+      `/characters/{character_id}`) were never registered in `main.py`, so
+      every character-language route returned a routing 404 — only the global
+      registry router was mounted. Now `languages.char_router` is included.
+    - `test_languages_api.py` opened a *production* `SessionLocal()` and
+      `db.add(character)`'d an object already attached to the test session,
+      raising `InvalidRequestError`. Reworked the tests to commit character
+      state through the shared `db_session` fixture the test client uses.
+    - `/languages/validate` now returns `error=None` (not `''`) for a valid
+      result, matching its `str|None` schema.
+    - 15 language API tests now green; full suite **1554 passing, 0 failing**
 
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
@@ -967,7 +978,6 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - Fix languages API tests (fixture session issues)
   - In-game background panel (GameView overlay to view/change background + claim starting equipment)
   - In-game alignment panel (GameView overlay to view/change alignment mid-campaign)
   - In-game environment panel (GameView overlay to view/change weather/light/terrain + live combat-modifier preview)
