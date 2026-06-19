@@ -14,6 +14,7 @@ import LanguagesPanel from '../components/LanguagesPanel'
 import EnvironmentPanel from '../components/EnvironmentPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 import SpellsPanel from '../components/SpellsPanel'
+import FeatsPanel from '../components/FeatsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
 const ALIGNMENT_LABELS: Record<string, string> = {
@@ -56,6 +57,7 @@ export default function GameView() {
   const [showEnvironment, setShowEnvironment] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [showSpells, setShowSpells] = useState(false)
+  const [showFeats, setShowFeats] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
@@ -434,6 +436,13 @@ export default function GameView() {
               title="View spellbook, cast spells, prepare & learn magic"
             >
               🔮 <span className="hidden sm:inline">Spells</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowFeats(true)}
+              title="View learned feats, ASI status & learn available feats"
+            >
+              🏆 <span className="hidden sm:inline">Feats</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1147,6 +1156,38 @@ export default function GameView() {
                 // Casting consumes slots / heals / damages — refresh game state.
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {showFeats && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowFeats(false)}
+        >
+          <div
+            className="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🏆 Feats &amp; Abilities</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowFeats(false)}
+              >
+                ×
+              </button>
+            </div>
+            <FeatsPanel
+              characterId={gameState.character.id}
+              onChanged={async () => {
+                // Learning a feat can change ability scores / HP (Tough), which
+                // reshapes AC (Dex/Con) and max HP — refresh both state & gear.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+                await refreshEquipmentStats()
               }}
             />
           </div>

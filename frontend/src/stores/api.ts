@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -620,4 +620,38 @@ export const castSpell = async (characterId: number, payload: CastSpellPayload):
 export const getSpellRegistry = async (): Promise<SpellDetail[]> => {
   const res = await API.get<SpellRegistryResponse>('/characters/spells/registry');
   return res.data.spells;
+};
+
+// === Feats ===
+
+/** List all feats in the registry (full definitions). */
+export const listFeats = async (): Promise<FeatInfo[]> => {
+  const res = await API.get<FeatInfo[]>('/characters/feats/list');
+  return res.data;
+};
+
+/** A character's learned feats + ASI (Ability Score Improvement) status. */
+export const getCharacterFeats = async (characterId: number): Promise<CharacterFeatsResponse> => {
+  const res = await API.get<CharacterFeatsResponse>(`/characters/feats/${characterId}`);
+  return res.data;
+};
+
+/** Feats a character can learn right now (not known, prerequisites met). */
+export const getAvailableFeats = async (characterId: number): Promise<FeatInfo[]> => {
+  const res = await API.get<FeatInfo[]>(`/characters/feats/${characterId}/available`);
+  return res.data;
+};
+
+/** Learn a feat, consuming one ASI instance. `chosenAbility` is required for
+ *  half-feats (those with ability_bonus_choices). */
+export const learnFeat = async (
+  characterId: number,
+  featName: string,
+  chosenAbility?: string,
+): Promise<LearnFeatResult> => {
+  const res = await API.post<LearnFeatResult>(`/characters/feats/${characterId}/learn`, {
+    feat_name: featName,
+    chosen_ability: chosenAbility ?? null,
+  });
+  return res.data;
 };

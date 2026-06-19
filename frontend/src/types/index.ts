@@ -876,3 +876,67 @@ export interface EnvironmentModifiersResponse {
   modifiers: EnvironmentCombatModifiers;
   environment: SceneEnvironment;
 }
+
+// === Feats (DnD 5e feat system — alternative to Ability Score Improvements) ===
+
+/** Prerequisites a character must meet to take a feat. */
+export interface FeatPrerequisite {
+  min_level: number;
+  min_abilities: Record<string, number>;
+  requires_caster: boolean;
+  requires_class: string | null;
+  requires_armor_proficiency: string | null;
+}
+
+/** A feat's full definition (registry entry). */
+export interface FeatInfo {
+  name: string;
+  description: string;
+  ability_bonus: Record<string, number>;
+  ability_bonus_choices: string[]; // Pick one of these to +1 (half-feats)
+  saving_throw_proficiency: string | null;
+  hp_per_level: number; // Tough = 2
+  initiative_bonus: number; // Alert = 5
+  speed_bonus: number; // Mobile = 10
+  ac_bonus: number; // Dual Wielder
+  skill_proficiencies: string[];
+  combat_modifiers: Record<string, unknown>;
+  notes: string[];
+  prerequisite: FeatPrerequisite | null;
+  source: string;
+}
+
+/** A feat a character has already learned. */
+export interface LearnedFeatInfo {
+  name: string;
+  description: string;
+  effects_applied: Record<string, unknown>;
+  learned_at_level: number | null;
+}
+
+/** A character's learned feats + ASI (Ability Score Improvement) status. */
+export interface CharacterFeatsResponse {
+  character_id: number;
+  character_name: string;
+  level: number;
+  feats: LearnedFeatInfo[];
+  asi_available: number;
+  asi_used: number;
+  asi_earned: number;
+  next_asi_level: number | null;
+}
+
+/** Result of learning a feat (consumes one ASI instance). */
+export interface LearnFeatResult {
+  success: boolean;
+  message: string;
+  feat_name: string;
+  ability_changes: Record<string, number>;
+  max_hp_change: number;
+  current_hp_change: number;
+  max_hp: number;
+  current_hp: number;
+  asi_available: number;
+  asi_used: number;
+  effects_applied: Record<string, unknown>;
+}
