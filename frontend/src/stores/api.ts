@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -652,6 +652,28 @@ export const learnFeat = async (
   const res = await API.post<LearnFeatResult>(`/characters/feats/${characterId}/learn`, {
     feat_name: featName,
     chosen_ability: chosenAbility ?? null,
+  });
+  return res.data;
+};
+
+// === Exhaustion (DnD 5e special state, 0–6 levels, 6 = death) ===
+
+/** The character's current exhaustion level + cumulative-effects breakdown. */
+export const getExhaustion = async (gameId: number): Promise<ExhaustionStatus> => {
+  const res = await API.get<ExhaustionStatus>(`/game/${gameId}/exhaustion`);
+  return res.data;
+};
+
+/** Modify the character's out-of-combat exhaustion.
+ *  `mode` is 'set' (absolute), 'add' (stack levels), or 'reduce'. */
+export const modifyExhaustion = async (
+  gameId: number,
+  mode: 'set' | 'add' | 'reduce',
+  levels: number,
+): Promise<ExhaustionModifyResult> => {
+  const res = await API.post<ExhaustionModifyResult>(`/game/${gameId}/exhaustion`, {
+    mode,
+    levels,
   });
   return res.data;
 };

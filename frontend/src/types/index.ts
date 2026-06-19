@@ -59,6 +59,7 @@ export interface GameState {
     active_quests: string[];
     conditions: string[];
     in_combat: boolean;
+    exhaustion?: number;
   };
   story_log: StoryEntry[];
   current_act: number;
@@ -939,4 +940,37 @@ export interface LearnFeatResult {
   asi_available: number;
   asi_used: number;
   effects_applied: Record<string, unknown>;
+}
+
+// === Exhaustion (DnD 5e special state, 0–6 levels, 6 = death) ===
+
+/** Cumulative-effects breakdown for a given exhaustion level. */
+export interface ExhaustionStatus {
+  character_id: number;
+  in_combat: boolean;
+  /** Current exhaustion level (0 = none, 6 = dead). */
+  exhaustion: number;
+  level: number;
+  description: string;
+  disadvantage_ability_checks: boolean;
+  disadvantage_attack_rolls: boolean;
+  disadvantage_saving_throws: boolean;
+  /** 0 = speed reduced to 0, 2 = halved, 1 = full. */
+  speed_divisor: number;
+  max_hp_halved: boolean;
+  dead: boolean;
+  /** One human-readable string per active level (cumulative). */
+  active_effects: string[];
+}
+
+/** Result of modifying the character's out-of-combat exhaustion. */
+export interface ExhaustionModifyResult extends ExhaustionStatus {
+  before: number;
+  after: number;
+  changed: boolean;
+  died: boolean;
+  character: {
+    current_hp: number;
+    max_hp: number;
+  };
 }
