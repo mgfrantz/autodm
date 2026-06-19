@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅
 ## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
@@ -1058,6 +1058,44 @@
     backend suite **1554 passing, 0 failing** (frontend-only UI layer over the
     already-tested spells API)
 
+- [x] **Add in-game feats panel** — view learned feats, ASI status & learn available feats (closes the gap that the feats API + leveling/ASI engine had no frontend UI; mirrors the spells/languages panels)
+  - New `FeatsPanel.tsx` component (~590 lines), a complete feats/ASI console:
+    * **ASI (Ability Score Improvement) status card** — shows level, ASIs
+      available to spend (large gold count), a spent/earned progress bar, the
+      earned vs. used totals, and the next ASI level (or "no further ASIs").
+      When ASIs are available, a prompt points the player at the available
+      feats; otherwise it explains why (level gate / class ASI ceiling).
+    * **Learned feats** — cards with the feat name, description, "learned @
+      level N", and effect chips parsed from the persisted `effects_applied`
+      dict (initiative/speed/AC/HP/save-prof/skill bonuses, notes). Empty
+      state guides the player to spend an ASI below.
+    * **Available feats** — every feat the character can take now (not known +
+      prerequisites met), with a live text search; each `FeatCard` is
+      expandable (full description + effect chips + notes + prerequisites).
+      "+ Learn" buttons are disabled when no ASI is available, with a tooltip
+      explaining why.
+    * **Learn confirmation flow** (inline modal): preview of effects, an
+      ability picker for "half-feats" (those with `ability_bonus_choices`,
+      e.g. Resilient/Athlete/Observant — defaults to the first valid choice),
+      prerequisite reminder, and on success a result card reporting the
+      ability changes, max-HP change, and remaining ASIs. Refreshes the
+      character-feats + available lists after each learn.
+    * **Feat Compendium** (collapsible) — the full 23-feat registry with a
+      search filter, each feat marked ✓ known / ✦ available / unmarked, so the
+      player can browse feats they don't yet qualify for.
+  - New frontend types: `FeatPrerequisite`, `FeatInfo`, `LearnedFeatInfo`,
+    `CharacterFeatsResponse`, `LearnedFeatResult`
+  - 4 new API client fns: `listFeats`, `getCharacterFeats`,
+    `getAvailableFeats`, `learnFeat` (against the existing, already-tested
+    `/api/characters/feats/*` routes)
+  - `GameView`: 🏆 Feats button in the header bar + overlay modal; refreshes
+    both game state **and** equipment-derived stats after a feat is learned
+    (learning Tough/Resilient CON/Athlete DEX reshapes max HP & AC)
+  - Verified: `tsc --noEmit` clean, `vite build` clean (117 modules); full
+    backend suite **1554 passing, 0 failing** (frontend-only UI layer over the
+    already-tested feats API — verified the 40 feat engine+API tests still pass
+    and the `/feats/list` payload keys exactly match the new TypeScript types)
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -1065,44 +1103,21 @@
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
-- [ ] **Add in-game feats panel** — view learned feats, ASI status, and learn
-  available feats (the backend feats API + leveling/ASI exist with no frontend
-  UI yet; mirrors the spells/languages panels)
+- [ ] **Polish & integration follow-ups** (smaller, can be picked next):
+  - Surface learned-feat count + ASI-available indicator in the GameView
+    character sidebar (mirrors how alignment/background are shown)
+  - Add a frontend integration test exercising the feats panel's learn flow
+  - Cross-link: show feat-granted skill/save proficiencies inside the Skills
+    and Saving-Throws panels (backend already derives them; UI is implicit)
+- [ ] Any remaining DESIGN.md "Future" engine features the DM should model
+  (e.g. exhaustion levels, mount/vehicle travel, disease/poison tables) once
+  a priority is chosen
 
 ## Completed This Run
-- [x] **Add in-game spells panel** — full spellbook UI: cast, prepare, learn & manage spell slots (details above)
+- [x] **Add in-game feats panel** — view learned feats, ASI status & learn available feats (details above)
 
 ## Previous Run (for reference)
-- [x] **Add in-game languages panel** — view & change known languages with racial/background/class grants and extra-choice tracking
-  - New `LanguagesPanel.tsx` component (~470 lines):
-    * **Current-state card** showing total known-language count, the character's
-      race/background, and known languages split into:
-      - **Automatic** (locked 🔒, green) — granted by race/background/class;
-        hover shows typical speakers + script
-      - **Chosen extras** (gold) — typed/colour-coded by language category
-      - A **remaining-choices** summary line ("N language choices remaining"
-        with a pulsing "choose below" hint, or "all choices spent")
-    * **Extra-language editor** (shown only when the race grants a budget > 0):
-      toggle chips from the selectable pool (union of current extras + the
-      backend's `available_choices`); a budget progress bar tracks
-      `used/total slots`; client-side budget enforcement prevents over-selection;
-      a **debounced (300 ms) `/languages/validate` probe** gives authoritative
-      live validity feedback (✓ valid / ⚠ error with the exact rule message);
-      Save + Reset buttons (Save disabled until there's a valid change)
-    * **Language reference browser** (collapsible): the full registry grouped &
-      filterable by Standard / Exotic / Secret, each entry showing name, type
-      badge, typical speakers, and script; known languages are highlighted with
-      a ✓ badge; legend ties the colour dots to categories
-  - Frontend types: `LanguageDetail`, `LanguagesResponse`,
-    `CharacterLanguageInfo`, `LanguageValidationResult`
-  - 5 new API client fns: `getLanguagesRegistry`, `getLanguageInfo`,
-    `getCharacterLanguages`, `setCharacterLanguages`, `validateCharacterLanguages`
-  - `GameView`: 🗣️ Tongues button in the header bar + overlay modal; refreshes
-    game state after a change so DM narration/comprehension picks up the new
-    tongues
-  - Verified: `tsc --noEmit` clean, `vite build` clean (115 modules); full
-    backend suite **1554 passing, 0 failing** (frontend-only change over the
-    already-tested language API)
+- [x] **Add in-game spells panel** — full spellbook UI: cast, prepare, learn & manage spell slots (full detail above in the Completed section; the run before that added the in-game languages panel, also detailed above)
 
 ## How to Use This File
 When you (the agent) work on the project:
