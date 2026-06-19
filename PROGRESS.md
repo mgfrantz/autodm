@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅
-## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅
+## TEST SUITE FULLY GREEN (1616 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -1096,6 +1096,43 @@
     already-tested feats API — verified the 40 feat engine+API tests still pass
     and the `/feats/list` payload keys exactly match the new TypeScript types)
 
+- [x] **Add exhaustion system** — DnD 5e 6-level Exhaustion special state, fully
+  integrated across combat, rest, saving throws, and DM narration context
+  (closes the gap that the environment engine already imposed "exhaustion
+  saves" for extreme heat/cold but nothing actually tracked the levels/effects)
+  - `engine/exhaustion.py` pure engine (~290 lines): all six PHB levels
+    (1=disadvantage on ability checks, 2=speed halved, 3=disadvantage on
+    attack rolls & saving throws, 4=hit-point maximum halved, 5=speed 0,
+    6=death) with **cumulative** effect resolution (a level-4 creature still
+    suffers the level-2 speed halving, etc.); state helpers
+    (get/set/add/reduce with 0–6 clamping), death detection, disadvantage
+    queries, `effective_speed`/`effective_max_hp`, and serialisable
+    `level_effects`/`describe` for the UI/DM
+  - Combat integration: `Combatant` gains an `exhaustion` field (serialized);
+    `resolve_attack` applies attacker disadvantage at level 3+;
+    `effective_speed` halves (2) / zeroes (5); new `effective_max_hp` property
+    halves at 4+; `heal` caps at the reduced ceiling; `is_alive` treats level 6
+    as death (ripples through initiative, `is_active`, and the winner check)
+  - Saving throws: `roll_saving_throw` accepts an `exhaustion` level — 3+
+    imposes disadvantage on all saves (via `check_save_disadvantage`)
+  - Rest: `long_rest` reduces exhaustion by one level (PHB recovery) and
+    reports `exhaustion_before/after/reduced`; the rest API reads it from
+    `game_state`, persists the drop, and surfaces it in the response
+  - `api/exhaustion.py` router (4 endpoints): out-of-combat character state
+    (persisted in `game_state["exhaustion"]`) — GET status + cumulative-effects
+    breakdown, POST set/add/reduce (level 6 slays the character, HP → 0); and
+    in-combat combatant state — GET/POST on a combatant in the active encounter
+    (reaching 6 slays it and ends combat with a winner). `start_combat` carries
+    the character's exhaustion onto the player combatant so its effects apply
+    from round 1
+  - Game API: the DM context block now includes the character's exhaustion
+    level + active effects, so the DM can narrate the affliction and adjudicate
+    hazards that add levels
+  - 62 new tests (engine registry/state/stats/serialisation + combat
+    attack-disadvantage via roll_d20 spy + saving-throw disadvantage + rest
+    reduction + REST API incl. death/winner/start-combat carry-over and the
+    long-rest endpoint round-trip); full suite now **1616 passing, 0 failing**
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -1106,18 +1143,27 @@
 - [ ] **Polish & integration follow-ups** (smaller, can be picked next):
   - Surface learned-feat count + ASI-available indicator in the GameView
     character sidebar (mirrors how alignment/background are shown)
+  - Surface the character's exhaustion level in the GameView character
+    sidebar / a small in-game exhaustion panel (backend API now exists at
+    `/api/game/{id}/exhaustion`; UI is the gap)
   - Add a frontend integration test exercising the feats panel's learn flow
   - Cross-link: show feat-granted skill/save proficiencies inside the Skills
     and Saving-Throws panels (backend already derives them; UI is implicit)
-- [ ] Any remaining DESIGN.md "Future" engine features the DM should model
-  (e.g. exhaustion levels, mount/vehicle travel, disease/poison tables) once
-  a priority is chosen
+- [ ] Any remaining DESIGN.md "Future" engine features the DM should model.
+  Exhaustion (done this run) was the headline example; remaining candidates:
+  - Mount/vehicle travel & mounted combat (travel-time + speed modifiers,
+    lance/weapon rules while mounted)
+  - Disease/poison tracking tables (lingering afflictions with onset/incubation
+    and staged effects, distinct from one-shot poisoned condition)
+  - Starvation/dehydration as exhaustion drivers (the environment engine
+    already computes exhaustion saves; wire food/water tracking to add levels)
 
 ## Completed This Run
-- [x] **Add in-game feats panel** — view learned feats, ASI status & learn available feats (details above)
+- [x] **Add exhaustion system** — DnD 5e 6-level Exhaustion special state, fully
+  integrated into combat/rest/saves/DM context (details below)
 
 ## Previous Run (for reference)
-- [x] **Add in-game spells panel** — full spellbook UI: cast, prepare, learn & manage spell slots (full detail above in the Completed section; the run before that added the in-game languages panel, also detailed above)
+- [x] **Add in-game feats panel** — view learned feats, ASI status & learn available feats (full detail above in the Completed section; the run before that added the in-game spells panel, also detailed above)
 
 ## How to Use This File
 When you (the agent) work on the project:
