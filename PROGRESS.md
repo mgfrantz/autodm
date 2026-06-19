@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅
 ## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
@@ -969,6 +969,27 @@
       result, matching its `str|None` schema.
     - 15 language API tests now green; full suite **1554 passing, 0 failing**
 
+- [x] **Add in-game background/origin panel** — view, change background & claim starting gear mid-campaign
+  - New `BackgroundPanel.tsx` component (~400 lines): a current-background
+    card showing the feature, skill/tool/language proficiencies, starting
+    equipment + gold, and a collapsible "Suggested characteristics" section
+    (personality traits, ideals, bonds, flaws) for roleplay inspiration
+  - Browse & change: a selectable grid of all 18 backgrounds with a live
+    detail preview (feature, skills, equipment, gold), an "apply" flow with a
+    "claim starting equipment" checkbox that drives the idempotent
+    `POST /characters/{id}/background` endpoint (re-grant skipped for the
+    unchanged background), and a result card reporting granted items + gold
+  - `GameView`: 🎭 Origin button in the header bar + overlay modal; refreshes
+    game state and equipment stats after a background change; the character
+    sidebar now shows the background next to race/class/alignment
+  - Backend: the game-state response (`get_game_state`) now includes the
+    character's `background` field so the frontend sidebar can render it
+  - Frontend `GameState.character` type gains an optional `background` field
+  - Verified: `tsc --noEmit` clean, `vite build` clean (112 modules),
+    full backend suite **1554 passing, 0 failing** (no new backend tests —
+    this run is purely a frontend UI layer over the existing, already-tested
+    background API; the one backend change is a single additive JSON key)
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
@@ -978,8 +999,7 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - In-game background panel (GameView overlay to view/change background + claim starting equipment)
-  - In-game alignment panel (GameView overlay to view/change alignment mid-campaign)
+  - In-game alignment panel (GameView overlay to view/change alignment mid-campaign, 3×3 grid with relationship preview)
   - In-game environment panel (GameView overlay to view/change weather/light/terrain + live combat-modifier preview)
   - In-game languages panel (GameView overlay to view/change languages + racial/automatic tracking)
 
