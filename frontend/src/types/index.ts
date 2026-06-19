@@ -328,6 +328,72 @@ export interface SpellSlotOverview {
   available: number;
 }
 
+// === Spells ===
+
+export interface SpellComponents {
+  verbal: boolean;
+  somatic: boolean;
+  material: boolean;
+  material_description: string;
+  material_cost_gp: number;
+  material_consumed: boolean;
+}
+
+export interface SpellDetail {
+  id: string;
+  name: string;
+  level: number; // 0 = cantrip, 1-9 = spell level
+  school: string;
+  description: string;
+  casting_time: string;
+  range: string;
+  components: string;
+  material_description: string;
+  duration: string;
+  concentration: boolean;
+  ritual: boolean;
+  requires_attack_roll: boolean;
+  save_ability: string | null;
+  damage_dice_count: number;
+  damage_dice_sides: number;
+  damage_bonus: number;
+  damage_type: string;
+  healing_dice_count: number;
+  healing_dice_sides: number;
+  healing_bonus: number;
+  at_higher_levels_dice: number;
+  parsed_components: SpellComponents;
+}
+
+export interface SpellbookResponse {
+  char_class: string;
+  level: number;
+  caster_type: string; // full | half | third | none
+  casting_style: string; // known | prepared | none
+  casting_ability: string; // int | wis | cha | ...
+  known_spells: string[];
+  prepared_spells: string[];
+  slots: SpellSlotOverview[];
+  castable_spells: SpellDetail[];
+}
+
+export interface CastSpellResult {
+  success: boolean;
+  message: string;
+  slot_level: number | null;
+  spell: SpellDetail | null;
+  damage: number;
+  healing: number;
+  hit: boolean | null;
+  made_save: boolean | null;
+  rolled_attack: number | null;
+  damage_type: string;
+}
+
+export interface SpellRegistryResponse {
+  spells: SpellDetail[];
+}
+
 export interface LongRestResult {
   type: 'long_rest';
   success: boolean;

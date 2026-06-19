@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -27,6 +27,11 @@ export const createCharacter = async (data: {
 
 export const listCharacters = async () => {
   const res = await API.get<Character[]>('/characters/');
+  return res.data;
+};
+
+export const getCharacter = async (characterId: number): Promise<Character> => {
+  const res = await API.get<Character>(`/characters/${characterId}`);
   return res.data;
 };
 
@@ -569,4 +574,50 @@ export const getEnvironmentCombatModifiers = async (
     { params: { attack_is_ranged: attackIsRanged } },
   );
   return res.data;
+};
+
+// === Spells ===
+
+export const getSpellbook = async (characterId: number): Promise<SpellbookResponse> => {
+  const res = await API.get<SpellbookResponse>(`/characters/${characterId}/spells`);
+  return res.data;
+};
+
+export const initializeSpellbook = async (characterId: number): Promise<SpellbookResponse> => {
+  const res = await API.post<SpellbookResponse>(`/characters/${characterId}/spells/initialize`);
+  return res.data;
+};
+
+export const learnSpell = async (characterId: number, spellId: string): Promise<SpellbookResponse> => {
+  const res = await API.post<SpellbookResponse>(`/characters/${characterId}/spells/learn`, {
+    spell_id: spellId,
+  });
+  return res.data;
+};
+
+/** Toggle a spell's prepared state (prepared casters). */
+export const togglePrepareSpell = async (characterId: number, spellId: string): Promise<SpellbookResponse> => {
+  const res = await API.post<SpellbookResponse>(`/characters/${characterId}/spells/prepare`, {
+    spell_id: spellId,
+  });
+  return res.data;
+};
+
+export interface CastSpellPayload {
+  spell_id: string;
+  slot_level?: number;
+  caster_mod: number;
+  target_ac?: number;
+  target_save_total?: number;
+  active_conditions?: string[];
+}
+
+export const castSpell = async (characterId: number, payload: CastSpellPayload): Promise<CastSpellResult> => {
+  const res = await API.post<CastSpellResult>(`/characters/${characterId}/spells/cast`, payload);
+  return res.data;
+};
+
+export const getSpellRegistry = async (): Promise<SpellDetail[]> => {
+  const res = await API.get<SpellRegistryResponse>('/characters/spells/registry');
+  return res.data.spells;
 };

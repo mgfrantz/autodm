@@ -13,6 +13,7 @@ import AlignmentPanel from '../components/AlignmentPanel'
 import LanguagesPanel from '../components/LanguagesPanel'
 import EnvironmentPanel from '../components/EnvironmentPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
+import SpellsPanel from '../components/SpellsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
 const ALIGNMENT_LABELS: Record<string, string> = {
@@ -54,6 +55,7 @@ export default function GameView() {
   const [showLanguages, setShowLanguages] = useState(false)
   const [showEnvironment, setShowEnvironment] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  const [showSpells, setShowSpells] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
@@ -425,6 +427,13 @@ export default function GameView() {
               title="View skills & roll checks"
             >
               📜 <span className="hidden sm:inline">Skills</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowSpells(true)}
+              title="View spellbook, cast spells, prepare & learn magic"
+            >
+              🔮 <span className="hidden sm:inline">Spells</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1105,6 +1114,37 @@ export default function GameView() {
               characterId={gameState.character.id}
               onHpChange={async () => {
                 // Potion use changed HP; refresh game state.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {showSpells && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowSpells(false)}
+        >
+          <div
+            className="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🔮 Spellbook</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowSpells(false)}
+              >
+                ×
+              </button>
+            </div>
+            <SpellsPanel
+              characterId={gameState.character.id}
+              activeConditions={gameState.game_state.conditions}
+              onChanged={async () => {
+                // Casting consumes slots / heals / damages — refresh game state.
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}
