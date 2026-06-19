@@ -9,6 +9,7 @@ import SkillsPanel from '../components/SkillsPanel'
 import ShopPanel from '../components/ShopPanel'
 import InventoryPanel from '../components/InventoryPanel'
 import BackgroundPanel from '../components/BackgroundPanel'
+import AlignmentPanel from '../components/AlignmentPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
@@ -47,6 +48,7 @@ export default function GameView() {
   const [showShop, setShowShop] = useState(false)
   const [showInventory, setShowInventory] = useState(false)
   const [showBackground, setShowBackground] = useState(false)
+  const [showAlignment, setShowAlignment] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -426,6 +428,13 @@ export default function GameView() {
               title="View or change background & claim starting gear"
             >
               🎭 <span className="hidden sm:inline">Origin</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowAlignment(true)}
+              title="View or change alignment (3×3 grid with relationship preview)"
+            >
+              ⚖️ <span className="hidden sm:inline">Alignment</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -924,6 +933,37 @@ export default function GameView() {
               characterId={gameState.character.id}
               onChanged={async () => {
                 // Equipment/gold/HP may have changed; refresh game state.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Alignment overlay */}
+      {showAlignment && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowAlignment(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">⚖️ Alignment</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowAlignment(false)}
+              >
+                ×
+              </button>
+            </div>
+            <AlignmentPanel
+              characterId={gameState.character.id}
+              onChanged={async () => {
+                // The sidebar alignment label + DM context depend on this.
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}
