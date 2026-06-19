@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅
 ## TEST SUITE FULLY GREEN (1554 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
@@ -1027,8 +1027,46 @@
   - Multiplayer / party-based play (large architectural change)
 - [ ] **[SUGGESTED — no external deps]** Further DnD 5e rules completeness /
   gameplay depth candidates (pick one next run):
-  - In-game environment panel (GameView overlay to view/change weather/light/terrain + live combat-modifier preview)
   - In-game languages panel (GameView overlay to view/change languages + racial/automatic tracking)
+
+## Completed This Run
+- [x] **Add in-game environment panel** — view/change weather, lighting, terrain & temperature with a live combat-modifier preview
+  - New `EnvironmentPanel.tsx` component (~640 lines):
+    * Current-scene summary card (time of day / lighting / weather / terrain /
+      temperature + notes) with iconography per option, plus the derived list
+      of active mechanical effects (obscurement, difficult terrain, exhaustion
+      saves, etc.) straight from the engine's `EnvironmentEffects`
+    * Inline editor with 5 dropdowns + a notes textarea; a debounced (300 ms)
+      `/environment/effects` probe drives a **live preview** of the effects of
+      your unsaved changes before you commit them
+    * **Live attack-modifier preview** with a Melee/Ranged toggle: the net
+      advantage/disadvantage/straight/normal outcome is derived client-side
+      from the `EnvironmentEffects` booleans, faithfully mirroring the backend
+      `environment.combat_modifiers()` + `combat.resolve_attack` net-dis logic
+      (heavily obscured -> mutual blindness cancels to a straight roll; strong
+      wind/storm -> ranged-only disadvantage). Badges annotate the contributing
+      factors using the engine's own narrative wording
+    * **Procedural weather roller** (climate x season x time-of-day + optional
+      numeric seed for reproducible rolls) using the existing `/environment/roll`
+      endpoint; preserves terrain & notes
+  - Frontend types: `EnvironmentEffects`, `EnvironmentRule`, `TimeOfDayOption`,
+    `EnvironmentRegistry`, `EnvironmentResponse`, `EnvironmentRollResult`,
+    `EnvironmentCombatModifiers`, `EnvironmentModifiersResponse` (the pre-existing
+    `SceneEnvironment` is reused unchanged)
+  - 6 new API client fns: `getEnvironmentRegistry`, `getEnvironment`,
+    `setEnvironment`, `previewEnvironmentEffects`, `rollEnvironmentWeather`,
+    `getEnvironmentCombatModifiers`
+  - `GameView`: Scene header button + overlay modal; refreshes game state after
+    a scene change so the combat engine picks up the new weather/light on the
+    next attack
+  - **Bug fix — flaky stealth test**: `test_attacker_revealed_on_hit` (flaked on
+    a nat-1) and `test_attacker_revealed_on_miss` (flaked ~5% on a nat-20, which
+    auto-hits per 5e rules despite the -20 attack bonus) now spy `roll_d20` via
+    the established `test_conditions.py` pattern for deterministic outcomes.
+    Suite is now reliably **1554 passing, 0 failing** (was intermittently 1553)
+  - Verified: `tsc --noEmit` clean, `vite build` clean (114 modules); no new
+    backend tests because this is a UI layer over the already-tested
+    environment API
 
 ## How to Use This File
 When you (the agent) work on the project:
