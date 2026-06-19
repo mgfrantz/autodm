@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅
 ## TEST SUITE FULLY GREEN (1616 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
@@ -1141,16 +1141,14 @@
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
 - [ ] **Polish & integration follow-ups** (smaller, can be picked next):
-  - Surface learned-feat count + ASI-available indicator in the GameView
-    character sidebar (mirrors how alignment/background are shown)
-  - Surface the character's exhaustion level in the GameView character
-    sidebar / a small in-game exhaustion panel (backend API now exists at
-    `/api/game/{id}/exhaustion`; UI is the gap)
   - Add a frontend integration test exercising the feats panel's learn flow
   - Cross-link: show feat-granted skill/save proficiencies inside the Skills
     and Saving-Throws panels (backend already derives them; UI is implicit)
+  - Wire exhaustion gains from the in-game exhaustion panel's "Gain a level"
+    button into the story log narration (currently only the backend POST logs;
+    surface the result line in the DM bubble)
 - [ ] Any remaining DESIGN.md "Future" engine features the DM should model.
-  Exhaustion (done this run) was the headline example; remaining candidates:
+  Exhaustion (done) was the headline example; remaining candidates:
   - Mount/vehicle travel & mounted combat (travel-time + speed modifiers,
     lance/weapon rules while mounted)
   - Disease/poison tracking tables (lingering afflictions with onset/incubation
@@ -1159,11 +1157,43 @@
     already computes exhaustion saves; wire food/water tracking to add levels)
 
 ## Completed This Run
-- [x] **Add exhaustion system** — DnD 5e 6-level Exhaustion special state, fully
-  integrated into combat/rest/saves/DM context (details below)
+- [x] **Add in-game exhaustion panel + sidebar indicators (exhaustion level, feats/ASI)**
+  - Closes the two top "Polish & integration follow-ups" gaps from the prior run:
+    the exhaustion backend API (added the run before) had **no UI**, and the
+    feats/ASI status wasn't surfaced in the character sidebar.
+  - New `ExhaustionPanel.tsx` (~270 lines), a genuine exhaustion console over
+    the existing `/api/game/{id}/exhaustion` API:
+    * **6-pip severity meter** — gold (1–2) / amber (3–4) / blood (5–6),
+      filled pips = current level, with a big "N / 6" readout and the
+      headline effect; level 6 renders a "☠️ dead" state.
+    * **Cumulative-effects breakdown** — one row per active level with the
+      PHB effect text, plus derived mechanical chips (disadv ability
+      checks / attacks / saves, max-HP-halved, and the speed band
+      full / halved / 0).
+    * **Recovery note** — long rest reduces by one level; level 6 is fatal
+      and needs Greater Restoration.
+    * **Adjust controls** — "🔥 Gain a level (+1)" (hazard), "✨ Recover a
+      level (−1)", and a "Set to level 0–6" picker. In-combat guard message
+      (combat exhaustion is per-combatant via the tracker).
+  - `GameView` changes:
+    * 🥵 Exhaustion **header button** + overlay modal (always reachable).
+    * **Sidebar exhaustion indicator** — a clickable, color-graded chip with
+      6 pips + "Exhaustion N/6", shown *only when afflicted* (level > 0),
+      placed beside the HP bar it impairs; opens the panel.
+    * **Feats & ASI sidebar indicator** — learned-feat count plus a gold
+      pulsing "✦ N ASI ready" badge when an ability score improvement is
+      available to spend (the headline prompt), else the next-ASI level.
+      Clickable to open the Feats panel; refreshes on level-up and after
+      learning a feat (so the badge clears when the ASI is consumed).
+  - New frontend types: `ExhaustionStatus`, `ExhaustionModifyResult`;
+    `GameState.game_state.exhaustion`.
+  - 2 new API client fns: `getExhaustion`, `modifyExhaustion`.
+  - Verified: `tsc --noEmit` clean, `vite build` clean (118 modules); backend
+    exhaustion suite 45 passing (frontend UI layer over the already-tested API).
 
 ## Previous Run (for reference)
-- [x] **Add in-game feats panel** — view learned feats, ASI status & learn available feats (full detail above in the Completed section; the run before that added the in-game spells panel, also detailed above)
+- [x] **Add exhaustion system** — DnD 5e 6-level Exhaustion special state, fully
+  integrated into combat/rest/saves/DM context (full detail above in the Completed section)
 
 ## How to Use This File
 When you (the agent) work on the project:
