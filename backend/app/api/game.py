@@ -405,6 +405,7 @@ def get_game_state(game_id: int, db: Session = Depends(get_db)):
             "hp": save.character.current_hp,
             "max_hp": save.character.max_hp,
             "alignment": save.character.alignment,
+            "background": save.character.background,
         },
         "world": {
             "id": save.world.id,

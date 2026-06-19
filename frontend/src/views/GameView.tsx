@@ -8,6 +8,7 @@ import WorldMap from '../components/WorldMap'
 import SkillsPanel from '../components/SkillsPanel'
 import ShopPanel from '../components/ShopPanel'
 import InventoryPanel from '../components/InventoryPanel'
+import BackgroundPanel from '../components/BackgroundPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
@@ -45,6 +46,7 @@ export default function GameView() {
   const [showSkills, setShowSkills] = useState(false)
   const [showShop, setShowShop] = useState(false)
   const [showInventory, setShowInventory] = useState(false)
+  const [showBackground, setShowBackground] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -420,6 +422,13 @@ export default function GameView() {
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowBackground(true)}
+              title="View or change background & claim starting gear"
+            >
+              🎭 <span className="hidden sm:inline">Origin</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
               onClick={() => setShowInventory(true)}
               title="Manage inventory & equipment"
             >
@@ -571,6 +580,9 @@ export default function GameView() {
           </h2>
           <div className="text-parchment-400 text-sm mb-4">
             Level {gameState.character.level} {gameState.character.race} {gameState.character.char_class}
+            {gameState.character.background && (
+              <span className="text-parchment-500"> · {gameState.character.background}</span>
+            )}
             {gameState.character.alignment && (
               <span className="text-parchment-500"> · {ALIGNMENT_LABELS[gameState.character.alignment] ?? gameState.character.alignment}</span>
             )}
@@ -879,6 +891,43 @@ export default function GameView() {
               </button>
             </div>
             <SkillsPanel characterId={gameState.character.id} />
+          </div>
+        </div>
+      )}
+
+      {/* Background / Origin overlay */}
+      {showBackground && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => {
+            setShowBackground(false)
+            refreshEquipmentStats()
+          }}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🎭 Origin</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => {
+                  setShowBackground(false)
+                  refreshEquipmentStats()
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <BackgroundPanel
+              characterId={gameState.character.id}
+              onChanged={async () => {
+                // Equipment/gold/HP may have changed; refresh game state.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
           </div>
         </div>
       )}

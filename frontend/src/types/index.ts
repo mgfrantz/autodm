@@ -47,6 +47,7 @@ export interface GameState {
     hp: number;
     max_hp: number;
     alignment?: string | null;
+    background?: string | null;
   };
   world: {
     id: number;
