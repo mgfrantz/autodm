@@ -1,6 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getExhaustion, modifyExhaustion } from '../stores/api'
-import type { ExhaustionStatus } from '../types'
+import type { ExhaustionModifyResult, ExhaustionStatus, StoryEntry } from '../types'
+
+/**
+ * Build a one-line, story-log-worthy narration of an exhaustion change, or
+ * ``null`` when nothing worth narrating happened (a no-op set).
+ *
+ * Surfacing this in the DM bubble (via ``onNarration``) means a hazard the
+ * player triggers from this panel reads like a world event, not just a silent
+ * stat change — matching how rest outcomes are already logged.
+ */
+function exhaustionNarration(result: ExhaustionModifyResult): string | null {
+  if (result.died) {
+    return `☠️ Exhaustion reaches level ${result.after}. The character collapses, lifeless — death by exhaustion.`
+  }
+  if (!result.changed) return null
+  if (result.after > result.before) {
+    return `🥵 Exhaustion worsens — level ${result.before} → ${result.after}.`
+  }
+  return `✨ Exhaustion eases — level ${result.before} → ${result.after}.`
+}
 
 /* ------------------------------------------------------------------ *
  * Exhaustion is a DnD 5e special state — a stacking 0–6 affliction
@@ -50,9 +69,13 @@ function levelTone(level: number): 'leaf' | 'gold' | 'amber' | 'blood' {
 interface ExhaustionPanelProps {
   gameId: number
   onChanged?: () => void | Promise<void>
+  /** Narrate an exhaustion change into the DM story bubble. Called with a
+   *  system story entry only when the level actually changed (or the
+   *  character died); no-op sets are not narrated. */
+  onNarration?: (entry: StoryEntry) => void
 }
 
-export default function ExhaustionPanel({ gameId, onChanged }: ExhaustionPanelProps) {
+export default function ExhaustionPanel({ gameId, onChanged, onNarration }: ExhaustionPanelProps) {
   const [status, setStatus] = useState<ExhaustionStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -94,6 +117,11 @@ export default function ExhaustionPanel({ gameId, onChanged }: ExhaustionPanelPr
         showFlash(`Exhaustion ${result.before} → ${result.after}.`)
       } else {
         showFlash('No change — already at that level.')
+      }
+      // Surface the change in the DM story bubble (only when meaningful).
+      const line = exhaustionNarration(result)
+      if (line && onNarration) {
+        onNarration({ role: 'system', content: line, timestamp: new Date().toISOString() })
       }
       if (onChanged) await onChanged()
     } catch {

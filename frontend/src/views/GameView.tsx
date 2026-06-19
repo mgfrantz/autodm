@@ -1299,6 +1299,7 @@ export default function GameView() {
             </div>
             <ExhaustionPanel
               gameId={gameState.game_id}
+              onNarration={(entry) => addToStory(entry)}
               onChanged={async () => {
                 // Changing exhaustion alters the game_state (exhaustion level),
                 // and level 6 drops HP to 0 — refresh state so the sidebar
