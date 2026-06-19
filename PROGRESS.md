@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅
-## TEST SUITE FULLY GREEN (1616 passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅
+## TEST SUITE FULLY GREEN (1616 backend + 8 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -1141,12 +1141,20 @@
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
 - [ ] **Polish & integration follow-ups** (smaller, can be picked next):
-  - Add a frontend integration test exercising the feats panel's learn flow
-  - Cross-link: show feat-granted skill/save proficiencies inside the Skills
-    and Saving-Throws panels (backend already derives them; UI is implicit)
-  - Wire exhaustion gains from the in-game exhaustion panel's "Gain a level"
-    button into the story log narration (currently only the backend POST logs;
-    surface the result line in the DM bubble)
+  - [x] Add a frontend integration test exercising the feats panel's learn flow
+    *(done — Vitest + @testing-library/react framework added; FeatsPanel.test.tsx
+    covers the full learn flow: simple feat, half-feat default ability, ability
+    switch; plus ExhaustionPanel narration tests; 8 frontend tests passing)*
+  - [ ] Cross-link: show feat-granted skill/save proficiencies inside the Skills
+    and Saving-Throws panels (backend already derives them; UI is implicit).
+    NOTE: there is currently **no Saving-Throws panel** — this sub-task also
+    entails creating one. Next run should: (a) expose feat-source attribution
+    in the skills + saving-throws API responses, (b) add a feat-granted badge
+    in SkillsPanel, (c) build a SavingThrowsPanel + wire it into GameView.
+  - [x] Wire exhaustion gains from the in-game exhaustion panel's "Gain a level"
+    button into the story log narration (surface the result line in the DM bubble)
+    *(done — ExhaustionPanel.onNarration → GameView addToStory; gain/recover/death
+    lines; no-op sets stay silent; 4 integration tests)*
 - [ ] Any remaining DESIGN.md "Future" engine features the DM should model.
   Exhaustion (done) was the headline example; remaining candidates:
   - Mount/vehicle travel & mounted combat (travel-time + speed modifiers,
@@ -1157,6 +1165,35 @@
     already computes exhaustion saves; wire food/water tracking to add levels)
 
 ## Completed This Run
+- [x] **Add frontend test suite (Vitest) + FeatsPanel learn-flow integration tests**
+  - Establishes the project's first frontend test layer (previously 1616 backend
+    tests, 0 frontend). Vitest + jsdom + @testing-library/react + jest-dom,
+    configured via a standalone `frontend/vitest.config.ts` so the production
+    `vite.config.ts` build config stays untouched.
+  - `src/test/setup.ts` loads the jest-dom DOM matchers; `npm test` /
+    `npm run test:watch` scripts added; README "Running Tests" section now
+    documents both backend and frontend test runs.
+  - `FeatsPanel.test.tsx` (4 tests) drives the full learn-a-feat flow:
+    renders the ASI budget + available feats; spends an ASI on a simple feat
+    (Tough) and asserts `learnFeat(id, 'Tough', undefined)` + the success view
+    + parent refresh; forwards the default first ability for half-feats
+    (Athlete→Strength); and lets the player switch the choice (Athlete→Dexterity).
+  - Verified: **8 frontend tests passing**; `tsc --noEmit` clean; `vite build`
+    clean (118 modules). (npm optional-dependency bug required pinning
+    `@rollup/rollup-darwin-arm64` so Vitest's Rollup native binary loads.)
+- [x] **Narrate exhaustion changes in the DM story bubble**
+  - Exhaustion hazards the player triggers from the in-game panel now surface
+    as system story entries in the live DM narration bubble (matching how
+    rest/travel outcomes are logged), instead of a silent stat change.
+  - `ExhaustionPanel` gains an optional `onNarration(entry)` callback, fired
+    with a system `StoryEntry` only when the level actually changes or the
+    character dies (no-op sets stay silent). Worsens (before→after), eases,
+    and level-6 death each get a distinct line.
+  - `GameView` wires `onNarration` to the Zustand `addToStory` action.
+  - `ExhaustionPanel.test.tsx` (4 tests): gain (worsens), recover (eases),
+    no-op (stays silent), death (distinct level-6 line).
+
+## Previous Run (exhaustion panel + sidebar indicators)
 - [x] **Add in-game exhaustion panel + sidebar indicators (exhaustion level, feats/ASI)**
   - Closes the two top "Polish & integration follow-ups" gaps from the prior run:
     the exhaustion backend API (added the run before) had **no UI**, and the
@@ -1190,10 +1227,6 @@
   - 2 new API client fns: `getExhaustion`, `modifyExhaustion`.
   - Verified: `tsc --noEmit` clean, `vite build` clean (118 modules); backend
     exhaustion suite 45 passing (frontend UI layer over the already-tested API).
-
-## Previous Run (for reference)
-- [x] **Add exhaustion system** — DnD 5e 6-level Exhaustion special state, fully
-  integrated into combat/rest/saves/DM context (full detail above in the Completed section)
 
 ## How to Use This File
 When you (the agent) work on the project:
