@@ -407,3 +407,99 @@ class TestLongRestAPI:
         state = client.get(f"/api/game/{save.id}/state").json()
         assert any(e["role"] == "system" and "Long rest" in e["content"]
                    for e in state["story_log"])
+
+    # ----- Exhaustion recovery gated on food & water (PHB) ----------------- #
+
+    def test_long_rest_recovers_exhaustion_when_fed(self, client: TestClient, db_session):
+        char = Character(
+            name="Tired", race="Human", char_class="Fighter", level=5,
+            classes=json.dumps({"fighter": 5}),
+            strength=16, dexterity=12, constitution=14, intelligence=10,
+            wisdom=10, charisma=10,
+            max_hp=40, current_hp=20, armor_class=16, speed=30, hit_dice_used=1,
+        )
+        db_session.add(char); db_session.flush()
+        w = World(name="W", description="d",
+                  world_data='{"starting_settlement": {"name": "T"}}', tone="heroic")
+        db_session.add(w); db_session.flush()
+        # Exhaustion 3, but well-fed/watered (survival counters at 0).
+        save = GameSave(
+            name="G", character_id=char.id, world_id=w.id,
+            game_state=json.dumps({
+                "in_combat": False, "conditions": [], "exhaustion": 3,
+                "survival": {"days_without_food": 0, "days_without_water": 0},
+            }),
+            story_log="[]",
+        )
+        db_session.add(save); db_session.commit()
+
+        r = client.post(f"/api/game/{save.id}/long-rest")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["exhaustion_before"] == 3
+        assert data["exhaustion_after"] == 2
+        assert data["exhaustion_reduced"] is True
+        assert data["exhaustion_recovery_blocked"] is False
+        # game_state reflects the recovery
+        assert data["exhaustion"] == 2
+
+    def test_long_rest_blocks_exhaustion_recovery_when_starving(self, client: TestClient, db_session):
+        char = Character(
+            name="Starving", race="Human", char_class="Fighter", level=5,
+            classes=json.dumps({"fighter": 5}),
+            strength=16, dexterity=12, constitution=14, intelligence=10,
+            wisdom=10, charisma=10,
+            max_hp=40, current_hp=20, armor_class=16, speed=30, hit_dice_used=1,
+        )
+        db_session.add(char); db_session.flush()
+        w = World(name="W", description="d",
+                  world_data='{"starting_settlement": {"name": "T"}}', tone="heroic")
+        db_session.add(w); db_session.flush()
+        # Exhaustion 3, but 2 days without food & 1 without water.
+        save = GameSave(
+            name="G", character_id=char.id, world_id=w.id,
+            game_state=json.dumps({
+                "in_combat": False, "conditions": [], "exhaustion": 3,
+                "survival": {"days_without_food": 2, "days_without_water": 1},
+            }),
+            story_log="[]",
+        )
+        db_session.add(save); db_session.commit()
+
+        r = client.post(f"/api/game/{save.id}/long-rest")
+        assert r.status_code == 200
+        data = r.json()
+        # Exhaustion NOT reduced — sustenance inadequate.
+        assert data["exhaustion_before"] == 3
+        assert data["exhaustion_after"] == 3
+        assert data["exhaustion_reduced"] is False
+        assert data["exhaustion_recovery_blocked"] is True
+        assert data["exhaustion"] == 3
+        assert "food" in data["message"].lower()
+
+    def test_long_rest_recovery_no_survival_state_defaults_to_fed(self, client: TestClient, db_session):
+        """A game that never touched the survival system recovers exhaustion normally."""
+        char = Character(
+            name="Classic", race="Human", char_class="Fighter", level=5,
+            classes=json.dumps({"fighter": 5}),
+            strength=16, dexterity=12, constitution=14, intelligence=10,
+            wisdom=10, charisma=10,
+            max_hp=40, current_hp=20, armor_class=16, speed=30, hit_dice_used=1,
+        )
+        db_session.add(char); db_session.flush()
+        w = World(name="W", description="d",
+                  world_data='{"starting_settlement": {"name": "T"}}', tone="heroic")
+        db_session.add(w); db_session.flush()
+        # No "survival" key at all.
+        save = GameSave(
+            name="G", character_id=char.id, world_id=w.id,
+            game_state=json.dumps({"in_combat": False, "conditions": [], "exhaustion": 2}),
+            story_log="[]",
+        )
+        db_session.add(save); db_session.commit()
+
+        r = client.post(f"/api/game/{save.id}/long-rest")
+        data = r.json()
+        assert data["exhaustion_after"] == 1
+        assert data["exhaustion_reduced"] is True
+        assert data["exhaustion_recovery_blocked"] is False

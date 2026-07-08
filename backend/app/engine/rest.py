@@ -142,6 +142,9 @@ class LongRestResult:
     exhaustion_before: int = 0
     exhaustion_after: int = 0          # one level lower than before (min 0)
     exhaustion_reduced: bool = False
+    # True when the long rest could NOT reduce exhaustion because the character
+    # had inadequate food/water (PHB). When set, exhaustion_after == exhaustion_before.
+    exhaustion_recovery_blocked: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -159,6 +162,7 @@ class LongRestResult:
             "exhaustion_before": self.exhaustion_before,
             "exhaustion_after": self.exhaustion_after,
             "exhaustion_reduced": self.exhaustion_reduced,
+            "exhaustion_recovery_blocked": self.exhaustion_recovery_blocked,
         }
 
 
@@ -300,6 +304,7 @@ def long_rest(
     is_caster: bool,
     conditions: Optional[list[str]] = None,
     exhaustion: int = 0,
+    can_recover_exhaustion: bool = True,
 ) -> LongRestResult:
     """Resolve a long rest: full HP, recover Hit Dice, clear restable conditions.
 
@@ -314,8 +319,16 @@ def long_rest(
         caller to remove from game state.
     exhaustion
         The player's current exhaustion level (0–6). A long rest reduces it by
-        one level (provided the creature has eaten and drunk — assumed true).
-        Level 6 is death and so cannot rest; the caller should not reach here.
+        one level (provided the creature has eaten and drunk — see
+        ``can_recover_exhaustion``). Level 6 is death and so cannot rest; the
+        caller should not reach here.
+    can_recover_exhaustion
+        Whether the character has had adequate food and water to benefit from
+        exhaustion recovery this rest (PHB: a long rest reduces exhaustion by 1
+        level *provided the creature has ingested some food and drink*). When
+        ``False`` the exhaustion level is unchanged and the result flags
+        :attr:`LongRestResult.exhaustion_recovery_blocked`. Defaults to ``True``
+        for backward compatibility with callers that do not track sustenance.
 
     A long rest always succeeds. HP is restored to ``max_hp``; Hit Dice recover
     up to half the total (minimum 1), but never more than were actually spent.
@@ -328,12 +341,24 @@ def long_rest(
     cleared = [c for c in conditions if is_clearable_by_long_rest(c)]
     hp_healed = max(0, max_hp - current_hp)
 
-    # Exhaustion recovers by one level per long rest (PHB). Fatal level 6
-    # cannot rest, but we still clamp defensively so the engine stays pure.
+    # Exhaustion recovers by one level per long rest (PHB) — but only when the
+    # creature has had adequate food and water. Fatal level 6 cannot rest, but
+    # we still clamp defensively so the engine stays pure.
     from app.engine.exhaustion import MAX_EXHAUSTION
     exhaustion_before = max(0, min(MAX_EXHAUSTION, int(exhaustion)))
-    exhaustion_after = max(0, exhaustion_before - 1) if exhaustion_before < MAX_EXHAUSTION else exhaustion_before
-    exhaustion_reduced = exhaustion_after < exhaustion_before
+    if exhaustion_before < MAX_EXHAUSTION and can_recover_exhaustion:
+        exhaustion_after = max(0, exhaustion_before - 1)
+        exhaustion_reduced = exhaustion_after < exhaustion_before
+        recovery_blocked = False
+    else:
+        # Either there is nothing to reduce, or sustenance is inadequate.
+        exhaustion_after = exhaustion_before
+        exhaustion_reduced = False
+        # We only flag a *block* when recovery would otherwise have happened
+        # (i.e. there was exhaustion to shed and the gate denied it).
+        recovery_blocked = (
+            exhaustion_before > 0 and not can_recover_exhaustion
+        )
 
     bits = [f"recovered {hp_healed} HP"]
     bits.append(f"regained {dice_regained} Hit Die(s)")
@@ -343,6 +368,11 @@ def long_rest(
         bits.append(f"cleared {', '.join(cleared)}")
     if exhaustion_reduced:
         bits.append(f"recovered 1 exhaustion level (now {exhaustion_after})")
+    if recovery_blocked:
+        bits.append(
+            f"could not ease exhaustion (still {exhaustion_after}) — needs food "
+            f"and water to recover (PHB)"
+        )
     message = "Long rest complete: " + "; ".join(bits) + "."
 
     return LongRestResult(
@@ -360,4 +390,5 @@ def long_rest(
         exhaustion_before=exhaustion_before,
         exhaustion_after=exhaustion_after,
         exhaustion_reduced=exhaustion_reduced,
+        exhaustion_recovery_blocked=recovery_blocked,
     )

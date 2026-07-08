@@ -96,6 +96,26 @@ def _log(save: GameSave, role: str, content: str) -> None:
     save.story_log = json.dumps(story_log)
 
 
+def _can_recover_exhaustion(game_state: dict) -> bool:
+    """Whether the character has had adequate food & water to recover exhaustion.
+
+    PHB: a long rest reduces exhaustion by 1 level *provided the creature has
+    ingested some food and drink*. We read the survival drivers persisted in
+    ``game_state["survival"]``. A counter of 0 means the character had a full
+    day's worth of that resource today. If *either* counter is non-zero the
+    character is running a deficit and the long rest cannot ease exhaustion.
+
+    When the survival system has never been touched (no ``survival`` key), the
+    character is assumed fed and watered, so recovery works as before.
+    """
+    survival = game_state.get("survival") or {}
+    if not isinstance(survival, dict):
+        return True
+    days_food = int(survival.get("days_without_food", 0) or 0)
+    days_water = int(survival.get("days_without_water", 0) or 0)
+    return days_food == 0 and days_water == 0
+
+
 # --------------------------------------------------------------------------- #
 # Endpoints
 # --------------------------------------------------------------------------- #
@@ -182,6 +202,7 @@ def long_rest(game_id: int, db: Session = Depends(get_db)):
     is_caster = _is_caster(save)
     current_conditions = list(game_state.get("conditions", []) or [])
     current_exhaustion = int(game_state.get("exhaustion", 0) or 0)
+    can_recover_exhaustion = _can_recover_exhaustion(game_state)
 
     result: LongRestResult = rest_engine.long_rest(
         char_class=_primary_class(save),
@@ -192,6 +213,7 @@ def long_rest(game_id: int, db: Session = Depends(get_db)):
         is_caster=is_caster,
         conditions=current_conditions,
         exhaustion=current_exhaustion,
+        can_recover_exhaustion=can_recover_exhaustion,
     )
 
     # --- Apply HP ---------------------------------------------------------

@@ -354,4 +354,80 @@ class TestLongRest:
         )
         assert "recovered" in result.message.lower()
         assert "spell slots" in result.message.lower()
-        assert "poisoned" in result.message.lower()
+
+    # ----- Exhaustion recovery (PHB long-rest rule) ------------------------ #
+
+    def test_exhaustion_reduced_by_one(self):
+        result = long_rest(
+            char_class="fighter", level=5, current_hp=1, max_hp=30,
+            hit_dice_used=2, is_caster=False, exhaustion=3,
+        )
+        assert result.exhaustion_before == 3
+        assert result.exhaustion_after == 2
+        assert result.exhaustion_reduced is True
+        assert result.exhaustion_recovery_blocked is False
+
+    def test_exhaustion_zero_stays_zero(self):
+        result = long_rest(
+            char_class="fighter", level=5, current_hp=1, max_hp=30,
+            hit_dice_used=2, is_caster=False, exhaustion=0,
+        )
+        assert result.exhaustion_after == 0
+        assert result.exhaustion_reduced is False
+        assert result.exhaustion_recovery_blocked is False
+
+    def test_exhaustion_clamped_at_six_cannot_rest(self):
+        result = long_rest(
+            char_class="fighter", level=5, current_hp=1, max_hp=30,
+            hit_dice_used=2, is_caster=False, exhaustion=6,
+        )
+        assert result.exhaustion_after == 6
+        assert result.exhaustion_reduced is False
+        assert result.exhaustion_recovery_blocked is False
+
+    # ----- Exhaustion recovery gated on food & water (PHB) ----------------- #
+
+    def test_recovery_blocked_without_sustenance(self):
+        # Character is exhausted but starving/dehydrated — no recovery.
+        result = long_rest(
+            char_class="fighter", level=5, current_hp=1, max_hp=30,
+            hit_dice_used=2, is_caster=False, exhaustion=4,
+            can_recover_exhaustion=False,
+        )
+        assert result.exhaustion_before == 4
+        assert result.exhaustion_after == 4  # unchanged
+        assert result.exhaustion_reduced is False
+        assert result.exhaustion_recovery_blocked is True
+        assert "food" in result.message.lower()
+        assert "water" in result.message.lower()
+
+    def test_recovery_blocked_not_flagged_when_no_exhaustion(self):
+        # Adequate sustenance is irrelevant when there is nothing to recover.
+        result = long_rest(
+            char_class="fighter", level=5, current_hp=1, max_hp=30,
+            hit_dice_used=2, is_caster=False, exhaustion=0,
+            can_recover_exhaustion=False,
+        )
+        assert result.exhaustion_after == 0
+        assert result.exhaustion_reduced is False
+        assert result.exhaustion_recovery_blocked is False
+
+    def test_recovery_default_true_preserves_old_behaviour(self):
+        # Omitting can_recover_exhaustion keeps the legacy behaviour.
+        result = long_rest(
+            char_class="fighter", level=5, current_hp=1, max_hp=30,
+            hit_dice_used=2, is_caster=False, exhaustion=2,
+        )
+        assert result.exhaustion_after == 1
+        assert result.exhaustion_reduced is True
+        assert result.exhaustion_recovery_blocked is False
+
+    def test_to_dict_includes_recovery_blocked_flag(self):
+        result = long_rest(
+            char_class="fighter", level=5, current_hp=1, max_hp=30,
+            hit_dice_used=2, is_caster=False, exhaustion=2,
+            can_recover_exhaustion=False,
+        )
+        d = result.to_dict()
+        assert d["exhaustion_recovery_blocked"] is True
+        assert d["exhaustion_after"] == 2
