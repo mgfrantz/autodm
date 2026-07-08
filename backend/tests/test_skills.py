@@ -387,6 +387,43 @@ class TestFeatIntegration:
         all_exp = get_all_skill_expertise(char)
         assert "stealth" in all_exp
 
+    def test_feat_skill_proficiency_persisted_format(self):
+        """The REAL format produced by the feats learn flow: effects stored under
+        ``effects_applied`` with key ``skill_proficiencies``. Previously the
+        engine read ``effects`` only, so feat-granted skills were silently lost."""
+        char = make_character(
+            skill_proficiencies="[]",
+            feats=json.dumps([{
+                "name": "Skilled",
+                "effects_applied": {"skill_proficiencies": ["arcana", "history", "nature"]},
+                "learned_at_level": 3,
+            }]),
+        )
+        all_profs = get_all_skill_proficiencies(char)
+        assert {"arcana", "history", "nature"} <= all_profs
+
+    def test_get_feat_skill_sources_real_format(self):
+        """get_feat_skill_sources attributes the right feat name + type."""
+        from app.engine.skills import get_feat_skill_sources
+        char = make_character(
+            skill_proficiencies="[]",
+            feats=json.dumps([
+                {"name": "Skilled",
+                 "effects_applied": {"skill_proficiencies": ["arcana", "history"]}},
+                {"name": "Skill Expert",
+                 "effects_applied": {"expertise": "stealth"}},
+            ]),
+        )
+        sources = get_feat_skill_sources(char)
+        assert sources["arcana"] == [{"feat": "Skilled", "type": "proficiency"}]
+        assert sources["history"] == [{"feat": "Skilled", "type": "proficiency"}]
+        assert sources["stealth"] == [{"feat": "Skill Expert", "type": "expertise"}]
+
+    def test_get_feat_skill_sources_empty(self):
+        from app.engine.skills import get_feat_skill_sources
+        char = make_character(feats="[]")
+        assert get_feat_skill_sources(char) == {}
+
 
 # --------------------------------------------------------------------------- #
 # Skill modifier calculation
@@ -712,6 +749,32 @@ class TestSkillsAPI:
         assert athletics["proficient"] is True
         assert athletics["modifier"] == 6  # +3 ability + 3 proficiency
         assert "passive_scores" in data
+
+    def test_get_skills_feat_source_attribution(self, client, db_session):
+        """Skill entries should carry feat_granted + feat_sources badges, and the
+        response-level feat_sources map should attribute the granting feat."""
+        import json
+        char_id = self._create_character(client, char_class="Fighter", level=4)
+        from app.models.models import Character
+        char = db_session.query(Character).filter(Character.id == char_id).first()
+        char.feats = json.dumps([{
+            "name": "Skilled",
+            "effects_applied": {"skill_proficiencies": ["arcana", "history"]},
+            "learned_at_level": 4,
+        }])
+        db_session.commit()
+
+        response = client.get(f"/api/characters/{char_id}/skills")
+        assert response.status_code == 200
+        data = response.json()
+        arcana = next(s for s in data["skills"] if s["skill"] == "arcana")
+        assert arcana["proficient"] is True
+        assert arcana["feat_granted"] is True
+        assert arcana["feat_sources"] == ["Skilled"]
+        assert data["feat_sources"]["arcana"] == [{"feat": "Skilled", "type": "proficiency"}]
+        # A non-feat skill has no badge.
+        athletics = next(s for s in data["skills"] if s["skill"] == "athletics")
+        assert athletics["feat_granted"] is False
 
     def test_get_skill_candidates(self, client, db_session):
         char_id = self._create_character(client, char_class="Rogue", level=3)

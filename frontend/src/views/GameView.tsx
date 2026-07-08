@@ -16,6 +16,7 @@ import CombatActionsPanel from '../components/CombatActionsPanel'
 import SpellsPanel from '../components/SpellsPanel'
 import FeatsPanel from '../components/FeatsPanel'
 import ExhaustionPanel from '../components/ExhaustionPanel'
+import SavingThrowsPanel from '../components/SavingThrowsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
 const ALIGNMENT_LABELS: Record<string, string> = {
@@ -60,6 +61,7 @@ export default function GameView() {
   const [showSpells, setShowSpells] = useState(false)
   const [showFeats, setShowFeats] = useState(false)
   const [showExhaustion, setShowExhaustion] = useState(false)
+  const [showSavingThrows, setShowSavingThrows] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -453,6 +455,13 @@ export default function GameView() {
               title="View skills & roll checks"
             >
               📜 <span className="hidden sm:inline">Skills</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowSavingThrows(true)}
+              title="View saving throw proficiencies & roll saves (feat-granted saves badged)"
+            >
+              🛡️ <span className="hidden sm:inline">Saves</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1018,6 +1027,33 @@ export default function GameView() {
               </button>
             </div>
             <SkillsPanel characterId={gameState.character.id} />
+          </div>
+        </div>
+      )}
+
+      {/* Saving Throws overlay */}
+      {showSavingThrows && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowSavingThrows(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🛡️ Saving Throws</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowSavingThrows(false)}
+              >
+                ×
+              </button>
+            </div>
+            <SavingThrowsPanel
+              characterId={gameState.character.id}
+              conditions={gameState.game_state.conditions}
+            />
           </div>
         </div>
       )}

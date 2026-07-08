@@ -25,6 +25,7 @@ class SavingThrowProficienciesResponse(BaseModel):
     character_id: int
     proficiencies: list[str]  # List of abilities the character is proficient in
     bonus_by_ability: dict[str, int]  # Static bonus per ability (prof + mod)
+    feat_sources: dict[str, str] = {}  # ability → feat name that granted the save proficiency
 
 
 class SavingThrowRollRequest(BaseModel):
@@ -86,6 +87,7 @@ def get_saving_throw_proficiencies(
         character_id=character_id,
         proficiencies=sorted(proficiencies),
         bonus_by_ability=bonus_by_ability,
+        feat_sources=saving_throws.get_feat_saving_throw_sources(character),
     )
 
 

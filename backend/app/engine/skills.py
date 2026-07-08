@@ -295,49 +295,93 @@ def has_expertise(skill: str, character: Any) -> bool:
 # Feat-based skill proficiency / expertise
 # --------------------------------------------------------------------------- #
 
-def _feat_skill_bonuses(character: Any) -> tuple[set[str], set[str]]:
-    """Return (proficiencies, expertise) granted by feats.
+def _feat_effects_dict(feat: dict) -> dict:
+    """Return the effects payload from a stored feat dict.
 
-    Recognised feat effect keys:
-      - ``skill_proficiency``: str or list[str]
-      - ``skill_proficiencies``: list[str]
-      - ``expertise``: str or list[str]   (e.g., Skill Expert feat)
+    The feats learn flow persists effects under ``effects_applied``; older test
+    fixtures and some engines use ``effects``. Read both for compatibility.
+    """
+    for key in ("effects_applied", "effects"):
+        val = feat.get(key)
+        if isinstance(val, dict):
+            return val
+    return {}
+
+
+def _norm_skill_list(val: Any) -> list[str]:
+    """Normalise a str / list[str] of skill names to lowercased list."""
+    if isinstance(val, str):
+        return [val.lower()]
+    if isinstance(val, list):
+        return [str(v).lower() for v in val]
+    return []
+
+
+def _feat_skill_grants(character: Any) -> list[dict]:
+    """Return one dict per feat granting skill bonuses.
+
+    Each entry is ``{"feat": <display name>, "proficiency": [...], "expertise": [...]}``
+    with already-lowercased, validated skill names.
     """
     import json
     feats_raw = getattr(character, "feats", None)
     if not feats_raw:
-        return set(), set()
+        return []
     try:
         feats = json.loads(feats_raw)
     except (json.JSONDecodeError, ValueError, TypeError):
-        return set(), set()
-
-    profs: set[str] = set()
-    exp: set[str] = set()
+        return []
     if not isinstance(feats, list):
-        return profs, exp
+        return []
+
+    grants: list[dict] = []
     for feat in feats:
         if not isinstance(feat, dict):
             continue
-        name = (feat.get("name", "") or "").lower()
-        effects = feat.get("effects", {}) if isinstance(feat.get("effects"), dict) else {}
+        name = feat.get("name", "") or ""
+        effects = _feat_effects_dict(feat)
+        profs: list[str] = []
+        profs += [s for s in _norm_skill_list(effects.get("skill_proficiency")) if s in SKILL_ABILITIES]
+        profs += [s for s in _norm_skill_list(effects.get("skill_proficiencies")) if s in SKILL_ABILITIES]
+        exps = [s for s in _norm_skill_list(effects.get("expertise")) if s in SKILL_ABILITIES]
+        # Skill Expert feat grants expertise in one already-known skill; we store
+        # it under "expertise" in the effects payload, which is covered above.
+        if profs or exps:
+            grants.append({"feat": name, "proficiency": profs, "expertise": exps})
+    return grants
 
-        def _norm(val):
-            if isinstance(val, str):
-                return [val.lower()]
-            if isinstance(val, list):
-                return [str(v).lower() for v in val]
-            return []
 
-        profs.update(s for s in _norm(effects.get("skill_proficiency")) if s in SKILL_ABILITIES)
-        profs.update(s for s in _norm(effects.get("skill_proficiencies")) if s in SKILL_ABILITIES)
-        exp.update(s for s in _norm(effects.get("expertise")) if s in SKILL_ABILITIES)
+def _feat_skill_bonuses(character: Any) -> tuple[set[str], set[str]]:
+    """Return (proficiencies, expertise) granted by feats.
 
-        # Skilled feat: grants any 3 skill proficiencies (we represent the
-        # chosen skills under skill_proficiency in the effects payload).
-        if "skilled" in name:
-            profs.update(s for s in _norm(effects.get("skill_proficiency")) if s in SKILL_ABILITIES)
+    Recognised feat effect keys (under ``effects`` or ``effects_applied``):
+      - ``skill_proficiency``: str or list[str]
+      - ``skill_proficiencies``: list[str]
+      - ``expertise``: str or list[str]   (e.g., Skill Expert feat)
+    """
+    profs: set[str] = set()
+    exp: set[str] = set()
+    for grant in _feat_skill_grants(character):
+        profs.update(grant["proficiency"])
+        exp.update(grant["expertise"])
     return profs, exp
+
+
+def get_feat_skill_sources(character: Any) -> dict[str, list[dict]]:
+    """Map each skill → the feats that granted it proficiency/expertise.
+
+    Returns ``{skill_name: [{"feat": <name>, "type": "proficiency"|"expertise"}, ...]}``.
+    Skills with no feat source are absent from the dict. Used by the skills API
+    and UI to badge feat-granted proficiencies.
+    """
+    sources: dict[str, list[dict]] = {}
+    for grant in _feat_skill_grants(character):
+        feat_name = grant["feat"]
+        for sk in grant["proficiency"]:
+            sources.setdefault(sk, []).append({"feat": feat_name, "type": "proficiency"})
+        for sk in grant["expertise"]:
+            sources.setdefault(sk, []).append({"feat": feat_name, "type": "expertise"})
+    return sources
 
 
 # --------------------------------------------------------------------------- #

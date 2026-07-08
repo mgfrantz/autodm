@@ -114,7 +114,9 @@ export default function SkillsPanel({ characterId }: Props) {
                           ? 'bg-arcane-800/70 ring-1 ring-arcane-500'
                           : 'bg-parchment-900/60 hover:bg-parchment-800/60'
                       }`}
-                      title={`${titleCase(s.skill)} (${s.ability.slice(0, 3).toUpperCase()}) — click to roll`}
+                      title={`${titleCase(s.skill)} (${s.ability.slice(0, 3).toUpperCase()}) — click to roll${
+                        s.feat_sources.length ? ` · feat: ${s.feat_sources.join(', ')}` : ''
+                      }`}
                     >
                       <span className="flex items-center gap-1.5 min-w-0">
                         <span className="w-4 text-center shrink-0">
@@ -129,6 +131,14 @@ export default function SkillsPanel({ characterId }: Props) {
                         <span className={`truncate ${s.proficient ? 'text-parchment-200' : 'text-parchment-400'}`}>
                           {titleCase(s.skill)}
                         </span>
+                        {s.feat_granted && (
+                          <span
+                            className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-gold-300 bg-gold-900/40 border border-gold-700/50 rounded px-1 leading-tight"
+                            title={`Granted by feat: ${s.feat_sources.join(', ')}`}
+                          >
+                            ✦ {s.feat_sources[0]}
+                          </span>
+                        )}
                       </span>
                       <span className={`font-mono shrink-0 ml-2 ${s.proficient ? 'text-arcane-300' : 'text-parchment-400'}`}>
                         {formatMod(s.modifier)}
@@ -230,7 +240,7 @@ export default function SkillsPanel({ characterId }: Props) {
       )}
 
       <p className="text-xs text-parchment-600 mt-3 text-center">
-        ● Proficient &nbsp; ✦✦ Expertise &nbsp; — Click a skill to roll a check.
+        ● Proficient &nbsp; ✦✦ Expertise &nbsp; <span className="text-gold-300">✦ badge</span> = feat-granted &nbsp; — Click a skill to roll a check.
       </p>
     </div>
   )

@@ -101,30 +101,68 @@ def get_saving_throw_proficiencies(character: Any) -> set[str]:
     # Start with class proficiencies
     proficient = get_multiclass_saving_throws(classes)
 
-    # Add feat-based proficiencies (Resilient feat)
-    if hasattr(character, "feats"):
-        import json
-        try:
-            feats = json.loads(character.feats or "[]")
-            for feat in feats:
-                feat_name = feat.get("name", "").lower()
-                # Resilient feat format: "Resilient (Constitution)" or just "Resilient"
-                if "resilient" in feat_name:
-                    # Extract ability from parentheses or feat effects
-                    if "(" in feat_name and ")" in feat_name:
-                        ability_part = feat_name[feat_name.find("(")+1:feat_name.find(")")].strip().lower()
-                        if ability_part in ABILITIES:
-                            proficient.add(ability_part)
-                    elif "effects" in feat:
-                        effects = feat["effects"]
-                        if "save_proficiency" in effects:
-                            save_abil = effects["save_proficiency"].lower()
-                            if save_abil in ABILITIES:
-                                proficient.add(save_abil)
-        except (json.JSONDecodeError, ValueError, AttributeError):
-            pass
+    # Add feat-based proficiencies (Resilient feat, and any feat that grants a
+    # saving-throw proficiency). This reads BOTH the persisted ``effects_applied``
+    # payload (the real feats-learn format, key ``saving_throw_proficiency``) and
+    # the legacy ``effects``/``save_proficiency`` fixture format, so proficiency
+    # is detected regardless of how the feat was stored.
+    proficient.update(get_feat_saving_throw_sources(character).keys())
 
     return proficient
+
+
+def _feat_effects_dict(feat: dict) -> dict:
+    """Return the effects payload from a stored feat dict.
+
+    The feats learn flow persists effects under ``effects_applied``; older test
+    fixtures use ``effects``. Read both for compatibility.
+    """
+    for key in ("effects_applied", "effects"):
+        val = feat.get(key)
+        if isinstance(val, dict):
+            return val
+    return {}
+
+
+def get_feat_saving_throw_sources(character: Any) -> dict[str, str]:
+    """Map each ability → the feat name that granted saving-throw proficiency.
+
+    Resilient (and any feat with a ``saving_throw_proficiency`` / legacy
+    ``save_proficiency`` effect) is recognised. A Resilient feat stored with the
+    ability in its name — e.g. ``"Resilient (Wisdom)"`` — is also parsed. Returns
+    an ability→feat-name dict; only feat-granted saves appear.
+    """
+    import json
+    feats_raw = getattr(character, "feats", None)
+    if not feats_raw:
+        return {}
+    try:
+        feats = json.loads(feats_raw)
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return {}
+    if not isinstance(feats, list):
+        return {}
+
+    sources: dict[str, str] = {}
+    for feat in feats:
+        if not isinstance(feat, dict):
+            continue
+        name = (feat.get("name", "") or "")
+        effects = _feat_effects_dict(feat)
+
+        # Primary path: the persisted effects key used by apply_feat().
+        save_prof = effects.get("saving_throw_proficiency") or effects.get("save_proficiency")
+        if isinstance(save_prof, str) and save_prof.strip().lower() in ABILITIES:
+            sources[save_prof.strip().lower()] = name
+            continue  # name-parentheses form is redundant once we have the effect
+
+        # Fallback: ability encoded in the feat name, e.g. "Resilient (Wisdom)".
+        lower_name = name.lower()
+        if "resilient" in lower_name and "(" in lower_name and ")" in lower_name:
+            ability_part = lower_name[lower_name.find("(") + 1:lower_name.find(")")].strip()
+            if ability_part in ABILITIES:
+                sources[ability_part] = name
+    return sources
 
 
 def get_character_level(character: Any) -> int:

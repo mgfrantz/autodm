@@ -32,6 +32,8 @@ class SkillInfo(BaseModel):
     expertise: bool
     proficiency_bonus: int  # 0, pb, or 2*pb
     modifier: int  # total skill modifier
+    feat_granted: bool = False  # True if proficiency/expertise comes (in part) from a feat
+    feat_sources: list[str] = []  # feat display names that granted proficiency/expertise
 
 
 class SkillsResponse(BaseModel):
@@ -41,6 +43,7 @@ class SkillsResponse(BaseModel):
     expertise: list[str]
     skills: list[SkillInfo]
     passive_scores: dict[str, int]
+    feat_sources: dict[str, list[dict]] = {}  # skill → [{feat, type}] attribution
 
 
 class SkillCandidatesResponse(BaseModel):
@@ -107,9 +110,11 @@ def _get_character_or_404(character_id: int, db: Session) -> Character:
 def _build_skill_infos(character: Character) -> list[SkillInfo]:
     profs = skills.get_all_skill_proficiencies(character)
     exp = skills.get_all_skill_expertise(character)
+    feat_sources = skills.get_feat_skill_sources(character)
     infos: list[SkillInfo] = []
     for sk in ALL_SKILLS:
         bd = skills.calculate_skill_breakdown(sk, character, profs, exp)
+        sources = feat_sources.get(sk, [])
         infos.append(SkillInfo(
             skill=sk,
             ability=bd["ability"],
@@ -119,8 +124,24 @@ def _build_skill_infos(character: Character) -> list[SkillInfo]:
             expertise=bd["expertise"],
             proficiency_bonus=bd["proficiency_bonus"],
             modifier=bd["modifier"],
+            feat_granted=bool(sources),
+            feat_sources=[s["feat"] for s in sources],
         ))
     return infos
+
+
+def _skills_response(character_id: int, character: Character) -> SkillsResponse:
+    """Build a full SkillsResponse with proficiencies, expertise, feat attribution."""
+    profs = sorted(skills.get_all_skill_proficiencies(character))
+    exp = sorted(skills.get_all_skill_expertise(character))
+    return SkillsResponse(
+        character_id=character_id,
+        proficiencies=profs,
+        expertise=exp,
+        skills=_build_skill_infos(character),
+        passive_scores=skills.calculate_all_passive_scores(character),
+        feat_sources=skills.get_feat_skill_sources(character),
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -131,15 +152,7 @@ def _build_skill_infos(character: Character) -> list[SkillInfo]:
 def get_skills(character_id: int, db: Session = Depends(get_db)):
     """Get all skills for a character with resolved modifiers and passive scores."""
     character = _get_character_or_404(character_id, db)
-    profs = sorted(skills.get_all_skill_proficiencies(character))
-    exp = sorted(skills.get_all_skill_expertise(character))
-    return SkillsResponse(
-        character_id=character_id,
-        proficiencies=profs,
-        expertise=exp,
-        skills=_build_skill_infos(character),
-        passive_scores=skills.calculate_all_passive_scores(character),
-    )
+    return _skills_response(character_id, character)
 
 
 @router.get("/skills/candidates", response_model=SkillCandidatesResponse)
@@ -223,15 +236,7 @@ def set_skill_proficiencies(
     db.commit()
     db.refresh(character)
 
-    profs = sorted(skills.get_all_skill_proficiencies(character))
-    exp = sorted(skills.get_all_skill_expertise(character))
-    return SkillsResponse(
-        character_id=character_id,
-        proficiencies=profs,
-        expertise=exp,
-        skills=_build_skill_infos(character),
-        passive_scores=skills.calculate_all_passive_scores(character),
-    )
+    return _skills_response(character_id, character)
 
 
 @router.post("/skills/expertise", response_model=SkillsResponse)
@@ -287,15 +292,7 @@ def set_skill_expertise(
     db.commit()
     db.refresh(character)
 
-    profs = sorted(skills.get_all_skill_proficiencies(character))
-    exp = sorted(skills.get_all_skill_expertise(character))
-    return SkillsResponse(
-        character_id=character_id,
-        proficiencies=profs,
-        expertise=exp,
-        skills=_build_skill_infos(character),
-        passive_scores=skills.calculate_all_passive_scores(character),
-    )
+    return _skills_response(character_id, character)
 
 
 @router.post("/skills/check", response_model=SkillCheckResponse)

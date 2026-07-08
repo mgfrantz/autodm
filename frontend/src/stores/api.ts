@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SavingThrowProficienciesResponse, SavingThrowRollResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -331,6 +331,32 @@ export const rollSkillCheck = async (
     disadvantage,
     conditions,
   });
+  return res.data;
+};
+
+// === Saving Throws ===
+
+export const getSavingThrowProficiencies = async (
+  characterId: number,
+): Promise<SavingThrowProficienciesResponse> => {
+  const res = await API.get<SavingThrowProficienciesResponse>(
+    `/characters/${characterId}/saving-throws/proficiencies`,
+  );
+  return res.data;
+};
+
+export const rollSavingThrow = async (
+  characterId: number,
+  ability: string,
+  dc: number,
+  advantage = false,
+  disadvantage = false,
+  conditions: string[] = [],
+): Promise<SavingThrowRollResult> => {
+  const res = await API.post<SavingThrowRollResult>(
+    `/characters/${characterId}/saving-throws/roll`,
+    { ability, dc, advantage, disadvantage, conditions },
+  );
   return res.data;
 };
 

@@ -428,6 +428,13 @@ export interface SkillInfo {
   expertise: boolean;
   proficiency_bonus: number; // 0, pb, or 2*pb
   modifier: number; // total skill modifier
+  feat_granted: boolean; // true if proficiency/expertise comes (in part) from a feat
+  feat_sources: string[]; // feat display names that granted it
+}
+
+export interface SkillFeatSource {
+  feat: string;
+  type: 'proficiency' | 'expertise';
 }
 
 export interface SkillsResponse {
@@ -436,6 +443,7 @@ export interface SkillsResponse {
   expertise: string[];
   skills: SkillInfo[];
   passive_scores: Record<string, number>;
+  feat_sources: Record<string, SkillFeatSource[]>; // skill → attribution
 }
 
 export interface SkillCheckResult {
@@ -973,4 +981,29 @@ export interface ExhaustionModifyResult extends ExhaustionStatus {
     current_hp: number;
     max_hp: number;
   };
+}
+
+// === Saving Throws (DnD 5e — per-ability saves with class + feat proficiency) ===
+
+/** A character's saving-throw proficiencies, per-ability bonuses, and feat attribution. */
+export interface SavingThrowProficienciesResponse {
+  character_id: number;
+  proficiencies: string[]; // abilities the character is proficient in
+  bonus_by_ability: Record<string, number>; // static save bonus per ability (prof + mod)
+  feat_sources: Record<string, string>; // ability → feat name that granted the save proficiency
+}
+
+/** Result of rolling a saving throw. */
+export interface SavingThrowRollResult {
+  ability: string;
+  roll: string; // roll description, e.g. "d20 (advantage) +5"
+  rolls: number[];
+  modifier: number;
+  total: number;
+  success: boolean;
+  dc: number;
+  advantage: boolean;
+  disadvantage: boolean;
+  auto_failed: boolean;
+  description: string;
 }

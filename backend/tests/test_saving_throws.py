@@ -201,6 +201,49 @@ class TestCharacterProficiencies:
         prof = get_saving_throw_proficiencies(char)
         assert prof == {"intelligence", "wisdom"}
 
+    def test_resilient_persisted_format_effects_applied(self):
+        """The REAL format produced by the feats learn flow: base feat name
+        ("Resilient", no parentheses) + effects stored under ``effects_applied``
+        with key ``saving_throw_proficiency``. This previously went undetected
+        because the engine read ``effects``/``save_proficiency``."""
+        import json
+        char = make_character(
+            char_class="Fighter", level=3, classes='{"fighter": 3}',
+            feats=json.dumps([{
+                "name": "Resilient",
+                "description": "+1 Wis, Wis save proficiency",
+                "effects_applied": {"saving_throw_proficiency": "wisdom"},
+                "ability_changes": {"wisdom": 1},
+                "learned_at_level": 3,
+            }]),
+        )
+        prof = get_saving_throw_proficiencies(char)
+        assert "wisdom" in prof
+        assert prof == {"strength", "constitution", "wisdom"}
+
+    def test_feat_save_sources_real_format(self):
+        """get_feat_saving_throw_sources attributes the right feat name."""
+        import json
+        from app.engine.saving_throws import get_feat_saving_throw_sources
+        char = make_character(feats=json.dumps([{
+            "name": "Resilient",
+            "effects_applied": {"saving_throw_proficiency": "wisdom"},
+        }]))
+        assert get_feat_saving_throw_sources(char) == {"wisdom": "Resilient"}
+
+    def test_feat_save_sources_name_parens_format(self):
+        """Legacy/fixture format: ability encoded in the feat name."""
+        from app.engine.saving_throws import get_feat_saving_throw_sources
+        char = make_character(feats='[{"name": "Resilient (Wisdom)"}]')
+        assert get_feat_saving_throw_sources(char) == {"wisdom": "Resilient (Wisdom)"}
+
+    def test_feat_save_sources_empty(self):
+        """No feats → no feat save sources."""
+        from app.engine.saving_throws import get_feat_saving_throw_sources
+        char = make_character(feats="[]")
+        assert get_feat_saving_throw_sources(char) == {}
+
+
 
 # --------------------------------------------------------------------------- #
 # Save bonus calculation
@@ -587,3 +630,37 @@ class TestSavingThrowAPI:
         })
         assert response.status_code == 400
         assert "Invalid ability" in response.json()["detail"]
+
+    def test_proficiencies_include_feat_sources(self, client, db_session):
+        """The proficiencies response should surface feat-source attribution
+        (ability → feat name) for save proficiencies granted by a feat."""
+        import json
+        # Create a fighter (Str/Con saves), then learn Resilient (Wisdom) by
+        # writing the feat directly (the real persisted shape).
+        response = client.post("/api/characters", json={
+            "name": "Resilient Hero",
+            "race": "Human",
+            "char_class": "Fighter",
+            "level": 4,
+            "background": "Soldier",
+            "strength": 16, "dexterity": 14, "constitution": 14,
+            "intelligence": 10, "wisdom": 12, "charisma": 10,
+        })
+        assert response.status_code == 200
+        char_id = response.json()["id"]
+
+        from app.models.models import Character
+        char = db_session.query(Character).filter(Character.id == char_id).first()
+        char.feats = json.dumps([{
+            "name": "Resilient",
+            "effects_applied": {"saving_throw_proficiency": "wisdom"},
+            "learned_at_level": 4,
+        }])
+        db_session.commit()
+
+        response = client.get(f"/api/characters/{char_id}/saving-throws/proficiencies")
+        assert response.status_code == 200
+        data = response.json()
+        # Fighter base (Str/Con) + Resilient (Wisdom)
+        assert set(data["proficiencies"]) == {"strength", "constitution", "wisdom"}
+        assert data["feat_sources"] == {"wisdom": "Resilient"}
