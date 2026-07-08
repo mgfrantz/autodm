@@ -147,6 +147,32 @@ def _exhaustion_for_dm(level) -> str:
     return f"level {lvl} ({'; '.join(effects['active_effects']) or 'afflicted'})"
 
 
+def _survival_for_dm(game_state: dict, character) -> str:
+    """Render a character's food/water situation for DM context.
+
+    Returns 'well provisioned' when the character is eating and drinking, or a
+    short note flagging how many days of deprivation have accrued and whether
+    the character is actively starving/dehydrated — so the DM can narrate the
+    toll of a long trek or a desert crossing.
+    """
+    from app.engine import starvation as surv
+    from app.engine.dice import ability_modifier
+    state = surv.SurvivalState.from_dict(game_state.get("survival"))
+    if state.days_without_food == 0 and state.days_without_water == 0:
+        return "well provisioned"
+    con_mod = ability_modifier(int(getattr(character, "constitution", 10) or 10))
+    env = game_state.get("environment")
+    temp = env.get("temperature", "normal") if isinstance(env, dict) else "normal"
+    summ = surv.deficit_summary(state, con_mod, surv.is_hot(temp))
+    parts = []
+    if state.days_without_food > 0:
+        tag = "starving" if summ["starving"] else f"{summ['food_days_until_exhaustion']} food-day(s) of grace left"
+        parts.append(f"{state.days_without_food} day(s) without food ({tag})")
+    if state.days_without_water > 0:
+        need = summ["daily_water_gal"]
+        parts.append(f"{state.days_without_water} day(s) without water (need {need} gal/day)")
+    return "; ".join(parts) or "well provisioned"
+
 
 @router.post("/{game_id}/start/stream")
 async def start_adventure_stream(game_id: int, session_factory=Depends(get_session_factory)):
@@ -254,6 +280,7 @@ AC: {character.armor_class}
 Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
 Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
+Sustenance: {_survival_for_dm(game_state, character)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -337,6 +364,7 @@ AC: {character.armor_class}
 Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
 Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
+Sustenance: {_survival_for_dm(game_state, character)}
 """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(
