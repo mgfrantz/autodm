@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅
-## TEST SUITE FULLY GREEN (1616 backend + 8 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅
+## TEST SUITE FULLY GREEN (1625 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -1145,12 +1145,18 @@
     *(done — Vitest + @testing-library/react framework added; FeatsPanel.test.tsx
     covers the full learn flow: simple feat, half-feat default ability, ability
     switch; plus ExhaustionPanel narration tests; 8 frontend tests passing)*
-  - [ ] Cross-link: show feat-granted skill/save proficiencies inside the Skills
+  - [x] Cross-link: show feat-granted skill/save proficiencies inside the Skills
     and Saving-Throws panels (backend already derives them; UI is implicit).
-    NOTE: there is currently **no Saving-Throws panel** — this sub-task also
-    entails creating one. Next run should: (a) expose feat-source attribution
-    in the skills + saving-throws API responses, (b) add a feat-granted badge
-    in SkillsPanel, (c) build a SavingThrowsPanel + wire it into GameView.
+    NOTE: there was previously **no Saving-Throws panel** — this sub-task also
+    entailed creating one. Done this run: (a) feat-source attribution exposed
+    in the skills + saving-throws API responses, (b) a feat-granted badge added
+    in SkillsPanel, (c) a full SavingThrowsPanel built + wired into GameView.
+    *(done — engine attribution helpers `get_feat_saving_throw_sources` /
+    `get_feat_skill_sources`; SavingThrowProficienciesResponse/SkillInfo carry
+    feat_sources; new SavingThrowsPanel.tsx (6-save console, DC presets, adv/disadv,
+    condition-aware rolls, feat badges) wired via a Saving-Throws header button +
+    overlay in GameView; 4 SavingThrowsPanel integration tests + backend assertions;
+    1625 backend + 12 frontend tests passing)*
   - [x] Wire exhaustion gains from the in-game exhaustion panel's "Gain a level"
     button into the story log narration (surface the result line in the DM bubble)
     *(done — ExhaustionPanel.onNarration → GameView addToStory; gain/recover/death
@@ -1165,6 +1171,41 @@
     already computes exhaustion saves; wire food/water tracking to add levels)
 
 ## Completed This Run
+- [x] **Cross-link feat-granted proficiencies into Skills + Saving-Throws panels**
+  - Closes the top "Polish & integration follow-ups" gap. The backend already
+    derived feat-granted skill/save proficiencies but the UI was implicit, and
+    there was **no Saving-Throws panel** at all.
+  - **Backend attribution plumbing**:
+    - `engine/saving_throws.py`: `get_feat_saving_throw_sources()` maps
+      ability → feat name (reads `effects_applied.saving_throw_proficiency`,
+      legacy `save_proficiency`, and the `Resilient (Ability)` name form) and
+      is rolled into `get_saving_throw_proficiencies()`.
+    - `api/saving_throws.py`: `SavingThrowProficienciesResponse.feat_sources`
+      (ability → feat name) now exposed on the proficiencies endpoint.
+    - `engine/skills.py`: `get_feat_skill_sources()` returns skill →
+      [{feat, type}]; `SkillInfo` gains `feat_granted` + `feat_sources`.
+    - `api/skills.py`: `_build_skill_infos` / `_skills_response` surface the
+      feat attribution (per-skill and the top-level `feat_sources` map).
+  - **Frontend**:
+    - `SkillsPanel.tsx`: gold `✦ <feat>` badge on feat-granted skills.
+    - `SavingThrowsPanel.tsx` (new): 6-save console with proficiency pips,
+      feat-granted badges, DC presets + advantage/disadvantage toggles,
+      condition-aware rolling (paralyzed auto-fails Str/Dex), and a
+      success/failure result banner.
+    - `GameView.tsx`: Saving-Throws header button + overlay modal; passes the
+      character's active combat conditions into the panel's rolls.
+    - `types/index.ts` + `stores/api.ts`: `SavingThrowProficienciesResponse` /
+      `SavingThrowRollResult` types and `getSavingThrowProficiencies` /
+      `rollSavingThrow` API fns.
+  - **Tests**: +feat-source assertions in `test_skills.py` /
+    `test_saving_throws.py`; new `SavingThrowsPanel.test.tsx` (4 integration
+    tests). Fixed a `found multiple elements` matcher bug (the "Proficient in N
+    of 6 saves" summary's textContent matched both the inner span and its
+    parent div) by narrowing the matcher to the specific summary span.
+  - Verified: **1625 backend + 12 frontend tests passing, 0 failing**;
+    `tsc --noEmit` clean; `vite build` clean (119 modules).
+
+## Previous Run (frontend test suite + exhaustion narration)
 - [x] **Add frontend test suite (Vitest) + FeatsPanel learn-flow integration tests**
   - Establishes the project's first frontend test layer (previously 1616 backend
     tests, 0 frontend). Vitest + jsdom + @testing-library/react + jest-dom,
@@ -1193,7 +1234,7 @@
   - `ExhaustionPanel.test.tsx` (4 tests): gain (worsens), recover (eases),
     no-op (stays silent), death (distinct level-6 line).
 
-## Previous Run (exhaustion panel + sidebar indicators)
+## Earlier Run (exhaustion panel + sidebar indicators)
 - [x] **Add in-game exhaustion panel + sidebar indicators (exhaustion level, feats/ASI)**
   - Closes the two top "Polish & integration follow-ups" gaps from the prior run:
     the exhaustion backend API (added the run before) had **no UI**, and the
