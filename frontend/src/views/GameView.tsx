@@ -16,6 +16,7 @@ import CombatActionsPanel from '../components/CombatActionsPanel'
 import SpellsPanel from '../components/SpellsPanel'
 import FeatsPanel from '../components/FeatsPanel'
 import ExhaustionPanel from '../components/ExhaustionPanel'
+import SurvivalPanel from '../components/SurvivalPanel'
 import SavingThrowsPanel from '../components/SavingThrowsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
@@ -61,6 +62,7 @@ export default function GameView() {
   const [showSpells, setShowSpells] = useState(false)
   const [showFeats, setShowFeats] = useState(false)
   const [showExhaustion, setShowExhaustion] = useState(false)
+  const [showSurvival, setShowSurvival] = useState(false)
   const [showSavingThrows, setShowSavingThrows] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
@@ -486,6 +488,13 @@ export default function GameView() {
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowSurvival(true)}
+              title="Track food & water (starvation/dehydration) and resolve a survival day"
+            >
+              🍖 <span className="hidden sm:inline">Survival</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
               onClick={() => setShowBackground(true)}
               title="View or change background & claim starting gear"
             >
@@ -709,6 +718,36 @@ export default function GameView() {
                       />
                     ))}
                   </div>
+                </div>
+              </button>
+            )
+          })()}
+
+          {/* Survival indicator — shown only when running a food/water deficit. */}
+          {(() => {
+            const sv = gameState.game_state?.survival
+            const foodDays = sv?.days_without_food ?? 0
+            const waterDays = sv?.days_without_water ?? 0
+            if (foodDays <= 0 && waterDays <= 0) return null
+            const tone = waterDays > 0 ? 'blood' : 'amber'
+            const accent = tone === 'blood' ? 'text-blood-400' : 'text-amber-300'
+            return (
+              <button
+                onClick={() => setShowSurvival(true)}
+                className={`w-full text-left rounded-md px-2 py-1.5 mb-3 transition-colors border ${
+                  tone === 'blood'
+                    ? 'bg-blood-900/30 border-blood-700/50 hover:border-blood-600'
+                    : 'bg-amber-900/30 border-amber-700/50 hover:border-amber-600'
+                }`}
+                title="Track food & water, resolve a survival day"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className={accent}>🍖 Survival</span>
+                  <span className="text-parchment-400">
+                    {foodDays > 0 && `🍖${foodDays}d`}
+                    {foodDays > 0 && waterDays > 0 && ' · '}
+                    {waterDays > 0 && `💧${waterDays}d`}
+                  </span>
                 </div>
               </button>
             )
@@ -1340,6 +1379,40 @@ export default function GameView() {
                 // Changing exhaustion alters the game_state (exhaustion level),
                 // and level 6 drops HP to 0 — refresh state so the sidebar
                 // indicator + HP bar stay in sync.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Survival overlay */}
+      {showSurvival && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowSurvival(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🍖 Survival</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowSurvival(false)}
+              >
+                ×
+              </button>
+            </div>
+            <SurvivalPanel
+              gameId={gameState.game_id}
+              onNarration={(entry) => addToStory(entry)}
+              onChanged={async () => {
+                // A survival day can add exhaustion (and at level 6 drop HP
+                // to 0) — refresh state so the sidebar indicator + HP bar
+                // stay in sync.
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}

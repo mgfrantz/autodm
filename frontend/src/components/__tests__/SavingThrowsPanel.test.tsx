@@ -27,7 +27,7 @@ vi.mock('../../stores/api', () => ({
  */
 const proficientCount = (n: number) => (
   _content: string,
-  el: HTMLElement | null,
+  el: Element | null,
 ): boolean =>
   el?.tagName === 'SPAN' &&
   typeof el.className === 'string' &&

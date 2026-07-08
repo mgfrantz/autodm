@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SavingThrowProficienciesResponse, SavingThrowRollResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -701,5 +701,36 @@ export const modifyExhaustion = async (
     mode,
     levels,
   });
+  return res.data;
+};
+
+// === Survival (DnD 5e starvation & dehydration — daily food/water tracking) ===
+
+/** The character's current survival drivers, deficit summary, and exhaustion. */
+export const getSurvival = async (gameId: number): Promise<SurvivalStatus> => {
+  const res = await API.get<SurvivalStatus>(`/game/${gameId}/survival`);
+  return res.data;
+};
+
+/** Resolve one day of food/water intake; applies any exhaustion inflicted. */
+export const advanceSurvival = async (
+  gameId: number,
+  foodLbs: number,
+  waterGal: number,
+  hot?: boolean,
+  saveRoll?: number,
+): Promise<SurvivalAdvanceResult> => {
+  const res = await API.post<SurvivalAdvanceResult>(`/game/${gameId}/survival/advance`, {
+    food_lbs: foodLbs,
+    water_gal: waterGal,
+    ...(hot !== undefined ? { hot } : {}),
+    ...(saveRoll !== undefined ? { save_roll: saveRoll } : {}),
+  });
+  return res.data;
+};
+
+/** Reset the food/water deprivation counters to zero (character has restocked). */
+export const resetSurvival = async (gameId: number): Promise<SurvivalStatus> => {
+  const res = await API.post<SurvivalStatus>(`/game/${gameId}/survival/reset`);
   return res.data;
 };

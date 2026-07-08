@@ -1178,8 +1178,20 @@
     from environment; death at 6 → HP 0; narrates to story log), POST
     /survival/reset; DM context gains a 'Sustenance:' line; state lives in
     game_state['survival'] so it round-trips through save/load; 32 engine +
-    13 API tests, 1670 backend total)*. NOTE follow-up: build an in-game
-    Survival panel + gate long-rest exhaustion recovery on having eaten/drunk.
+    13 API tests, 1670 backend total)*.
+ - [x] Gate long-rest exhaustion recovery on having eaten/drunk (PHB rule)
+ *(done — engine/rest.py long_rest() gains can_recover_exhaustion param;
+ api/rest.py checks game_state['survival'] food/water counters; +10 tests;
+ 1680 backend total)*
+ - [x] In-game Survival panel (frontend)
+ *(done — SurvivalPanel.tsx over /api/game/{id}/survival API; food/water
+ deficit readout with grace countdowns, hot-weather doubling, exhaustion
+ link, intake sliders, Resolve day + Restock buttons, DM narration hook;
+ types + API client + GameView wiring (header button, overlay, sidebar
+ indicator); SavingThrowsPanel.test.tsx matcher typing fix; 16 frontend
+ total)*
+ NOTE: this follow-up pair was implemented by the cron agent but hit the
+ iteration limit before committing the frontend portion; committed manually.
 
 ## Completed This Run
 - [x] **Add starvation/dehydration survival engine + API**

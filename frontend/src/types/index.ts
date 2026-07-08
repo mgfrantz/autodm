@@ -60,6 +60,10 @@ export interface GameState {
     conditions: string[];
     in_combat: boolean;
     exhaustion?: number;
+    survival?: {
+      days_without_food?: number;
+      days_without_water?: number;
+    };
   };
   story_log: StoryEntry[];
   current_act: number;
@@ -981,6 +985,76 @@ export interface ExhaustionModifyResult extends ExhaustionStatus {
     current_hp: number;
     max_hp: number;
   };
+}
+
+// === Survival (DnD 5e starvation & dehydration — PHB ch.8 "Food and Water") ===
+
+/** Persistent drivers of starvation/dehydration exhaustion (consecutive-day counters). */
+export interface SurvivalState {
+  days_without_food: number;
+  days_without_water: number;
+}
+
+/** Readable snapshot of how close a character is to suffering. */
+export interface SurvivalDeficit {
+  days_without_food: number;
+  days_without_water: number;
+  /** Days a character can go without food before exhaustion (3 + CON mod). */
+  food_grace_days: number;
+  /** Grace minus days already gone — days left before starvation bites. */
+  food_days_until_exhaustion: number;
+  starving: boolean;
+  dehydrated: boolean;
+  daily_food_lbs: number;
+  /** Gallons of water needed per day (2 in hot weather). */
+  daily_water_gal: number;
+  hot: boolean;
+}
+
+/** Current survival status (GET /survival, POST /survival/reset). */
+export interface SurvivalStatus {
+  character_id: number;
+  /** Current exhaustion level driven (in part) by these counters. */
+  exhaustion: number;
+  state: SurvivalState;
+  deficit: SurvivalDeficit;
+  daily_needs: { food: number; water: number };
+}
+
+/** Outcome of resolving one day of food/water intake (POST /survival/advance). */
+export interface SurvivalAdvanceResult {
+  state: SurvivalState;
+  food_intake_ok: boolean;
+  water_intake_ok: boolean;
+  water_half_or_more: boolean;
+  water_needed: number;
+  exhaustion_from_food: number;
+  exhaustion_from_water: number;
+  exhaustion_added: number;
+  new_exhaustion: number;
+  character_id: number;
+  exhaustion_before: number;
+  exhaustion_after: number;
+  changed: boolean;
+  hot: boolean;
+  deficit: SurvivalDeficit;
+  thirst_save_dc: number | null;
+  thirst_save_roll: number | null;
+  thirst_save_bonus: number;
+  thirst_save_success: boolean | null;
+  died: boolean;
+  messages: string[];
+  character: { current_hp: number; max_hp: number };
+  // exhaustion level-effects (mirrors ExhaustionStatus)
+  level: number;
+  description: string;
+  disadvantage_ability_checks: boolean;
+  disadvantage_attack_rolls: boolean;
+  disadvantage_saving_throws: boolean;
+  speed_divisor: number;
+  max_hp_halved: boolean;
+  dead: boolean;
+  active_effects: string[];
 }
 
 // === Saving Throws (DnD 5e — per-ability saves with class + feat proficiency) ===
