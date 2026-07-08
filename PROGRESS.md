@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅
-## TEST SUITE FULLY GREEN (1625 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅
+## TEST SUITE FULLY GREEN (1670 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems) ✅
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -1167,10 +1167,47 @@
     lance/weapon rules while mounted)
   - Disease/poison tracking tables (lingering afflictions with onset/incubation
     and staged effects, distinct from one-shot poisoned condition)
-  - Starvation/dehydration as exhaustion drivers (the environment engine
+  - [x] Starvation/dehydration as exhaustion drivers (the environment engine
     already computes exhaustion saves; wire food/water tracking to add levels)
+    *(done — engine/starvation.py pure engine: SurvivalState counters +
+    advance_day() resolving DnD 5e food/water rules — food grace = 3+CON mod
+    (min 1) then automatic exhaustion, water < half = automatic / half..full =
+    DC 15 CON save (injectable roll), hot doubles water need, exhaustion
+    clamps to 0–6 with death; api/starvation.py: GET /survival, POST
+    /survival/advance (CON-save bonus includes proficiency; auto-detects hot
+    from environment; death at 6 → HP 0; narrates to story log), POST
+    /survival/reset; DM context gains a 'Sustenance:' line; state lives in
+    game_state['survival'] so it round-trips through save/load; 32 engine +
+    13 API tests, 1670 backend total)*. NOTE follow-up: build an in-game
+    Survival panel + gate long-rest exhaustion recovery on having eaten/drunk.
 
 ## Completed This Run
+- [x] **Add starvation/dehydration survival engine + API**
+  - Implements DnD 5e food & water survival rules (PHB ch.8 / DMG ch.5),
+    closing the loop the environment engine opened: extreme heat/cold already
+    forced exhaustion saves, but nothing modelled the persistent pressure of
+    going without enough food and water.
+  - `engine/starvation.py` (pure): `SurvivalState` (consecutive-day counters,
+    round-trip serialisation; exhaustion itself stays in the exhaustion
+    system); `advance_day()` → `SurvivalResult` — food grace = 3+CON mod
+    (min 1), beyond grace automatic 1 exhaustion/day, a full day of eating
+    resets the counter; water need 1 gal/day (2 in hot), < half = automatic
+    exhaustion, half..full = DC 15 CON save (success suppresses); injectable
+    save roll/roller for determinism; projects exhaustion delta (clamp 0–6,
+    death at 6). Plus `daily_needs`/`food_grace_days`/`is_hot`/`deficit_summary`.
+  - `api/starvation.py` (mounted /api/game): `GET /{game_id}/survival`,
+    `POST /{game_id}/survival/advance` (CON-save bonus = CON mod + proficiency
+    when proficient; auto-detects 'hot' from the stored environment; death at
+    6 → HP 0; narrates to the story log), `POST /{game_id}/survival/reset`
+    (restock — clears counters, not exhaustion).
+  - DM integration: the `/action` + `/action/stream` DM context blocks now
+    include a `Sustenance:` line so the DM can narrate the toll of long treks
+    and desert crossings. State lives in `game_state['survival']` so it
+    round-trips through save/load automatically.
+  - Verified: **1670 backend tests passing, 0 failing** (32 engine + 13 API).
+    NOTE follow-ups: build an in-game Survival panel; gate long-rest
+    exhaustion recovery on having eaten/drunk (PHB).
+
 - [x] **Cross-link feat-granted proficiencies into Skills + Saving-Throws panels**
   - Closes the top "Polish & integration follow-ups" gap. The backend already
     derived feat-granted skill/save proficiencies but the UI was implicit, and
