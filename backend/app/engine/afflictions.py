@@ -364,7 +364,7 @@ class AfflictionStatus:
         active = ActiveAffliction(
             affliction_id=affliction.id,
             affliction=affliction,
-            stage_index=-1,  # Start in onset
+            stage_index=0 if affliction.onset_days == 0 else -1,  # Stage 0 immediately if no onset, else onset period
             days_in_stage=0,
             days_since_onset=0,
             cured=False

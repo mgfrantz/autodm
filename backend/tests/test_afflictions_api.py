@@ -2,11 +2,12 @@
 Tests for the afflictions API.
 """
 
+import json
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.models.models import Character, GameSave
+from app.models.models import Character, GameSave, World
 from app.models.database import get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -62,7 +63,8 @@ def test_character(db_session):
     character = Character(
         name="Test Hero",
         race="Human",
-        class_name="Fighter",
+        char_class="Fighter",
+        classes='{"fighter": 1}',
         level=1,
         strength=16,
         dexterity=14,
@@ -82,10 +84,21 @@ def test_character(db_session):
 @pytest.fixture
 def test_game(db_session, test_character):
     """Create a test game."""
+    world = World(
+        name="Test World",
+        description="A test world",
+        world_data="{}",
+    )
+    db_session.add(world)
+    db_session.commit()
+    db_session.refresh(world)
+
     game = GameSave(
+        name="Test Game",
         character_id=test_character.id,
-        story_log=[],
-        game_state={}
+        world_id=world.id,
+        game_state="{}",
+        story_log="[]",
     )
     db_session.add(game)
     db_session.commit()
@@ -98,7 +111,7 @@ class TestAfflictionRegistry:
     
     def test_get_affliction_registry(self):
         """Test getting the full affliction registry."""
-        response = client.get("/api/afflictions/registry")
+        response = client.get("/api/game/afflictions/registry")
         assert response.status_code == 200
         
         data = response.json()
@@ -117,7 +130,7 @@ class TestAfflictionRegistry:
     
     def test_get_diseases(self):
         """Test getting only diseases."""
-        response = client.get("/api/afflictions/registry/diseases")
+        response = client.get("/api/game/afflictions/registry/diseases")
         assert response.status_code == 200
         
         data = response.json()
@@ -130,7 +143,7 @@ class TestAfflictionRegistry:
     
     def test_get_poisons(self):
         """Test getting only poisons."""
-        response = client.get("/api/afflictions/registry/poisons")
+        response = client.get("/api/game/afflictions/registry/poisons")
         assert response.status_code == 200
         
         data = response.json()
@@ -143,7 +156,7 @@ class TestAfflictionRegistry:
     
     def test_get_affliction_detail(self):
         """Test getting details for a specific affliction."""
-        response = client.get("/api/afflictions/registry/cackle_fever")
+        response = client.get("/api/game/afflictions/registry/cackle_fever")
         assert response.status_code == 200
         
         data = response.json()
@@ -154,7 +167,7 @@ class TestAfflictionRegistry:
     
     def test_get_nonexistent_affliction(self):
         """Test getting a non-existent affliction."""
-        response = client.get("/api/afflictions/registry/nonexistent")
+        response = client.get("/api/game/afflictions/registry/nonexistent")
         assert response.status_code == 404
 
 
@@ -527,9 +540,9 @@ class TestStoryLogging:
         )
         
         db_session.refresh(test_game)
-        assert len(test_game.story_log) > 0
+        assert len(json.loads(test_game.story_log)) > 0
         
-        last_entry = test_game.story_log[-1]
+        last_entry = json.loads(test_game.story_log)[-1]
         assert last_entry["type"] == "system"
         assert "cackle fever" in last_entry["content"].lower()
     
@@ -545,7 +558,7 @@ class TestStoryLogging:
             json={"days": 2}
         )
         
-        initial_log_count = len(test_game.story_log)
+        initial_log_count = len(json.loads(test_game.story_log))
         
         # Save
         client.post(
@@ -559,7 +572,7 @@ class TestStoryLogging:
         )
         
         db_session.refresh(test_game)
-        assert len(test_game.story_log) > initial_log_count
+        assert len(json.loads(test_game.story_log)) > initial_log_count
     
     def test_advance_logged(self, test_game, db_session):
         """Test that advancement is logged."""
@@ -569,7 +582,7 @@ class TestStoryLogging:
             json={"affliction_id": "cackle_fever"}
         )
         
-        initial_log_count = len(test_game.story_log)
+        initial_log_count = len(json.loads(test_game.story_log))
         
         # Advance
         client.post(
@@ -578,7 +591,7 @@ class TestStoryLogging:
         )
         
         db_session.refresh(test_game)
-        assert len(test_game.story_log) >= initial_log_count
+        assert len(json.loads(test_game.story_log)) >= initial_log_count
 
 
 class TestPersistence:
@@ -597,9 +610,9 @@ class TestPersistence:
         db_session.refresh(test_game)
         
         # Check game_state
-        assert "afflictions" in test_game.game_state
-        assert "active" in test_game.game_state["afflictions"]
-        assert len(test_game.game_state["afflictions"]["active"]) == 1
+        assert "afflictions" in json.loads(test_game.game_state)
+        assert "active" in json.loads(test_game.game_state)["afflictions"]
+        assert len(json.loads(test_game.game_state)["afflictions"]["active"]) == 1
     
     def test_advance_persists(self, test_game, db_session):
         """Test that advancement persists."""
@@ -618,7 +631,7 @@ class TestPersistence:
         db_session.refresh(test_game)
         
         # Check state
-        active = test_game.game_state["afflictions"]["active"][0]
+        active = json.loads(test_game.game_state)["afflictions"]["active"][0]
         assert active["days_since_onset"] == 2
 
 

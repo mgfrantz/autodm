@@ -115,15 +115,6 @@ def get_affliction_registry() -> List[AfflictionSchema]:
     return [_affliction_to_schema(a) for a in afflictions]
 
 
-@router.get("/afflictions/registry/{affliction_id}")
-def get_affliction_detail(affliction_id: str) -> AfflictionSchema:
-    """Get details for a specific affliction."""
-    affliction = get_affliction(affliction_id)
-    if not affliction:
-        raise HTTPException(status_code=404, detail=f"Affliction '{affliction_id}' not found")
-    return _affliction_to_schema(affliction)
-
-
 @router.get("/afflictions/registry/diseases")
 def get_diseases() -> List[AfflictionSchema]:
     """Get all diseases."""
@@ -136,6 +127,15 @@ def get_poisons() -> List[AfflictionSchema]:
     """Get all poisons."""
     poisons = list_afflictions(AfflictionType.POISON)
     return [_affliction_to_schema(p) for p in poisons]
+
+
+@router.get("/afflictions/registry/{affliction_id}")
+def get_affliction_detail(affliction_id: str) -> AfflictionSchema:
+    """Get details for a specific affliction."""
+    affliction = get_affliction(affliction_id)
+    if not affliction:
+        raise HTTPException(status_code=404, detail=f"Affliction '{affliction_id}' not found")
+    return _affliction_to_schema(affliction)
 
 
 @router.get("/{game_id}/afflictions")
@@ -166,23 +166,28 @@ def contract_affliction(
     
     affliction_status = _load_affliction_status(game)
     
-    # Check if already has this affliction (and not cured)
+    # Check if already has this affliction
     existing = affliction_status.get_by_id(request.affliction_id)
-    if existing and not existing.cured:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Already afflicted with {affliction.name}"
-        )
-    
+    if existing:
+        if not existing.cured:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Already afflicted with {affliction.name}"
+            )
+        # Affliction was cured previously — remove the stale entry so we can
+        # re-contract a fresh instance without leaving duplicates.
+        affliction_status.active = [
+            a for a in affliction_status.active
+            if a.affliction_id != request.affliction_id
+        ]
+
     # Add the affliction
     active = affliction_status.add_affliction(affliction)
     
-    # Persist
+    # Persist (log before commit so the story entry is saved in the same tx)
     _save_affliction_status(game, affliction_status)
-    db.commit()
-    
-    # Log to story
     _log_to_story(game, f"Contracted {affliction.name}: {affliction.description}")
+    db.commit()
     
     return _active_to_schema(active)
 
@@ -210,16 +215,11 @@ def save_against_affliction(
     # Attempt the save
     result = active.attempt_save(request.roll, request.modifier, request.treat)
     
-    # If cured, remove from active list
-    if result.success:
-        affliction_status.remove_cured()
-    
-    # Persist
+    # Persist. Cured afflictions are kept (filtered by active_afflictions and
+    # cleaned up on advance) so a repeat save returns 400 "already cured".
     _save_affliction_status(game, affliction_status)
-    db.commit()
-    
-    # Log to story
     _log_to_story(game, result.narrative)
+    db.commit()
     
     return _save_result_to_schema(result)
 
@@ -244,14 +244,12 @@ def advance_afflictions(
     # Remove cured
     affliction_status.remove_cured()
     
-    # Persist
+    # Persist (log before commit)
     _save_affliction_status(game, affliction_status)
-    db.commit()
-    
-    # Log to story
     for result in results:
         if result.narrative:
             _log_to_story(game, result.narrative)
+    db.commit()
     
     # Get current status for response
     effects_breakdown = affliction_effects_breakdown(affliction_status)
@@ -305,12 +303,11 @@ def remove_affliction(
     active.cured = True
     affliction_status.remove_cured()
     
-    # Persist
+    # Persist (log before commit)
     _save_affliction_status(game, affliction_status)
-    db.commit()
-    
     affliction_name = active.affliction.name
     _log_to_story(game, f"{affliction_name} has been removed (GM action)")
+    db.commit()
     
     return {"status": "removed", "affliction_id": affliction_id}
 
@@ -322,13 +319,17 @@ def remove_affliction(
 def _load_affliction_status(game: GameSave) -> AfflictionStatus:
     """Load affliction status from game_state."""
     import json
-    
-    game_state = game.game_state or {}
+
+    try:
+        game_state = json.loads(game.game_state or "{}")
+    except (TypeError, json.JSONDecodeError):
+        game_state = {}
+
     affliction_data = game_state.get("afflictions", {})
-    
+
     if not affliction_data:
         return AfflictionStatus()
-    
+
     try:
         return AfflictionStatus.from_dict(affliction_data)
     except Exception:
@@ -339,27 +340,33 @@ def _load_affliction_status(game: GameSave) -> AfflictionStatus:
 def _save_affliction_status(game: GameSave, status: AfflictionStatus) -> None:
     """Save affliction status to game_state."""
     import json
-    
-    if not game.game_state:
-        game.game_state = {}
-    
-    game.game_state["afflictions"] = status.to_dict()
+
+    try:
+        game_state = json.loads(game.game_state or "{}")
+    except (TypeError, json.JSONDecodeError):
+        game_state = {}
+
+    game_state["afflictions"] = status.to_dict()
+    game.game_state = json.dumps(game_state)
 
 
 def _log_to_story(game: GameSave, message: str) -> None:
     """Add a message to the story log."""
     import json
     from datetime import datetime
-    
-    if not game.story_log:
-        game.story_log = []
-    
+
+    try:
+        story = json.loads(game.story_log or "[]")
+    except (TypeError, json.JSONDecodeError):
+        story = []
+
     entry = {
         "type": "system",
         "content": message,
         "timestamp": datetime.utcnow().isoformat()
     }
-    game.story_log.append(entry)
+    story.append(entry)
+    game.story_log = json.dumps(story)
 
 
 # Schema conversion helpers
