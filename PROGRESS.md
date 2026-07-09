@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅
-## TEST SUITE FULLY GREEN (1820 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅
+## TEST SUITE FULLY GREEN (1906 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
 
 ## Completed This Run
 - [x] **Convert backend to uv-managed project** — unified root pyproject.toml + .env
@@ -40,6 +40,33 @@
     paths, and `json.loads` column reads.
   - Verified: **1820 backend tests passing, 0 failing** (was 1764; +56 from
     now-collecting afflictions tests + the new engine/API fixes).
+
+- [x] **Add trap/hazard engine + API** — DMG ch.5 traps (detection, disarm, trigger)
+  - `engine/traps.py` (pure, ~630 lines): full DnD 5e trap mechanics.
+    `Trap` (immutable template), `TrapInstance` (mutable, placed in world),
+    `TrapEffect` (damage/condition/teleport/summon/telekinesis), severity bands
+    (setback/dangerous/deadly) matching DMG DC & damage guidelines.
+    Resolution: `attempt_detection` (active Perception vs detection DC),
+    `check_passive_perception` (passive WIS), `attempt_disarm` (thieves' tools /
+    Strength / Arcana vs disarm DC; requires prior discovery),
+    `trigger_trap` (resolves all effects — dice damage with save-for-half,
+    conditions with save-to-resist, misc effects; supports deterministic roller).
+    `failed_disarm_triggers()` — DMG guidance that a critical disarm failure
+    can spring the trap.
+  - `TRAP_REGISTRY`: **15 DMG sample traps** — mechanical (Collapsing Roof,
+    Falling Net, Hidden Pit, Poison Darts, Poisoned Needle, Rolling Sphere,
+    Swinging Blade, Flooding Room, Gas Trap, Bear Trap) and magical
+    (Fire-Breathing Statue, Teleportation Trap, Sphere of Annihilation,
+    Glyph of Warding).
+  - `api/traps.py` (mounted `/api/game`, 13 endpoints): registry list/detail,
+    filter by type/severity, DMG severity guidelines, trap-IDs list,
+    place/list/remove trap instances, active & passive detection, disarm
+    (with trigger-on-critical-failure), trigger (with save roll/modifier),
+    DM-summary. Trap instances persisted in `game_state["traps"]`; all mutations
+    log to the story log.
+  - DM helpers: `trap_summary_for_dm()` (one-line area context),
+    `severity_guidelines()` (DC/damage bands).
+  - Verified: **1906 backend tests passing, 0 failing** (+50 engine + 36 API).
 
 ## Completed (previous runs)
 - [x] **Add mounts/vehicles engine — mounted travel + mounted combat**
@@ -1252,6 +1279,11 @@
     Othertears, Dragon Bile), staged progression with onset periods, save-based curing,
     combat-effect integration, DM-context helpers; 9 REST endpoints (registry list/detail,
     contract, save, advance, effects, status, remove); 28 engine tests passing)*
+  - [x] Trap/hazard engine (DMG ch.5) — detection (Perception / passive),
+    disarm (thieves' tools / ability checks), triggering (damage + conditions
+    + misc effects, save-for-half), 15 DMG sample traps (mechanical + magical)
+    *(done — engine/traps.py + api/traps.py; 15-trap registry; 50 engine + 36
+    API tests, 1906 backend total)*
   - [x] Starvation/dehydration as exhaustion drivers (the environment engine
     already computes exhaustion saves; wire food/water tracking to add levels)
     *(done — engine/starvation.py pure engine: SurvivalState counters +
