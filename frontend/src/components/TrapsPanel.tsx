@@ -116,7 +116,7 @@ export default function TrapsPanel({ gameId, inCombat = false, onChanged, onNarr
       setInstances((prev) => [...prev, inst])
       setPlaceLocation('')
       if (onNarration) {
-        onNarration({ role: 'system', content: trapNarration('place', inst.trap.name, placeLocation || undefined), timestamp: new Date().toISOString() })
+        onNarration({ role: 'system', content: trapNarration('place', inst.trap.name, inst.location || undefined), timestamp: new Date().toISOString() })
       }
       if (onChanged) await onChanged()
     } catch {
