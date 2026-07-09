@@ -1,7 +1,40 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅
-## TEST SUITE FULLY GREEN (1670 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems) ✅
+## TEST SUITE FULLY GREEN (1764 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles) ✅
+
+## Completed This Run
+- [x] **Add mounts/vehicles engine — mounted travel + mounted combat**
+  - The top unchecked DESIGN.md "Future" engine item: PHB ch.5 (mounts),
+    ch.8 (travel pace), ch.9 (mounted combat).
+  - `engine/mounts.py` (pure): `Mount` dataclass + 19-mount `MOUNT_REGISTRY`
+    — land (warhorse, riding/draft horse, pony, mule, donkey, camel, elk,
+    mastiff), flying (pegasus, griffon, hippogriff, giant eagle/owl), and
+    vehicles/vessels (cart, wagon, rowboat, sailing ship). Derived fields:
+    effective/fly/swim speed, carrying capacity (STR×15×size mult×Beast-of-
+    Burden trait), clamped overland speed multiplier.
+  - `MountState` persisted in `game_state["mount"]` with resilient per-field
+    `from_dict`; `fresh_state()` for a healthy acquisition.
+  - Overland travel: pace multipliers (slow/normal/fast + PHB side-effect
+    notes), mount speed scaling, **gallop burst** (≈2× for ~1 hr/day), and a
+    min-1-hour clamp. `adjust_travel_hours()` → `TravelSpeed` breakdown.
+  - Mounted combat (PHB ch.9): `rider_combat_modifiers()` (advantage vs
+    smaller unmounted targets), **Mounted Combatant feat** auto-detected from
+    learned feats (Dex-save advantage, evasion, attack redirect to rider),
+    controlled vs independent control, prone/downed handling;
+    `melee_advantage_applies()`; `weapon_mounted_rules()` (lance one-handed on
+    a mount / reach / disadvantage within 5 ft); `mount_prone_outcome()`
+    (DC 10 Dex save); `damage_mount()`/`heal_mount()` with overflow + forced
+    dismount (prone) at 0 HP; `mount_summary()`/`mount_for_dm()` DM+UI helpers.
+  - `api/mounts.py` (mounted `/api/game`): registry list/detail, get state,
+    acquire (+ optional gold payment / 402 when broke), mount-up/dismount,
+    pace, damage, heal, combat modifiers (auto-detects Mounted Combatant
+    feat), and a travel-hours preview. All changes log to the story + persist.
+  - Integration: `game.py` DM context gains a `Mount:` line in both `/action`
+    blocks; `navigation` `travel()` takes an optional `speed_multiplier` (the
+    foot minimum of 4h drops to 1h mounted) and the travel endpoint folds in
+    the *ridden* mount's pace×speed multiplier so mounted journeys are faster.
+  - Verified: **1764 backend tests passing, 0 failing** (+54 engine, +30 API).
 
 ## Completed
 - [x] Project structure created (backend + frontend)
@@ -1163,8 +1196,16 @@
     lines; no-op sets stay silent; 4 integration tests)*
 - [ ] Any remaining DESIGN.md "Future" engine features the DM should model.
   Exhaustion (done) was the headline example; remaining candidates:
-  - Mount/vehicle travel & mounted combat (travel-time + speed modifiers,
+  - [x] Mount/vehicle travel & mounted combat (travel-time + speed modifiers,
     lance/weapon rules while mounted)
+    *(done — engine/mounts.py pure engine + api/mounts.py; 19-mount registry
+    (land/flying/vehicle), MountState in game_state['mount'], overland travel
+    with pace (slow/normal/fast) + mount speed scaling + gallop burst, mounted
+    combat modifiers (advantage vs smaller unmounted, Mounted Combatant feat
+    auto-detected: Dex-save adv/evasion/attack-redirect), lance/weapon rules,
+    prone (DC 10 Dex save) + downed dismount outcomes, damage/heal; navigation
+    travel() folds in the ridden mount's pace×speed multiplier; DM context
+    gains a 'Mount:' line; 54 engine + 30 API tests, 1764 backend total)*
   - Disease/poison tracking tables (lingering afflictions with onset/incubation
     and staged effects, distinct from one-shot poisoned condition)
   - [x] Starvation/dehydration as exhaustion drivers (the environment engine
