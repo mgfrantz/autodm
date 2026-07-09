@@ -1081,3 +1081,97 @@ export interface SavingThrowRollResult {
   auto_failed: boolean;
   description: string;
 }
+
+// === Traps & Hazards (DMG ch.5 — detection, disarm, trigger) ===
+
+/** A single outcome applied when a trap is triggered. */
+export interface TrapEffect {
+  type: 'damage' | 'condition' | 'teleport' | 'summon' | 'telekinesis';
+  damage_dice: string;
+  damage_type: string;
+  save_ability: string;
+  save_dc: number;
+  /** On a successful save: "half" | "none" | "full". */
+  save_result: string;
+  condition: string;
+  condition_duration: number;
+  description: string;
+}
+
+/** An immutable trap template from the registry. */
+export interface Trap {
+  id: string;
+  name: string;
+  description: string;
+  trap_type: 'mechanical' | 'magical';
+  severity: 'setback' | 'dangerous' | 'deadly';
+  detection_dc: number;
+  disarm_dc: number;
+  trigger: string;
+  effects: TrapEffect[];
+  countermeasure: string;
+  area: string;
+}
+
+/** A trap placed in the game world with mutable state. */
+export interface TrapInstance {
+  trap_id: string;
+  trap: Trap;
+  location: string;
+  discovered: boolean;
+  disarmed: boolean;
+  triggered: boolean;
+  trigger_count: number;
+}
+
+/** Result of an active Perception attempt to detect a trap. */
+export interface DetectionResult {
+  success: boolean;
+  roll: number;
+  perception_total: number;
+  dc: number;
+  discovered: boolean;
+  narrative: string;
+}
+
+/** Result of an attempt to disarm a trap. */
+export interface DisarmResult {
+  success: boolean;
+  roll: number;
+  check_total: number;
+  dc: number;
+  disarmed: boolean;
+  method: string;
+  narrative: string;
+  /** Present when a critical disarm failure (by 5+) springs the trap. */
+  triggered?: TriggerResult;
+}
+
+/** Result of a trap being triggered (damage, conditions, save outcome). */
+export interface TriggerResult {
+  triggered: boolean;
+  damage: number;
+  damage_type: string;
+  save_ability: string;
+  save_dc: number;
+  save_success: boolean;
+  conditions: string[];
+  effect_descriptions: string[];
+  narrative: string;
+}
+
+/** Result of a passive Perception check against a trap. */
+export interface PassiveDetectResult {
+  noticed: boolean;
+  discovered: boolean;
+  narrative: string;
+}
+
+/** DM-friendly summary of traps in the current area. */
+export interface TrapDmSummary {
+  summary: string;
+  total_traps: number;
+  undiscovered: number;
+  discovered: number;
+  disarmed: number;
+}

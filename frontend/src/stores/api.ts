@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -732,5 +732,117 @@ export const advanceSurvival = async (
 /** Reset the food/water deprivation counters to zero (character has restocked). */
 export const resetSurvival = async (gameId: number): Promise<SurvivalStatus> => {
   const res = await API.post<SurvivalStatus>(`/game/${gameId}/survival/reset`);
+  return res.data;
+};
+
+// === Traps & Hazards (DMG ch.5 — registry, place, detect, disarm, trigger) ===
+
+/** List all trap templates, optionally filtered by type and/or severity. */
+export const getTrapRegistry = async (
+  trapType?: 'mechanical' | 'magical',
+  severity?: 'setback' | 'dangerous' | 'deadly',
+): Promise<Trap[]> => {
+  const res = await API.get<Trap[]>('/game/traps/registry', {
+    params: {
+      ...(trapType ? { trap_type: trapType } : {}),
+      ...(severity ? { severity } : {}),
+    },
+  });
+  return res.data;
+};
+
+/** Get details for a specific trap template. */
+export const getTrapDetail = async (trapId: string): Promise<Trap> => {
+  const res = await API.get<Trap>(`/game/traps/registry/${encodeURIComponent(trapId)}`);
+  return res.data;
+};
+
+/** List all trap instances placed in a game. */
+export const getGameTraps = async (gameId: number): Promise<TrapInstance[]> => {
+  const res = await API.get<TrapInstance[]>(`/game/${gameId}/traps`);
+  return res.data;
+};
+
+/** Place a trap (from the registry) into the game world. */
+export const placeTrap = async (
+  gameId: number,
+  trapId: string,
+  location = '',
+): Promise<TrapInstance> => {
+  const res = await API.post<TrapInstance>(`/game/${gameId}/traps`, { trap_id: trapId, location });
+  return res.data;
+};
+
+/** Attempt to detect a trap with an active Perception check. */
+export const detectTrap = async (
+  gameId: number,
+  trapIndex: number,
+  perceptionTotal: number,
+  roll = 0,
+): Promise<DetectionResult> => {
+  const res = await API.post<DetectionResult>(
+    `/game/${gameId}/traps/${trapIndex}/detect`,
+    { perception_total: perceptionTotal, roll },
+  );
+  return res.data;
+};
+
+/** Check passive Perception against a trap. */
+export const passiveDetectTrap = async (
+  gameId: number,
+  trapIndex: number,
+  passivePerception: number,
+): Promise<PassiveDetectResult> => {
+  const res = await API.post<PassiveDetectResult>(
+    `/game/${gameId}/traps/${trapIndex}/passive-detect`,
+    { passive_perception: passivePerception },
+  );
+  return res.data;
+};
+
+/** Attempt to disarm a trap. A critical failure (by 5+) can spring the trap. */
+export const disarmTrap = async (
+  gameId: number,
+  trapIndex: number,
+  checkTotal: number,
+  method = 'thieves_tools',
+  roll = 0,
+): Promise<DisarmResult> => {
+  const res = await API.post<DisarmResult>(
+    `/game/${gameId}/traps/${trapIndex}/disarm`,
+    { check_total: checkTotal, roll, method },
+  );
+  return res.data;
+};
+
+/** Trigger a trap (e.g. by walking into it). Applies damage/conditions. */
+export const triggerGameTrap = async (
+  gameId: number,
+  trapIndex: number,
+  saveRoll?: number,
+  saveModifier = 0,
+): Promise<TriggerResult> => {
+  const res = await API.post<TriggerResult>(
+    `/game/${gameId}/traps/${trapIndex}/trigger`,
+    {
+      ...(saveRoll !== undefined ? { save_roll: saveRoll } : {}),
+      save_modifier: saveModifier,
+    },
+  );
+  return res.data;
+};
+
+/** Remove a placed trap from the game (GM/admin action). */
+export const removeTrap = async (
+  gameId: number,
+  trapIndex: number,
+): Promise<{ status: string; trap_id: string }> => {
+  const res = await API.delete(`/game/${gameId}/traps/${trapIndex}`);
+  return res.data;
+};
+
+/** Get a DM-friendly summary of traps in the current area. */
+export const getTrapsDmSummary = async (gameId: number): Promise<TrapDmSummary> => {
+  const res = await API.get<TrapDmSummary>(`/game/${gameId}/traps/dm-summary`);
   return res.data;
 };

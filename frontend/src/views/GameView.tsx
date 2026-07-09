@@ -18,6 +18,7 @@ import FeatsPanel from '../components/FeatsPanel'
 import ExhaustionPanel from '../components/ExhaustionPanel'
 import SurvivalPanel from '../components/SurvivalPanel'
 import SavingThrowsPanel from '../components/SavingThrowsPanel'
+import TrapsPanel from '../components/TrapsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
 const ALIGNMENT_LABELS: Record<string, string> = {
@@ -64,6 +65,7 @@ export default function GameView() {
   const [showExhaustion, setShowExhaustion] = useState(false)
   const [showSurvival, setShowSurvival] = useState(false)
   const [showSavingThrows, setShowSavingThrows] = useState(false)
+  const [showTraps, setShowTraps] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -492,6 +494,13 @@ export default function GameView() {
               title="Track food & water (starvation/dehydration) and resolve a survival day"
             >
               🍖 <span className="hidden sm:inline">Survival</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowTraps(true)}
+              title="Place, detect, disarm & trigger traps (DMG ch.5)"
+            >
+              🪤 <span className="hidden sm:inline">Traps</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1413,6 +1422,40 @@ export default function GameView() {
                 // A survival day can add exhaustion (and at level 6 drop HP
                 // to 0) — refresh state so the sidebar indicator + HP bar
                 // stay in sync.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Traps overlay */}
+      {showTraps && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowTraps(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🪤 Traps & Hazards</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowTraps(false)}
+              >
+                ×
+              </button>
+            </div>
+            <TrapsPanel
+              gameId={gameState.game_id}
+              inCombat={inCombat}
+              onNarration={(entry) => addToStory(entry)}
+              onChanged={async () => {
+                // A trap can deal damage or apply conditions — refresh state
+                // so the sidebar / HP bar stay in sync.
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}
