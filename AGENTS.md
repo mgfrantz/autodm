@@ -16,10 +16,13 @@ Read `DESIGN.md` first — it has the full architecture, tech stack, and scope.
 
 ## Development Commands
 ```bash
-# Backend
-cd backend && python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+# Backend — run all commands from the project root
+uv sync                          # create the venv and install runtime + dev deps
+uv run backend                   # start the FastAPI service on :8000
+uv run pytest                    # run the backend tests
+
+# Environment — unified .env at the project root (LLM_* plus HOST/PORT/RELOAD)
+# cp .env.example .env
 
 # Frontend
 cd frontend && npm install && npm run dev

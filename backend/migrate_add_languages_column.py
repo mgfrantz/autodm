@@ -7,7 +7,7 @@ Run this from the backend directory after pulling new code.
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "data" / "dnd_game.db"
+DB_PATH = Path(__file__).parent / "data" / "dnd_game.db"
 
 
 def migrate():

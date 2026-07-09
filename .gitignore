@@ -1,12 +1,16 @@
-# Backend
-backend/venv/
-backend/__pycache__/
-backend/**/__pycache__/
-backend/*.pyc
+# Python / uv
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Env (unified at project root)
+.env
+
+# Backend runtime data
 backend/data/*.db
 backend/*.db
 backend/tests/*.db
-backend/.env
 
 # Frontend
 frontend/node_modules/

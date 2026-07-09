@@ -47,6 +47,7 @@ A browser-based single-player Dungeons & Dragons game where an LLM acts as the D
 
 ### Prerequisites
 - Python 3.11+
+- [uv](https://docs.astral.sh/uv/) — the Python package manager (install via the [official installer](https://docs.astral.sh/uv/getting-started/installation/) or `pipx install uv`)
 - Node.js 18+
 - An LLM API key (OpenAI, Anthropic, or OpenAI-compatible local model)
 
@@ -59,23 +60,12 @@ cd dnd-llm-game
 ### 2. Backend Setup
 
 ```bash
-cd backend
+# From the project root — create the virtualenv and install runtime + dev deps
+uv sync
 
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On macOS/Linux:
-source venv/bin/activate
-# On Windows:
-# venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment variables
+# Set up environment variables at the project root
 cp .env.example .env
-# Edit .env and add your LLM_API_KEY
+# Edit .env at the project root and add your LLM_API_KEY
 ```
 
 ### 3. Frontend Setup
@@ -96,10 +86,8 @@ npm run dev
 ### 4. Run the Game
 
 ```bash
-# Terminal 1: Start backend
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --reload --port 8000
+# Terminal 1: Start backend (from the project root)
+uv run backend
 
 # Terminal 2: Start frontend (if using dev server)
 cd frontend
@@ -110,7 +98,7 @@ Then open your browser to `http://localhost:5173` (dev) or `http://localhost:800
 
 ## Configuration
 
-The LLM provider is configured via environment variables in `backend/.env`:
+The LLM provider is configured via environment variables in the project-root `.env`:
 
 ```env
 # Required
@@ -120,6 +108,11 @@ LLM_API_KEY=your-api-key-here
 
 # Optional (for OpenAI-compatible local models like Ollama)
 # LLM_BASE_URL=http://localhost:11434/v1
+
+# Server (optional — defaults shown)
+# HOST=0.0.0.0
+# PORT=8000
+# RELOAD=true
 ```
 
 ### Supported LLM Providers
@@ -133,13 +126,11 @@ LLM_API_KEY=your-api-key-here
 ### Running Tests
 
 ```bash
-# Backend tests (game engine: dice, combat, spells, leveling, …)
-cd backend
-source venv/bin/activate
-pytest tests/ -v
+# Backend tests (game engine: dice, combat, spells, leveling, …) — from the project root
+uv run pytest -v
 
 # Check test coverage
-pytest tests/ --cov=app --cov-report=html
+uv run pytest --cov=app --cov-report=html
 
 # Frontend tests (React component integration tests via Vitest)
 cd frontend
@@ -172,8 +163,9 @@ dnd-llm-game/
 │   │   ├── llm/        # LLM orchestration and prompts
 │   │   ├── models/     # Database models
 │   │   └── prompts/    # DM prompt templates
-│   ├── tests/          # Test suite (749 passing tests)
-│   └── requirements.txt
+│   └── tests/          # Test suite (749 passing tests)
+├── pyproject.toml     # uv project definition and the `backend` console script
+├── .env               # Unified environment variables (gitignored; copy from .env.example)
 ├── DESIGN.md          # Architecture and design decisions
 ├── AGENTS.md          # Development guidelines and priorities
 └── PROGRESS.md        # Development tracker

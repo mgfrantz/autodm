@@ -1,12 +1,18 @@
 """
 Database setup and session management.
 """
+import os
+from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.models.models import Base
 
-DATABASE_URL = "sqlite:///./data/dnd_game.db"
+# Default to backend/data/dnd_game.db, resolved from this file so the location
+# is independent of the process working directory. Override via DATABASE_URL.
+_DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "dnd_game.db"
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_DB_PATH}")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
