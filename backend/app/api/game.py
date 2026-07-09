@@ -174,6 +174,19 @@ def _survival_for_dm(game_state: dict, character) -> str:
     return "; ".join(parts) or "well provisioned"
 
 
+def _mount_for_dm(game_state: dict) -> str:
+    """Render the character's mount situation for DM context.
+
+    Returns 'on foot' when the character has no mount, or a short note naming
+    the mount, its HP, and its overland-travel multiplier — so the DM can
+    narrate mounted travel, aerial scouting, and the consequences of a downed
+    steed in combat.
+    """
+    from app.engine import mounts
+    state = mounts.MountState.from_dict(game_state.get("mount"))
+    return mounts.mount_for_dm(state)
+
+
 @router.post("/{game_id}/start/stream")
 async def start_adventure_stream(game_id: int, session_factory=Depends(get_session_factory)):
     """Stream the opening narration to the client via Server-Sent Events.
@@ -281,6 +294,7 @@ Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
 Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 Sustenance: {_survival_for_dm(game_state, character)}
+Mount: {_mount_for_dm(game_state)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -365,6 +379,7 @@ Location: {game_state.get('location', 'Unknown')}
 Conditions: {', '.join(game_state.get('conditions', ['none']))}
 Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 Sustenance: {_survival_for_dm(game_state, character)}
+Mount: {_mount_for_dm(game_state)}
 """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(

@@ -440,8 +440,19 @@ class WorldMap:
 
     # -- actions ---------------------------------------------------------------
 
-    def travel(self, region_id: str, rng: random.Random | None = None) -> TravelResult:
-        """Attempt to travel to ``region_id`` from the current region."""
+    def travel(
+        self,
+        region_id: str,
+        rng: random.Random | None = None,
+        *,
+        speed_multiplier: float = 1.0,
+    ) -> TravelResult:
+        """Attempt to travel to ``region_id`` from the current region.
+
+        ``speed_multiplier`` (>1 for a mount/vehicle) scales travel time down.
+        The foot minimum of 4 hours is relaxed to 1 hour once a mount speeds
+        travel, so mounted journeys are visibly faster.
+        """
         rng = rng or random.Random()
 
         if region_id not in self.regions:
@@ -482,7 +493,11 @@ class WorldMap:
         dest = self.regions[region_id]
         dist = _distance(from_region.coordinates, dest.coordinates)
         # Normalise distance (0..~0.76 diagonal) into travel hours.
-        travel_hours = max(4, round(dist * 48))
+        # A mount/vehicle (speed_multiplier > 1) covers the distance faster; the
+        # foot minimum of 4 hours drops to 1 hour once a mount is in play.
+        raw_hours = round(dist * 48 / max(speed_multiplier, 0.1))
+        min_hours = 4 if speed_multiplier <= 1.0 else 1
+        travel_hours = max(min_hours, raw_hours)
 
         # Random encounter roll based on destination terrain.
         chance = terrain_encounter_rate(dest.terrain)

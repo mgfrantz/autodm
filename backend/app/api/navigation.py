@@ -78,7 +78,21 @@ def travel(game_id: int, request: TravelRequest, db: Session = Depends(get_db)):
     if request.region_id not in world_map.regions:
         raise HTTPException(status_code=404, detail=f"Region '{request.region_id}' not found")
 
-    result = world_map.travel(request.region_id)
+    # A mounted traveller covers ground faster — fold the mount's pace × speed
+    # multiplier into the travel time. (No mount → multiplier 1.0, no change.)
+    game_state = json.loads(save.game_state)
+    mount_mult = 1.0
+    mount_state_data = game_state.get("mount")
+    if mount_state_data:
+        from app.engine import mounts
+        mstate = mounts.MountState.from_dict(mount_state_data)
+        # Only a *ridden* mount speeds travel; a mount merely being led does not.
+        if mstate.mounted and mstate.is_conscious():
+            mount = mstate.mount_obj()
+            if mount is not None:
+                mount_mult = mounts.travel_multiplier(mstate)
+
+    result = world_map.travel(request.region_id, speed_multiplier=mount_mult)
 
     # Persist updated position regardless of success (a failed move doesn't
     # change state, but we keep the write cheap and consistent).
