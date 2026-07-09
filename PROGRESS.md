@@ -1,9 +1,47 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅
-## TEST SUITE FULLY GREEN (1764 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles) ✅
+## TEST SUITE FULLY GREEN (1820 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅
 
 ## Completed This Run
+- [x] **Convert backend to uv-managed project** — unified root pyproject.toml + .env
+  - Migrated from pip/venv/requirements.txt to **uv**: a single root
+    `pyproject.toml` (hatchling ships `backend/app` as `app`; `backend`
+    console script → `app.serve:main`), `uv.lock`, and a unified root `.env`.
+  - `backend/app/serve.py` entry point loads the unified `.env` **before** any
+    app import (database.py and llm/config.py read env at import time), inits
+    the DB, and runs uvicorn with HOST/PORT/RELOAD from env.
+  - `database.py` `DATABASE_URL` is now env-driven and CWD-independent (default
+    resolves to `backend/data/dnd_game.db` via `__file__`, preserving the
+    existing game DB).
+  - Fixed standalone migrate scripts (`DB_PATH` was `parent.parent` → `parent`).
+  - Removed `run.py`, `requirements.txt`, `backend/.env.example`; broadened
+    `.gitignore` for root `.venv` + unified `.env`.
+  - Updated README/AGENTS to `uv sync` / `uv run backend` / `uv run pytest`.
+
+- [x] **Repair broken afflictions API** — every endpoint 500'd in production
+  - Root cause: `game_state`/`story_log` (Text JSON columns) were treated as
+    live Python dicts/lists instead of JSON strings — every endpoint crashed
+    on `.get()` / `.append()`.
+  - `json.loads`/`dumps` in `_load_affliction_status`,
+    `_save_affliction_status`, and `_log_to_story` (preserving other
+    `game_state` keys).
+  - Moved `_log_to_story` **before** `db.commit` in all four mutating
+    endpoints so story entries are actually persisted.
+  - Reordered `/registry/{affliction_id}` below static `/registry/diseases`
+    and `/registry/poisons` routes (FastAPI was capturing them as the param).
+  - Zero-onset afflictions now start at stage 0 so their effects apply on
+    contraction instead of only after advancing.
+  - Cured afflictions are kept (filtered by `active_afflictions`, cleaned up
+    on advance) so the "already cured" 400 branch is reachable; re-contracting
+    a cured affliction replaces the stale entry to avoid duplicates.
+  - Fixed stale `test_afflictions_api.py`: `char_class`/`classes` fixture,
+    valid `GameSave` (`name`/`world_id`, JSON strings), `/api/game` registry
+    paths, and `json.loads` column reads.
+  - Verified: **1820 backend tests passing, 0 failing** (was 1764; +56 from
+    now-collecting afflictions tests + the new engine/API fixes).
+
+## Completed (previous runs)
 - [x] **Add mounts/vehicles engine — mounted travel + mounted combat**
   - The top unchecked DESIGN.md "Future" engine item: PHB ch.5 (mounts),
     ch.8 (travel pace), ch.9 (mounted combat).
