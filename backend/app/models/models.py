@@ -45,6 +45,7 @@ class Character(Base):
     char_class = Column(String(50), nullable=False)  # Kept for backward compatibility
     level = Column(Integer, default=1)  # Total level (sum of all class levels)
     classes = Column(Text, default="{}")  # JSON: {"class_name": level, ...}
+    subclass = Column(Text, default="{}")  # JSON: {"class_name": subclass_id, ...}
     background = Column(String(100), nullable=True)
     alignment = Column(String(50), nullable=True)  # DnD 5e alignment (lawful_good, etc.)
 
@@ -111,6 +112,27 @@ class Character(Base):
             return classes_dict
         except (json.JSONDecodeError, ValueError):
             return {self.char_class.lower(): self.level or 1}
+
+    @property
+    def subclass_dict(self) -> dict[str, str]:
+        """Get subclass choices as a dictionary {class_name: subclass_id}.
+
+        Backward compatible: defaults to ``{}`` for old rows without the
+        column or with invalid JSON.
+        """
+        try:
+            data = json.loads(self.subclass or "{}")
+            if isinstance(data, dict):
+                return {str(k).lower(): str(v) for k, v in data.items()}
+            return {}
+        except (json.JSONDecodeError, ValueError, TypeError):
+            return {}
+
+    @property
+    def primary_subclass_id(self) -> str | None:
+        """The subclass id for the primary class (highest level), or None."""
+        primary = self.primary_class
+        return self.subclass_dict.get(primary)
 
 
 class World(Base):
