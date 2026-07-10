@@ -29,15 +29,20 @@ cd frontend && npm install && npm run dev
 ```
 
 ## Build Priorities (in order)
-1. Backend: project scaffold + FastAPI app structure + DB models
-2. Backend: LLM orchestrator + DM prompt system
-3. Backend: World generation pipeline
-4. Backend: Character creation API + game state management
-5. Backend: Combat/dice engine
-6. Frontend: Character creation wizard
-7. Frontend: Game/narration UI
-8. Frontend: Combat tracker
-9. Integration: Full gameplay loop
+1. ✅ Backend: project scaffold + FastAPI app structure + DB models
+2. ✅ Backend: LLM orchestrator + DM prompt system
+3. ✅ Backend: World generation pipeline
+4. ✅ Backend: Character creation API + game state management
+5. ✅ Backend: Combat/dice engine
+6. ✅ Frontend: Character creation wizard
+7. ✅ Frontend: Game/narration UI
+8. ✅ Frontend: Combat tracker
+9. ✅ Integration: Full gameplay loop
+10. 🚧 Frontend: Visual map rendering
+11. 🚧 Images: AI-generated scene/NPC images
+12. 🚧 Audio: Voice narration (TTS DM)
+13. ⏳ Future: Multiplayer (party-based)
+14. ⏳ Future: Advanced rules refinements (feat expansion, subclasses)
 
 ## Rules
 - Keep the LLM provider configurable — don't hardcode OpenAI or Claude

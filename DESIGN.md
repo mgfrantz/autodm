@@ -87,8 +87,8 @@ A browser-based single-player DnD game where an LLM acts as the Dungeon Master. 
 ## Future (Post-MVP)
 - Multiplayer (party-based)
 - Visual map rendering
-- AI-generated images for scenes/NPCs
-- Voice narration (TTS DM)
+- AI-generated images for scenes/NPCs (in flight)
+- Voice narration (TTS DM) (in flight)
 - Homebrew content support
 - Advanced rules (multiclassing, feats)
 
