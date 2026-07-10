@@ -490,6 +490,7 @@ def get_game_state(game_id: int, db: Session = Depends(get_db)):
             "level": save.character.level,
             "hp": save.character.current_hp,
             "max_hp": save.character.max_hp,
+            "gold": save.character.gold,
             "alignment": save.character.alignment,
             "background": save.character.background,
         },

@@ -46,6 +46,7 @@ export interface GameState {
     level: number;
     hp: number;
     max_hp: number;
+    gold?: number;
     alignment?: string | null;
     background?: string | null;
   };
@@ -1239,4 +1240,32 @@ export interface InsightResult {
   detected: boolean;
   contested: boolean;
   description: string;
+}
+
+// === Downtime Activities (PHB ch.8 + XGE ch.2 between-adventures system) ===
+
+/** A downtime activity's metadata (GET /downtime/activities). */
+export interface DowntimeActivity {
+  id: string;
+  name: string;
+  source: 'PHB' | 'XGE';
+  category: string;
+  description: string;
+  min_days: number;
+  gold_per_day: number;
+  requires_tool: string | null;
+  requires_profession_tool: boolean;
+}
+
+/** Result of resolving one downtime activity (POST /downtime/resolve). */
+export interface DowntimeResolveResult {
+  activity: string;
+  days: number;
+  gold_delta: number;
+  narration: string;
+  complication: string | null;
+  details: Record<string, unknown>;
+  character_gold: number;
+  exhaustion: number | null;
+  proficiency_granted: string | null;
 }

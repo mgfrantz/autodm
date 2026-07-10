@@ -15,6 +15,7 @@ import EnvironmentPanel from '../components/EnvironmentPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
 import TrapsPanel from '../components/TrapsPanel'
 import SocialPanel from '../components/SocialPanel'
+import DowntimePanel from '../components/DowntimePanel'
 import SpellsPanel from '../components/SpellsPanel'
 import FeatsPanel from '../components/FeatsPanel'
 import ExhaustionPanel from '../components/ExhaustionPanel'
@@ -68,6 +69,7 @@ export default function GameView() {
   const [showSavingThrows, setShowSavingThrows] = useState(false)
   const [showTraps, setShowTraps] = useState(false)
   const [showSocial, setShowSocial] = useState(false)
+  const [showDowntime, setShowDowntime] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -510,6 +512,13 @@ export default function GameView() {
               title="Reaction rolls, influence checks & insight (DMG ch.4)"
             >
               💬 <span className="hidden sm:inline">Social</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowDowntime(true)}
+              title="Between-adventures activities: carouse, crime, gamble, craft, train (PHB ch.8 / XGE ch.2)"
+            >
+              ⏳ <span className="hidden sm:inline">Downtime</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1494,6 +1503,38 @@ export default function GameView() {
             </div>
             <SocialPanel
               gameId={gameState.game_id}
+              onNarration={(entry) => addToStory(entry)}
+              onChanged={async () => {
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Downtime overlay */}
+      {showDowntime && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowDowntime(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">⏳ Downtime</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowDowntime(false)}
+              >
+                ×
+              </button>
+            </div>
+            <DowntimePanel
+              gameId={gameState.game_id}
+              gold={gameState.character?.gold ?? 0}
               onNarration={(entry) => addToStory(entry)}
               onChanged={async () => {
                 const state = await getGameState(gameState.game_id)

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -921,5 +921,55 @@ export const insightNPC = async (
     ...(opts.npcPassiveDeception !== undefined ? { npc_passive_deception: opts.npcPassiveDeception } : {}),
     ...(opts.insightRoll !== undefined ? { insight_roll: opts.insightRoll } : {}),
   });
+  return res.data;
+};
+
+// === Downtime Activities (PHB ch.8 + XGE ch.2 — between-adventures system) ===
+
+/** All available downtime activities (carousing, crime, gambling, ...). */
+export const getDowntimeActivities = async (
+  gameId: number,
+): Promise<DowntimeActivity[]> => {
+  const res = await API.get<{ activities: DowntimeActivity[] }>(`/game/${gameId}/downtime/activities`);
+  return res.data.activities;
+};
+
+/** Optional knobs for a downtime resolution; all are passed straight through. */
+export interface DowntimeResolveOptions {
+  activity: string;
+  modifier?: number;
+  dc?: number;
+  days?: number;
+  workweeks?: number;
+  roll?: number;
+  rolls?: number[];
+  d6?: number;
+  complication_d20?: number;
+  save_roll?: number;
+  tier?: 'lower' | 'middle' | 'upper';
+  wager?: number;
+  games?: number;
+  casing_dc?: number;
+  heist_dc?: number;
+  heist_checks?: number;
+  casing_modifier?: number;
+  heist_modifier?: number;
+  casing_roll?: number;
+  heist_rolls?: number[];
+  item_value?: number;
+  progress_before?: number;
+  has_proficiency?: boolean;
+  target?: string;
+  target_kind?: 'tool' | 'language';
+  tool_proficiency?: boolean;
+  conditions?: string[];
+}
+
+/** Resolve one downtime activity, applying gold/exhaustion/training effects. */
+export const resolveDowntime = async (
+  gameId: number,
+  opts: DowntimeResolveOptions,
+): Promise<DowntimeResolveResult> => {
+  const res = await API.post<DowntimeResolveResult>(`/game/${gameId}/downtime/resolve`, opts);
   return res.data;
 };
