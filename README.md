@@ -96,6 +96,13 @@ npm run dev
 
 Then open your browser to `http://localhost:5173` (dev) or `http://localhost:8000/static/` (production).
 
+> **Backend port:** The Vite dev server proxies `/api` to `http://localhost:8000`
+> by default (matching `.env.example`'s `PORT`). If your backend runs on a different
+> port (the project-root `.env` `PORT`), start the frontend with that origin, e.g.
+> `API_URL=http://localhost:8001 npm run dev` (run from `frontend/`), then reload
+> http://localhost:5173. Restart `npm run dev` after changing `API_URL` — proxy
+> config is not hot-reloaded.
+
 ## Configuration
 
 The LLM provider is configured via environment variables in the project-root `.env`:
