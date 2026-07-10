@@ -1266,7 +1266,7 @@
   - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
-- [ ] **Polish & integration follow-ups** (smaller, can be picked next):
+- [x] **Polish & integration follow-ups** ✅
   - [x] Add a frontend integration test exercising the feats panel's learn flow
     *(done — Vitest + @testing-library/react framework added; FeatsPanel.test.tsx
     covers the full learn flow: simple feat, half-feat default ability, ability
@@ -1287,7 +1287,7 @@
     button into the story log narration (surface the result line in the DM bubble)
     *(done — ExhaustionPanel.onNarration → GameView addToStory; gain/recover/death
     lines; no-op sets stay silent; 4 integration tests)*
-- [ ] Any remaining DESIGN.md "Future" engine features the DM should model.
+- [x] Any remaining DESIGN.md "Future" engine features the DM should model. ✅
   Exhaustion (done) was the headline example; remaining candidates:
   - [x] Mount/vehicle travel & mounted combat (travel-time + speed modifiers,
     lance/weapon rules while mounted)
@@ -1348,6 +1348,36 @@
  iteration limit before committing the frontend portion; committed manually.
 
 ## Completed This Run
+- [x] **Add frontend downtime panel — between-adventures UI (PHB ch.8 / XGE ch.2)**
+  - New `DowntimePanel.tsx` (~400 lines): complete downtime console over the
+    existing `/api/game/{id}/downtime` API
+    * Activity picker (11 activities: carousing, crime, gambling, pit fighting,
+      research, relaxation, crafting, profession, work, training, religion)
+    * Purse readout showing current gold
+    * Contextual parameters per activity (tier, workweeks, days, wager, games,
+      item value, proficiency flag, target tool/language)
+    * Resolve button with live gold/exhaustion/proficiency result flash
+    * DM narration hook (narrates results into the story bubble)
+  - `GameView.tsx`: ⏳ Downtime header button + overlay modal; passes gold from
+    `game_state.character` and refreshes state after resolution
+  - `backend/app/api/game.py`: `GET /{id}/state` now includes `character.gold`
+  - `frontend/src/types/index.ts`: `DowntimeActivity`, `DowntimeResolveResult` types
+  - `frontend/src/stores/api.ts`: `getDowntimeActivities`, `resolveDowntime` API clients
+  - Verified: `tsc --noEmit` clean, `vite build` clean; **2073 backend tests
+    passing, 0 failing**
+
+- [x] **Commit pending downtime changes from previous run**
+  - The frontend `DowntimePanel.tsx` component and related API integration
+    changes were staged but not committed in the prior run (hit iteration limit).
+  - Verified TypeScript compilation and backend tests, then committed.
+  - Full downtime system now complete: engine (59 tests), API (28 tests), and UI.
+
+- [x] **Mark completed items in PROGRESS.md**
+  - Checked off "Polish & integration follow-ups" (all sub-items were done)
+  - Checked off "Any remaining DESIGN.md 'Future' engine features" (all sub-items done)
+  - Only remaining items are BLOCKED due to external service requirements
+
+## Previous Run
 - [x] **Add starvation/dehydration survival engine + API**
   - Implements DnD 5e food & water survival rules (PHB ch.8 / DMG ch.5),
     closing the loop the environment engine opened: extreme heat/cold already
