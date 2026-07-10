@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -844,5 +844,82 @@ export const removeTrap = async (
 /** Get a DM-friendly summary of traps in the current area. */
 export const getTrapsDmSummary = async (gameId: number): Promise<TrapDmSummary> => {
   const res = await API.get<TrapDmSummary>(`/game/${gameId}/traps/dm-summary`);
+  return res.data;
+};
+
+// === Social Interaction (DMG ch.4/ch.8 — reaction, influence, insight) ===
+
+/** List known NPCs with their DMG attitude, trust, and influence-DC. */
+export const getSocialNPCs = async (gameId: number): Promise<SocialNPC[]> => {
+  const res = await API.get<{ npcs: SocialNPC[] }>(`/game/${gameId}/social/npcs`);
+  return res.data.npcs;
+};
+
+/** Get a single NPC's interaction summary (defaults to indifferent if unknown). */
+export const getSocialNPC = async (gameId: number, npcName: string): Promise<SocialNPC> => {
+  const res = await API.get<SocialNPC>(`/game/${gameId}/social/npcs/${encodeURIComponent(npcName)}`);
+  return res.data;
+};
+
+/** Roll an initial-reaction (2d6 + CHA) for a newly-met NPC. */
+export const rollSocialReaction = async (
+  gameId: number,
+  npcName: string,
+  charismaModifier?: number,
+  reactionDice?: [number, number],
+): Promise<ReactionResult> => {
+  const res = await API.post<ReactionResult>(`/game/${gameId}/social/reaction`, {
+    npc_name: npcName,
+    ...(charismaModifier !== undefined ? { charisma_modifier: charismaModifier } : {}),
+    ...(reactionDice ? { reaction_dice: reactionDice } : {}),
+  });
+  return res.data;
+};
+
+/** Make a Charisma check to shift an NPC's attitude one step. */
+export const influenceNPC = async (
+  gameId: number,
+  npcName: string,
+  skill: string,
+  opts: {
+    skillModifier?: number;
+    conditions?: string[];
+    forcedAdvantage?: boolean;
+    forcedDisadvantage?: boolean;
+    roll?: number;
+    failMarginForWorsen?: number;
+  } = {},
+): Promise<InfluenceResult> => {
+  const res = await API.post<InfluenceResult>(`/game/${gameId}/social/influence`, {
+    npc_name: npcName,
+    skill,
+    ...(opts.skillModifier !== undefined ? { skill_modifier: opts.skillModifier } : {}),
+    ...(opts.conditions !== undefined ? { conditions: opts.conditions } : {}),
+    ...(opts.forcedAdvantage ? { forced_advantage: true } : {}),
+    ...(opts.forcedDisadvantage ? { forced_disadvantage: true } : {}),
+    ...(opts.roll !== undefined ? { roll: opts.roll } : {}),
+    ...(opts.failMarginForWorsen !== undefined ? { fail_margin_for_worsen: opts.failMarginForWorsen } : {}),
+  });
+  return res.data;
+};
+
+/** An Insight check against an NPC's (passive or rolled) Deception. */
+export const insightNPC = async (
+  gameId: number,
+  npcName: string,
+  opts: {
+    insightModifier?: number;
+    npcDeceptionTotal?: number;
+    npcPassiveDeception?: number;
+    insightRoll?: number;
+  } = {},
+): Promise<InsightResult> => {
+  const res = await API.post<InsightResult>(`/game/${gameId}/social/insight`, {
+    npc_name: npcName,
+    ...(opts.insightModifier !== undefined ? { insight_modifier: opts.insightModifier } : {}),
+    ...(opts.npcDeceptionTotal !== undefined ? { npc_deception_total: opts.npcDeceptionTotal } : {}),
+    ...(opts.npcPassiveDeception !== undefined ? { npc_passive_deception: opts.npcPassiveDeception } : {}),
+    ...(opts.insightRoll !== undefined ? { insight_roll: opts.insightRoll } : {}),
+  });
   return res.data;
 };

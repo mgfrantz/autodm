@@ -1175,3 +1175,68 @@ export interface TrapDmSummary {
   discovered: number;
   disarmed: number;
 }
+
+/* ------------------------------------------------------------------ *
+ * Social Interaction (DMG ch.4/ch.8 — reaction, influence, insight)
+ * ------------------------------------------------------------------ */
+
+/** A DMG five-level NPC attitude (hostile → helpful). */
+export type SocialAttitude = 'hostile' | 'unfriendly' | 'indifferent' | 'friendly' | 'helpful';
+
+/** An NPC's current interaction stance, with the influence-DC to improve it. */
+export interface SocialNPC {
+  npc_name: string;
+  attitude: SocialAttitude;
+  trust: number;
+  influence_dc: number;
+  target_attitude: SocialAttitude;
+  summary: string;
+}
+
+/** Result of an initial-reaction roll (2d6 + CHA mod). */
+export interface ReactionResult {
+  npc_name: string;
+  character_id: number;
+  rolls: number[];
+  modifier: number;
+  total: number;
+  attitude: SocialAttitude;
+  description: string;
+  trust: number;
+}
+
+/** Result of a Charisma influence check (improve / hold / worsen attitude). */
+export interface InfluenceResult {
+  npc_name: string;
+  character_id: number;
+  skill: string;
+  current_attitude: SocialAttitude;
+  target_attitude: SocialAttitude;
+  dc: number;
+  roll: number;
+  modifier: number;
+  total: number;
+  advantage: boolean;
+  disadvantage: boolean;
+  success: boolean;
+  worsened: boolean;
+  new_attitude: SocialAttitude;
+  trust_delta: number;
+  auto_success: boolean;
+  description: string;
+  trust: number;
+  stored_attitude: string;
+}
+
+/** Result of an Insight check vs an NPC's Deception. */
+export interface InsightResult {
+  npc_name: string;
+  character_id: number;
+  insight_total: number;
+  insight_roll: number | null;
+  insight_modifier: number;
+  deception_total: number;
+  detected: boolean;
+  contested: boolean;
+  description: string;
+}

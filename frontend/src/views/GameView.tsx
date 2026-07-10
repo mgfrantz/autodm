@@ -13,12 +13,13 @@ import AlignmentPanel from '../components/AlignmentPanel'
 import LanguagesPanel from '../components/LanguagesPanel'
 import EnvironmentPanel from '../components/EnvironmentPanel'
 import CombatActionsPanel from '../components/CombatActionsPanel'
+import TrapsPanel from '../components/TrapsPanel'
+import SocialPanel from '../components/SocialPanel'
 import SpellsPanel from '../components/SpellsPanel'
 import FeatsPanel from '../components/FeatsPanel'
 import ExhaustionPanel from '../components/ExhaustionPanel'
 import SurvivalPanel from '../components/SurvivalPanel'
 import SavingThrowsPanel from '../components/SavingThrowsPanel'
-import TrapsPanel from '../components/TrapsPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
 const ALIGNMENT_LABELS: Record<string, string> = {
@@ -66,6 +67,7 @@ export default function GameView() {
   const [showSurvival, setShowSurvival] = useState(false)
   const [showSavingThrows, setShowSavingThrows] = useState(false)
   const [showTraps, setShowTraps] = useState(false)
+  const [showSocial, setShowSocial] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -501,6 +503,13 @@ export default function GameView() {
               title="Place, detect, disarm & trigger traps (DMG ch.5)"
             >
               🪤 <span className="hidden sm:inline">Traps</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowSocial(true)}
+              title="Reaction rolls, influence checks & insight (DMG ch.4)"
+            >
+              💬 <span className="hidden sm:inline">Social</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1456,6 +1465,37 @@ export default function GameView() {
               onChanged={async () => {
                 // A trap can deal damage or apply conditions — refresh state
                 // so the sidebar / HP bar stay in sync.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Social Interaction overlay */}
+      {showSocial && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowSocial(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">💬 Social Interaction</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowSocial(false)}
+              >
+                ×
+              </button>
+            </div>
+            <SocialPanel
+              gameId={gameState.game_id}
+              onNarration={(entry) => addToStory(entry)}
+              onChanged={async () => {
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}
