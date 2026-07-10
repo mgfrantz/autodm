@@ -1,9 +1,37 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅
-## TEST SUITE FULLY GREEN (1906 backend + 12 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅
+## TEST SUITE FULLY GREEN (1986 backend + 20 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
 
 ## Completed This Run
+- [x] **Add social interaction engine + API + UI — DMG ch.4/ch.8 (the third DnD pillar)**
+  - Combat and Exploration had resolution engines; **Social Interaction** (one
+    of the three DnD 5e pillars) had none. `world_state` tracked NPC
+    attitude/trust but provided no DMG adjudication rules. This run adds the
+    full social-resolution stack and an in-game panel.
+  - `engine/social.py` (pure, ~560 lines): three resolution layers —
+    (1) **Reaction roll** (2d6 + CHA mod → DMG attitude band), (2) **Influence
+    check** (Charisma check vs a DC keyed to the NPC's *current* attitude;
+    success shifts one step friendlier, fail-by-5+ or nat-1 worsens; auto-
+    success when already helpful), (3) **Insight-vs-Deception contest** (active
+    or passive). Condition effects modelled (charmed→advantage;
+    frightened/poisoned→disadvantage; adv+disadv cancel). A trust-score bridge
+    (`attitude_for_trust` / `trust_for_attitude`) keeps the DMG five-level
+    scale and the `world_state` seven-band scale in sync. All dice injectable
+    for determinism.
+  - `api/social.py` (mounted `/api/game`, 5 endpoints): list/get NPCs with DMG
+    attitude + influence-DC; POST `/reaction` (rolls + persists initial
+    disposition on the NPC relationship); POST `/influence` (uses the
+    character's real skill modifier via the skills engine, auto-detects combat
+    conditions from game_state, syncs attitude/trust to the NPC relationship);
+    POST `/insight`. All mutations log to the story.
+  - Frontend `SocialPanel.tsx`: known-NPC roster with attitude/trust/influence-
+    DC chips; reaction-roll, influence-check (4-skill picker), and insight
+    consoles; result-flash + story narration. Wired into GameView via a 💬
+    Social header button + overlay modal.
+  - Verified: **1986 backend tests passing, 0 failing** (+57 engine, +23 API);
+    `tsc --noEmit` clean; 20 frontend tests passing.
+
 - [x] **Convert backend to uv-managed project** — unified root pyproject.toml + .env
   - Migrated from pip/venv/requirements.txt to **uv**: a single root
     `pyproject.toml` (hatchling ships `backend/app` as `app`; `backend`
@@ -1284,6 +1312,15 @@
     + misc effects, save-for-half), 15 DMG sample traps (mechanical + magical)
     *(done — engine/traps.py + api/traps.py; 15-trap registry; 50 engine + 36
     API tests, 1906 backend total)*
+  - [x] Social interaction resolution (DMG ch.4/ch.8) — the third DnD pillar:
+    reaction rolls (2d6+CHA → attitude), influence checks (Charisma vs
+    attitude-keyed DC; improve/hold/worsen), insight-vs-deception contests,
+    condition effects, trust-score bridge to world_state NPC relationships
+    *(done — engine/social.py pure engine + api/social.py + SocialPanel.tsx;
+    5 endpoints (list/get NPCs, reaction, influence, insight) synced to NPC
+    relationships + story log; uses the character's real skill modifiers +
+    auto-detects combat conditions; 57 engine + 23 API tests, 1986 backend
+    total; tsc clean, 20 frontend tests)*
   - [x] Starvation/dehydration as exhaustion drivers (the environment engine
     already computes exhaustion saves; wire food/water tracking to add levels)
     *(done — engine/starvation.py pure engine: SurvivalState counters +
