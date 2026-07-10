@@ -1,9 +1,41 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅
-## TEST SUITE FULLY GREEN (2154 backend + 24 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅
+## TEST SUITE FULLY GREEN (2170 backend + 25 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
 
 ## Completed This Run
+- [x] **Expand feat registry — 16 PHB general feats + 14 XGE race-specific feats (AGENTS.md build priority #14: feat expansion)**
+  - The feat registry had 23 feats; build priority #14 called for "feat
+    expansion". This run more than doubles it to **53 feats** and adds a
+    **race prerequisite** system so XGE race-specific feats can be gated.
+  - **Race prerequisite engine**: `FeatPrerequisite.requires_race` (list of
+    acceptable races) + `_matches_race()` helper with subrace-tolerant
+    matching — `"High Elf"` matches `["elf"]`, `"Half-Elf"` matches
+    `["elf","half-elf"]`, but `"High Elf"` does **not** match `["wood elf"]`.
+    Threaded through `check_prerequisites` (new optional `race` param) and
+    `list_available_feats`; the API layer passes `character.race` to both the
+    available-feats and learn-feat endpoints. `_prerequisite_to_dict` /
+    `Feat.to_dict()` expose `requires_race` for the frontend.
+  - **16 PHB general feats**: Actor, Charger, Durable, Elemental Adept
+    (caster-gated), Grappler (Str 13+), Inspiring Leader (Cha 13+), Lightly
+    Armored, Linguist, Magic Initiate, Martial Adept, Medium Armor Master
+    (medium-armor-gated), Mounted Combatant, Savage Attacker, Shield Master,
+    Skulker, Weapon Master — each with structured `combat_modifiers` metadata.
+  - **14 XGE race-specific feats**: Bountiful Luck (halfling), Dragon Fear /
+    Dragon Hide (dragonborn), Dwarven Fortitude / Squat Nimbleness (dwarf),
+    Elven Accuracy (elf/half-elf), Fade Away (gnome), Fey Teleportation (high
+    elf), Flames of Phlegethos / Infernal Constitution (tiefling), Orcish Fury
+    (half-orc), Prodigy (human/half-elf/half-orc), Second Chance (halfling),
+    Wood Elf Magic (wood elf) — all with `source="Xanathar's Guide to
+    Everything"`.
+  - **Frontend**: `FeatPrerequisite` TS type gains `requires_race`;
+    `prerequisiteText()` renders race requirements (e.g. `"Dwarf"`, `"Elf /
+    Half-elf"`); new FeatsPanel test expands a race-gated card and verifies the
+    Requires line.
+  - Verified: **2170 backend tests passing, 0 failing** (feat engine 26→57,
+    +31); `tsc --noEmit` clean; `vite build` clean (124 modules); **25 frontend
+    tests** (+1 race-prerequisite display test).
+
 - [x] **Add subclass system (DnD 5e archetypes) — AGENTS.md build priority #14**
   - Every 5e class gains a **subclass** at a class-specific level (1/2/3), but
     until now the engine surfaced only the *choice point* (e.g. `("fighter", 3):
