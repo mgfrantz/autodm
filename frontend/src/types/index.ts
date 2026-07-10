@@ -900,6 +900,7 @@ export interface FeatPrerequisite {
   requires_caster: boolean;
   requires_class: string | null;
   requires_armor_proficiency: string | null;
+  requires_race: string[] | null; // XGE race feats; char must match one
 }
 
 /** A feat's full definition (registry entry). */

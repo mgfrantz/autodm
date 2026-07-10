@@ -86,7 +86,8 @@ function prerequisiteText(feat: FeatInfo): string | null {
     Object.keys(pre.min_abilities).length === 0 &&
     !pre.requires_caster &&
     !pre.requires_class &&
-    !pre.requires_armor_proficiency
+    !pre.requires_armor_proficiency &&
+    !pre.requires_race
   ) {
     return null
   }
@@ -99,6 +100,9 @@ function prerequisiteText(feat: FeatInfo): string | null {
   if (pre.requires_class) parts.push(`${capitalize(pre.requires_class)} class`)
   if (pre.requires_armor_proficiency) {
     parts.push(`${capitalize(pre.requires_armor_proficiency)} armor prof`)
+  }
+  if (pre.requires_race && pre.requires_race.length > 0) {
+    parts.push(pre.requires_race.map(capitalize).join(' / '))
   }
   return parts.join(' · ')
 }

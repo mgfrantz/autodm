@@ -263,3 +263,63 @@ describe('FeatsPanel — learn flow', () => {
     expect(await screen.findByText(SUCCESS('Athlete'))).toBeInTheDocument()
   })
 })
+
+describe('FeatsPanel — race prerequisite display', () => {
+  const DWARVEN_FORTITUDE: FeatInfo = {
+    ...TOUGH,
+    name: 'Dwarven Fortitude',
+    description: 'Increase your Constitution by 1. Dodge to spend a Hit Die.',
+    ability_bonus_choices: ['constitution'],
+    hp_per_level: 0,
+    prerequisite: {
+      min_level: 1,
+      min_abilities: {},
+      requires_caster: false,
+      requires_class: null,
+      requires_armor_proficiency: null,
+      requires_race: ['dwarf'],
+    },
+    source: "Xanathar's Guide to Everything",
+  }
+
+  const ELVEN_ACCURACY: FeatInfo = {
+    ...TOUGH,
+    name: 'Elven Accuracy',
+    description: 'Reroll one advantage die on attack rolls.',
+    ability_bonus_choices: ['dexterity', 'intelligence', 'wisdom', 'charisma'],
+    hp_per_level: 0,
+    prerequisite: {
+      min_level: 1,
+      min_abilities: {},
+      requires_caster: false,
+      requires_class: null,
+      requires_armor_proficiency: null,
+      requires_race: ['elf', 'half-elf'],
+    },
+    source: "Xanathar's Guide to Everything",
+  }
+
+  beforeEach(() => {
+    vi.mocked(listFeats).mockResolvedValue([DWARVEN_FORTITUDE, ELVEN_ACCURACY])
+    vi.mocked(getCharacterFeats).mockResolvedValue(BEFORE)
+    vi.mocked(getAvailableFeats).mockResolvedValue([DWARVEN_FORTITUDE, ELVEN_ACCURACY])
+    vi.mocked(learnFeat).mockResolvedValue(TOUGH_RESULT)
+  })
+
+  it('shows the race requirement in the prerequisite text', async () => {
+    render(<FeatsPanel characterId={1} />)
+
+    // Dwarven Fortitude card renders; expand it to see the Requires line.
+    const dwarfBtn = await screen.findByRole('button', { name: /Dwarven Fortitude/i })
+    expect(dwarfBtn).toBeInTheDocument()
+    fireEvent.click(dwarfBtn)
+
+    // The expanded card shows "Requires: … Dwarf".
+    expect(await screen.findByText(/Requires:.*Dwarf/i)).toBeInTheDocument()
+
+    // Elven Accuracy lists both Elf and Half-Elf.
+    const elfBtn = screen.getByRole('button', { name: /Elven Accuracy/i })
+    fireEvent.click(elfBtn)
+    expect(await screen.findByText(/Requires:.*Elf\s*\/\s*Half-elf/i)).toBeInTheDocument()
+  })
+})
