@@ -122,6 +122,12 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
             acrobatics_bonus=enemy_data.get("acrobatics_bonus"),
             cr=enemy_data.get("cr", 0.0),
             damage_modifiers=enemy_data.get("damage_modifiers", []),
+            # Legendary Actions / Lair Actions (Monster Manual p. 11). Optional and
+            # default to off so non-legendary foes are unaffected.
+            is_legendary=bool(enemy_data.get("is_legendary", False)),
+            legendary_actions=list(enemy_data.get("legendary_actions", [])),
+            legendary_budget_max=int(enemy_data.get("legendary_budget_max", 0) or 0),
+            legendary_budget_used=0,
         )
         encounter.add_combatant(enemy)
 
@@ -130,6 +136,12 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
 
     # Attach the current scene environment so combat respects weather/light.
     encounter.set_environment(_environment_from_state(game_state))
+
+    # Carry over any lair actions declared on the first enemy (a boss fighting
+    # in its lair). Lair actions fire on initiative 20 each round.
+    first_enemy = request.enemies[0] if request.enemies else {}
+    if first_enemy.get("lair_actions"):
+        encounter.lair_actions = list(first_enemy["lair_actions"])
 
     # Update game state
     game_state["in_combat"] = True

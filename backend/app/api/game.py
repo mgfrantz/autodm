@@ -220,6 +220,42 @@ def _subclass_for_dm(character) -> str:
     return subclasses.subclass_summary_for_dm(primary, sub_id, character.level)
 
 
+def _boss_for_dm(game_state: dict) -> str:
+    """Render the active combat's legendary/lair creatures for DM context.
+
+    When the party is fighting a legendary boss, surfaces the creature's
+    legendary-action budget + remaining actions and any lair actions, so the
+    DM narrates off-turn legendary strikes and lair hazards correctly. Returns
+    'none' outside of combat or when no legendary creature is present.
+    """
+    if not game_state.get("in_combat", False):
+        return "none"
+    from app.engine import legendary as legendary_mod
+    combat = game_state.get("combat") or {}
+    lair_raw = combat.get("lair_actions") or []
+    lair = [legendary_mod.LairAction.from_dict(a) for a in lair_raw]
+    lines: list[str] = []
+    for c in combat.get("combatants", []):
+        if not legendary_mod.is_legendary(c):
+            continue
+        state = legendary_mod.LegendaryState(
+            budget_max=c.get("legendary_budget_max", 3) or 3,
+            budget_used=c.get("legendary_budget_used", 0) or 0,
+        )
+        summary = legendary_mod.legendary_summary_for_dm(
+            type("X", (), {"name": c.get("name", "Creature"),
+                            "is_legendary": True,
+                            "legendary_actions": c.get("legendary_actions", []),
+                            "legendary_budget_max": c.get("legendary_budget_max", 3),
+                            "lair_actions": []})()
+        )
+        lines.append(f"{c.get('name', 'Creature')} — {summary} [{state.remaining}/{state.budget_max} left]")
+    if lair:
+        names = ", ".join(a.name for a in lair)
+        lines.append(f"Lair actions (initiative {legendary_mod.LAIR_INITIATIVE_COUNT}): {names}")
+    return "; ".join(lines) if lines else "none"
+
+
 @router.post("/{game_id}/start/stream")
 async def start_adventure_stream(game_id: int, session_factory=Depends(get_session_factory)):
     """Stream the opening narration to the client via Server-Sent Events.
@@ -330,6 +366,7 @@ Sustenance: {_survival_for_dm(game_state, character)}
 Mount: {_mount_for_dm(game_state)}
 Downtime: {_downtime_for_dm(game_state, character)}
 Subclass: {_subclass_for_dm(character)}
+Boss: {_boss_for_dm(game_state)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -417,6 +454,7 @@ Sustenance: {_survival_for_dm(game_state, character)}
 Mount: {_mount_for_dm(game_state)}
 Downtime: {_downtime_for_dm(game_state, character)}
 Subclass: {_subclass_for_dm(character)}
+Boss: {_boss_for_dm(game_state)}
 """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(

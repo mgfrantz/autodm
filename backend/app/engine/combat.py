@@ -14,7 +14,7 @@ reconstruct it with ``Encounter.from_dict`` for persistence.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from app.engine import conditions as conditions_mod
 from app.engine import damage_types as damage_types_mod
@@ -27,6 +27,11 @@ from app.engine.concentration import (
     end_concentration,
     ConcentrationCheckResult,
 )
+
+if TYPE_CHECKING:
+    # Forward reference only — avoids a runtime import cycle. The lair-action
+    # machinery imports this module's engine lazily at call time.
+    from app.engine.legendary import LairActionResult
 
 
 @dataclass
@@ -124,6 +129,16 @@ class Combatant:
     # backward compatibility. ``apply_damage_modifiers`` resolves them in
     # resolve_attack before damage is applied. See engine/damage_types.py.
     damage_modifiers: list[dict] = field(default_factory=list)
+    # --- Legendary Actions / Lair Actions (Monster Manual p. 11) ---
+    # Boss monsters act off-turn. ``legendary_actions`` is a serialized list
+    # of LegendaryAction dicts (engine/legendary.py). ``legendary_budget_max``
+    # is the per-round point pool (typically 3); ``legendary_budget_used``
+    # tracks spending and resets at the start of the creature's turn. All
+    # default to empty/zero for backward compatibility (non-legendary foes).
+    is_legendary: bool = False
+    legendary_actions: list[dict] = field(default_factory=list)
+    legendary_budget_max: int = 0
+    legendary_budget_used: int = 0
     def __post_init__(self) -> None:
         # Default current HP to max when not explicitly set.
         # Default current HP to max when not explicitly set.
@@ -170,8 +185,12 @@ class Combatant:
         """Called when this combatant's turn begins.
 
         Dodge lasts *until the start of your next turn*, so it is cleared here.
+        Legendary creatures also regain all spent legendary actions at the
+        start of their turn (Monster Manual p. 11).
         """
         self.dodging = False
+        if self.legendary_budget_max > 0:
+            self.legendary_budget_used = 0
 
     def end_turn(self) -> None:
         """Called when this combatant's turn ends.
@@ -277,6 +296,10 @@ class Combatant:
             "concentration_spell_id": self.concentration_spell_id,
             "exhaustion": self.exhaustion,
             "damage_modifiers": list(self.damage_modifiers),
+            "is_legendary": self.is_legendary,
+            "legendary_actions": [dict(a) for a in self.legendary_actions],
+            "legendary_budget_max": self.legendary_budget_max,
+            "legendary_budget_used": self.legendary_budget_used,
             "attacks": [
                 {
                     "name": a.name,
@@ -326,6 +349,10 @@ class Combatant:
             concentration_spell_id=data.get("concentration_spell_id", ""),
             exhaustion=data.get("exhaustion", 0),
             damage_modifiers=list(data.get("damage_modifiers", [])),
+            is_legendary=data.get("is_legendary", False),
+            legendary_actions=list(data.get("legendary_actions", [])),
+            legendary_budget_max=data.get("legendary_budget_max", 0),
+            legendary_budget_used=data.get("legendary_budget_used", 0),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
@@ -348,6 +375,44 @@ class Encounter:
         # folds the environment's situational modifiers into every attack roll.
         # ``None`` means "no environmental effect" (backward compatible).
         self.environment: Optional[environment_mod.Environment] = None
+        # --- Lair Actions (Monster Manual p. 11) ---
+        # A creature fighting in its lair acts on initiative count 20 each
+        # round. ``lair_actions`` holds serialized LairAction dicts
+        # (engine/legendary.py); ``lair_last_fired_round`` guards against
+        # double-firing within a round. Empty by default (backward compatible).
+        self.lair_actions: list[dict] = []
+        self.lair_last_fired_round: Optional[int] = None
+
+    def trigger_lair_action(self) -> Optional["LairActionResult"]:
+        """Fire the lair action due this round (Monster Manual p. 11).
+
+        Lair actions trigger once per round on initiative count 20. This
+        picks the rotating lair action for the current round, records it
+        as fired (preventing a repeat this round), and returns a
+        :class:`LairActionResult`. Returns ``None`` when there are no lair
+        actions configured.
+
+        The mechanical resolution of any attack/save payload is the API
+        layer's job; this method produces the scheduling decision and the
+        narrative description.
+        """
+        from app.engine import legendary as legendary_mod
+
+        lair = [legendary_mod.LairAction.from_dict(a) if isinstance(a, dict) else a
+                for a in self.lair_actions]
+        if not lair:
+            return None
+        if not legendary_mod.should_fire_lair_action(
+            self.round_number, lair, last_fired_round=self.lair_last_fired_round
+        ):
+            return None
+        action = legendary_mod.choose_lair_action(lair, self.round_number)
+        if action is None:
+            return None
+        self.lair_last_fired_round = self.round_number
+        result = legendary_mod.fire_lair_action(action, self.round_number)
+        self.log.append(f"Lair action: {action.name}. {action.description}")
+        return result
 
     def set_environment(self, environment: Optional[environment_mod.Environment]) -> None:
         """Attach (or clear) the scene environment for this encounter.
@@ -766,6 +831,8 @@ class Encounter:
             "started": self.started,
             "log": list(self.log),
             "help_advantage_targets": list(self.help_advantage_targets),
+            "lair_actions": [dict(a) for a in self.lair_actions],
+            "lair_last_fired_round": self.lair_last_fired_round,
             "environment": self.environment.to_dict() if self.environment else None,
         }
 
@@ -782,6 +849,8 @@ class Encounter:
         encounter.started = data.get("started", False)
         encounter.log = list(data.get("log", []))
         encounter.help_advantage_targets = list(data.get("help_advantage_targets", []))
+        encounter.lair_actions = list(data.get("lair_actions", []))
+        encounter.lair_last_fired_round = data.get("lair_last_fired_round")
         env_data = data.get("environment")
         if env_data:
             encounter.environment = environment_mod.Environment.from_dict(env_data)
