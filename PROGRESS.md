@@ -1,9 +1,53 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅
-## TEST SUITE FULLY GREEN (2263 backend + 35 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅
+## TEST SUITE FULLY GREEN (2324 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
 
 ## Completed This Run
+- [x] **Add legendary actions & lair actions engine + API + UI — boss-monster combat (Monster Manual p.11)**
+  - The combat engine modelled single creatures taking one turn each, so a
+    solo boss got action-economy crushed by a party. **Legendary Actions**
+    (off-turn special actions costing 1/2/3 of a per-round budget) and **Lair
+    Actions** (environmental hazards firing on initiative 20) are THE 5e
+    mechanic that makes dragon/lich/beholder fights work. This run adds the
+    full stack.
+  - **`engine/legendary.py`** (pure): `LegendaryAction` (id/name/desc/cost/
+    kind attack-detect-move-utility/attack payload/condition), `LairAction`
+    (id/name/desc/initiative_count/kind attack-save-utility/damage/save_dc/
+    save_ability/condition), `LegendaryState` (per-round budget: spend/reset/
+    affordability/serialization), resolution helpers (`is_legendary`,
+    `get/available_legendary_actions`, `can_take/spend/reset`, lair
+    scheduling `should_fire/choose/fire`, `legendary_summary_for_dm`), and a
+    `LegendaryCreaturePreset` registry of **6 iconic bosses** (Adult Red
+    Dragon CR17 w/ 3 legendary + 2 lair, Lich CR21 w/ 4 legendary, Beholder
+    CR13 w/ 2 legendary + 1 lair, Vampire CR13, Tarrasque CR30, Adult Blue
+    Dragon CR16 w/ 3 legendary + 2 lair) — full stat blocks + damage
+    modifiers ready to drop into `/combat/start`.
+  - **`engine/combat.py`**: `Combatant` gains `is_legendary` /
+    `legendary_actions` / `legendary_budget_max` / `legendary_budget_used`
+    (serialized); `start_turn()` resets the budget at the start of the
+    creature's turn (MM rule). `Encounter` gains `lair_actions` +
+    `lair_last_fired_round` + `trigger_lair_action()` (rotating initiative-20
+    scheduling with same-round double-fire guard).
+  - **`api/combat.py`**: `/combat/start` reads legendary + lair fields from
+    enemy data.
+  - **`api/legendary.py`** (mounted `/api/game`, 7 endpoints): registry
+    `GET /legendary/creatures` + `/{id}`, `GET /{game}/legendary` (all bosses),
+    `GET /{game}/legendary/{combatant}` (budget + available actions),
+    `POST /{game}/legendary/use` (spend; attack-kind resolved through the
+    encounter), `GET /{game}/lair`, `POST /{game}/lair/action`. All mutations
+    persist + log to the story.
+  - **`api/game.py`**: DM context gains a `Boss:` line so the LLM DM
+    narrates off-turn legendary strikes + lair hazards.
+  - **Frontend** `LegendaryPanel.tsx` (~360 lines): boss console (action
+    budget bar, per-action use buttons, target picker for attacks), lair
+    console (initiative-20 hazards + fire button + fired-this-round guard),
+    result flash, and a legendary bestiary browser. 🐉 Legendary header
+    button + overlay in GameView; types + 7 API client fns.
+  - **Tests**: 57 engine + 19 API (2324 backend total, 0 failing); 5
+    LegendaryPanel integration tests (40 frontend total). `tsc` clean;
+    `vite build` clean (127 modules).
+
 - [x] **Add provider-agnostic image generation system — AI scene/NPC images (DESIGN.md "Future": AI-generated images)**
   - DESIGN.md lists "AI-generated images for scenes/NPCs" as a future
     feature, marked BLOCKED on an external image-gen provider. This run
