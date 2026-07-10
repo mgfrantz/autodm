@@ -76,6 +76,26 @@ class FeatPrerequisite:
     requires_caster: bool = False                 # must have a casting class
     requires_class: str | None = None             # must have at least one level
     requires_armor_proficiency: str | None = None  # "heavy" | "medium" | "light"
+    requires_race: list[str] | None = None        # XGE race feats; char must match one
+
+
+def _matches_race(race: str | None, required_races: list[str]) -> bool:
+    """Whether a character's ``race`` satisfies one of ``required_races``.
+
+    Matching is case-insensitive and tolerant of subraces / multi-word race
+    names: a required race matches if it equals the character's race exactly
+    or appears as a substring of it. This lets ``["elf"]`` match ``"High Elf"``
+    and ``"Half-Elf"`` (both eligible for *Elven Accuracy*), while
+    ``["wood elf"]`` only matches Wood Elves (for *Wood Elf Magic*).
+    """
+    if not race:
+        return False
+    r = race.lower().strip()
+    for req in required_races:
+        req_l = req.lower().strip()
+        if r == req_l or req_l in r:
+            return True
+    return False
 
 
 def _has_armor_proficiency(
@@ -106,12 +126,14 @@ def check_prerequisites(
     ability_scores: dict[str, int],
     level: int,
     classes: dict[str, int],
+    race: str | None = None,
 ) -> PrerequisiteCheck:
     """Check whether a character meets a feat's prerequisites.
 
-    ``classes`` maps class name -> level (multiclass-safe). The check verifies
-    minimum level, minimum ability scores, caster status, class membership, and
-    armor proficiency as configured on the feat.
+    ``classes`` maps class name -> level (multiclass-safe). ``race`` is the
+    character's race string (e.g. ``"High Elf"``, ``"Half-Orc"``). The check
+    verifies minimum level, minimum ability scores, caster status, class
+    membership, armor proficiency, and race as configured on the feat.
     """
     pre = feat.prerequisite
     if pre is None:
@@ -138,6 +160,10 @@ def check_prerequisites(
         if not _has_armor_proficiency(classes, pre.requires_armor_proficiency):
             missing["requires_armor_proficiency"] = pre.requires_armor_proficiency
 
+    if pre.requires_race:
+        if not _matches_race(race, pre.requires_race):
+            missing["requires_race"] = pre.requires_race
+
     if missing:
         parts = []
         if "min_level" in missing:
@@ -152,6 +178,8 @@ def check_prerequisites(
             parts.append(f"{missing['requires_class']} class")
         if "requires_armor_proficiency" in missing:
             parts.append(f"{missing['requires_armor_proficiency']} armor proficiency")
+        if "requires_race" in missing:
+            parts.append("race: " + "/".join(missing["requires_race"]))
         return PrerequisiteCheck(
             False,
             f"{feat.name} requires " + " and ".join(parts),
@@ -225,6 +253,7 @@ def _prerequisite_to_dict(pre: FeatPrerequisite | None) -> dict[str, Any] | None
         "requires_caster": pre.requires_caster,
         "requires_class": pre.requires_class,
         "requires_armor_proficiency": pre.requires_armor_proficiency,
+        "requires_race": list(pre.requires_race) if pre.requires_race else None,
     }
 
 
@@ -535,6 +564,508 @@ _register(Feat(
 ))
 
 
+# --- PHB general feats (expanded registry) -----------------------------------
+
+_register(Feat(
+    name="Actor",
+    description=(
+        "Increase your Charisma by 1. You have advantage on Charisma "
+        "(Deception) and Charisma (Performance) checks when trying to pass "
+        "yourself off as a different person. You can mimic the speech of "
+        "another person or the sounds made by a creature, and others have "
+        "disadvantage on Insight checks against your disguise."
+    ),
+    ability_bonus_choices=["charisma"],
+    combat_modifiers={
+        "skill_advantage": ["deception", "performance"],
+        "insight_disadvantage_vs_disguise": True,
+    },
+    notes=["advantage on Deception/Performance when impersonating", "mimic sounds"],
+))
+
+_register(Feat(
+    name="Charger",
+    description=(
+        "When you use your action to Dash, you can use a bonus action to make "
+        "one melee weapon attack or shove a creature. If you move at least 10 "
+        "feet in a straight line immediately before taking this bonus action, "
+        "you gain a +5 bonus to the attack's damage roll (if you chose to "
+        "attack and not shove), or you have advantage on the shove (if you "
+        "chose to shove and not attack)."
+    ),
+    combat_modifiers={
+        "dash_bonus_action_attack": True,
+        "straight_line_bonus": {"damage_bonus": 5, "min_distance_ft": 10},
+    },
+    notes=["bonus-action melee/shove after Dash", "+5 damage after 10 ft straight charge"],
+))
+
+_register(Feat(
+    name="Durable",
+    description=(
+        "Increase your Constitution by 1. When you roll a Hit Die to regain "
+        "hit points, the minimum number of hit points you regain from the roll "
+        "equals twice your Constitution modifier (minimum 2)."
+    ),
+    ability_bonus_choices=["constitution"],
+    combat_modifiers={"hit_die_minimum": "twice_con_mod_minimum_2"},
+    notes=["Hit Die healing minimum = 2 × CON mod"],
+))
+
+_register(Feat(
+    name="Elemental Adept",
+    description=(
+        "Choose one damage type: acid, cold, fire, lightning, poison, or "
+        "thunder. Spells you cast of that type ignore resistance to that "
+        "damage type, and when you roll damage for a spell of that type, you "
+        "can treat any 1 on a damage die as a 2. (Requires the ability to "
+        "cast at least one spell.)"
+    ),
+    combat_modifiers={
+        "ignore_resistance": ["chosen_element"],
+        "treat_ones_as_twos": True,
+        "element_choices": ["acid", "cold", "fire", "lightning", "poison", "thunder"],
+    },
+    prerequisite=FeatPrerequisite(requires_caster=True),
+    source="Player's Handbook",
+))
+
+_register(Feat(
+    name="Grappler",
+    description=(
+        "You have advantage on attack rolls against a creature you are "
+        "grappling. You can use your action to try to pin a creature grappled "
+        "by you; to do so, make another grapple check. If you succeed, you "
+        "and the creature are both restrained until the grapple ends."
+    ),
+    combat_modifiers={
+        "advantage_vs_grappled": True,
+        "pin_action": "both_restrained",
+    },
+    prerequisite=FeatPrerequisite(min_abilities={"strength": 13}),
+    notes=["advantage vs grappled targets", "pin = both restrained"],
+))
+
+_register(Feat(
+    name="Inspiring Leader",
+    description=(
+        "You can spend 10 minutes inspiring your companions, shoring up their "
+        "resolve to fight. When you do so, choose up to six friendly creatures "
+        "(which can include yourself) within 30 feet of you who can perceive "
+        "you. Each gains temporary hit points equal to your level + your "
+        "Charisma modifier. A creature can't gain temporary HP this way more "
+        "than once per short rest. (Requires Charisma 13.)"
+    ),
+    combat_modifiers={
+        "temp_hp_ritual": {"duration": "10 min", "targets": 6, "formula": "level + cha_mod"},
+    },
+    prerequisite=FeatPrerequisite(min_abilities={"charisma": 13}),
+    notes=["temp HP = level + CHA mod to up to 6 allies"],
+))
+
+_register(Feat(
+    name="Lightly Armored",
+    description=(
+        "Increase your Strength or Dexterity by 1 and gain proficiency with "
+        "light armor and shields."
+    ),
+    ability_bonus_choices=["strength", "dexterity"],
+    skill_proficiencies=["light armor", "shields"],
+))
+
+_register(Feat(
+    name="Linguist",
+    description=(
+        "Increase your Intelligence by 1. You learn three languages of your "
+        "choice. You can ably create written ciphers; others can't decipher a "
+        "code you create unless you teach them or they succeed on an "
+        "Intelligence check (DC = 8 + your proficiency bonus + your Int mod)."
+    ),
+    ability_bonus_choices=["intelligence"],
+    skill_proficiencies=["3 languages (player choice)"],
+    combat_modifiers={"cipher_creation_dc": "8 + prof + int_mod"},
+    notes=["learn 3 languages", "create ciphers"],
+))
+
+_register(Feat(
+    name="Magic Initiate",
+    description=(
+        "Choose a class: bard, cleric, druid, sorcerer, warlock, or wizard. "
+        "You learn two cantrips of your choice from that class's spell list, "
+        "and one 1st-level spell from that list. You can cast the 1st-level "
+        "spell once at its lowest level without expending a spell slot, and "
+        "you must finish a long rest before you can cast it this way again. "
+        "Your spellcasting ability for these spells is that class's."
+    ),
+    combat_modifiers={
+        "learn_cantrips": 2,
+        "learn_spell": {"level": 1, "casts_per_long_rest": 1},
+        "spell_class_choices": ["bard", "cleric", "druid", "sorcerer", "warlock", "wizard"],
+    },
+    notes=["2 cantrips + 1 1st-level spell from a chosen class"],
+))
+
+_register(Feat(
+    name="Martial Adept",
+    description=(
+        "You learn two maneuvers of your choice from among those available to "
+        "the Battle Master archetype. If a maneuver requires a saving throw, "
+        "the DC is 8 + your proficiency bonus + your Strength or Dexterity "
+        "modifier. You gain one superiority die (a d6), which is expended when "
+        "you use a maneuver; you regain all expended superiority dice after a "
+        "short or long rest."
+    ),
+    combat_modifiers={
+        "maneuvers_learned": 2,
+        "superiority_dice": {"count": 1, "sides": 6, "refresh": "short_rest"},
+        "maneuver_save_dc": "8 + prof + str_or_dex_mod",
+    },
+    notes=["2 Battle Master maneuvers", "1 superiority die (d6) per short rest"],
+))
+
+_register(Feat(
+    name="Medium Armor Master",
+    description=(
+        "Increase your Strength or Dexterity by 1. While wearing medium "
+        "armor, you can add 3 (rather than 2) to your AC if you have a "
+        "Dexterity of 16 or higher, and you don't have disadvantage on "
+        "Stealth checks. (Requires medium armor proficiency.)"
+    ),
+    ability_bonus_choices=["strength", "dexterity"],
+    combat_modifiers={
+        "medium_armor_max_dex": 3,
+        "no_stealth_disadvantage_medium_armor": True,
+    },
+    prerequisite=FeatPrerequisite(requires_armor_proficiency="medium"),
+    notes=["+3 Dex to AC in medium armor (if Dex 16+)", "no stealth disadvantage in medium armor"],
+))
+
+_register(Feat(
+    name="Mounted Combatant",
+    description=(
+        "While mounted and not incapacitated, you have advantage on melee "
+        "attack rolls against unmounted creatures smaller than your mount. You "
+        "can force an attack targeted at your mount to target you instead. If "
+        "your mount is subjected to an effect that allows a Dexterity saving "
+        "throw for half damage, it takes no damage on a success and half "
+        "damage on a failure."
+    ),
+    combat_modifiers={
+        "advantage_vs_unmounted_smaller": True,
+        "redirect_attack_to_rider": True,
+        "mount_evasion": True,
+    },
+    notes=["advantage vs unmounted smaller foes", "redirect attacks to self", "mount evasion"],
+))
+
+_register(Feat(
+    name="Savage Attacker",
+    description=(
+        "Once per turn when you roll damage for a melee weapon attack, you "
+        "can reroll the weapon's damage dice and use either total."
+    ),
+    combat_modifiers={"reroll_weapon_damage": {"per_turn": 1, "use_higher": True}},
+    notes=["reroll melee weapon damage once per turn, keep higher"],
+))
+
+_register(Feat(
+    name="Shield Master",
+    description=(
+        "You use shields not just for protection but also for offense. If you "
+        "take the Attack action on your turn, you can use a bonus action to "
+        "try to shove a creature with your shield. You don't suffer "
+        "disadvantage on an attack roll as a result of the target being "
+        "behind cover. When you are subjected to an effect that lets you make "
+        "a Dexterity saving throw to take half damage, you can use your "
+        "reaction to add your shield's AC bonus to the save."
+    ),
+    combat_modifiers={
+        "bonus_action_shield_shove": True,
+        "no_disadvantage_vs_cover": True,
+        "reaction_shield_ac_to_dex_save": True,
+    },
+    notes=["bonus-action shove with shield", "add shield AC to Dex saves as reaction"],
+))
+
+_register(Feat(
+    name="Skulker",
+    description=(
+        "You can try to hide when you are lightly obscured from the creature "
+        "from which you are hiding. When you are hidden, dim light doesn't "
+        "impose disadvantage on your Wisdom (Perception) checks. You can "
+        "make ranged attacks without disadvantage when hidden in dim light. "
+        "If you miss with a ranged weapon attack while hidden, the attack "
+        "doesn't reveal your position."
+    ),
+    combat_modifiers={
+        "hide_when_lightly_obscured": True,
+        "no_dim_light_perception_disadvantage": True,
+        "no_disadvantage_hidden_ranged_dim_light": True,
+        "miss_doesnt_reveal_position": True,
+    },
+    notes=["hide when lightly obscured", "missed ranged attacks don't reveal position"],
+))
+
+_register(Feat(
+    name="Weapon Master",
+    description=(
+        "Increase your Strength or Dexterity by 1. You gain proficiency with "
+        "four weapons of your choice, each of which must be a melee or ranged "
+        "weapon."
+    ),
+    ability_bonus_choices=["strength", "dexterity"],
+    skill_proficiencies=["4 weapons (player choice)"],
+))
+
+
+# --- Xanathar's Guide race-specific feats ------------------------------------
+# These feats require a specific race (or a set of races), gated by the
+# ``requires_race`` prerequisite. Source: Xanathar's Guide to Everything.
+
+_register(Feat(
+    name="Bountiful Luck",
+    description=(
+        "When an ally you can see within 30 feet of you rolls a 1 on the d20 "
+        "for an attack roll, an ability check, or a saving throw, you can use "
+        "your reaction to allow the ally to reroll the die. The ally must use "
+        "the new roll. (Halfling.)"
+    ),
+    combat_modifiers={
+        "reaction_reroll_ally_nat1": {"range_ft": 30, "must_use_new": True},
+    },
+    prerequisite=FeatPrerequisite(requires_race=["halfling"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Dragon Fear",
+    description=(
+        "Increase your Strength, Constitution, or Charisma by 1. When you "
+        "take the Attack action, you can replace one attack with a fearsome "
+        "roar; each creature of your choice within 30 ft that can hear you "
+        "must make a Wisdom saving throw (DC 8 + prof + Cha mod) or become "
+        "frightened until the end of your next turn. (Dragonborn.)"
+    ),
+    ability_bonus_choices=["strength", "constitution", "charisma"],
+    combat_modifiers={
+        "fear_roar": {"range_ft": 30, "save": "wisdom", "condition": "frightened"},
+        "save_dc": "8 + prof + cha_mod",
+    },
+    prerequisite=FeatPrerequisite(requires_race=["dragonborn"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Dragon Hide",
+    description=(
+        "Increase your Strength, Constitution, or Charisma by 1. Your scales "
+        "become tougher; your AC equals 13 + Dex mod when not wearing armor "
+        "or a shield. You can grow retractile claws as natural weapons "
+        "(1d6 + Str slashing). You can use a reaction to deal your breath "
+        "weapon damage to a melee attacker. (Dragonborn.)"
+    ),
+    ability_bonus_choices=["strength", "constitution", "charisma"],
+    combat_modifiers={
+        "natural_armor": "13 + dex_mod",
+        "natural_weapon_claws": {"dice_count": 1, "dice_sides": 6, "ability": "strength"},
+        "reaction_breath_damage": True,
+    },
+    prerequisite=FeatPrerequisite(requires_race=["dragonborn"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Dwarven Fortitude",
+    description=(
+        "Increase your Constitution by 1. You have advantage on saving throws "
+        "against poison, and you have resistance against poison damage. When "
+        "you take the Dodge action in combat, you can spend one Hit Die to "
+        "recover hit points. (Dwarf.)"
+    ),
+    ability_bonus_choices=["constitution"],
+    combat_modifiers={
+        "dodge_spend_hit_die": True,
+        "poison_save_advantage": True,
+        "poison_damage_resistance": True,
+    },
+    prerequisite=FeatPrerequisite(requires_race=["dwarf"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Elven Accuracy",
+    description=(
+        "Increase your Dexterity, Intelligence, Wisdom, or Charisma by 1. "
+        "Whenever you have advantage on an attack roll using Dexterity, "
+        "Intelligence, Wisdom, or Charisma, you can reroll one of the dice "
+        "once. (Elf or half-elf.)"
+    ),
+    ability_bonus_choices=["dexterity", "intelligence", "wisdom", "charisma"],
+    combat_modifiers={
+        "reroll_one_advantage_die": True,
+        "applicable_abilities": ["dexterity", "intelligence", "wisdom", "charisma"],
+    },
+    prerequisite=FeatPrerequisite(requires_race=["elf", "half-elf"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Fade Away",
+    description=(
+        "Increase your Dexterity or Intelligence by 1. When you take damage, "
+        "you can use your reaction to turn invisible and teleport up to 60 "
+        "feet to an unoccupied space. You remain invisible until the end of "
+        "your next turn or until you attack, cast a spell, or deal damage. "
+        "Once you use this ability, you can't use it again until you finish a "
+        "short or long rest. (Gnome.)"
+    ),
+    ability_bonus_choices=["dexterity", "intelligence"],
+    combat_modifiers={
+        "reaction_invisible_teleport": {"range_ft": 60, "refresh": "short_rest"},
+        "invisible_until": "end_of_next_turn_or_action",
+    },
+    prerequisite=FeatPrerequisite(requires_race=["gnome"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Fey Teleportation",
+    description=(
+        "Increase your Intelligence or Charisma by 1. You learn the *misty "
+        "step* spell and can cast it once without expending a spell slot; you "
+        "regain the ability to cast it this way after a short or long rest. "
+        "Intelligence is your spellcasting ability for it. You also learn "
+        "one language of your choice. (High elf.)"
+    ),
+    ability_bonus_choices=["intelligence", "charisma"],
+    skill_proficiencies=["1 language (player choice)"],
+    combat_modifiers={
+        "learn_spell": {"name": "misty step", "casts_per_short_rest": 1},
+        "spellcasting_ability": "intelligence",
+    },
+    prerequisite=FeatPrerequisite(requires_race=["high elf", "elf"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Flames of Phlegethos",
+    description=(
+        "Increase your Intelligence or Charisma by 1. When you roll fire "
+        "damage for a spell you cast, you can reroll any 1 on the damage "
+        "dice, but must use the new roll. When you cast a spell that deals "
+        "fire damage, you can cause flames to wreathe you until the end of "
+        "your next turn; a creature that hits you with a melee attack while "
+        "these flames burn takes 1d4 fire damage. (Tiefling.)"
+    ),
+    ability_bonus_choices=["intelligence", "charisma"],
+    combat_modifiers={
+        "reroll_fire_damage_ones": True,
+        "fire_wreathe_retaliation": {"dice_count": 1, "dice_sides": 4, "damage_type": "fire"},
+    },
+    prerequisite=FeatPrerequisite(requires_race=["tiefling"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Infernal Constitution",
+    description=(
+        "Increase your Constitution by 1. You have resistance to cold and "
+        "poison damage, and you have advantage on saving throws against being "
+        "poisoned. (Tiefling.)"
+    ),
+    ability_bonus_choices=["constitution"],
+    combat_modifiers={
+        "damage_resistance": ["cold", "poison"],
+        "poisoned_save_advantage": True,
+    },
+    prerequisite=FeatPrerequisite(requires_race=["tiefling"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Orcish Fury",
+    description=(
+        "Increase your Strength or Constitution by 1. When you hit with a "
+        "melee weapon attack, you can roll one of your weapon's damage dice "
+        "an additional time and add it to the damage. You can use this once "
+        "per short rest. When you use Relentless Endurance, you can also "
+        "make a melee weapon attack as a reaction. (Half-orc.)"
+    ),
+    ability_bonus_choices=["strength", "constitution"],
+    combat_modifiers={
+        "extra_weapon_damage_die": {"per_short_rest": 1},
+        "relentless_endurance_bonus_attack": True,
+    },
+    prerequisite=FeatPrerequisite(requires_race=["half-orc"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Prodigy",
+    description=(
+        "Increase one ability score of your choice by 1. You gain proficiency "
+        "in one skill, one tool, and one language of your choice. (Human, "
+        "half-elf, or half-orc.)"
+    ),
+    ability_bonus_choices=list(VALID_ABILITIES),
+    skill_proficiencies=["1 skill", "1 tool", "1 language"],
+    prerequisite=FeatPrerequisite(requires_race=["human", "half-elf", "half-orc"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Second Chance",
+    description=(
+        "Increase your Constitution, Dexterity, or Charisma by 1. When a "
+        "creature you can see hits you with an attack roll, you can use your "
+        "reaction to force that creature to reroll; you use the new roll. "
+        "Once you use this ability, you can't use it again until you roll "
+        "initiative or finish a short or long rest. (Halfling.)"
+    ),
+    ability_bonus_choices=["constitution", "dexterity", "charisma"],
+    combat_modifiers={
+        "reaction_force_reroll_attack": {"refresh": "initiative_or_rest", "must_use_new": True},
+    },
+    prerequisite=FeatPrerequisite(requires_race=["halfling"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Squat Nimbleness",
+    description=(
+        "Increase your Strength or Dexterity by 1, and your walking speed "
+        "increases by 5 feet. You gain proficiency in the Acrobatics or "
+        "Athletics skill (your choice). You have advantage on any Strength "
+        "(Athletics) or Dexterity (Acrobatics) check you make to escape from "
+        "being grappled. (Dwarf.)"
+    ),
+    ability_bonus_choices=["strength", "dexterity"],
+    speed_bonus=5,
+    skill_proficiencies=["acrobatics or athletics (player choice)"],
+    combat_modifiers={"escape_grapple_advantage": True},
+    prerequisite=FeatPrerequisite(requires_race=["dwarf"]),
+    source="Xanathar's Guide to Everything",
+))
+
+_register(Feat(
+    name="Wood Elf Magic",
+    description=(
+        "You learn one cantrip and one 1st-level spell of your choice from "
+        "the druid spell list. Wisdom is your spellcasting ability for them. "
+        "You can cast the 1st-level spell once at its lowest level without "
+        "expending a spell slot, regaining the ability after a long rest. "
+        "(Wood elf.)"
+    ),
+    combat_modifiers={
+        "learn_cantrip": 1,
+        "learn_spell": {"level": 1, "casts_per_long_rest": 1, "list": "druid"},
+        "spellcasting_ability": "wisdom",
+    },
+    prerequisite=FeatPrerequisite(requires_race=["wood elf"]),
+    source="Xanathar's Guide to Everything",
+))
+
+
 # --------------------------------------------------------------------------- #
 # Registry access                                                             #
 # --------------------------------------------------------------------------- #
@@ -559,17 +1090,20 @@ def list_available_feats(
     level: int,
     classes: dict[str, int],
     known_feats: list[str] | None = None,
+    race: str | None = None,
 ) -> list[Feat]:
     """Feats a character could take right now.
 
     Filters out feats already known and feats whose prerequisites are not met.
+    ``race`` is threaded through to :func:`check_prerequisites` so XGE
+    race-specific feats are gated correctly.
     """
     known = {k.lower() for k in (known_feats or [])}
     out: list[Feat] = []
     for feat in list_feats():
         if feat.name.lower() in known:
             continue
-        if check_prerequisites(feat, ability_scores, level, classes).met:
+        if check_prerequisites(feat, ability_scores, level, classes, race=race).met:
             out.append(feat)
     return out
 

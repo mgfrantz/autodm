@@ -211,6 +211,7 @@ def get_available_feats(character_id: int, db: Session = Depends(get_db)):
         level=character.level,
         classes=classes,
         known_feats=known,
+        race=str(character.race),
     )
 
     return [FeatInfo.from_engine(f) for f in available]
@@ -281,7 +282,7 @@ def learn_feat(
         "charisma": character.charisma or 10,
     }
 
-    prereq_check = check_prerequisites(feat, abilities, character.level, classes)
+    prereq_check = check_prerequisites(feat, abilities, character.level, classes, race=str(character.race))
     if not prereq_check.met:
         raise HTTPException(status_code=400, detail=prereq_check.message)
 
