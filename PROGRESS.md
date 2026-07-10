@@ -1,9 +1,57 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅
-## TEST SUITE FULLY GREEN (2227 backend + 29 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅
+## TEST SUITE FULLY GREEN (2263 backend + 35 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
 
 ## Completed This Run
+- [x] **Add provider-agnostic image generation system — AI scene/NPC images (DESIGN.md "Future": AI-generated images)**
+  - DESIGN.md lists "AI-generated images for scenes/NPCs" as a future
+    feature, marked BLOCKED on an external image-gen provider. This run
+    builds the **full provider-agnostic abstraction layer** (mirroring the
+    LLM orchestrator pattern) so the system works the moment an
+    IMAGE_API_KEY is configured — no code changes needed. All code is
+    fully tested with mocks (no live API key required for tests).
+  - **Backend `app/llm/image_config.py`**: `ImageConfig` dataclass +
+    `load_config()` reading `IMAGE_PROVIDER` / `IMAGE_API_KEY` /
+    `IMAGE_MODEL` / `IMAGE_BASE_URL` / `IMAGE_SIZE` / `IMAGE_QUALITY`
+    env vars. Falls back to `LLM_API_KEY` when `IMAGE_API_KEY` is unset.
+    `is_configured` property gates all generation.
+  - **Backend `app/llm/image_client.py`**: `ImageClient` with lazy
+    `AsyncOpenAI` init (same pattern as the LLM orchestrator singleton).
+    `build_scene_prompt()` extracts the latest DM narration + character/
+    location context into a visual art prompt (strips markdown, takes the
+    final paragraph, truncates, appends a consistent fantasy-art-style
+    suffix). `build_portrait_prompt()` builds NPC portrait prompts from
+    name + description + race/class. `ImageResult` dataclass with
+    `to_dict()`. `ImageNotConfiguredError` for clean 503s.
+  - **Backend `app/api/images.py`** (5-endpoint REST API, mounted
+    `/api/game`): `GET /images/status` (configured + model/size info),
+    `POST /images/scene` (auto-builds prompt from latest DM narration,
+    generates, caches in `game_state["images"]`), `POST /images/portrait`
+    (name + description form), `GET /images` (gallery listing),
+    `DELETE /images/{index}`. 503 when not configured, 502 on provider
+    errors. Images survive save/load via `game_state`.
+  - **Frontend `types/index.ts`**: `ImageGenerationStatus`,
+    `GeneratedImage`, `ImageGenerationResult`, `ImageGallery` interfaces.
+  - **Frontend `stores/api.ts`**: 5 API client fns.
+  - **Frontend `components/ImagePanel.tsx`** (~310 lines): complete image
+    studio — configuration-status banner (graceful "not configured" with
+    setup instructions when no key), scene generation button, NPC portrait
+    form (name + description + race + class), detail view with revised
+    prompt, thumbnail gallery with delete. Narrates generation events into
+    the DM story bubble.
+  - **Frontend `GameView.tsx`**: Images header button + overlay modal;
+    `onNarration` to `addToStory`, `onChanged` to state refresh.
+  - **`.env.example`**: documents all `IMAGE_*` env vars.
+  - **Tests**: 36 backend tests (6 config, 9 prompt builders, 6 client,
+    15 API) + 6 frontend integration tests (not-configured banner,
+    configured controls, scene generation + narration, portrait form,
+    gallery rendering, 503 error handling). All fully mocked — no live
+    API calls.
+  - Verified: **2263 backend tests passing** (was 2227, +36), 0 failing;
+    `tsc --noEmit` clean; `vite build` clean; **35 frontend tests**
+    (was 29, +6).
+
 - [x] **Add in-game Mounts panel — mount/vehicle acquisition, riding & management UI (PHB ch.5/8/9)**
   - The mounts engine (`engine/mounts.py`) + 11-endpoint API (`api/mounts.py`) were
     **fully built and tested on the backend** (84 tests, 19-mount registry, mounted
@@ -1388,10 +1436,15 @@
   - Verified: **2227 backend tests passing** (was 2185, +42), no regressions.
 
 ## Next Priorities
+- [x] **AI-generated images for scenes/NPCs** ✅
+  *(done this run — provider-agnostic image generation system: image_config.py
+  + image_client.py (lazy AsyncOpenAI, build_scene_prompt / build_portrait_prompt),
+  5-endpoint REST API, ImagePanel.tsx frontend with gallery; 36 backend + 6
+  frontend tests. Works with any OpenAI-compatible image API when IMAGE_API_KEY
+  is set; graceful 503 when not configured.)*
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
   (skipped this run; revisit when a provider is configured):
-  - AI-generated images for scenes/NPCs (needs an image-generation provider)
   - Voice narration / TTS DM (needs a TTS provider)
   - Multiplayer / party-based play (large architectural change)
 - [x] **Polish & integration follow-ups** ✅
