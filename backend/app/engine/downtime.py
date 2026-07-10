@@ -418,6 +418,7 @@ def carouse(
     workweeks: int = 1,
     *,
     save_modifier: int = 0,
+    save_modifiers: Optional[dict[str, int]] = None,
     d6: Optional[int] = None,
     complication_d20: Optional[int] = None,
     save_roll: Optional[int] = None,
@@ -427,7 +428,10 @@ def carouse(
 
     ``tier`` is ``"lower"``/``"middle"``/``"upper"``. ``workweeks`` multiplies
     the cost; a complication can arise each workweek. ``save_modifier`` is the
-    ability modifier for any complication save (caller picks the relevant one).
+    fallback ability modifier for any complication save; ``save_modifiers`` (an
+    ability→modifier map) lets the caller supply the *correct* modifier for
+    whichever save the rolled complication demands (since the ability isn't
+    known until the complication is drawn).
     """
     tier = (tier or "middle").strip().lower()
     if tier not in CAROUSING_COST_PER_WEEK:
@@ -447,8 +451,12 @@ def carouse(
         raw = _pick_complication(table, complication_d20)
         body, dc, ability = _parse_complication_save(raw)
         if dc > 0 and ability:
+            # Prefer the per-ability modifier when supplied.
+            chosen_mod = save_modifier
+            if save_modifiers and ability in save_modifiers:
+                chosen_mod = int(save_modifiers[ability])
             shown, total, save_succeeded = _check(
-                save_modifier, dc, roll=save_roll, roller=roller,
+                chosen_mod, dc, roll=save_roll, roller=roller,
             )
             save_used = shown
             complication_text = (
