@@ -1,9 +1,47 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅
-## TEST SUITE FULLY GREEN (1986 backend + 20 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅
+## TEST SUITE FULLY GREEN (2154 backend + 24 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 23 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
 
 ## Completed This Run
+- [x] **Add subclass system (DnD 5e archetypes) — AGENTS.md build priority #14**
+  - Every 5e class gains a **subclass** at a class-specific level (1/2/3), but
+    until now the engine surfaced only the *choice point* (e.g. `("fighter", 3):
+    "Martial Archetype"`) with no model of the subclasses themselves — the
+    choice was flavour-only. This run adds the full subclass layer: registry,
+    eligibility, feature progression, REST API, DM integration, save/load
+    round-trip, and an in-game panel.
+  - `engine/subclasses.py` (pure, ~860 lines): `Subclass` dataclass (id, name,
+    parent class, category, features-by-level); `SUBCLASS_REGISTRY` with **27
+    representative official subclasses** (2–3 per all 12 PHB classes — Champion /
+    Battle Master / Eldritch Knight, Life/War/Knowledge Domain, Berserker / Totem
+    Warrior, Lore/Valor College, Land/Moon Circle, Open Hand/Shadow, Devotion /
+    Ancients / Vengeance, Hunter / Beast Master, Thief / Assassin / Arcane
+    Trickster, Draconic / Wild Magic, Fiend / Archfey / Great Old One, Evocation
+    / Abjuration). Choice-level table (cleric/sorcerer/warlock→1, druid/wizard→2,
+    others→3). Helpers: lookups, `can_choose_subclass`, `validate_subclass_choice`,
+    `features_at/through_level`, `next_subclass_feature`, DM summary, and a
+    `combined_features_through_level` that merges the class table + subclass
+    features into one timeline.
+  - `api/subclasses.py` (mounted `/api/characters/subclasses`, 5 endpoints):
+    `GET /list` (+ ?class= filter), `GET /list/{id}`, `GET /{character_id}`
+    (choices + pending + merged timeline + DM summary), `GET /{character_id}/available`,
+    `POST /{character_id}/choose` (permanent, validated).
+  - Model: `Character.subclass` Text column (JSON `{class_name: subclass_id}`,
+    multiclass-safe — one subclass per class) + `subclass_dict` /
+    `primary_subclass_id` properties; migration `add_subclass_column.py`.
+  - Integration: DM context blocks (`/action` + `/action/stream`) gain a
+    `Subclass:` line so the LLM DM can narrate a Champion's improved crits, a Life
+    cleric's enhanced healing, etc.; save/load snapshots + restores the column;
+    `CharacterResponse` exposes `subclass`.
+  - Frontend: `SubclassPanel.tsx` — current-archetype card with active features,
+    a "Choose Your Path" picker (shown when eligible & not chosen), and the
+    merged class+subclass feature timeline; ⚔️ Subclass header button + overlay
+    in GameView; types + 5 API client fns.
+  - Verified: **2154 backend tests passing, 0 failing** (+56 engine, +25 API);
+    `tsc --noEmit` clean; `vite build` clean (124 modules); **24 frontend tests**
+    (+4 SubclassPanel integration tests).
+
 - [x] **Add social interaction engine + API + UI — DMG ch.4/ch.8 (the third DnD pillar)**
   - Combat and Exploration had resolution engines; **Social Interaction** (one
     of the three DnD 5e pillars) had none. `world_state` tracked NPC

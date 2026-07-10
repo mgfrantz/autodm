@@ -42,7 +42,7 @@ cd frontend && npm install && npm run dev
 11. 🚧 Images: AI-generated scene/NPC images
 12. 🚧 Audio: Voice narration (TTS DM)
 13. ⏳ Future: Multiplayer (party-based)
-14. ⏳ Future: Advanced rules refinements (feat expansion, subclasses)
+14. 🚧 Future: Advanced rules refinements (subclass system ✅, feat expansion)
 
 ## Rules
 - Keep the LLM provider configurable — don't hardcode OpenAI or Claude
