@@ -955,6 +955,77 @@ export interface LearnFeatResult {
   effects_applied: Record<string, unknown>;
 }
 
+// === Subclasses (DnD 5e archetypes — domain/path/college/origin) ===
+
+/** A feature granted by a subclass at a specific level. */
+export interface SubclassFeatureInfo {
+  level: number;
+  feature: string;
+}
+
+/** A subclass definition from the registry. */
+export interface SubclassInfo {
+  id: string;
+  name: string;
+  char_class: string;
+  category: string; // e.g. "Martial Archetype", "Divine Domain"
+  description: string;
+  features: SubclassFeatureInfo[];
+  choice_level: number; // 1, 2, or 3 depending on class
+}
+
+/** A subclass a character has chosen, with active features. */
+export interface ChosenSubclassInfo {
+  class_name: string;
+  subclass_id: string;
+  name: string;
+  category: string;
+  features: SubclassFeatureInfo[];
+}
+
+/** One merged class-or-subclass feature in the level timeline. */
+export interface SubclassTimelineEntry {
+  level: number;
+  source: string;
+  feature: string;
+}
+
+/** A class that has reached its subclass choice level but lacks a subclass. */
+export interface PendingSubclass {
+  class_name: string;
+  choice_level: number;
+  category: string;
+  options: string[]; // subclass ids
+}
+
+/** A character's subclass state + feature timeline. */
+export interface CharacterSubclassResponse {
+  character_id: number;
+  character_name: string;
+  level: number;
+  choices: ChosenSubclassInfo[];
+  pending: PendingSubclass[];
+  timeline: SubclassTimelineEntry[];
+  dm_summary: string;
+}
+
+/** Subclasses a character can choose right now. */
+export interface AvailableSubclassesResponse {
+  character_id: number;
+  level: number;
+  available: SubclassInfo[];
+}
+
+/** Result of choosing a subclass (permanent). */
+export interface ChooseSubclassResult {
+  success: boolean;
+  message: string;
+  class_name: string;
+  subclass_id: string;
+  subclass_name: string;
+  dm_summary: string;
+}
+
 // === Exhaustion (DnD 5e special state, 0–6 levels, 6 = death) ===
 
 /** Cumulative-effects breakdown for a given exhaustion level. */

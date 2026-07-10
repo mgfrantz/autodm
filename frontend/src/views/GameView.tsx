@@ -18,6 +18,7 @@ import SocialPanel from '../components/SocialPanel'
 import DowntimePanel from '../components/DowntimePanel'
 import SpellsPanel from '../components/SpellsPanel'
 import FeatsPanel from '../components/FeatsPanel'
+import SubclassPanel from '../components/SubclassPanel'
 import ExhaustionPanel from '../components/ExhaustionPanel'
 import SurvivalPanel from '../components/SurvivalPanel'
 import SavingThrowsPanel from '../components/SavingThrowsPanel'
@@ -64,6 +65,7 @@ export default function GameView() {
   const [showActions, setShowActions] = useState(false)
   const [showSpells, setShowSpells] = useState(false)
   const [showFeats, setShowFeats] = useState(false)
+  const [showSubclass, setShowSubclass] = useState(false)
   const [showExhaustion, setShowExhaustion] = useState(false)
   const [showSurvival, setShowSurvival] = useState(false)
   const [showSavingThrows, setShowSavingThrows] = useState(false)
@@ -484,6 +486,13 @@ export default function GameView() {
               title="View learned feats, ASI status & learn available feats"
             >
               🏆 <span className="hidden sm:inline">Feats</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowSubclass(true)}
+              title="View your subclass (archetype) & feature timeline, or choose an archetype"
+            >
+              ⚔️ <span className="hidden sm:inline">Subclass</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1374,6 +1383,36 @@ export default function GameView() {
                 setGameState(state)
                 await refreshEquipmentStats()
                 await refreshFeatStatus()
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Subclass overlay */}
+      {showSubclass && gameState?.character?.id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowSubclass(false)}
+        >
+          <div
+            className="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">⚔️ Subclass &amp; Features</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowSubclass(false)}
+              >
+                ×
+              </button>
+            </div>
+            <SubclassPanel
+              characterId={gameState.character.id}
+              onChanged={async () => {
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
               }}
             />
           </div>

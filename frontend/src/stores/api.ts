@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -679,6 +679,55 @@ export const learnFeat = async (
     feat_name: featName,
     chosen_ability: chosenAbility ?? null,
   });
+  return res.data;
+};
+
+// === Subclasses (DnD 5e archetypes) ===
+
+/** List all subclasses in the registry, optionally filtered by class. */
+export const listSubclasses = async (className?: string): Promise<SubclassInfo[]> => {
+  const res = await API.get<SubclassInfo[]>('/characters/subclasses/list', {
+    params: className ? { class_name: className } : {},
+  });
+  return res.data;
+};
+
+/** A specific subclass's definition. */
+export const getSubclassDetail = async (subclassId: string): Promise<SubclassInfo> => {
+  const res = await API.get<SubclassInfo>(`/characters/subclasses/list/${subclassId}`);
+  return res.data;
+};
+
+/** A character's subclass state + merged class/subclass feature timeline. */
+export const getCharacterSubclass = async (
+  characterId: number,
+): Promise<CharacterSubclassResponse> => {
+  const res = await API.get<CharacterSubclassResponse>(
+    `/characters/subclasses/${characterId}`,
+  );
+  return res.data;
+};
+
+/** Subclasses a character can choose right now (one set per eligible class). */
+export const getAvailableSubclasses = async (
+  characterId: number,
+): Promise<AvailableSubclassesResponse> => {
+  const res = await API.get<AvailableSubclassesResponse>(
+    `/characters/subclasses/${characterId}/available`,
+  );
+  return res.data;
+};
+
+/** Permanently choose a subclass. `className` defaults to the primary class. */
+export const chooseSubclass = async (
+  characterId: number,
+  subclassId: string,
+  className?: string,
+): Promise<ChooseSubclassResult> => {
+  const res = await API.post<ChooseSubclassResult>(
+    `/characters/subclasses/${characterId}/choose`,
+    { subclass_id: subclassId, class_name: className ?? null },
+  );
   return res.data;
 };
 
