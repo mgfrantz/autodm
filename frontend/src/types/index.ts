@@ -1341,3 +1341,172 @@ export interface DowntimeResolveResult {
   exhaustion: number | null;
   proficiency_granted: string | null;
 }
+
+// === Mounts & Vehicles (DnD 5e mounted travel + mounted combat — PHB ch.5/8/9) ===
+
+/** A mount/vehicle's own attack (matches the combat-engine Attack shape). */
+export interface MountAttack {
+  name: string;
+  attack_bonus: number;
+  damage_dice_count: number;
+  damage_dice_sides: number;
+  damage_bonus: number;
+  damage_type: string;
+  ranged: boolean;
+}
+
+/** A mount or vehicle definition from the registry (GET /mounts/registry, /mounts/{id}). */
+export interface Mount {
+  id: string;
+  name: string;
+  /** "land" | "flying" | "aquatic" | "vehicle" */
+  type: string;
+  speed: number;
+  fly_speed: number;
+  swim_speed: number;
+  size: string;
+  strength: number;
+  hp: number;
+  armor_class: number;
+  cr: number;
+  /** "controlled" | "independent" */
+  control_type: string;
+  capacity_mult: number;
+  cost_gp: number;
+  attacks: MountAttack[];
+  notes: string;
+  description: string;
+  // Derived convenience fields.
+  effective_speed: number;
+  carrying_capacity_lbs: number;
+  speed_multiplier: number;
+  can_fly: boolean;
+  can_swim: boolean;
+  is_vehicle: boolean;
+}
+
+/** The player's current mount situation, persisted in game_state["mount"]. */
+export interface MountState {
+  mount_id: string;
+  current_hp: number;
+  max_hp: number;
+  mounted: boolean;
+  conditions: string[];
+  pace: string;
+  galloping: boolean;
+}
+
+/** Readable snapshot of the current mount situation (DM + UI). */
+export interface MountSummary {
+  has_mount: boolean;
+  mounted: boolean;
+  mount: Mount | null;
+  mount_hp: string;
+  mount_conditions: string[];
+  pace: string;
+  pace_note: string;
+  speed_multiplier: number;
+  travel_multiplier: number;
+  carrying_capacity_lbs: number;
+  control_type: string;
+}
+
+/** What happens to a rider when their mount is compromised. */
+export interface DismountOutcome {
+  forced_dismount: boolean;
+  rider_prone: boolean;
+  dc: number | null;
+  save_ability: string | null;
+  message: string;
+}
+
+/** Mounted-combat modifiers for a rider (PHB ch.9). */
+export interface MountedCombatModifiers {
+  mounted: boolean;
+  mount_name: string;
+  mount_size: string;
+  control_type: string;
+  melee_advantage: boolean;
+  mount_dex_save_advantage: boolean;
+  mount_evasion: boolean;
+  can_redirect_attack_to_rider: boolean;
+  has_mounted_combatant_feat: boolean;
+  mount_downed: boolean;
+  mount_prone: boolean;
+  mount_speed: number;
+  notes: string[];
+}
+
+/** Overland-travel speed breakdown for the active mount + pace. */
+export interface TravelSpeed {
+  base_hours: number;
+  adjusted_hours: number;
+  pace: string;
+  pace_multiplier: number;
+  mount_multiplier: number;
+  galloping: boolean;
+  total_multiplier: number;
+  notes: string[];
+}
+
+/** Current mount status (GET /mount). */
+export interface MountStatusResponse {
+  character_id: number;
+  has_mounted_combatant: boolean;
+  state: MountState;
+  summary: MountSummary;
+}
+
+/** Result of acquiring a mount (POST /mount/acquire). */
+export interface MountAcquireResult {
+  character_id: number;
+  state: MountState;
+  mount: Mount;
+  paid_gp: number;
+  character_gold: number;
+  summary: MountSummary;
+}
+
+/** Generic result for mount-up / dismount / pace. */
+export interface MountSimpleResult {
+  character_id: number;
+  state: MountState;
+  summary: MountSummary;
+  pace_note?: string;
+}
+
+/** Result of damaging the mount (POST /mount/damage). */
+export interface MountDamageResult {
+  character_id: number;
+  state: MountState;
+  outcome: DismountOutcome;
+  overflow: number;
+  summary: MountSummary;
+}
+
+/** Result of healing the mount (POST /mount/heal). */
+export interface MountHealResult {
+  character_id: number;
+  state: MountState;
+  healed: number;
+  summary: MountSummary;
+}
+
+/** Result of the mounted-combat modifier lookup (POST /mount/combat). */
+export interface MountCombatResult {
+  character_id: number;
+  has_mounted_combatant: boolean;
+  modifiers: MountedCombatModifiers;
+  melee_advantage_vs_target: boolean;
+  target_size: string;
+  target_mounted: boolean;
+  weapon_rules: Record<string, { notes?: string; [k: string]: unknown }>;
+}
+
+/** Result of the travel-hours preview (POST /mount/travel). */
+export interface MountTravelResult {
+  character_id: number;
+  speed: TravelSpeed;
+  state: MountState;
+  summary: MountSummary;
+}

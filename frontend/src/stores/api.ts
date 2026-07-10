@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -1020,5 +1020,123 @@ export const resolveDowntime = async (
   opts: DowntimeResolveOptions,
 ): Promise<DowntimeResolveResult> => {
   const res = await API.post<DowntimeResolveResult>(`/game/${gameId}/downtime/resolve`, opts);
+  return res.data;
+};
+
+// === Mounts & Vehicles (DnD 5e mounted travel + mounted combat — PHB ch.5/8/9) ===
+
+/** List all registered mount/vehicle definitions, optionally filtered by type. */
+export const getMountRegistry = async (
+  gameId: number,
+  type?: 'land' | 'flying' | 'aquatic' | 'vehicle',
+): Promise<Mount[]> => {
+  const res = await API.get<Mount[]>(`/game/${gameId}/mounts/registry`, {
+    params: type ? { type } : {},
+  });
+  return res.data;
+};
+
+/** Get a single mount definition from the registry. */
+export const getMountRegistryMount = async (
+  gameId: number,
+  mountId: string,
+): Promise<Mount> => {
+  const res = await API.get<Mount>(`/game/${gameId}/mounts/${mountId}`);
+  return res.data;
+};
+
+/** The character's current mount state + readable summary. */
+export const getMountState = async (gameId: number): Promise<MountStatusResponse> => {
+  const res = await API.get<MountStatusResponse>(`/game/${gameId}/mount`);
+  return res.data;
+};
+
+/** Acquire a fresh, fully-healthy mount (optionally paying its cost). */
+export const acquireMount = async (
+  gameId: number,
+  mountId: string,
+  mounted = true,
+  pay = false,
+): Promise<MountAcquireResult> => {
+  const res = await API.post<MountAcquireResult>(`/game/${gameId}/mount/acquire`, {
+    mount_id: mountId,
+    mounted,
+    pay,
+  });
+  return res.data;
+};
+
+/** Climb into the saddle (costs half your movement in combat). */
+export const mountUp = async (gameId: number): Promise<MountSimpleResult> => {
+  const res = await API.post<MountSimpleResult>(`/game/${gameId}/mount/mount-up`);
+  return res.data;
+};
+
+/** Dismount but keep leading the mount. */
+export const dismount = async (gameId: number): Promise<MountSimpleResult> => {
+  const res = await API.post<MountSimpleResult>(`/game/${gameId}/mount/dismount`);
+  return res.data;
+};
+
+/** Set the overland travel pace (slow/normal/fast) and gallop-burst toggle. */
+export const setMountPace = async (
+  gameId: number,
+  pace: 'slow' | 'normal' | 'fast',
+  galloping = false,
+): Promise<MountSimpleResult> => {
+  const res = await API.post<MountSimpleResult>(`/game/${gameId}/mount/pace`, {
+    pace,
+    galloping,
+  });
+  return res.data;
+};
+
+/** Apply damage to the mount (may throw the rider at 0 HP). */
+export const damageMount = async (
+  gameId: number,
+  amount: number,
+  saveTotal?: number,
+): Promise<MountDamageResult> => {
+  const res = await API.post<MountDamageResult>(`/game/${gameId}/mount/damage`, {
+    amount,
+    ...(saveTotal !== undefined ? { save_total: saveTotal } : {}),
+  });
+  return res.data;
+};
+
+/** Heal the active mount (clamped to its max HP). */
+export const healMount = async (
+  gameId: number,
+  amount: number,
+): Promise<MountHealResult> => {
+  const res = await API.post<MountHealResult>(`/game/${gameId}/mount/heal`, { amount });
+  return res.data;
+};
+
+/** Mounted-combat modifiers for the rider against a given target. */
+export const getMountCombat = async (
+  gameId: number,
+  targetSize = 'medium',
+  targetMounted = false,
+): Promise<MountCombatResult> => {
+  const res = await API.post<MountCombatResult>(`/game/${gameId}/mount/combat`, {
+    target_size: targetSize,
+    target_mounted: targetMounted,
+  });
+  return res.data;
+};
+
+/** Preview adjusted travel hours for a trip given the current mount + pace. */
+export const previewMountTravel = async (
+  gameId: number,
+  baseHours: number,
+  pace?: 'slow' | 'normal' | 'fast',
+  galloping?: boolean,
+): Promise<MountTravelResult> => {
+  const res = await API.post<MountTravelResult>(`/game/${gameId}/mount/travel`, {
+    base_hours: baseHours,
+    ...(pace ? { pace } : {}),
+    ...(galloping !== undefined ? { galloping } : {}),
+  });
   return res.data;
 };
