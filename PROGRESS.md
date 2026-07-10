@@ -1329,6 +1329,35 @@
     reduction + REST API incl. death/winner/start-combat carry-over and the
     long-rest endpoint round-trip); full suite now **1616 passing, 0 failing**
 
+## Completed This Run
+- [x] **Add damage-type resistances/immunities/vulnerabilities (Monster Manual)**
+  - Core 5e combat mechanic previously missing — skeletons took full poison damage,
+    fire elementals took full fire damage, and fiend/lycanthrope BPS resistance was
+    unmodeled. This run adds the full damage-modifier stack:
+  - `engine/damage_types.py` (pure, ~460 lines): DamageModifier dataclass with
+    bypassed_by_magic/bypassed_by_silver flags; DamageModifierSet for grouping;
+    compute_damage() resolves immunity/resistance/vulnerability per PHB order;
+    damage_multiplier() helper for UI/DM summaries (0, 0.5, 1, 2); convenience
+    constructors (resist/immune/vuln; resist_nonmagical_bps; immune_nonmagical_bps);
+    summary_for_dm() formats a DM-facing line.
+  - `Attack` gains magical/silvered flags (backward-compat defaults).
+  - `Combatant` gains damage_modifiers field (list of serialized dicts) +
+    apply_damage_modifiers() method; to_dict/from_dict serialize/deserialize.
+  - `resolve_attack()` wires in damage-modifier resolution before take_damage,
+    applying the condition-based "resistance to all damage" first, then damage-type.
+  - `EnemyTemplate` (encounters.py) gains damage_modifiers field; to_dict()
+    emits it for combat API consumption.
+  - Enemy registry updates: 12 iconic monsters now have correct MM stat blocks
+    (Skeleton/Zombie/Wight/Revenant = poison immune; Werewolf = immune to
+    nonmagical & nonsilvered BPS; Fire Elemental = immune to fire + poison,
+    vuln bludgeoning; White Dragon = immune cold, vuln fire; Ghost = immune
+    poison/necrotic, resist 5 elements; Gelatinous Cube = immune poison,
+    resist acid; dragons/devils with fiend-style resistance).
+  - Combat API (api/combat.py): Enemy combatant construction passes damage_modifiers
+    through from enemy_data dict.
+  - Tests: 42 new tests (36 engine + 6 combat integration). All passing.
+  - Verified: **2227 backend tests passing** (was 2185, +42), no regressions.
+
 ## Next Priorities
 - [ ] **[BLOCKED — external services]** Remaining DESIGN.md "Future" candidates
   that require new infrastructure/3rd-party services not yet provisioned
