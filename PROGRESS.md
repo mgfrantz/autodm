@@ -1,9 +1,38 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅
-## TEST SUITE FULLY GREEN (2170 backend + 25 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅
+## TEST SUITE FULLY GREEN (2227 backend + 29 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
 
 ## Completed This Run
+- [x] **Add in-game Mounts panel — mount/vehicle acquisition, riding & management UI (PHB ch.5/8/9)**
+  - The mounts engine (`engine/mounts.py`) + 11-endpoint API (`api/mounts.py`) were
+    **fully built and tested on the backend** (84 tests, 19-mount registry, mounted
+    travel + combat) but had **zero frontend coverage** — no types, no API client,
+    no panel, no GameView wiring. A player could not acquire, ride, manage, or
+    benefit from mounts in the UI at all. This run adds the full frontend layer.
+  - **`types/index.ts`**: 16 mount interfaces (`Mount`, `MountState`, `MountSummary`,
+    `DismountOutcome`, `MountedCombatModifiers`, `TravelSpeed` + 6 result types)
+    modeled exactly against the backend `to_dict()` shapes.
+  - **`stores/api.ts`**: 11 mount API client fns (registry list/detail, get state,
+    acquire, mount-up, dismount, set pace, damage, heal, combat modifiers, travel
+    preview).
+  - **`components/MountsPanel.tsx`** (~520 lines): complete mount console —
+    current-mount card (HP bar, mounted/leading/downed status, stat chips for
+    speed/carry/travel-mult), mount-up/dismount, travel-pace selector
+    (slow/normal/fast) + gallop-burst toggle, damage/heal controls, collapsible
+    mounted-combat modifier preview (target-size picker, advantage vs smaller
+    unmounted, Mounted Combatant feat benefits, lance rules), collapsible
+    travel-time preview (on-foot → adjusted hours), and a 19-mount registry
+    browser grouped by type with pay-gold toggle. Narrates acquire/damage events
+    into the DM story bubble.
+  - **`GameView.tsx`**: 🐎 Mounts header button + overlay modal, wired with
+    `onNarration → addToStory` and `onChanged → state refresh`.
+  - **Tests**: 4 `MountsPanel.test.tsx` integration tests (no-mount prompt +
+    registry, acquire-with-narration, mounted card + dismount, damage-throws-rider
+    narration). Verified: `tsc --noEmit` clean; `vite build` clean (125 modules,
+    +1); **29 frontend tests passing** (was 25, +4).
+
+## Previous Run
 - [x] **Expand feat registry — 16 PHB general feats + 14 XGE race-specific feats (AGENTS.md build priority #14: feat expansion)**
   - The feat registry had 23 feats; build priority #14 called for "feat
     expansion". This run more than doubles it to **53 feats** and adds a
