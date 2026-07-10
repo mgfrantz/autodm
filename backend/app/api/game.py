@@ -207,6 +207,19 @@ def _downtime_for_dm(game_state: dict, character) -> str:
     return wealth
 
 
+def _subclass_for_dm(character) -> str:
+    """Render the character's subclass for DM context.
+
+    Returns 'none' when no subclass is modelled, a prompt when one is due, or
+    the subclass name plus its active features — so the DM can narrate a
+    Champion's improved crits, a Life cleric's enhanced healing, etc.
+    """
+    from app.engine import subclasses
+    primary = character.primary_class
+    sub_id = character.subclass_dict.get(primary) if hasattr(character, "subclass_dict") else None
+    return subclasses.subclass_summary_for_dm(primary, sub_id, character.level)
+
+
 @router.post("/{game_id}/start/stream")
 async def start_adventure_stream(game_id: int, session_factory=Depends(get_session_factory)):
     """Stream the opening narration to the client via Server-Sent Events.
@@ -316,6 +329,7 @@ Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 Sustenance: {_survival_for_dm(game_state, character)}
 Mount: {_mount_for_dm(game_state)}
 Downtime: {_downtime_for_dm(game_state, character)}
+Subclass: {_subclass_for_dm(character)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -402,6 +416,7 @@ Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 Sustenance: {_survival_for_dm(game_state, character)}
 Mount: {_mount_for_dm(game_state)}
 Downtime: {_downtime_for_dm(game_state, character)}
+Subclass: {_subclass_for_dm(character)}
 """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(

@@ -37,6 +37,7 @@ MUTABLE_CHARACTER_FIELDS = (
     "asi_used",
     "gold",
     "feats",
+    "subclass",
     "strength",
     "dexterity",
     "constitution",
@@ -70,11 +71,11 @@ def capture_character_snapshot(character: Character) -> dict:
     snapshot: dict = {}
     for field in MUTABLE_CHARACTER_FIELDS:
         value = getattr(character, field)
-        if field in ("inventory", "spells", "feats", "skill_proficiencies", "skill_expertise", "tool_proficiencies", "languages"):
+        if field in ("inventory", "spells", "feats", "subclass", "skill_proficiencies", "skill_expertise", "tool_proficiencies", "languages"):
             try:
-                value = json.loads(value) if value else ([] if field != "spells" else {})
+                value = json.loads(value) if value else ([] if field != "spells" and field != "subclass" else {})
             except (TypeError, json.JSONDecodeError):
-                value = [] if field != "spells" else {}
+                value = [] if field != "spells" and field != "subclass" else {}
         snapshot[field] = value
     return snapshot
 
@@ -89,7 +90,7 @@ def apply_character_snapshot(character: Character, snapshot: dict) -> None:
         if field not in snapshot:
             continue
         value = snapshot[field]
-        if field in ("inventory", "spells", "feats", "skill_proficiencies", "skill_expertise", "tool_proficiencies", "languages"):
+        if field in ("inventory", "spells", "feats", "subclass", "skill_proficiencies", "skill_expertise", "tool_proficiencies", "languages"):
             value = json.dumps(value)
         setattr(character, field, value)
 

@@ -48,6 +48,7 @@ class CharacterResponse(BaseModel):
     level: int
     classes: dict[str, int]  # All classes with levels
     primary_class: str  # The class with the highest level
+    subclass: dict[str, str] = {}  # Chosen subclasses {class_name: subclass_id}
     background: str | None
     alignment: str | None = None  # DnD 5e alignment id (e.g. "lawful_good")
     strength: int
@@ -77,6 +78,21 @@ class CharacterResponse(BaseModel):
         if isinstance(v, str):
             return parse_classes(v)
         return v or {}
+
+    @field_validator('subclass', mode='before')
+    @classmethod
+    def parse_subclass_field(cls, v):
+        """Parse JSON string to dict if needed (handles raw column value)."""
+        if isinstance(v, str):
+            try:
+                import json as _json
+                data = _json.loads(v) if v else {}
+                return data if isinstance(data, dict) else {}
+            except (ValueError, TypeError):
+                return {}
+        if isinstance(v, dict):
+            return {str(k).lower(): str(val) for k, val in v.items()}
+        return {}
 
     @field_validator('feats', mode='before')
     @classmethod
