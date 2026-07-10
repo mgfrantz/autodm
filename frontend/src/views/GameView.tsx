@@ -23,6 +23,7 @@ import ExhaustionPanel from '../components/ExhaustionPanel'
 import SurvivalPanel from '../components/SurvivalPanel'
 import MountsPanel from '../components/MountsPanel'
 import SavingThrowsPanel from '../components/SavingThrowsPanel'
+import ImagePanel from '../components/ImagePanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
 const ALIGNMENT_LABELS: Record<string, string> = {
@@ -74,6 +75,7 @@ export default function GameView() {
   const [showSocial, setShowSocial] = useState(false)
   const [showDowntime, setShowDowntime] = useState(false)
   const [showMounts, setShowMounts] = useState(false)
+  const [showImages, setShowImages] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -537,6 +539,13 @@ export default function GameView() {
               title="Acquire, ride & manage mounts and vehicles (mounted travel + combat, PHB ch.5/8/9)"
             >
               🐎 <span className="hidden sm:inline">Mounts</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowImages(true)}
+              title="AI-generated scene illustrations & NPC portraits (provider-agnostic image API)"
+            >
+              🖼️ <span className="hidden sm:inline">Images</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1619,6 +1628,37 @@ export default function GameView() {
               onChanged={async () => {
                 // Acquiring a mount with payment deducts gold; damage/dismount
                 // can affect HP — refresh the game state to keep things in sync.
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Images overlay */}
+      {showImages && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowImages(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🖼️ Image Studio</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowImages(false)}
+              >
+                ×
+              </button>
+            </div>
+            <ImagePanel
+              gameId={gameState.game_id}
+              onNarration={(entry) => addToStory(entry)}
+              onChanged={async () => {
                 const state = await getGameState(gameState.game_id)
                 setGameState(state)
               }}

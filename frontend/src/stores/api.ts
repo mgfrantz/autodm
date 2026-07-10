@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -1138,5 +1138,59 @@ export const previewMountTravel = async (
     ...(pace ? { pace } : {}),
     ...(galloping !== undefined ? { galloping } : {}),
   });
+  return res.data;
+};
+
+// --------------------------------------------------------------------------- //
+// Image Generation
+// --------------------------------------------------------------------------- //
+
+/** Check whether image generation is configured. */
+export const getImageStatus = async (
+  gameId: number,
+): Promise<ImageGenerationStatus> => {
+  const res = await API.get<ImageGenerationStatus>(`/game/${gameId}/images/status`);
+  return res.data;
+};
+
+/** Generate a scene illustration from the latest DM narration. */
+export const generateSceneImage = async (
+  gameId: number,
+): Promise<ImageGenerationResult> => {
+  const res = await API.post<ImageGenerationResult>(`/game/${gameId}/images/scene`);
+  return res.data;
+};
+
+/** Generate an NPC or character portrait. */
+export const generatePortraitImage = async (
+  gameId: number,
+  name: string,
+  description = '',
+  race = '',
+  charClass = '',
+): Promise<ImageGenerationResult> => {
+  const res = await API.post<ImageGenerationResult>(`/game/${gameId}/images/portrait`, {
+    name,
+    description,
+    race,
+    char_class: charClass,
+  });
+  return res.data;
+};
+
+/** List all cached images for this game (gallery). */
+export const getGameImages = async (
+  gameId: number,
+): Promise<ImageGallery> => {
+  const res = await API.get<ImageGallery>(`/game/${gameId}/images`);
+  return res.data;
+};
+
+/** Remove a cached image from the gallery by index. */
+export const deleteGameImage = async (
+  gameId: number,
+  index: number,
+): Promise<{ removed: GeneratedImage; remaining_count: number }> => {
+  const res = await API.delete(`/game/${gameId}/images/${index}`);
   return res.data;
 };

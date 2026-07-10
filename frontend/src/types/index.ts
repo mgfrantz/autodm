@@ -1510,3 +1510,42 @@ export interface MountTravelResult {
   state: MountState;
   summary: MountSummary;
 }
+
+// --------------------------------------------------------------------------- //
+// Image Generation
+// --------------------------------------------------------------------------- //
+
+/** Whether image generation is configured (GET /images/status). */
+export interface ImageGenerationStatus {
+  configured: boolean;
+  provider: string;
+  model: string;
+  size: string;
+  quality: string;
+}
+
+/** A cached generated image (scene or portrait). */
+export interface GeneratedImage {
+  type: 'scene' | 'portrait';
+  label: string;
+  prompt: string;
+  revised_prompt: string | null;
+  url: string;
+  model: string;
+  size: string;
+  quality: string;
+  timestamp: string;
+}
+
+/** Result of generating a scene or portrait image. */
+export interface ImageGenerationResult {
+  image: GeneratedImage;
+  cached_count: number;
+}
+
+/** Gallery listing (GET /images). */
+export interface ImageGallery {
+  images: GeneratedImage[];
+  count: number;
+  configured: boolean;
+}
