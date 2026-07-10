@@ -1549,3 +1549,101 @@ export interface ImageGallery {
   count: number;
   configured: boolean;
 }
+
+/* ------------------------------------------------------------------ *
+ * Legendary Actions & Lair Actions — DnD 5e boss-monster combat (MM p.11)
+ * A legendary creature's off-turn special action.
+ * ------------------------------------------------------------------ */
+export interface LegendaryAction {
+  id: string;
+  name: string;
+  description: string;
+  cost: number; // 1, 2, or 3 legendary-action points
+  kind: 'attack' | 'detect' | 'move' | 'utility' | string;
+  attack?: Record<string, unknown> | null; // Attack shape when kind === 'attack'
+  condition?: string | null;
+  condition_duration?: number | null;
+  notes?: string;
+}
+
+/** An environmental action a creature uses while in its lair (initiative 20). */
+export interface LairAction {
+  id: string;
+  name: string;
+  description: string;
+  initiative_count: number;
+  kind: 'attack' | 'save' | 'utility' | string;
+  attack?: Record<string, unknown> | null;
+  damage?: number;
+  damage_type?: string;
+  save_dc?: number;
+  save_ability?: string;
+  condition?: string | null;
+  condition_duration?: number | null;
+}
+
+/** A ready-to-use legendary creature preset (registry entry). */
+export interface LegendaryCreaturePreset {
+  id: string;
+  name: string;
+  cr: number;
+  max_hp: number;
+  armor_class: number;
+  speed: number;
+  size: string;
+  strength: number;
+  dexterity: number;
+  initiative_bonus: number;
+  attacks: Record<string, unknown>[];
+  damage_modifiers: Record<string, unknown>[];
+  legendary_budget_max: number;
+  legendary_actions: LegendaryAction[];
+  lair_actions: LairAction[];
+  notes: string;
+}
+
+/** A combatant's current legendary-action budget + actions (GET /legendary/{id}). */
+export interface LegendaryCombatantView {
+  combatant_id: string;
+  name: string;
+  is_legendary: boolean;
+  budget_max: number;
+  budget_used: number;
+  budget_remaining: number;
+  legendary_actions: LegendaryAction[];
+  available_actions: LegendaryAction[];
+}
+
+/** Response from GET /{id}/legendary — every legendary creature in the fight. */
+export interface EncounterLegendaryResponse {
+  in_combat: boolean;
+  legendary_creatures: LegendaryCombatantView[];
+  has_lair: boolean;
+}
+
+/** Response from GET /{id}/lair — the encounter's lair state. */
+export interface LairStateResponse {
+  has_lair: boolean;
+  initiative_count: number;
+  lair_last_fired_round: number | null;
+  round_number: number;
+  lair_actions: LairAction[];
+}
+
+/** Response from spending a legendary action. */
+export interface UseLegendaryActionResult {
+  used: boolean;
+  action: LegendaryAction;
+  remaining_budget: number;
+  description: string;
+  encounter?: unknown;
+}
+
+/** Response from firing a lair action. */
+export interface FireLairActionResult {
+  triggered: boolean;
+  action: LairAction | null;
+  description: string;
+  lair_last_fired_round: number | null;
+  encounter?: unknown;
+}

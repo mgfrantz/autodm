@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -1020,6 +1020,62 @@ export const resolveDowntime = async (
   opts: DowntimeResolveOptions,
 ): Promise<DowntimeResolveResult> => {
   const res = await API.post<DowntimeResolveResult>(`/game/${gameId}/downtime/resolve`, opts);
+  return res.data;
+};
+
+// === Legendary Actions & Lair Actions — boss-monster combat (MM p.11) ===
+
+/** All ready-to-use legendary creature presets (dragons, liches, beholders...). */
+export const listLegendaryCreatures = async (): Promise<LegendaryCreaturePreset[]> => {
+  const res = await API.get<{ creatures: LegendaryCreaturePreset[] }>('/game/legendary/creatures');
+  return res.data.creatures;
+};
+
+/** Look up a single legendary creature preset by id. */
+export const getLegendaryCreature = async (creatureId: string): Promise<LegendaryCreaturePreset> => {
+  const res = await API.get<LegendaryCreaturePreset>(`/game/legendary/creatures/${creatureId}`);
+  return res.data;
+};
+
+/** Every legendary creature in the active encounter with its action budget. */
+export const getEncounterLegendary = async (gameId: number): Promise<EncounterLegendaryResponse> => {
+  const res = await API.get<EncounterLegendaryResponse>(`/game/${gameId}/legendary`);
+  return res.data;
+};
+
+/** A single combatant's legendary-action budget + available actions. */
+export const getLegendaryState = async (
+  gameId: number,
+  combatantId: string,
+): Promise<LegendaryCombatantView> => {
+  const res = await API.get<LegendaryCombatantView>(`/game/${gameId}/legendary/${combatantId}`);
+  return res.data;
+};
+
+/** Spend a legendary action off-turn (attack-kind actions need a targetId). */
+export const useLegendaryAction = async (
+  gameId: number,
+  combatantId: string,
+  actionId: string,
+  targetId?: string,
+): Promise<UseLegendaryActionResult> => {
+  const res = await API.post<UseLegendaryActionResult>(`/game/${gameId}/legendary/use`, {
+    combatant_id: combatantId,
+    action_id: actionId,
+    target_id: targetId,
+  });
+  return res.data;
+};
+
+/** The encounter's lair-action state (initiative 20 actions + last fired round). */
+export const getLairState = async (gameId: number): Promise<LairStateResponse> => {
+  const res = await API.get<LairStateResponse>(`/game/${gameId}/lair`);
+  return res.data;
+};
+
+/** Fire the lair action due this round (initiative count 20). */
+export const fireLairAction = async (gameId: number): Promise<FireLairActionResult> => {
+  const res = await API.post<FireLairActionResult>(`/game/${gameId}/lair/action`);
   return res.data;
 };
 
