@@ -16,6 +16,10 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+# Import damage modifiers for enemy stat blocks
+from app.engine import damage_types as dt_mod
+
+
 # CR to XP mapping (DnD 5e DMG, page 274)
 # Fractional CRs are represented as decimals
 CR_TO_XP = {
@@ -178,10 +182,13 @@ class EnemyTemplate:
     hp: int = 10
     attack_bonus: int = 0
     damage_dice: str = "1d6"
-    
+    # Damage-type modifiers (resistance/immunity/vulnerability). Expressed as
+    # serialized DamageModifier dicts for compatibility with combat API.
+    damage_modifiers: list[dict] = field(default_factory=list)
+
     def __post_init__(self):
         self.xp_value = cr_to_xp(self.cr)
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for combat API."""
         return {
@@ -190,6 +197,7 @@ class EnemyTemplate:
             "armor_class": self.armor_class,
             "initiative_bonus": 0,
             "speed": 30,
+            "damage_modifiers": list(self.damage_modifiers),
             "attacks": [
                 {
                     "name": f"{self.name} Attack",
@@ -438,7 +446,14 @@ COMMON_ENEMIES = {
 
     # CR 1/8 (25 XP)
     "Goblin": EnemyTemplate(name="Goblin", cr=1/8, armor_class=15, hp=7, attack_bonus=4),
-    "Skeleton": EnemyTemplate(name="Skeleton", cr=1/8, armor_class=13, hp=13, attack_bonus=4),
+    "Skeleton": EnemyTemplate(
+        name="Skeleton",
+        cr=1/8,
+        armor_class=13,
+        hp=13,
+        attack_bonus=4,
+        damage_modifiers=[dt_mod.immune("poison").to_dict()],
+    ),
     "Bat": EnemyTemplate(name="Bat", cr=1/8, armor_class=12, hp=1, attack_bonus=0),
     "Cat": EnemyTemplate(name="Cat", cr=1/8, armor_class=12, hp=2, attack_bonus=0),
     "Crawling Claw": EnemyTemplate(name="Crawling Claw", cr=1/8, armor_class=12, hp=3, attack_bonus=4),
@@ -466,19 +481,52 @@ COMMON_ENEMIES = {
     "Goblin Boss": EnemyTemplate(name="Goblin Boss", cr=1, armor_class=17, hp=21, attack_bonus=4),
     "Hobgoblin": EnemyTemplate(name="Hobgoblin", cr=1, armor_class=18, hp=11, attack_bonus=3),
     "Pteranodon": EnemyTemplate(name="Pteranodon", cr=1, armor_class=13, hp=13, attack_bonus=3),
-    "Zombie": EnemyTemplate(name="Zombie", cr=1, armor_class=8, hp=22, attack_bonus=3),
+    "Zombie": EnemyTemplate(
+        name="Zombie",
+        cr=1,
+        armor_class=8,
+        hp=22,
+        attack_bonus=3,
+        damage_modifiers=[dt_mod.immune("poison").to_dict()],
+    ),
 
     # CR 2 (450 XP)
     "Ogre": EnemyTemplate(name="Ogre", cr=2, armor_class=11, hp=59, attack_bonus=7),
-    "Gelatinous Cube": EnemyTemplate(name="Gelatinous Cube", cr=2, armor_class=6, hp=84, attack_bonus=4),
+    "Gelatinous Cube": EnemyTemplate(
+        name="Gelatinous Cube",
+        cr=2,
+        armor_class=6,
+        hp=84,
+        attack_bonus=4,
+        damage_modifiers=[
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist("acid").to_dict(),
+        ],
+    ),
     "Giant Ape": EnemyTemplate(name="Giant Ape", cr=2, armor_class=12, hp=76, attack_bonus=7),
     "Giant Constrictor Snake": EnemyTemplate(name="Giant Constrictor Snake", cr=2, armor_class=12, hp=60, attack_bonus=6),
     "Guard": EnemyTemplate(name="Guard", cr=2, armor_class=16, hp=11, attack_bonus=3),
     "Knight": EnemyTemplate(name="Knight", cr=2, armor_class=18, hp=52, attack_bonus=5),
-    "Minotaur Skeleton": EnemyTemplate(name="Minotaur Skeleton", cr=2, armor_class=15, hp=67, attack_bonus=6),
+    "Minotaur Skeleton": EnemyTemplate(
+        name="Minotaur Skeleton",
+        cr=2,
+        armor_class=15,
+        hp=67,
+        attack_bonus=6,
+        damage_modifiers=[dt_mod.immune("poison").to_dict()],
+    ),
     "Pegasus": EnemyTemplate(name="Pegasus", cr=2, armor_class=12, hp=59, attack_bonus=5),
     "Phase Spider": EnemyTemplate(name="Phase Spider", cr=2, armor_class=15, hp=32, attack_bonus=4),
-    "Werewolf": EnemyTemplate(name="Werewolf", cr=2, armor_class=13, hp=58, attack_bonus=4),
+    "Werewolf": EnemyTemplate(
+        name="Werewolf",
+        cr=2,
+        armor_class=13,
+        hp=58,
+        attack_bonus=4,
+        damage_modifiers=[
+            dt_mod.immune_nonmagical_bps(silver_bypasses=True).to_dict(),
+        ],
+    ),
 
     # CR 3 (700 XP)
     "Owlbear": EnemyTemplate(name="Owlbear", cr=3, armor_class=13, hp=59, attack_bonus=7),
@@ -493,8 +541,27 @@ COMMON_ENEMIES = {
     "Giant Vulture": EnemyTemplate(name="Giant Vulture", cr=3, armor_class=10, hp=30, attack_bonus=5),
 
     # CR 4 (1100 XP)
-    "Young Red Dragon": EnemyTemplate(name="Young Red Dragon", cr=4, armor_class=18, hp=75, attack_bonus=7),
-    "Wight": EnemyTemplate(name="Wight", cr=4, armor_class=14, hp=45, attack_bonus=4),
+    "Young Red Dragon": EnemyTemplate(
+        name="Young Red Dragon",
+        cr=4,
+        armor_class=18,
+        hp=75,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.resist("fire").to_dict(),
+        ],
+    ),
+    "Wight": EnemyTemplate(
+        name="Wight",
+        cr=4,
+        armor_class=14,
+        hp=45,
+        attack_bonus=4,
+        damage_modifiers=[
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
     "Basilisk": EnemyTemplate(name="Basilisk", cr=4, armor_class=15, hp=52, attack_bonus=5),
     "Blackguard": EnemyTemplate(name="Blackguard", cr=4, armor_class=18, hp=60, attack_bonus=7),
     "Bulette": EnemyTemplate(name="Bulette", cr=4, armor_class=17, hp=94, attack_bonus=7),
@@ -502,11 +569,27 @@ COMMON_ENEMIES = {
     "Chimera": EnemyTemplate(name="Chimera", cr=4, armor_class=14, hp=81, attack_bonus=6),
     "Gorgon": EnemyTemplate(name="Gorgon", cr=4, armor_class=19, hp=76, attack_bonus=7),
     "Hook Horror": EnemyTemplate(name="Hook Horror", cr=4, armor_class=15, hp=75, attack_bonus=6),
-    "Ogre Zombie": EnemyTemplate(name="Ogre Zombie", cr=4, armor_class=8, hp=85, attack_bonus=7),
+    "Ogre Zombie": EnemyTemplate(
+        name="Ogre Zombie",
+        cr=4,
+        armor_class=8,
+        hp=85,
+        attack_bonus=7,
+        damage_modifiers=[dt_mod.immune("poison").to_dict()],
+    ),
 
     # CR 5 (1800 XP)
     "Hill Giant": EnemyTemplate(name="Hill Giant", cr=5, armor_class=13, hp=105, attack_bonus=8),
-    "Werewolf": EnemyTemplate(name="Werewolf", cr=5, armor_class=14, hp=58, attack_bonus=7),
+    "Werewolf": EnemyTemplate(
+        name="Werewolf",
+        cr=5,
+        armor_class=14,
+        hp=58,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.immune_nonmagical_bps(silver_bypasses=True).to_dict(),
+        ],
+    ),
     "Bandit Captain": EnemyTemplate(name="Bandit Captain", cr=5, armor_class=15, hp=65, attack_bonus=4),
     "Berbalang": EnemyTemplate(name="Berbalang", cr=5, armor_class=13, hp=75, attack_bonus=5),
     "Berserker": EnemyTemplate(name="Berserker", cr=5, armor_class=13, hp=67, attack_bonus=5),
@@ -514,18 +597,60 @@ COMMON_ENEMIES = {
     "Frost Giant": EnemyTemplate(name="Frost Giant", cr=5, armor_class=15, hp=126, attack_bonus=9),
     "Gladiator": EnemyTemplate(name="Gladiator", cr=5, armor_class=16, hp=112, attack_bonus=7),
     "Giant Hydra": EnemyTemplate(name="Giant Hydra", cr=5, armor_class=15, hp=76, attack_bonus=6),
-    "Revenant": EnemyTemplate(name="Revenant", cr=5, armor_class=13, hp=82, attack_bonus=7),
+    "Revenant": EnemyTemplate(
+        name="Revenant",
+        cr=5,
+        armor_class=13,
+        hp=82,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
 
     # CR 6 (2300 XP)
     "Young Blue Dragon": EnemyTemplate(name="Young Blue Dragon", cr=6, armor_class=18, hp=110, attack_bonus=9),
     "Air Elemental": EnemyTemplate(name="Air Elemental", cr=6, armor_class=15, hp=90, attack_bonus=8),
-    "Baby White Dragon": EnemyTemplate(name="Baby White Dragon", cr=6, armor_class=17, hp=99, attack_bonus=9),
-    "Bearded Devil": EnemyTemplate(name="Bearded Devil", cr=6, armor_class=13, hp=52, attack_bonus=5),
+    "Baby White Dragon": EnemyTemplate(
+        name="Baby White Dragon",
+        cr=6,
+        armor_class=17,
+        hp=99,
+        attack_bonus=9,
+        damage_modifiers=[
+            dt_mod.immune("cold").to_dict(),
+            dt_mod.vuln("fire").to_dict(),
+        ],
+    ),
+    "Bearded Devil": EnemyTemplate(
+        name="Bearded Devil",
+        cr=6,
+        armor_class=13,
+        hp=52,
+        attack_bonus=5,
+        damage_modifiers=[
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+            dt_mod.resist("fire").to_dict(),
+        ],
+    ),
     "Behir": EnemyTemplate(name="Behir", cr=6, armor_class=17, hp=168, attack_bonus=7),
     "Dire Troll": EnemyTemplate(name="Dire Troll", cr=6, armor_class=15, hp=84, attack_bonus=7),
     "Drider": EnemyTemplate(name="Drider", cr=6, armor_class=16, hp=71, attack_bonus=7),
     "Earth Elemental": EnemyTemplate(name="Earth Elemental", cr=6, armor_class=17, hp=126, attack_bonus=8),
-    "Fire Elemental": EnemyTemplate(name="Fire Elemental", cr=6, armor_class=13, hp=102, attack_bonus=7),
+    "Fire Elemental": EnemyTemplate(
+        name="Fire Elemental",
+        cr=6,
+        armor_class=13,
+        hp=102,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.immune("fire").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.vuln("bludgeoning").to_dict(),
+        ],
+    ),
     "Gargoyle Protector": EnemyTemplate(name="Gargoyle Protector", cr=6, armor_class=15, hp=110, attack_bonus=6),
 
     # CR 7 (2900 XP)
@@ -537,7 +662,22 @@ COMMON_ENEMIES = {
     "Fire Giant": EnemyTemplate(name="Fire Giant", cr=7, armor_class=21, hp=162, attack_bonus=10),
     "Formorian": EnemyTemplate(name="Formorian", cr=7, armor_class=17, hp=170, attack_bonus=9),
     "Gargoyle Sentinel": EnemyTemplate(name="Gargoyle Sentinel", cr=7, armor_class=17, hp=137, attack_bonus=7),
-    "Ghost": EnemyTemplate(name="Ghost", cr=7, armor_class=11, hp=45, attack_bonus=6),
+    "Ghost": EnemyTemplate(
+        name="Ghost",
+        cr=7,
+        armor_class=11,
+        hp=45,
+        attack_bonus=6,
+        damage_modifiers=[
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.immune("necrotic").to_dict(),
+            dt_mod.resist("acid").to_dict(),
+            dt_mod.resist("cold").to_dict(),
+            dt_mod.resist("fire").to_dict(),
+            dt_mod.resist("lightning").to_dict(),
+            dt_mod.resist("thunder").to_dict(),
+        ],
+    ),
     "Giant Octopus": EnemyTemplate(name="Giant Octopus", cr=7, armor_class=11, hp=52, attack_bonus=6),
 
     # CR 8 (3900 XP)

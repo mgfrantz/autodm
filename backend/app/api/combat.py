@@ -121,6 +121,7 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
             athletics_bonus=enemy_data.get("athletics_bonus"),
             acrobatics_bonus=enemy_data.get("acrobatics_bonus"),
             cr=enemy_data.get("cr", 0.0),
+            damage_modifiers=enemy_data.get("damage_modifiers", []),
         )
         encounter.add_combatant(enemy)
 
