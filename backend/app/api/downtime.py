@@ -453,6 +453,14 @@ def resolve_downtime(
     if a == "relaxation" and result.details.get("remaining_conditions") is not None:
         game_state["conditions"] = result.details["remaining_conditions"]
 
+    # Remember the last between-adventures activity for DM context + UI.
+    game_state["downtime"] = {
+        "activity": result.activity,
+        "name": activity.name,
+        "gold_after": new_gold,
+        "when": datetime.utcnow().isoformat(),
+    }
+
     # Training completion grants a language or tool proficiency.
     proficiency_granted: Optional[str] = None
     if a == "training" and result.details.get("complete"):

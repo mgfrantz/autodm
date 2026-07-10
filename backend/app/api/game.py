@@ -187,6 +187,26 @@ def _mount_for_dm(game_state: dict) -> str:
     return mounts.mount_for_dm(state)
 
 
+def _downtime_for_dm(game_state: dict, character) -> str:
+    """Render the character's between-adventures situation for DM context.
+
+    Surfaces the character's purse (gold) plus their most recent downtime
+    activity, so the DM can narrate the texture of off-screen life — a flush
+    purse after a heist, hard-won training, a week of carousing — and weight
+    costs and opportunities accordingly. Returns just the wealth when no
+    downtime activity has been recorded yet.
+    """
+    try:
+        gold = int(getattr(character, "gold", 0) or 0)
+    except (TypeError, ValueError):
+        gold = 0
+    dt_state = game_state.get("downtime") or {}
+    wealth = f"{gold} gp"
+    if isinstance(dt_state, dict) and dt_state.get("name"):
+        return f"{wealth}; recently: {dt_state['name'].lower()}"
+    return wealth
+
+
 @router.post("/{game_id}/start/stream")
 async def start_adventure_stream(game_id: int, session_factory=Depends(get_session_factory)):
     """Stream the opening narration to the client via Server-Sent Events.
@@ -295,6 +315,7 @@ Conditions: {', '.join(game_state.get('conditions', ['none']))}
 Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 Sustenance: {_survival_for_dm(game_state, character)}
 Mount: {_mount_for_dm(game_state)}
+Downtime: {_downtime_for_dm(game_state, character)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -380,6 +401,7 @@ Conditions: {', '.join(game_state.get('conditions', ['none']))}
 Exhaustion: {_exhaustion_for_dm(game_state.get('exhaustion', 0))}
 Sustenance: {_survival_for_dm(game_state, character)}
 Mount: {_mount_for_dm(game_state)}
+Downtime: {_downtime_for_dm(game_state, character)}
 """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(
