@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from app.engine import conditions as conditions_mod
+from app.engine import damage_types as damage_types_mod
 from app.engine import environment as environment_mod
 from app.engine import exhaustion as exhaustion_mod
 from app.engine.dice import roll_d20, roll_dice
@@ -39,6 +40,12 @@ class Attack:
     damage_bonus: int = 0
     damage_type: str = "slashing"
     ranged: bool = False  # distinguishes melee vs ranged for prone/cover rules
+    # Whether the weapon/attack counts as magical. Bypasses "resistant/immune
+    # to bludgeoning/piercing/slashing from nonmagical weapons" monster traits.
+    magical: bool = False
+    # Whether the weapon is silvered. Bypasses lycanthrope-style "that aren't
+    # silvered" immunity qualifiers.
+    silvered: bool = False
 
     def roll_damage(self, critical: bool = False) -> int:
         """Roll damage. On a critical hit the damage dice are doubled (5e rule)."""
@@ -111,6 +118,12 @@ class Combatant:
     # (attack disadvantage at 3+), effective_speed (halved at 2, zero at 5),
     # effective_max_hp (halved at 4), and is_alive (dead at 6).
     exhaustion: int = 0
+    # --- Damage-type modifiers (Monster Manual) ---
+    # Serialized list of DamageModifier dicts (resistance/immunity/vulnerability),
+    # e.g. [{"types": ["poison"], "kind": "immunity"}]. Empty by default for
+    # backward compatibility. ``apply_damage_modifiers`` resolves them in
+    # resolve_attack before damage is applied. See engine/damage_types.py.
+    damage_modifiers: list[dict] = field(default_factory=list)
     def __post_init__(self) -> None:
         # Default current HP to max when not explicitly set.
         # Default current HP to max when not explicitly set.
@@ -184,6 +197,32 @@ class Combatant:
         self.current_hp = min(self.effective_max_hp, self.current_hp + amount)
         return self.current_hp
 
+    def apply_damage_modifiers(
+        self,
+        amount: int,
+        damage_type: str,
+        *,
+        magical: bool = False,
+        silvered: bool = False,
+    ) -> int:
+        """Apply this combatant's damage-type resistances/immunities/vulnerabilities.
+
+        Models the Monster Manual "Damage Resistances and Immunities" trait:
+        immunity negates, resistance halves (round down), vulnerability doubles,
+        applied in PHB order (immunity → resistance → vulnerability). Qualified
+        modifiers ("from nonmagical weapons that aren't silvered") are bypassed
+        when the attack is magical or the weapon is silvered.
+
+        Returns the modified damage (never negative). See engine/damage_types.py.
+        """
+        return damage_types_mod.compute_damage(
+            amount,
+            damage_type,
+            self.damage_modifiers,
+            magical=magical,
+            silvered=silvered,
+        )
+
     def roll_initiative(self) -> int:
         """Roll this combatant's initiative (d20 + initiative bonus)."""
         result = roll_d20(self.initiative_bonus)
@@ -237,6 +276,7 @@ class Combatant:
             "concentration_spell_name": self.concentration_spell_name,
             "concentration_spell_id": self.concentration_spell_id,
             "exhaustion": self.exhaustion,
+            "damage_modifiers": list(self.damage_modifiers),
             "attacks": [
                 {
                     "name": a.name,
@@ -246,6 +286,8 @@ class Combatant:
                     "damage_bonus": a.damage_bonus,
                     "damage_type": a.damage_type,
                     "ranged": a.ranged,
+                    "magical": a.magical,
+                    "silvered": a.silvered,
                 }
                 for a in self.attacks
             ],
@@ -283,6 +325,7 @@ class Combatant:
             concentration_spell_name=data.get("concentration_spell_name", ""),
             concentration_spell_id=data.get("concentration_spell_id", ""),
             exhaustion=data.get("exhaustion", 0),
+            damage_modifiers=list(data.get("damage_modifiers", [])),
             attacks=attacks,
             current_hp=data.get("current_hp", data["max_hp"]),
         )
@@ -640,9 +683,18 @@ class Encounter:
             critical = True
 
         damage = attack.roll_damage(critical=critical)
-        # Resistance to all damage (e.g. petrified) halves the total, rounding down.
+        # Condition "resistance to all damage" (e.g. petrified) halves the total,
+        # rounding down. This is a separate effect from damage-type resistances.
         if conditions_mod.has_damage_resistance(target):
             damage = damage // 2
+        # Apply damage-type resistances/immunities/vulnerabilities (Monster Manual).
+        # Pass magical/silvered flags so qualified modifiers are bypassed correctly.
+        damage = target.apply_damage_modifiers(
+            damage,
+            attack.damage_type,
+            magical=attack.magical,
+            silvered=attack.silvered,
+        )
         remaining = target.take_damage(damage)
 
         # Attacker reveals themselves on hit

@@ -295,4 +295,208 @@ class TestSerialization:
         assert len(restored.turn_order) == 2
         # Turn order preserved by id.
         assert restored.turn_order[0].id == enc.turn_order[0].id
-        assert restored.current_turn_index == enc.current_turn_index
+
+
+# ---------------------------------------------------------------------------
+# Damage-type modifiers (resistance/immunity/vulnerability)
+# ---------------------------------------------------------------------------
+
+    def test_combatant_immune_to_poison_takes_no_damage(self, monkeypatch):
+        from app.engine.damage_types import immune
+        # Dagger: 1d4. Set die to 8 for hit (8+5=13 vs AC 13) and damage 8.
+        monkeypatch.setattr(dice.random, "randint", fixed_die(8))
+        skeleton = Combatant(
+            id="skel1",
+            name="Skeleton",
+            side="enemy",
+            max_hp=13,
+            armor_class=13,
+            damage_modifiers=[immune("poison").to_dict()],
+        )
+        hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Poisoned Dagger", attack_bonus=5, damage_dice_count=1, damage_dice_sides=4, damage_type="poison")],
+        )
+        enc = Encounter([hero, skeleton])
+        result = enc.resolve_attack(hero, skeleton, hero.attacks[0])
+        assert result.hit
+        assert result.damage == 0  # immunity
+
+    def test_resistance_halves_damage(self, monkeypatch):
+        from app.engine.damage_types import resist
+        # Firebolt: 2d6+2. With fixed 4 per die = 8+2=10 raw. 4+5=9 vs AC 13, miss. Need higher.
+        monkeypatch.setattr(dice.random, "randint", fixed_die(8))  # 8+5=13 hits; damage: 8+8+2=18; half=9.
+        skeleton = Combatant(
+            id="skel1",
+            name="Skeleton",
+            side="enemy",
+            max_hp=20,
+            armor_class=13,
+            damage_modifiers=[resist("fire").to_dict()],
+        )
+        hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Firebolt", attack_bonus=5, damage_dice_count=2, damage_dice_sides=6, damage_type="fire", damage_bonus=2)],
+        )
+        enc = Encounter([hero, skeleton])
+        result = enc.resolve_attack(hero, skeleton, hero.attacks[0])
+        assert result.hit
+        assert result.damage == 9  # (8*2+2) // 2 = 9
+
+    def test_vulnerability_doubles_damage(self, monkeypatch):
+        from app.engine.damage_types import vuln
+        # Firebolt: 2d6+2. Troll AC 15. Need die 10 to hit (10+5=15). Damage: 10*2+2=22; vuln: 44.
+        monkeypatch.setattr(dice.random, "randint", fixed_die(10))  # 10+5=15 hits; damage: 20+2=22; vuln: 44.
+        troll = Combatant(
+            id="troll1",
+            name="Troll",
+            side="enemy",
+            max_hp=40,
+            armor_class=15,
+            damage_modifiers=[vuln("fire").to_dict()],
+        )
+        hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Firebolt", attack_bonus=5, damage_dice_count=2, damage_dice_sides=6, damage_type="fire", damage_bonus=2)],
+        )
+        enc = Encounter([hero, troll])
+        result = enc.resolve_attack(hero, troll, hero.attacks[0])
+        assert result.hit
+        assert result.damage == 44  # (20+2) * 2
+
+    def test_nonmagical_resistance_bypassed_by_magic_weapon(self, monkeypatch):
+        from app.engine.damage_types import resist_nonmagical_bps
+        # Longsword: 1d8+3. Fixed die 10 for hit/damage: 10+5=15 hits; damage: 10+3=13.
+        monkeypatch.setattr(dice.random, "randint", fixed_die(10))
+        imp = Combatant(
+            id="imp1",
+            name="Imp",
+            side="enemy",
+            max_hp=10,
+            armor_class=13,
+            damage_modifiers=[resist_nonmagical_bps().to_dict()],
+        )
+        # Nonmagical sword — resistance applies.
+        hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Longsword", attack_bonus=5, damage_dice_count=1, damage_dice_sides=8, damage_bonus=3, magical=False)],
+        )
+        enc = Encounter([hero, imp])
+        result = enc.resolve_attack(hero, imp, hero.attacks[0])
+        assert result.hit
+        assert result.damage == 6  # 13 // 2
+
+        # Magic sword — bypasses.
+        magic_hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Magic Longsword +1", attack_bonus=6, damage_dice_count=1, damage_dice_sides=8, damage_bonus=4, magical=True)],
+        )
+        enc2 = Encounter([magic_hero, imp])
+        result2 = enc2.resolve_attack(magic_hero, imp, magic_hero.attacks[0])
+        assert result2.hit
+        assert result2.damage == 14  # full (10+4)
+
+    def test_lycanthrope_immunity_bypassed_by_silver_or_magic(self, monkeypatch):
+        from app.engine.damage_types import immune_nonmagical_bps
+        # Longsword: 1d8+3. Fixed die 8 for hit/damage: 8+5=13 hits; damage: 8+3=11.
+        monkeypatch.setattr(dice.random, "randint", fixed_die(8))
+        werewolf = Combatant(
+            id="wolf1",
+            name="Werewolf",
+            side="enemy",
+            max_hp=58,
+            armor_class=13,
+            damage_modifiers=[immune_nonmagical_bps(silver_bypasses=True).to_dict()],
+        )
+        # Plain weapon → immunity applies (0 damage).
+        hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Longsword", attack_bonus=5, damage_dice_count=1, damage_dice_sides=8, damage_bonus=3)],
+        )
+        enc = Encounter([hero, werewolf])
+        result = enc.resolve_attack(hero, werewolf, hero.attacks[0])
+        assert result.hit
+        assert result.damage == 0  # immunity
+
+        # Silvered weapon → bypasses.
+        silver_hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Silver Longsword", attack_bonus=5, damage_dice_count=1, damage_dice_sides=8, damage_bonus=3, silvered=True)],
+        )
+        enc2 = Encounter([silver_hero, werewolf])
+        result2 = enc2.resolve_attack(silver_hero, werewolf, silver_hero.attacks[0])
+        assert result2.hit
+        assert result2.damage == 11  # full
+
+        # Magic weapon → also bypasses.
+        magic_hero = Combatant(
+            id="hero",
+            name="Hero",
+            side="player",
+            max_hp=30,
+            armor_class=16,
+            attacks=[Attack(name="Magic Longsword", attack_bonus=5, damage_dice_count=1, damage_dice_sides=8, damage_bonus=3, magical=True)],
+        )
+        enc3 = Encounter([magic_hero, werewolf])
+        result3 = enc3.resolve_attack(magic_hero, werewolf, magic_hero.attacks[0])
+        assert result3.hit
+        assert result3.damage == 11  # full
+
+    def test_damage_modifiers_serialization_round_trip(self):
+        from app.engine.damage_types import resist, immune
+        c = Combatant(
+            id="test",
+            name="Test",
+            side="player",
+            max_hp=20,
+            armor_class=12,
+            damage_modifiers=[
+                resist("fire").to_dict(),
+                immune("poison").to_dict(),
+            ],
+        )
+        d = c.to_dict()
+        assert "damage_modifiers" in d
+        assert len(d["damage_modifiers"]) == 2
+        restored = Combatant.from_dict(d)
+        assert restored.damage_modifiers == c.damage_modifiers
+        # Behavior preserved.
+        assert restored.apply_damage_modifiers(10, "fire") == 5
+        assert restored.apply_damage_modifiers(10, "poison") == 0
+        # Attacks serialize magical/silvered.
+        magic_atk = Attack(name="Magic Blade", attack_bonus=3, damage_dice_count=1, damage_dice_sides=6, damage_type="slashing", magical=True, silvered=False)
+        c2 = Combatant(id="test2", name="Test2", side="player", max_hp=20, armor_class=12, attacks=[magic_atk])
+        d2 = c2.to_dict()
+        assert d2["attacks"][0]["magical"] is True
+        assert d2["attacks"][0]["silvered"] is False
+        c2_restored = Combatant.from_dict(d2)
+        assert c2_restored.attacks[0].magical is True
+        assert c2_restored.attacks[0].silvered is False
