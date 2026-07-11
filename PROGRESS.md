@@ -1,14 +1,14 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅
-## TEST SUITE FULLY GREEN (2344 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅
+## TEST SUITE FULLY GREEN (2356 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅
 
 ## Next Priority: DSPy Migration (IN PROGRESS)
 All LLM interactions must be mediated by DSPy. Character creation is done; the rest still uses the legacy `LLMOrchestrator` (raw `AsyncOpenAI` calls).
 
 ### Migration status
 - [x] **Character flavor generation** (`api/characters.py`) — `GenerateCharacterFlavor` signature + `CharacterCreationModule` (ChainOfThought). ✅ DONE
-- [ ] **World generation** (`api/world.py:119`) — uses `orchestrator.generate_structured` with `WORLD_SCHEMA`. Needs `GenerateWorld` DSPy signature + module.
+- [x] **World generation** (`api/world.py`) — `GenerateWorld` DSPy signature + `WorldGenerationModule` (ChainOfThought). Endpoint converted async→sync. ✅ DONE
 - [ ] **DM narration — game start** (`api/game.py:109`) — uses `orchestrator.generate_narration`. Needs `DMNarration` DSPy signature + module.
 - [ ] **DM narration — player action** (`api/game.py:383`) — uses `orchestrator.generate_narration`. Needs `DMNarration` DSPy signature + module (same as above).
 - [ ] **DM narration streaming — game start** (`api/game.py:297`) — uses `orchestrator.stream_narration`. Needs streaming-aware DSPy module or `dspy.LM` stream wrapper.
@@ -19,9 +19,10 @@ All LLM interactions must be mediated by DSPy. Character creation is done; the r
 
 ### DSPy files already created
 - `backend/app/llm/dspy_config.py` — `get_dspy_lm()` bridges `LLMConfig` → `dspy.LM`; `ensure_dspy_configured()` sets `dspy.settings.lm`.
-- `backend/app/llm/dspy_signatures.py` — `GenerateCharacterFlavor` signature.
-- `backend/app/llm/dspy_modules.py` — `CharacterCreationModule` (ChainOfThought) + singleton.
+- `backend/app/llm/dspy_signatures.py` — `GenerateCharacterFlavor` + `GenerateWorld` signatures.
+- `backend/app/llm/dspy_modules.py` — `CharacterCreationModule` + `WorldGenerationModule` (ChainOfThought) + singletons.
 - `backend/app/api/characters.py` — `POST /generate-flavor` endpoint using DSPy.
+- `backend/app/api/world.py` — `POST /generate` endpoint using DSPy (migrated off orchestrator).
 
 ### Guidance for remaining migration
 1. Add new signatures to `dspy_signatures.py`: `GenerateWorld`, `DMNarration`, `SummarizeStory`.
@@ -73,6 +74,31 @@ All LLM interactions must be mediated by DSPy. Character creation is done; the r
     personality storage with/without); verified **2344 backend tests
     passing, 0 failing** (was 2324); `tsc --noEmit` clean; `vite build`
     clean (127 modules).
+
+- [x] **Migrate world generation to DSPy (migration step 2 of 8)**
+  - `POST /api/world/generate` now calls `WorldGenerationModule`
+    (DSPy ChainOfThought) instead of the legacy
+    `orchestrator.generate_structured`.
+  - **`GenerateWorld` signature** (`dspy_signatures.py`): 2 inputs
+    (`tone`, `character_context`) + 9 outputs (`name`, `description`,
+    `world_tone`, `regions`, `campaign_arc`, `starting_settlement`,
+    `npcs`, `factions`, `hook`) with rich field descriptions guiding
+    the nested JSON structure (region coordinates/connections, etc.).
+  - **`WorldGenerationModule`** (`dspy_modules.py`): ChainOfThought +
+    singleton; `forward()` catches failures and returns a graceful
+    empty Prediction; `to_world_dict()` assembles the
+    WORLD_SCHEMA-compatible dict (with fallback tone) so downstream
+    code is unchanged.
+  - **`api/world.py`**: endpoint converted async→sync (FastAPI runs
+    sync endpoints in a threadpool so the blocking DSPy call doesn't
+    stall the event loop); character-tailoring context now built via
+    `_build_character_context()` helper; removed `orchestrator` +
+    `dm_prompts` imports.
+  - **Tests**: 12 new (5 module: singleton/to_world_dict assembly/
+    fallback tone/None defaults/forward-failure; 7 API: success/
+    empty-503/failure-503/character-tailoring/default-tone/list+detail/
+    not-found). Verified **2356 backend tests passing, 0 failing**
+    (was 2344). No frontend changes needed (endpoint contract unchanged).
 
 ## Previous Run
 - [x] **Add legendary actions & lair actions engine + API + UI — boss-monster combat (Monster Manual p.11)**
