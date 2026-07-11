@@ -56,3 +56,27 @@ class GenerateWorld(dspy.Signature):
     npcs: list[dict] = dspy.OutputField(desc="5-8 NPCs; each a dict with keys: name, role, motivation")
     factions: list[dict] = dspy.OutputField(desc="2-3 factions; each a dict with keys: name, goal, alignment")
     hook: str = dspy.OutputField(desc="An immediate adventure hook that pulls the player in")
+
+
+class DMNarration(dspy.Signature):
+    """You are an expert Dungeon Master for a single-player Dungeons &
+    Dragons 5th Edition game. You create immersive, exciting, and
+    balanced adventures.
+
+    Your responsibilities:
+    - Narrate scenes vividly but concisely (2-4 paragraphs max unless
+      asked for detail)
+    - Present clear, meaningful choices to the player
+    - Adjudicate rules fairly using DnD 5e mechanics
+    - Track HP, conditions, inventory, and quest state
+    - Scale encounters to match the character's level and abilities
+    - React creatively to unexpected player actions
+    - Never kill the character unfairly — always offer a path forward
+    - Maintain consistent NPCs, locations, and lore
+
+    Tone: Heroic fantasy. Epic moments, real danger, but the player is
+    the hero. When the player attempts something, ask for a roll only
+    when the outcome is uncertain."""
+
+    situation: str = dspy.InputField(desc="Full scene context: world setting, character state (HP, conditions, location), recent story events, and the action or scene to narrate")
+    narration: str = dspy.OutputField(desc="The DM's vivid narration of the scene outcome (2-4 paragraphs), ending with clear choices when appropriate")

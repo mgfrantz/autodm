@@ -1,7 +1,7 @@
-"""DSPy modules for character creation and world generation."""
+"""DSPy modules for character creation, world generation, and DM narration."""
 import logging
 import dspy
-from app.llm.dspy_signatures import GenerateCharacterFlavor, GenerateWorld
+from app.llm.dspy_signatures import GenerateCharacterFlavor, GenerateWorld, DMNarration
 
 logger = logging.getLogger(__name__)
 
@@ -80,3 +80,28 @@ def get_world_generation_module() -> WorldGenerationModule:
     if _world_generation is None:
         _world_generation = WorldGenerationModule()
     return _world_generation
+
+
+class DMNarrationModule(dspy.Module):
+    """Generate free-text DM narration for a scene or player action."""
+
+    def __init__(self):
+        super().__init__()
+        self.generate = dspy.ChainOfThought(DMNarration)
+
+    def forward(self, *, situation):
+        try:
+            return self.generate(situation=situation)
+        except Exception as e:
+            logger.error(f"DM narration failed: {e}")
+            return dspy.Prediction(narration="")
+
+
+# Singleton
+_dm_narration: DMNarrationModule | None = None
+
+def get_dm_narration_module() -> DMNarrationModule:
+    global _dm_narration
+    if _dm_narration is None:
+        _dm_narration = DMNarrationModule()
+    return _dm_narration

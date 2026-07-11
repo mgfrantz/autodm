@@ -8,15 +8,33 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.orchestrator import orchestrator
+from app.llm.dspy_config import ensure_dspy_configured
+from app.llm.dspy_modules import get_dm_narration_module
 from app.prompts.dm_prompts import DM_SYSTEM_PROMPT, ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 
 router = APIRouter()
+
+
+async def _dm_narrate(situation: str) -> str:
+    """Generate DM narration via DSPy (runs in a threadpool to avoid
+    blocking the async event loop during the synchronous LLM call).
+
+    Returns an empty string on failure; callers should treat an empty
+    narration as a degraded-response signal.
+    """
+    def _call() -> str:
+        ensure_dspy_configured()
+        module = get_dm_narration_module()
+        result = module(situation=situation)
+        return result.narration
+    return await run_in_threadpool(_call)
 
 
 def _sse(payload: dict) -> str:
@@ -106,10 +124,7 @@ Narrate the opening scene. Set the mood, introduce the setting, and present the 
 End with 2-3 clear choices for the player.
 """
 
-    narration = await orchestrator.generate_narration(
-        system_prompt=DM_SYSTEM_PROMPT,
-        user_prompt=user_prompt,
-    )
+    narration = await _dm_narrate(situation=user_prompt)
 
     # Save to story log
     story_log = json.loads(save.story_log)
@@ -380,10 +395,7 @@ Boss: {_boss_for_dm(game_state)}
 
 {base_context}"""
 
-    narration = await orchestrator.generate_narration(
-        system_prompt=DM_SYSTEM_PROMPT,
-        user_prompt=user_prompt,
-    )
+    narration = await _dm_narrate(situation=user_prompt)
 
     # Log the exchange
     story_log.append({"role": "player", "content": action.action, "timestamp": datetime.utcnow().isoformat()})
