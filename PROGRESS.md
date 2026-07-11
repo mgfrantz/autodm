@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅
-## TEST SUITE FULLY GREEN (2410 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅
+## TEST SUITE FULLY GREEN (2410 backend + 46 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅
 
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
@@ -32,35 +32,30 @@ docstring (the old duplicated `DM_SYSTEM_PROMPT` constant was removed).
       `app.api.game.stream_narration_dspy`; new `test_dm_streaming.py`
       covers the helper (15 tests). ✅ DONE
 
-## Next Priority: Voice narration (TTS DM) — FRONTEND — AGENTS.md build priority #12
-The backend TTS system is **complete** (config + client + 6-endpoint API + 40
-tests). The remaining work is the **frontend**: a `VoicePanel.tsx` component
-(configuration banner, narrate-latest button, audio playback control, cached
-narration list) and a 🔊 Voice header button in GameView. Mirrors the
-`ImagePanel.tsx` pattern exactly.
+## Next Priority: AGENTS.md build priorities #1–#12, #14, #15 all COMPLETE ✅
+Every shipped build priority is done. The single remaining item in
+`AGENTS.md` is **#13 — Multiplayer (party-based)**, currently marked
+`⏳ Future` (a large, multi-session undertaking). The core single-player
+DnD 5e game — all three pillars (combat / exploration / social), full
+rules engine, DSPy DM narration + streaming, AI image generation, **and
+AI voice narration (TTS)** — is feature-complete.
 
-### Backend (DONE ✅)
-1. ✅ `backend/app/llm/tts_config.py` — `TTSConfig` dataclass + `load_config()`
-   reading `TTS_PROVIDER` / `TTS_API_KEY` / `TTS_MODEL` / `TTS_VOICE` /
-   `TTS_BASE_URL` / `TTS_FORMAT` / `TTS_SPEED` env vars; `is_configured` gates all calls.
-2. ✅ `backend/app/llm/tts_client.py` — `TTSClient` (lazy singleton) wrapping
-   OpenAI-compatible TTS API; `clean_text_for_speech()` strips markdown/dice/
-   choices/"what do you do?" prompts; `SpeechResult` with base64 audio;
-   `TTSNotConfiguredError` for clean 503s.
-3. ✅ `backend/app/api/tts.py` — 6-endpoint REST API mounted `/api/game`:
-   `GET /tts/status`, `POST /tts/synthesize` (text → audio/mpeg),
-   `POST /tts/narrate` (latest DM narration → cached), `GET /tts/audio/{id}`,
-   `GET /tts` (list), `DELETE /tts/{id}`. Pre-cleans text before synthesis.
-4. ✅ Tests: 40 tests (config, text cleaning, client, API) — fully mocked.
+Suggested next-run candidates (pick one):
+1. **Multiplayer foundation (#13)** — party/session model + WebSocket
+   fan-out so multiple browser clients share one DM. Largest scope; would
+   span several runs.
+2. **Audio polish** — auto-narrate each new DM narration (toggle in
+   VoicePanel), voice-per-NPC selection, streaming/chunked playback.
+3. **Content/registry expansion** — more spells/enemies/magic items, or a
+   curated starter adventure (one-shot) the DM can run out of the box.
+4. **Frontend bundle optimisation** — the production JS chunk is ~500 KB;
+   dynamic-import the overlay panels (Legendary, Mounts, Voice, Images…)
+   to split the bundle.
 
-### Frontend (NEXT)
-5. `frontend/src/components/VoicePanel.tsx` — configuration banner (graceful
-   "not configured" with setup instructions), narrate-latest button, audio
-   playback control (HTML5 `<audio>`), cached narration list with delete.
-6. `frontend/src/types/index.ts` — TTS types (`TTSStatus`, `CachedAudio`, etc.).
-7. `frontend/src/stores/api.ts` — TTS API client functions.
-8. `frontend/src/views/GameView.tsx` — 🔊 Voice header button + overlay modal.
-9. Frontend integration tests (Vitest).
+### Voice narration (TTS DM) — COMPLETE ✅ (backend + frontend)
+Build priority #12 is fully shipped. The backend (config + client +
+6-endpoint API + 40 tests) was completed in the previous run; the frontend
+half was completed this run.
 
 ### Guidance
 - Follow the exact pattern of `image_config.py` / `image_client.py` / `images.py`
@@ -68,6 +63,41 @@ narration list) and a 🔊 Voice header button in GameView. Mirrors the
 - Keep the provider configurable — don't hardcode OpenAI.
 
 ## Completed This Run
+- [x] **Add TTS voice narration system — FRONTEND (AGENTS.md build priority #12 — COMPLETE)**
+  - The frontend half of the TTS voice narration feature, completing build
+    priority #12. Mirrors the provider-agnostic image-generation system
+    (`ImagePanel.tsx`) exactly — the TTS system is its audio analogue. Works
+    the moment a `TTS_API_KEY` is configured; clean 503s when not. The backend
+    (config + client + 6-endpoint API + 40 tests) was completed in the previous
+    run; this run adds the full frontend layer.
+  - **`frontend/src/types/index.ts`**: 5 TTS interfaces (`TTSStatus`,
+    `CachedAudio`, `NarrateResult`, `TTSListResponse`, `DeleteAudioResult`)
+    modeled exactly against the backend `GET /tts/status` /
+    `POST /tts/narrate` / `GET /tts` / `DELETE /tts/{id}` response shapes.
+  - **`frontend/src/stores/api.ts`**: 6 TTS API client fns — `getTTSStatus`,
+    `synthesizeSpeech` (one-shot, `responseType:'blob'` → object URL),
+    `narrateLatest` (synthesize + cache latest DM narration),
+    `cachedAudioUrl` (relative `/api/game/{id}/tts/audio/{id}` playable URL,
+    works through the vite proxy in dev), `listCachedAudio`, `deleteCachedAudio`.
+  - **`frontend/src/components/VoicePanel.tsx`** (~320 lines): complete voice
+    console — configuration-status banner (graceful "not configured" with
+    `TTS_API_KEY` / `TTS_BASE_URL` setup instructions), **Narrate Latest**
+    button (synthesize most recent DM entry, cache, narrate into story
+    bubble), **Speak Custom Text** one-shot synthesis with inline `<audio>`
+    preview (object URLs revoked on change/unmount, guarded for envs lacking
+    `URL.revokeObjectURL`), and a **Cached Narrations** list with per-entry
+    Play/Stop toggle + delete, metadata chips (voice/model/size), and
+    line-clamped text preview.
+  - **`frontend/src/views/GameView.tsx`**: 🔊 Voice header button + overlay
+    modal, wired with `onNarration → addToStory` and
+    `onChanged → getGameState` refresh — identical pattern to the Images overlay.
+  - **Tests** (`__tests__/VoicePanel.test.tsx`, 6 integration tests):
+    not-configured banner (button disabled), configured controls (provider
+    info + button enabled), narrate-latest → API call + narration callback,
+    custom-text synthesis, cached-list rendering, 503 error handling.
+  - Verified: `tsc --noEmit` clean; `vite build` clean (**128 modules**,
+    +1); **46 frontend tests passing** (was 40, +6).
+
 - [x] **Add provider-agnostic TTS voice narration system — BACKEND (AGENTS.md build priority #12)**
   - The backend half of the TTS voice narration feature. Mirrors the
     provider-agnostic image-generation system (`image_config.py` /
