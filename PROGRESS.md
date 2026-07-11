@@ -1,10 +1,10 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅
-## TEST SUITE FULLY GREEN (2366 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅
+## TEST SUITE FULLY GREEN (2370 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy STORY SUMMARIZATION ✅
 
 ## Next Priority: DSPy Migration (IN PROGRESS)
-All LLM interactions must be mediated by DSPy. Character creation is done; the rest still uses the legacy `LLMOrchestrator` (raw `AsyncOpenAI` calls).
+All LLM interactions must be mediated by DSPy. Character creation, world generation, non-streaming DM narration, and story summarization are done; only the **two streaming narration endpoints** still use the legacy `LLMOrchestrator` (raw `AsyncOpenAI` calls).
 
 ### Migration status
 - [x] **Character flavor generation** (`api/characters.py`) — `GenerateCharacterFlavor` signature + `CharacterCreationModule` (ChainOfThought). ✅ DONE
@@ -13,17 +13,18 @@ All LLM interactions must be mediated by DSPy. Character creation is done; the r
 - [x] **DM narration — player action** (`api/game.py`) — same `DMNarration` module; `/action` endpoint migrated. ✅ DONE
 - [ ] **DM narration streaming — game start** (`api/game.py:297`) — uses `orchestrator.stream_narration`. Needs streaming-aware DSPy module or `dspy.LM` stream wrapper.
 - [ ] **DM narration streaming — player action** (`api/game.py:483`) — uses `orchestrator.stream_narration`. Same streaming approach.
-- [ ] **Story summarization** (`engine/context.py:150`) — uses `orchestrator.generate_structured`. Needs `SummarizeStory` DSPy signature + module.
+- [x] **Story summarization** (`engine/context.py`) — `SummarizeStory` DSPy signature + `StorySummaryModule` (ChainOfThought); `ContextManager.summarize_story` migrated off `orchestrator.generate_structured`. ✅ DONE
 - [ ] **Deprecate `orchestrator.py`** — once all callers migrated, remove `LLMOrchestrator` / `get_orchestrator` / `orchestrator` proxy.
-- [ ] **Update tests** — `test_streaming.py`, `test_context.py` mock `orchestrator`; update to mock DSPy modules instead.
+- [ ] **Update tests** — `test_streaming.py` still mocks `orchestrator` (streaming endpoints not yet migrated); `test_context.py` ✅ updated to mock DSPy modules.
 
 ### DSPy files already created
 - `backend/app/llm/dspy_config.py` — `get_dspy_lm()` bridges `LLMConfig` → `dspy.LM`; `ensure_dspy_configured()` sets `dspy.settings.lm`.
-- `backend/app/llm/dspy_signatures.py` — `GenerateCharacterFlavor` + `GenerateWorld` + `DMNarration` signatures.
-- `backend/app/llm/dspy_modules.py` — `CharacterCreationModule` + `WorldGenerationModule` + `DMNarrationModule` (ChainOfThought) + singletons.
+- `backend/app/llm/dspy_signatures.py` — `GenerateCharacterFlavor` + `GenerateWorld` + `DMNarration` + `SummarizeStory` signatures.
+- `backend/app/llm/dspy_modules.py` — `CharacterCreationModule` + `WorldGenerationModule` + `DMNarrationModule` + `StorySummaryModule` (ChainOfThought) + singletons.
 - `backend/app/api/characters.py` — `POST /generate-flavor` endpoint using DSPy.
 - `backend/app/api/world.py` — `POST /generate` endpoint using DSPy (migrated off orchestrator).
 - `backend/app/api/game.py` — `/start` + `/action` (non-streaming) using DSPy via `_dm_narrate()` threadpool wrapper; streaming endpoints still use orchestrator.
+- `backend/app/engine/context.py` — `ContextManager.summarize_story` uses `StorySummaryModule` via `asyncio.to_thread` (migrated off orchestrator).
 
 ### Guidance for remaining migration
 1. Add new signatures to `dspy_signatures.py`: `GenerateWorld`, `DMNarration`, `SummarizeStory`.
@@ -120,6 +121,42 @@ All LLM interactions must be mediated by DSPy. Character creation is done; the r
   - **Tests**: 10 new (3 module: singleton/forward/failure; 7 API:
     start narration+persist+404, action narration+log+404+combat-flag).
     Verified **2366 backend tests passing, 0 failing** (was 2356).
+
+- [x] **Migrate story summarization to DSPy (migration step 5 of 8)**
+  - `ContextManager.summarize_story` (`engine/context.py`) was the last
+    non-streaming caller of the legacy `orchestrator.generate_structured`.
+    It now uses the DSPy `StorySummaryModule` (ChainOfThought), leaving
+    only the two streaming narration endpoints on the orchestrator.
+  - **`SummarizeStory` signature** (`dspy_signatures.py`): 1 input
+    (`story_entries` — formatted story text, optionally prefixed with
+    `PREVIOUS SUMMARY:` / `NEW EVENTS:`) + 6 outputs (`summary`,
+    `npcs_met`, `key_locations`, `active_quests`, `completed_quests`,
+    `current_act`). The docstring replaces the old `SUMMARY_PROMPT` +
+    "precise summarizer" system prompt.
+  - **`StorySummaryModule`** (`dspy_modules.py`): ChainOfThought +
+    singleton; `forward()` catches failures → graceful empty Prediction
+    (act defaults to 1).
+  - **`engine/context.py`**: removed the orchestrator import,
+    `get_orchestrator()` method, `_orchestrator` attribute, and the
+    `SUMMARY_PROMPT` constant. `summarize_story()` now calls
+    `ensure_dspy_configured()` then runs the sync DSPy module via
+    `asyncio.to_thread` so the async event loop is not blocked while the
+    LM responds; the `StorySummary` is assembled from the Prediction
+    with `getattr` fallbacks + a `_coerce_act()` helper for robustness.
+  - **Tests** (`test_context.py`): rewrote the 2 async summarization
+    tests to mock the DSPy module (sync `forward` via `asyncio.to_thread`)
+    instead of the orchestrator; added 3 `StorySummaryModule` tests
+    (singleton / forward / failure) + 1 graceful-fallback test (module
+    raises → empty summary, no crash). Verified **2370 backend tests
+    passing, 0 failing** (was 2366, +4).
+
+- [x] **Remove dead `WORLD_SCHEMA` + world-gen prompts** (cleanup)
+  - After world generation moved to the DSPy `GenerateWorld` signature,
+    the `WORLD_SCHEMA` dict in `api/world.py` and the
+    `WORLD_GENERATION_PROMPT` / `CAMPAIGN_TAILORING_PROMPT` in
+    `dm_prompts.py` were no longer imported or referenced anywhere.
+    Removed both (95 lines of dead code) as part of the orchestrator
+    deprecation effort. Verified: 2366 backend tests passing.
 
 ## Previous Run
 - [x] **Add legendary actions & lair actions engine + API + UI — boss-monster combat (Monster Manual p.11)**
