@@ -1,9 +1,80 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅
-## TEST SUITE FULLY GREEN (2324 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅
+## TEST SUITE FULLY GREEN (2344 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅
+
+## Next Priority: DSPy Migration (IN PROGRESS)
+All LLM interactions must be mediated by DSPy. Character creation is done; the rest still uses the legacy `LLMOrchestrator` (raw `AsyncOpenAI` calls).
+
+### Migration status
+- [x] **Character flavor generation** (`api/characters.py`) — `GenerateCharacterFlavor` signature + `CharacterCreationModule` (ChainOfThought). ✅ DONE
+- [ ] **World generation** (`api/world.py:119`) — uses `orchestrator.generate_structured` with `WORLD_SCHEMA`. Needs `GenerateWorld` DSPy signature + module.
+- [ ] **DM narration — game start** (`api/game.py:109`) — uses `orchestrator.generate_narration`. Needs `DMNarration` DSPy signature + module.
+- [ ] **DM narration — player action** (`api/game.py:383`) — uses `orchestrator.generate_narration`. Needs `DMNarration` DSPy signature + module (same as above).
+- [ ] **DM narration streaming — game start** (`api/game.py:297`) — uses `orchestrator.stream_narration`. Needs streaming-aware DSPy module or `dspy.LM` stream wrapper.
+- [ ] **DM narration streaming — player action** (`api/game.py:483`) — uses `orchestrator.stream_narration`. Same streaming approach.
+- [ ] **Story summarization** (`engine/context.py:150`) — uses `orchestrator.generate_structured`. Needs `SummarizeStory` DSPy signature + module.
+- [ ] **Deprecate `orchestrator.py`** — once all callers migrated, remove `LLMOrchestrator` / `get_orchestrator` / `orchestrator` proxy.
+- [ ] **Update tests** — `test_streaming.py`, `test_context.py` mock `orchestrator`; update to mock DSPy modules instead.
+
+### DSPy files already created
+- `backend/app/llm/dspy_config.py` — `get_dspy_lm()` bridges `LLMConfig` → `dspy.LM`; `ensure_dspy_configured()` sets `dspy.settings.lm`.
+- `backend/app/llm/dspy_signatures.py` — `GenerateCharacterFlavor` signature.
+- `backend/app/llm/dspy_modules.py` — `CharacterCreationModule` (ChainOfThought) + singleton.
+- `backend/app/api/characters.py` — `POST /generate-flavor` endpoint using DSPy.
+
+### Guidance for remaining migration
+1. Add new signatures to `dspy_signatures.py`: `GenerateWorld`, `DMNarration`, `SummarizeStory`.
+2. Add new modules to `dspy_modules.py`: `WorldGenerationModule`, `DMNarrationModule`, `StorySummaryModule` (+ singletons).
+3. For streaming: DSPy's `dspy.LM` supports `stream=True` via litellm. Create a `stream_narration_dspy()` async generator that wraps the LM directly, or use `dspy.streamify()`.
+4. Migrate `api/world.py`, `api/game.py` (4 endpoints), and `engine/context.py` to call DSPy modules instead of `orchestrator`.
+5. Run `ensure_dspy_configured()` before each module call (as `characters.py` does).
+6. Update tests to mock DSPy modules instead of the old orchestrator.
+7. After all callers are migrated, remove `orchestrator.py`.
 
 ## Completed This Run
+- [x] **Add DSPy character flavor generation + personality system (DSPy migration step 1 of 8)**
+  - First step of the DSPy migration: all LLM interactions must be
+    mediated by DSPy (currently character creation is done; the rest
+    still uses the legacy `LLMOrchestrator` with raw `AsyncOpenAI`).
+    This run adds the DSPy infrastructure layer + a personality system
+    so the LLM can generate a cohesive DnD 5e-standard personality
+    profile (name + backstory + two traits + ideal + bond + flaw).
+  - **DSPy infrastructure** (mirrors the orchestrator singleton pattern):
+    - `backend/app/llm/dspy_config.py` — `get_dspy_lm()` bridges
+      `LLMConfig` → `dspy.LM` (adds a litellm provider prefix when
+      missing; passes `api_base` only for self-hosted endpoints);
+      `ensure_dspy_configured()` sets `dspy.settings.lm`.
+    - `backend/app/llm/dspy_signatures.py` — `GenerateCharacterFlavor`
+      signature (11 inputs: race/class/background/alignment/level +
+      6 ability scores; 6 outputs: name/backstory/traits/ideal/bond/flaw).
+    - `backend/app/llm/dspy_modules.py` — `CharacterCreationModule`
+      (`dspy.ChainOfThought` wrapper) + singleton with graceful
+      empty-Prediction fallback on failure.
+  - **Personality system**: `Character.personality` JSON Text column
+    (`{"traits":[...],"ideal":...,"bond":...,"flaw":...}`) with
+    `personality_dict` / `personality_traits` / `ideal` / `bond` /
+    `flaw` model properties (tolerant of missing/empty/invalid JSON);
+    `add_personality_column.py` migration.
+  - **API** (`api/characters.py`): `POST /generate-flavor` endpoint
+    (503 on unavailable / empty result; 422 on missing required field);
+    `CharacterCreate` + `CharacterResponse` carry personality fields;
+    create serializes personality into the JSON column.
+  - **Config**: `LLM_API_KEY` fallback now also checks
+    `OPENROUTER_API_KEY` (provider-agnostic); added `dspy>=3.2.1` dep.
+  - **Frontend**: `Character` type + `generateCharacterFlavor()` API
+    client; **CharacterCreation reworked** — the old 3-step wizard
+    (Identity → Abilities → Story) became a single-page form with a
+    "Generate Details" button (calls DSPy, fills name + backstory +
+    personality, graceful fallback on failure) and editable personality
+    fields. vite proxy default moved :8000 → :8001 (:8000 reserved for
+    a local vLLM endpoint).
+  - **Tests**: 5 new backend tests (flavor success/empty/missing +
+    personality storage with/without); verified **2344 backend tests
+    passing, 0 failing** (was 2324); `tsc --noEmit` clean; `vite build`
+    clean (127 modules).
+
+## Previous Run
 - [x] **Add legendary actions & lair actions engine + API + UI — boss-monster combat (Monster Manual p.11)**
   - The combat engine modelled single creatures taking one turn each, so a
     solo boss got action-economy crushed by a party. **Legendary Actions**
