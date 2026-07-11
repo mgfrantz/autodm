@@ -80,3 +80,26 @@ class DMNarration(dspy.Signature):
 
     situation: str = dspy.InputField(desc="Full scene context: world setting, character state (HP, conditions, location), recent story events, and the action or scene to narrate")
     narration: str = dspy.OutputField(desc="The DM's vivid narration of the scene outcome (2-4 paragraphs), ending with clear choices when appropriate")
+
+
+class SummarizeStory(dspy.Signature):
+    """You are a Dungeon Master creating a concise summary of past game
+    events. Given the story log entries to summarize — and, when merging
+    with earlier work, a 'PREVIOUS SUMMARY:' block followed by 'NEW
+    EVENTS:' — produce a structured summary that captures what actually
+    happened.
+
+    Focus on:
+    - What actually happened (not what almost happened)
+    - Important NPCs and their roles
+    - Current location and where the player is headed
+    - Active objectives
+    - Story progress (which act, approximate percentage)"""
+
+    story_entries: str = dspy.InputField(desc="Formatted story log entries to summarize; may begin with 'PREVIOUS SUMMARY:' followed by 'NEW EVENTS:' when merging with an earlier summary")
+    summary: str = dspy.OutputField(desc="1-2 paragraph prose summary of key events")
+    npcs_met: list[str] = dspy.OutputField(desc="Names and brief descriptions of NPCs encountered, e.g. ['Aldric - wise old wizard']")
+    key_locations: list[str] = dspy.OutputField(desc="Important places visited")
+    active_quests: list[str] = dspy.OutputField(desc="Current quest objectives")
+    completed_quests: list[str] = dspy.OutputField(desc="Finished quests")
+    current_act: int = dspy.OutputField(desc="Story act number (1, 2, or 3)")

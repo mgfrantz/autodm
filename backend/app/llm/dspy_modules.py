@@ -1,7 +1,12 @@
 """DSPy modules for character creation, world generation, and DM narration."""
 import logging
 import dspy
-from app.llm.dspy_signatures import GenerateCharacterFlavor, GenerateWorld, DMNarration
+from app.llm.dspy_signatures import (
+    GenerateCharacterFlavor,
+    GenerateWorld,
+    DMNarration,
+    SummarizeStory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -105,3 +110,41 @@ def get_dm_narration_module() -> DMNarrationModule:
     if _dm_narration is None:
         _dm_narration = DMNarrationModule()
     return _dm_narration
+
+
+class StorySummaryModule(dspy.Module):
+    """Summarize story log entries into a structured story summary.
+
+    Mirrors the orchestrator's old ``generate_structured`` call used by
+    the context manager: given the formatted story text (optionally
+    prefixed with a previous summary), produce a structured summary
+    (prose + NPCs + locations + quests + act number).
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.generate = dspy.ChainOfThought(SummarizeStory)
+
+    def forward(self, *, story_entries):
+        try:
+            return self.generate(story_entries=story_entries)
+        except Exception as e:
+            logger.error(f"Story summarization failed: {e}")
+            return dspy.Prediction(
+                summary="",
+                npcs_met=[],
+                key_locations=[],
+                active_quests=[],
+                completed_quests=[],
+                current_act=1,
+            )
+
+
+# Singleton
+_story_summary: StorySummaryModule | None = None
+
+def get_story_summary_module() -> StorySummaryModule:
+    global _story_summary
+    if _story_summary is None:
+        _story_summary = StorySummaryModule()
+    return _story_summary

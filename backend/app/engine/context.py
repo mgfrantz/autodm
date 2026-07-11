@@ -6,12 +6,20 @@ context window manageable. The system maintains:
 1. A summary of early game events
 2. Recent raw entries for freshness
 3. Structured summaries (NPCs, quests, locations) for fast retrieval
+
+Summarization is mediated by DSPy (``StorySummaryModule``); the legacy
+``LLMOrchestrator`` is no longer used here.
 """
+import asyncio
+import logging
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import Any, Optional
 
-from app.llm.orchestrator import get_orchestrator
+from app.llm.dspy_config import ensure_dspy_configured
+from app.llm.dspy_modules import get_story_summary_module
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -42,30 +50,12 @@ class StorySummary:
         return cls(**data)
 
 
-SUMMARY_PROMPT = """\
-You are a Dungeon Master creating a concise summary of past game events.
-
-Given the following story log entries, produce a structured summary:
-
-{story_entries}
-
-Respond ONLY with valid JSON matching this schema:
-{{
-  "summary": "1-2 paragraph prose summary of key events",
-  "npcs_met": ["NPC1 - brief description", "NPC2 - brief description"],
-  "key_locations": ["Location1", "Location2"],
-  "active_quests": ["Quest objective 1", "Quest objective 2"],
-  "completed_quests": ["Quest completed 1"],
-  "current_act": 1
-}}
-
-Focus on:
-- What actually happened (not what almost happened)
-- Important NPCs and their roles
-- Current location and where the player is headed
-- Active objectives
-- Story progress (which act, approximate percentage)
-"""
+def _coerce_act(value: Any, default: int) -> int:
+    """Coerce an LLM-returned act value to an int, falling back on failure."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 class ContextManager:
@@ -78,13 +68,6 @@ class ContextManager:
     ):
         self.summary_threshold = summary_threshold
         self.keep_raw_entries = keep_raw_entries
-        self._orchestrator = None
-    
-    def get_orchestrator(self):
-        """Get the LLM orchestrator (lazy-loaded)."""
-        if self._orchestrator is None:
-            self._orchestrator = get_orchestrator()
-        return self._orchestrator
     
     def should_summarize(self, story_log: list[dict], summary: Optional[StorySummary]) -> bool:
         """Check if story log is long enough to trigger summarization.
@@ -144,25 +127,28 @@ class ContextManager:
         if base_summary:
             story_text = f"PREVIOUS SUMMARY:\n{base_summary}\n\nNEW EVENTS:\n{story_text}"
         
-        user_prompt = SUMMARY_PROMPT.format(story_entries=story_text)
+        # Generate summary via DSPy (sync call offloaded to a worker thread
+        # so the async event loop is not blocked while the LM responds).
+        ensure_dspy_configured()
+        module = get_story_summary_module()
+        try:
+            result = await asyncio.to_thread(module.forward, story_entries=story_text)
+        except Exception as e:
+            logger.error(f"Story summarization failed: {e}")
+            result = None
         
-        # Generate summary via LLM
-        response = await self.get_orchestrator().generate_structured(
-            system_prompt="You are a precise summarizer of DnD game events.",
-            user_prompt=user_prompt,
-        )
-        
-        # Build StorySummary from response
+        # Build StorySummary from the DSPy Prediction (with graceful
+        # fallbacks if the module returned an empty/None result).
         now = datetime.utcnow().isoformat()
         entries_count = len(story_log)
         
         summary = StorySummary(
-            summary=response.get("summary", ""),
-            npcs_met=response.get("npcs_met", []),
-            key_locations=response.get("key_locations", []),
-            active_quests=response.get("active_quests", []),
-            completed_quests=response.get("completed_quests", []),
-            current_act=response.get("current_act", current_act),
+            summary=getattr(result, "summary", "") or "",
+            npcs_met=getattr(result, "npcs_met", None) or [],
+            key_locations=getattr(result, "key_locations", None) or [],
+            active_quests=getattr(result, "active_quests", None) or [],
+            completed_quests=getattr(result, "completed_quests", None) or [],
+            current_act=_coerce_act(getattr(result, "current_act", None), current_act),
             last_summarized_at=now,
             entries_summarized=entries_count,
             summary_created_at=now,
