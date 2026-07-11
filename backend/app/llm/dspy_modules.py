@@ -1,6 +1,9 @@
 """DSPy modules for character creation, world generation, and DM narration."""
 import logging
+from typing import AsyncIterator
+
 import dspy
+
 from app.llm.dspy_signatures import (
     GenerateCharacterFlavor,
     GenerateWorld,
@@ -148,3 +151,111 @@ def get_story_summary_module() -> StorySummaryModule:
     if _story_summary is None:
         _story_summary = StorySummaryModule()
     return _story_summary
+
+
+# --- Streaming narration -------------------------------------------------
+#
+# The DM narration endpoints offer a streaming variant (Server-Sent Events)
+# so the player sees the DM "talk" in real time. The non-streaming path uses
+# ``DMNarrationModule`` (a ChainOfThought), but ChainOfThought emits a hidden
+# reasoning trace that we do NOT want streamed to the player — only the final
+# narration prose. So the streaming path drives litellm's async streaming
+# directly through the same DSPy-configured ``dspy.LM`` (provider-agnostic),
+# reusing the ``DMNarration`` signature's persona as the system prompt. This
+# keeps a single source of truth for the DM persona while yielding raw tokens.
+
+_DM_STREAM_OUTPUT_INSTRUCTIONS = (
+    "\n\nYou will be given a situation to narrate. Respond ONLY with the vivid "
+    "DM narration (2-4 paragraphs), ending with clear choices when appropriate. "
+    "Do not include any preamble, labels, reasoning, field names, or JSON — "
+    "only the narration text itself."
+)
+
+
+def _dm_stream_system_prompt() -> str:
+    """Build the system prompt for streaming DM narration.
+
+    Reuses the ``DMNarration`` signature docstring (the DM persona) so the
+    streaming and non-streaming narration paths share one persona definition.
+    """
+    persona = (DMNarration.__doc__ or "").strip()
+    return persona + _DM_STREAM_OUTPUT_INSTRUCTIONS
+
+
+def _extract_stream_delta(chunk) -> str:
+    """Pull the streamed text delta from a litellm chunk.
+
+    litellm streaming chunks are returned as ModelResponse-style objects that
+    also support dict access; this helper is robust to both shapes and never
+    raises (callers rely on the generator staying alive across chunks).
+    """
+    try:
+        if hasattr(chunk, "choices"):
+            choices = chunk.choices
+        elif isinstance(chunk, dict):
+            choices = chunk.get("choices") or []
+        else:
+            return ""
+        if not choices:
+            return ""
+        choice = choices[0]
+        if isinstance(choice, dict):
+            delta = choice.get("delta") or {}
+            return delta.get("content") or ""
+        delta = getattr(choice, "delta", None)
+        if delta is None:
+            return ""
+        if isinstance(delta, dict):
+            return delta.get("content") or ""
+        return getattr(delta, "content", "") or ""
+    except Exception:  # noqa: BLE001 - never let one bad chunk kill the stream
+        return ""
+
+
+async def stream_narration_dspy(user_prompt: str) -> AsyncIterator[str]:
+    """Stream DM narration token-by-token via the DSPy-configured LM.
+
+    This is the streaming counterpart of :class:`DMNarrationModule`. It uses
+    the same DM persona (the ``DMNarration`` signature docstring) as the
+    system prompt but drives litellm's async streaming directly so callers
+    receive raw narration chunks — no ChainOfThought reasoning trace.
+
+    Provider-agnostic: the request is routed through litellm using the model
+    and kwargs resolved by the DSPy ``dspy.LM`` (see
+    ``dspy_config.get_dspy_lm``), so it works with OpenAI, Anthropic,
+    OpenRouter, and OpenAI-compatible local endpoints alike.
+    """
+    # Imported lazily so the module remains importable without litellm
+    # installed in environments that only use the non-streaming modules.
+    import litellm
+
+    from app.llm.config import config
+    from app.llm.dspy_config import ensure_dspy_configured, get_dspy_lm
+
+    ensure_dspy_configured()
+    lm = get_dspy_lm()
+
+    messages = [
+        {"role": "system", "content": _dm_stream_system_prompt()},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    # Merge the LM's kwargs (temperature, max_tokens, api_base for self-hosted,
+    # ...) and pass the resolved API key explicitly for robustness across
+    # providers — litellm would otherwise resolve it from a provider-specific
+    # env var, which works but is fragile if only LLM_API_KEY is set.
+    kwargs = dict(lm.kwargs)
+    api_key = getattr(config, "api_key", "") or ""
+    if api_key:
+        kwargs["api_key"] = api_key
+
+    stream = await litellm.acompletion(
+        model=lm.model,
+        messages=messages,
+        stream=True,
+        **kwargs,
+    )
+    async for chunk in stream:
+        content = _extract_stream_delta(chunk)
+        if content:
+            yield content
