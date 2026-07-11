@@ -5,10 +5,11 @@ Covers character CRUD operations, stat calculations, and validation.
 """
 import json
 from datetime import datetime
+from unittest.mock import patch
 
+import dspy
 import pytest
 from fastapi.testclient import TestClient
-
 from app.main import app
 from app.models.database import get_db
 from app.models.models import Base, Character, World, GameSave
@@ -448,3 +449,103 @@ class TestCharacterValidation:
         assert data["intelligence"] == 10
         assert data["wisdom"] == 10
         assert data["charisma"] == 10
+
+
+class TestGenerateFlavor:
+    """Test the DSPy-powered character flavor generation endpoint."""
+
+    def test_generate_flavor_success(self, client):
+        """Generated flavor returns all six fields (incl. generated name) with expected values."""
+        mock_result = dspy.Prediction(
+            name="Thalia", backstory="A test backstory.",
+            personality_traits=["Brave", "Loyal"], ideal="Justice",
+            bond="My sword", flaw="Reckless",
+        )
+        with patch("app.api.characters.get_character_creation_module") as mock_get:
+            mock_module = mock_get.return_value
+            mock_module.return_value = mock_result
+            with patch("app.api.characters.ensure_dspy_configured"):
+                response = client.post("/api/characters/generate-flavor", json={
+                    "race": "Human", "char_class": "Fighter",
+                    "strength": 16, "dexterity": 14, "constitution": 15,
+                    "intelligence": 10, "wisdom": 12, "charisma": 8,
+                })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Thalia"
+        assert data["backstory"] == "A test backstory."
+        assert data["personality_traits"] == ["Brave", "Loyal"]
+        assert data["ideal"] == "Justice"
+        assert data["bond"] == "My sword"
+        assert data["flaw"] == "Reckless"
+
+    def test_generate_flavor_empty_returns_503(self, client):
+        """Empty generation result (empty generated name) returns 503."""
+        mock_result = dspy.Prediction(
+            name="", backstory="", personality_traits=[],
+            ideal="", bond="", flaw="",
+        )
+        with patch("app.api.characters.get_character_creation_module") as mock_get:
+            mock_module = mock_get.return_value
+            mock_module.return_value = mock_result
+            with patch("app.api.characters.ensure_dspy_configured"):
+                response = client.post("/api/characters/generate-flavor", json={
+                    "race": "Human", "char_class": "Fighter",
+                    "strength": 16, "dexterity": 14, "constitution": 15,
+                    "intelligence": 10, "wisdom": 12, "charisma": 8,
+                })
+        assert response.status_code == 503
+
+    def test_generate_flavor_missing_required(self, client):
+        """Missing required field (race) triggers Pydantic validation (422)."""
+        response = client.post("/api/characters/generate-flavor", json={
+            "char_class": "Fighter",
+            "strength": 16, "dexterity": 14, "constitution": 15,
+            "intelligence": 10, "wisdom": 12, "charisma": 8,
+        })
+        assert response.status_code == 422
+
+
+class TestPersonalityStorage:
+    """Test that personality fields persist and round-trip via the API."""
+
+    def test_create_character_with_personality(self, client):
+        """Personality fields sent on create are stored and returned."""
+        create_response = client.post("/api/characters/", json={
+            "name": "Thalia",
+            "race": "Elf",
+            "char_class": "Ranger",
+            "personality_traits": ["Brave", "Loyal"],
+            "ideal": "Freedom",
+            "bond": "My family heirloom",
+            "flaw": "Vengeful",
+        })
+        assert create_response.status_code == 200
+        char_id = create_response.json()["id"]
+
+        get_response = client.get(f"/api/characters/{char_id}")
+        assert get_response.status_code == 200
+        data = get_response.json()
+        assert data["name"] == "Thalia"
+        assert data["personality_traits"] == ["Brave", "Loyal"]
+        assert data["ideal"] == "Freedom"
+        assert data["bond"] == "My family heirloom"
+        assert data["flaw"] == "Vengeful"
+
+    def test_create_character_without_personality(self, client):
+        """Omitting personality fields yields CharacterResponse defaults."""
+        create_response = client.post("/api/characters/", json={
+            "name": "Plain",
+            "race": "Human",
+            "char_class": "Commoner",
+        })
+        assert create_response.status_code == 200
+        char_id = create_response.json()["id"]
+
+        get_response = client.get(f"/api/characters/{char_id}")
+        assert get_response.status_code == 200
+        data = get_response.json()
+        assert data["personality_traits"] == []
+        assert data["ideal"] == ""
+        assert data["bond"] == ""
+        assert data["flaw"] == ""

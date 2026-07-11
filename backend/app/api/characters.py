@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.models.database import get_db
 from app.models.models import Character
+from app.llm.dspy_config import ensure_dspy_configured
+from app.llm.dspy_modules import get_character_creation_module
 from app.engine.dice import ability_modifier
 from app.engine.multiclassing import (
     parse_classes,
@@ -36,6 +38,10 @@ class CharacterCreate(BaseModel):
     wisdom: int = 10
     charisma: int = 10
     backstory: str | None = None
+    personality_traits: list[str] | None = None
+    ideal: str | None = None
+    bond: str | None = None
+    flaw: str | None = None
 
 
 class CharacterResponse(BaseModel):
@@ -70,6 +76,10 @@ class CharacterResponse(BaseModel):
     tool_proficiencies: list[str] = []  # Chosen tool proficiencies
     languages: list[str] = []  # Known languages
     backstory: str | None
+    personality_traits: list[str] = []
+    ideal: str = ""
+    bond: str = ""
+    flaw: str = ""
 
     @field_validator('classes', mode='before')
     @classmethod
@@ -131,6 +141,29 @@ class AddClassResponse(BaseModel):
     proficiency_bonus: int
     hp_gained: int
     max_hp: int
+
+class CharacterFlavorRequest(BaseModel):
+    """Request to generate character flavor via DSPy."""
+    race: str
+    char_class: str
+    background: str | None = None
+    alignment: str | None = None
+    level: int = 1
+    strength: int = 10
+    dexterity: int = 10
+    constitution: int = 10
+    intelligence: int = 10
+    wisdom: int = 10
+    charisma: int = 10
+
+class CharacterFlavorResponse(BaseModel):
+    """Generated character flavor from DSPy."""
+    name: str
+    backstory: str
+    personality_traits: list[str]
+    ideal: str
+    bond: str
+    flaw: str
 
 
 # Starting HP by class (simplified — 5e hit die + CON mod)
@@ -241,6 +274,17 @@ def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
     # Initialize classes dict
     classes = {char_class_lower: char_data.level}
 
+    # Serialize personality fields into the JSON column
+    personality_data = {}
+    if char_data.personality_traits:
+        personality_data["traits"] = char_data.personality_traits
+    if char_data.ideal:
+        personality_data["ideal"] = char_data.ideal
+    if char_data.bond:
+        personality_data["bond"] = char_data.bond
+    if char_data.flaw:
+        personality_data["flaw"] = char_data.flaw
+
     character = Character(
         name=char_data.name,
         race=char_data.race,
@@ -261,12 +305,45 @@ def create_character(char_data: CharacterCreate, db: Session = Depends(get_db)):
         speed=speed,
         gold=starting_gold,
         backstory=char_data.backstory,
+        personality=json.dumps(personality_data),
     )
 
     db.add(character)
     db.commit()
     db.refresh(character)
     return character
+
+
+@router.post("/generate-flavor", response_model=CharacterFlavorResponse)
+def generate_character_flavor(req: CharacterFlavorRequest):
+    """Generate character flavor (backstory, traits, ideal, bond, flaw) via DSPy.
+
+    Returns 503 if the LLM is unavailable or generation fails.
+    """
+    try:
+        ensure_dspy_configured()
+        module = get_character_creation_module()
+        result = module(
+            race=req.race, char_class=req.char_class,
+            background=req.background, alignment=req.alignment, level=req.level,
+            strength=req.strength, dexterity=req.dexterity,
+            constitution=req.constitution, intelligence=req.intelligence,
+            wisdom=req.wisdom, charisma=req.charisma,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Character flavor generation unavailable: {e}")
+
+    if not result.name:
+        raise HTTPException(status_code=503, detail="Character flavor generation returned empty results.")
+
+    return CharacterFlavorResponse(
+        name=result.name,
+        backstory=result.backstory,
+        personality_traits=result.personality_traits,
+        ideal=result.ideal,
+        bond=result.bond,
+        flaw=result.flaw,
+    )
 
 
 @router.get("/", response_model=list[CharacterResponse])

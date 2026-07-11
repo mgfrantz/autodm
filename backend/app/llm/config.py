@@ -23,7 +23,7 @@ def load_config() -> LLMConfig:
     """Load LLM config from environment variables."""
     provider = os.getenv("LLM_PROVIDER", "openai")
     model = os.getenv("LLM_MODEL", "gpt-4o")
-    api_key = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", ""))
+    api_key = os.getenv("LLM_API_KEY", os.getenv("OPENROUTER_API_KEY", os.getenv("OPENAI_API_KEY", "")))
     base_url = os.getenv("LLM_BASE_URL", None)  # e.g. http://localhost:11434/v1 for Ollama
 
     return LLMConfig(

@@ -84,6 +84,7 @@ class Character(Base):
     backstory = Column(Text, nullable=True)
     inventory = Column(Text, default="[]")  # JSON array
     spells = Column(Text, default="{}")  # JSON: spellbook data
+    personality = Column(Text, default="{}")  # JSON: {ideal: str, bond: str, flaw: str}
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -133,6 +134,30 @@ class Character(Base):
         """The subclass id for the primary class (highest level), or None."""
         primary = self.primary_class
         return self.subclass_dict.get(primary)
+
+    @property
+    def personality_dict(self) -> dict:
+        try:
+            data = json.loads(self.personality or "{}")
+            return data if isinstance(data, dict) else {}
+        except (json.JSONDecodeError, ValueError, TypeError):
+            return {}
+
+    @property
+    def personality_traits(self) -> list[str]:
+        return self.personality_dict.get("traits", [])
+
+    @property
+    def ideal(self) -> str:
+        return self.personality_dict.get("ideal", "")
+
+    @property
+    def bond(self) -> str:
+        return self.personality_dict.get("bond", "")
+
+    @property
+    def flaw(self) -> str:
+        return self.personality_dict.get("flaw", "")
 
 
 class World(Base):
