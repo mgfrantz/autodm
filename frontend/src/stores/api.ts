@@ -20,6 +20,10 @@ export const createCharacter = async (data: {
   wisdom: number;
   charisma: number;
   backstory?: string;
+  personality_traits?: string[];
+  ideal?: string;
+  bond?: string;
+  flaw?: string;
 }) => {
   const res = await API.post<Character>('/characters/', data);
   return res.data;
@@ -33,6 +37,30 @@ export const listCharacters = async () => {
 export const getCharacter = async (characterId: number): Promise<Character> => {
   const res = await API.get<Character>(`/characters/${characterId}`);
   return res.data;
+};
+
+export const generateCharacterFlavor = async (data: {
+  race: string;
+  char_class: string;
+  background?: string;
+  alignment?: string;
+  level?: number;
+  strength: number;
+  dexterity: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
+}) => {
+  const res = await API.post('/characters/generate-flavor', data);
+  return res.data as {
+    name: string;
+    backstory: string;
+    personality_traits: string[];
+    ideal: string;
+    bond: string;
+    flaw: string;
+  };
 };
 
 // === Worlds ===

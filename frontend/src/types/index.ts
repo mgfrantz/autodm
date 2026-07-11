@@ -17,6 +17,10 @@ export interface Character {
   armor_class: number;
   speed: number;
   backstory: string | null;
+  personality_traits?: string[];
+  ideal?: string;
+  bond?: string;
+  flaw?: string;
   gold?: number;
   skill_proficiencies?: string[];
   skill_expertise?: string[];

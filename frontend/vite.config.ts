@@ -7,9 +7,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        // Backend API origin. Override with API_URL=http://localhost:<port> npm run dev
-        // when the backend isn't on the default 8000 (matches .env.example PORT).
-        target: process.env.API_URL || 'http://localhost:8000',
+        // Backend API origin. Default :8001 (the app server); :8000 is reserved
+        // for a local vLLM endpoint. Override with API_URL=http://localhost:<port>.
+        target: process.env.API_URL || 'http://localhost:8001',
         changeOrigin: true,
       },
     },
