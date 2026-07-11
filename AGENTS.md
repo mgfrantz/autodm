@@ -40,7 +40,7 @@ cd frontend && npm install && npm run dev
 9. ✅ Integration: Full gameplay loop
 10. ✅ Frontend: Visual map rendering
 11. ✅ Images: AI-generated scene/NPC images (provider-agnostic)
-12. 🚧 Audio: Voice narration (TTS DM) — provider-agnostic, mirrors #11
+12. ✅ Audio: Voice narration (TTS DM) — provider-agnostic, mirrors #11
 13. ⏳ Future: Multiplayer (party-based)
 14. ✅ Future: Advanced rules refinements (subclass system ✅, feat expansion ✅ — 53 feats incl. XGE race-specific)
 15. ✅ Infra: DSPy migration complete — all LLM interactions mediated by DSPy (legacy `LLMOrchestrator` deprecated/removed)
