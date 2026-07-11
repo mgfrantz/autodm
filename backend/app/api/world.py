@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.models.database import get_db
 from app.models.models import World
-from app.llm.orchestrator import orchestrator
-from app.prompts.dm_prompts import WORLD_GENERATION_PROMPT, CAMPAIGN_TAILORING_PROMPT
+from app.llm.dspy_config import ensure_dspy_configured
+from app.llm.dspy_modules import get_world_generation_module
 
 router = APIRouter()
 
@@ -96,31 +96,41 @@ WORLD_SCHEMA = {
 }
 
 
-@router.post("/generate", response_model=WorldResponse)
-async def generate_world(request: WorldGenerateRequest, db: Session = Depends(get_db)):
-    """Generate a new world using the LLM."""
-    system_prompt = f"You are a world-building expert. {WORLD_GENERATION_PROMPT}"
-    user_prompt = f"Generate a world with tone: {request.tone}"
+def _build_character_context(character) -> str:
+    """Build a character-tailoring context string for the world generator."""
+    return (
+        f"Tailor the world to this player character:\n"
+        f"  Name: {character.name}\n"
+        f"  Race: {character.race}\n"
+        f"  Class: {character.char_class}\n"
+        f"  Level: {character.level}\n"
+        f"  Background: {character.background or 'unknown'}\n"
+        f"  Abilities: STR {character.strength}, DEX {character.dexterity}, CON {character.constitution}\n"
+        f"Adjust encounter types, social dynamics, and plot hooks to create a personalized experience."
+    )
 
-    # If character provided, tailor the world
+
+@router.post("/generate", response_model=WorldResponse)
+def generate_world(request: WorldGenerateRequest, db: Session = Depends(get_db)):
+    """Generate a new world using the LLM (DSPy-mediated)."""
+    character_context = ""
     if request.character_id:
         from app.models.models import Character
         character = db.query(Character).filter(Character.id == request.character_id).first()
         if character:
-            user_prompt += CAMPAIGN_TAILORING_PROMPT.format(
-                character_name=character.name,
-                race=character.race,
-                char_class=character.char_class,
-                level=character.level,
-                background=character.background or "unknown",
-                abilities=f"STR {character.strength}, DEX {character.dexterity}, CON {character.constitution}",
-            )
+            character_context = _build_character_context(character)
 
-    world_data = await orchestrator.generate_structured(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        response_schema=WORLD_SCHEMA,
-    )
+    try:
+        ensure_dspy_configured()
+        module = get_world_generation_module()
+        result = module(tone=request.tone, character_context=character_context)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"World generation unavailable: {e}")
+
+    if not result.name:
+        raise HTTPException(status_code=503, detail="World generation returned an empty result.")
+
+    world_data = module.to_world_dict(result, fallback_tone=request.tone)
 
     world = World(
         name=world_data.get("name", "Unnamed World"),

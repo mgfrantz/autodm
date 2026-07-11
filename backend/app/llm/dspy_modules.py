@@ -1,7 +1,7 @@
-"""DSPy modules for character creation."""
+"""DSPy modules for character creation and world generation."""
 import logging
 import dspy
-from app.llm.dspy_signatures import GenerateCharacterFlavor
+from app.llm.dspy_signatures import GenerateCharacterFlavor, GenerateWorld
 
 logger = logging.getLogger(__name__)
 
@@ -36,3 +36,47 @@ def get_character_creation_module() -> CharacterCreationModule:
     if _character_creation is None:
         _character_creation = CharacterCreationModule()
     return _character_creation
+
+
+class WorldGenerationModule(dspy.Module):
+    """Generate a complete DnD 5e world (regions, arc, NPCs, factions, hook)."""
+
+    def __init__(self):
+        super().__init__()
+        self.generate = dspy.ChainOfThought(GenerateWorld)
+
+    def forward(self, *, tone, character_context=""):
+        try:
+            return self.generate(tone=tone, character_context=character_context)
+        except Exception as e:
+            logger.error(f"World generation failed: {e}")
+            return dspy.Prediction(
+                name="", description="", world_tone="",
+                regions=[], campaign_arc={}, starting_settlement={},
+                npcs=[], factions=[], hook="",
+            )
+
+    def to_world_dict(self, result, fallback_tone: str = "") -> dict:
+        """Convert a module Prediction into the WORLD_SCHEMA-compatible dict
+        consumed by the rest of the codebase."""
+        return {
+            "name": result.name or "Unnamed World",
+            "description": result.description or "",
+            "tone": getattr(result, "world_tone", "") or fallback_tone,
+            "regions": result.regions or [],
+            "campaign_arc": result.campaign_arc or {},
+            "starting_settlement": result.starting_settlement or {},
+            "npcs": result.npcs or [],
+            "factions": result.factions or [],
+            "hook": result.hook or "",
+        }
+
+
+# Singleton
+_world_generation: WorldGenerationModule | None = None
+
+def get_world_generation_module() -> WorldGenerationModule:
+    global _world_generation
+    if _world_generation is None:
+        _world_generation = WorldGenerationModule()
+    return _world_generation
