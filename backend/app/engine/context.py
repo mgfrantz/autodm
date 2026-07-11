@@ -7,8 +7,7 @@ context window manageable. The system maintains:
 2. Recent raw entries for freshness
 3. Structured summaries (NPCs, quests, locations) for fast retrieval
 
-Summarization is mediated by DSPy (``StorySummaryModule``); the legacy
-``LLMOrchestrator`` is no longer used here.
+Summarization is mediated by DSPy (``StorySummaryModule``).
 """
 import asyncio
 import logging

@@ -1,26 +1,14 @@
 """
-DM Prompt Templates — the personality and rules for the LLM Dungeon Master.
+DM Prompt Templates — encounter templates for the LLM Dungeon Master.
+
+The DM persona itself lives in the ``DMNarration`` DSPy signature
+(``app.llm.dspy_signatures.DMNarration``), which is the single source of
+truth shared by both the non-streaming ``DMNarrationModule`` and the
+streaming ``stream_narration_dspy`` helper.
 """
 
-# Core system prompt — defines the DM persona
-DM_SYSTEM_PROMPT = """\
-You are an expert Dungeon Master for a single-player Dungeons & Dragons 5th Edition game.
-You create immersive, exciting, and balanced adventures.
-
-Your responsibilities:
-- Narrate scenes vividly but concisely (2-4 paragraphs max unless asked for detail)
-- Present clear, meaningful choices to the player
-- Adjudicate rules fairly using DnD 5e mechanics
-- Track HP, conditions, inventory, and quest state
-- Scale encounters to match the character's level and abilities
-- React creatively to unexpected player actions
-- Never kill the character unfairly — always offer a path forward
-- Maintain consistent NPCs, locations, and lore
-
-Tone: Heroic fantasy. Epic moments, real danger, but the player is the hero.
-When the player attempts something, ask for a roll only when the outcome is uncertain.
-"""
-
+# Encounter template — the per-action framing passed to the DM as the
+# situation to narrate (filled with live game state).
 ENCOUNTER_PROMPT = """\
 You are narrating the next beat of the adventure.
 

@@ -1,11 +1,11 @@
 """
 Image Generation Client — provider-agnostic image generation.
 
-Mirrors the LLM orchestrator pattern (``app.llm.orchestrator``): a lazy-
-initialised singleton that talks to an OpenAI-compatible image-generation API
-(DALL-E 3 by default). When no API key is configured, ``is_configured`` returns
-``False`` and ``generate_image`` raises ``ImageNotConfiguredError`` so the API
-layer can surface a clean 503 to the frontend instead of crashing.
+Uses a lazy-initialised singleton that talks to an OpenAI-compatible
+image-generation API (DALL-E 3 by default). When no API key is configured,
+``is_configured`` returns ``False`` and ``generate_image`` raises
+``ImageNotConfiguredError`` so the API layer can surface a clean 503 to the
+frontend instead of crashing.
 
 Usage::
 
@@ -161,7 +161,7 @@ class ImageClient:
                     "(or IMAGE_PROVIDER=none to disable)."
                 )
             # Imported here so the module loads even without openai installed
-            # during partial environments (mirrors orchestrator pattern).
+            # during partial environments.
             from openai import AsyncOpenAI
 
             self._client = AsyncOpenAI(

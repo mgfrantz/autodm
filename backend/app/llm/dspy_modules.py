@@ -118,10 +118,9 @@ def get_dm_narration_module() -> DMNarrationModule:
 class StorySummaryModule(dspy.Module):
     """Summarize story log entries into a structured story summary.
 
-    Mirrors the orchestrator's old ``generate_structured`` call used by
-    the context manager: given the formatted story text (optionally
-    prefixed with a previous summary), produce a structured summary
-    (prose + NPCs + locations + quests + act number).
+    Given the formatted story text (optionally prefixed with a previous
+    summary), produce a structured summary (prose + NPCs + locations +
+    quests + act number).
     """
 
     def __init__(self):

@@ -2,9 +2,9 @@
 Images API — AI-generated scene & NPC portrait images.
 
 This router provides a provider-agnostic image-generation layer over the
-``ImageClient`` (which mirrors the LLM orchestrator pattern). When no image
-provider key is configured, endpoints return HTTP 503 so the frontend can show
-a graceful "not configured" state instead of an error.
+``ImageClient``. When no image provider key is configured, endpoints return
+HTTP 503 so the frontend can show a graceful "not configured" state instead
+of an error.
 
 Generated images are cached in ``game_state["images"]`` so they survive
 save/load and can be browsed in an in-game gallery.
