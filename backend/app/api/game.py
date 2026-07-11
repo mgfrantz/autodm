@@ -12,10 +12,9 @@ from starlette.concurrency import run_in_threadpool
 
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
-from app.llm.orchestrator import orchestrator
 from app.llm.dspy_config import ensure_dspy_configured
-from app.llm.dspy_modules import get_dm_narration_module
-from app.prompts.dm_prompts import DM_SYSTEM_PROMPT, ENCOUNTER_PROMPT
+from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy
+from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 
@@ -309,10 +308,7 @@ End with 2-3 clear choices for the player.
     async def event_stream():
         collected: list[str] = []
         try:
-            async for chunk in orchestrator.stream_narration(
-                system_prompt=DM_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-            ):
+            async for chunk in stream_narration_dspy(user_prompt=user_prompt):
                 collected.append(chunk)
                 yield _sse({"type": "chunk", "content": chunk})
         except Exception as exc:  # noqa: BLE001 - surface errors to the client
@@ -492,10 +488,7 @@ Boss: {_boss_for_dm(game_state)}
     async def event_stream():
         collected: list[str] = []
         try:
-            async for chunk in orchestrator.stream_narration(
-                system_prompt=DM_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-            ):
+            async for chunk in stream_narration_dspy(user_prompt=user_prompt):
                 collected.append(chunk)
                 yield _sse({"type": "chunk", "content": chunk})
         except Exception as exc:  # noqa: BLE001 - surface errors to the client

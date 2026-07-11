@@ -7,6 +7,9 @@ These verify that the streaming start/action endpoints:
 - Persist narration to the story log after streaming completes
 - Surface error events without crashing
 - Return 404 for missing games
+
+The endpoints are mediated by DSPy (``stream_narration_dspy``), which is
+patched here so no live LLM call is made.
 """
 import json
 from unittest.mock import patch
@@ -63,7 +66,7 @@ def _make_game_save(db_session, story_log=None):
 
 
 async def _fake_stream(*_args, **_kwargs):
-    """Async generator mimicking orchestrator.stream_narration."""
+    """Async generator mimicking stream_narration_dspy."""
     for piece in ["The ", "tower ", "glows ", "brightly."]:
         yield piece
 
@@ -89,7 +92,7 @@ class TestStartAdventureStream:
         _, _, save = _make_game_save(db_session)
 
         with patch(
-            "app.api.game.orchestrator.stream_narration",
+            "app.api.game.stream_narration_dspy",
             new=_fake_stream,
         ):
             response = client.post(f"/api/game/{save.id}/start/stream")
@@ -105,7 +108,7 @@ class TestStartAdventureStream:
         _, _, save = _make_game_save(db_session)
 
         with patch(
-            "app.api.game.orchestrator.stream_narration",
+            "app.api.game.stream_narration_dspy",
             new=_fake_stream,
         ):
             client.post(f"/api/game/{save.id}/start/stream")
@@ -120,7 +123,7 @@ class TestStartAdventureStream:
 
     def test_missing_game_returns_404(self, client, db_session):
         """A non-existent game id yields a 404."""
-        with patch("app.api.game.orchestrator.stream_narration", new=_fake_stream):
+        with patch("app.api.game.stream_narration_dspy", new=_fake_stream):
             response = client.post("/api/game/9999/start/stream")
         assert response.status_code == 404
 
@@ -132,7 +135,7 @@ class TestStartAdventureStream:
             raise RuntimeError("LLM is down")
             yield  # pragma: no cover - make this an async generator
 
-        with patch("app.api.game.orchestrator.stream_narration", new=failing_stream):
+        with patch("app.api.game.stream_narration_dspy", new=failing_stream):
             response = client.post(f"/api/game/{save.id}/start/stream")
 
         assert response.status_code == 200
@@ -148,7 +151,7 @@ class TestPlayerActionStream:
         """Action stream includes combat flag on the done event."""
         _, _, save = _make_game_save(db_session)
 
-        with patch("app.api.game.orchestrator.stream_narration", new=_fake_stream):
+        with patch("app.api.game.stream_narration_dspy", new=_fake_stream):
             response = client.post(
                 f"/api/game/{save.id}/action/stream",
                 json={"action": "I examine the glowing tower."},
@@ -163,7 +166,7 @@ class TestPlayerActionStream:
         """Both the player action and DM response are stored."""
         _, _, save = _make_game_save(db_session)
 
-        with patch("app.api.game.orchestrator.stream_narration", new=_fake_stream):
+        with patch("app.api.game.stream_narration_dspy", new=_fake_stream):
             client.post(
                 f"/api/game/{save.id}/action/stream",
                 json={"action": "I approach the door."},
@@ -180,7 +183,7 @@ class TestPlayerActionStream:
 
     def test_missing_game_returns_404(self, client, db_session):
         """A non-existent game id yields a 404."""
-        with patch("app.api.game.orchestrator.stream_narration", new=_fake_stream):
+        with patch("app.api.game.stream_narration_dspy", new=_fake_stream):
             response = client.post(
                 "/api/game/9999/action/stream",
                 json={"action": "look"},
