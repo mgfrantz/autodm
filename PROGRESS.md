@@ -1,41 +1,102 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅
-## TEST SUITE FULLY GREEN (2370 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy STORY SUMMARIZATION ✅
+## TEST SUITE FULLY GREEN (2385 backend + 40 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅
 
-## Next Priority: DSPy Migration (IN PROGRESS)
-All LLM interactions must be mediated by DSPy. Character creation, world generation, non-streaming DM narration, and story summarization are done; only the **two streaming narration endpoints** still use the legacy `LLMOrchestrator` (raw `AsyncOpenAI` calls).
+## DSPy Migration: COMPLETE ✅
+All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
+(raw `AsyncOpenAI`) has been **deleted** — every LLM call routes through DSPy
+signatures/modules or the DSPy-configured `dspy.LM`:
 
-### Migration status
-- [x] **Character flavor generation** (`api/characters.py`) — `GenerateCharacterFlavor` signature + `CharacterCreationModule` (ChainOfThought). ✅ DONE
-- [x] **World generation** (`api/world.py`) — `GenerateWorld` DSPy signature + `WorldGenerationModule` (ChainOfThought). Endpoint converted async→sync. ✅ DONE
-- [x] **DM narration — game start** (`api/game.py`) — `DMNarration` DSPy signature + `DMNarrationModule`; `/start` endpoint migrated. ✅ DONE
-- [x] **DM narration — player action** (`api/game.py`) — same `DMNarration` module; `/action` endpoint migrated. ✅ DONE
-- [ ] **DM narration streaming — game start** (`api/game.py:297`) — uses `orchestrator.stream_narration`. Needs streaming-aware DSPy module or `dspy.LM` stream wrapper.
-- [ ] **DM narration streaming — player action** (`api/game.py:483`) — uses `orchestrator.stream_narration`. Same streaming approach.
-- [x] **Story summarization** (`engine/context.py`) — `SummarizeStory` DSPy signature + `StorySummaryModule` (ChainOfThought); `ContextManager.summarize_story` migrated off `orchestrator.generate_structured`. ✅ DONE
-- [ ] **Deprecate `orchestrator.py`** — once all callers migrated, remove `LLMOrchestrator` / `get_orchestrator` / `orchestrator` proxy.
-- [ ] **Update tests** — `test_streaming.py` still mocks `orchestrator` (streaming endpoints not yet migrated); `test_context.py` ✅ updated to mock DSPy modules.
+- **Character flavor** → `GenerateCharacterFlavor` + `CharacterCreationModule`
+- **World generation** → `GenerateWorld` + `WorldGenerationModule`
+- **DM narration (non-streaming)** → `DMNarration` + `DMNarrationModule`
+- **DM narration (streaming)** → `stream_narration_dspy()` (litellm async
+  streaming via the DSPy `dspy.LM`, reusing the `DMNarration` persona)
+- **Story summarization** → `SummarizeStory` + `StorySummaryModule`
 
-### DSPy files already created
-- `backend/app/llm/dspy_config.py` — `get_dspy_lm()` bridges `LLMConfig` → `dspy.LM`; `ensure_dspy_configured()` sets `dspy.settings.lm`.
-- `backend/app/llm/dspy_signatures.py` — `GenerateCharacterFlavor` + `GenerateWorld` + `DMNarration` + `SummarizeStory` signatures.
-- `backend/app/llm/dspy_modules.py` — `CharacterCreationModule` + `WorldGenerationModule` + `DMNarrationModule` + `StorySummaryModule` (ChainOfThought) + singletons.
-- `backend/app/api/characters.py` — `POST /generate-flavor` endpoint using DSPy.
-- `backend/app/api/world.py` — `POST /generate` endpoint using DSPy (migrated off orchestrator).
-- `backend/app/api/game.py` — `/start` + `/action` (non-streaming) using DSPy via `_dm_narrate()` threadpool wrapper; streaming endpoints still use orchestrator.
-- `backend/app/engine/context.py` — `ContextManager.summarize_story` uses `StorySummaryModule` via `asyncio.to_thread` (migrated off orchestrator).
+Single source of truth for the DM persona: the `DMNarration` signature
+docstring (the old duplicated `DM_SYSTEM_PROMPT` constant was removed).
 
-### Guidance for remaining migration
-1. Add new signatures to `dspy_signatures.py`: `GenerateWorld`, `DMNarration`, `SummarizeStory`.
-2. Add new modules to `dspy_modules.py`: `WorldGenerationModule`, `DMNarrationModule`, `StorySummaryModule` (+ singletons).
-3. For streaming: DSPy's `dspy.LM` supports `stream=True` via litellm. Create a `stream_narration_dspy()` async generator that wraps the LM directly, or use `dspy.streamify()`.
-4. Migrate `api/world.py`, `api/game.py` (4 endpoints), and `engine/context.py` to call DSPy modules instead of `orchestrator`.
-5. Run `ensure_dspy_configured()` before each module call (as `characters.py` does).
-6. Update tests to mock DSPy modules instead of the old orchestrator.
-7. After all callers are migrated, remove `orchestrator.py`.
+### Migration status (all done)
+- [x] **Character flavor generation** (`api/characters.py`) ✅ DONE
+- [x] **World generation** (`api/world.py`) ✅ DONE
+- [x] **DM narration — game start** (`api/game.py` `/start`) ✅ DONE
+- [x] **DM narration — player action** (`api/game.py` `/action`) ✅ DONE
+- [x] **DM narration streaming — game start** (`api/game.py` `/start/stream`) ✅ DONE
+- [x] **DM narration streaming — player action** (`api/game.py` `/action/stream`) ✅ DONE
+- [x] **Story summarization** (`engine/context.py`) ✅ DONE
+- [x] **Deprecate `orchestrator.py`** — deleted; `LLMOrchestrator` /
+      `get_orchestrator` / `_OrchestratorProxy` removed. ✅ DONE
+- [x] **Update tests** — `test_streaming.py` now mocks
+      `app.api.game.stream_narration_dspy`; new `test_dm_streaming.py`
+      covers the helper (15 tests). ✅ DONE
+
+## Next Priority: Voice narration (TTS DM) — AGENTS.md build priority #12
+The DSPy migration is complete. The next unchecked DESIGN.md "Future" item is
+**audio: voice narration (TTS DM)** — the natural follow-on to the
+provider-agnostic image-generation system (build priority #11, done). Mirrors
+the same provider-agnostic abstraction pattern so the system works the moment a
+TTS provider key is configured (no code changes).
+
+### Planned work
+1. `backend/app/llm/tts_config.py` — `TTSConfig` dataclass + `load_config()`
+   reading `TTS_PROVIDER` / `TTS_API_KEY` / `TTS_MODEL` / `TTS_VOICE` /
+   `TTS_BASE_URL` env vars; `is_configured` property gates all generation.
+2. `backend/app/llm/tts_client.py` — `TTSClient` (lazy singleton) wrapping an
+   OpenAI-compatible TTS API (OpenAI `tts-1` by default; works with local /
+   self-hosted endpoints via `TTS_BASE_URL`). `synthesize(text) -> bytes`
+   (audio/mpeg); `TTsNotConfiguredError` for clean 503s.
+3. `backend/app/api/tts.py` — REST API mounted `/api/game`: `GET /tts/status`,
+   `POST /tts/synthesize` (text → audio), `POST /tts/narrate` (synthesize the
+   latest DM narration), cache audio in `game_state["audio"]`.
+4. Frontend `components/VoicePanel.tsx` — configuration banner, narrate-latest
+   button, playback control; 🔊 Voice header button in GameView.
+5. Tests: config + client + API (fully mocked, no live TTS calls) + frontend
+   integration tests.
+
+### Guidance
+- Follow the exact pattern of `image_config.py` / `image_client.py` / `images.py`
+  / `ImagePanel.tsx` (the image system) — the TTS system is its audio analogue.
+- Keep the provider configurable — don't hardcode OpenAI.
 
 ## Completed This Run
+- [x] **Migrate streaming DM narration to DSPy + deprecate the legacy LLMOrchestrator (DSPy migration steps 5–8 of 8 — COMPLETE)**
+  - The two SSE streaming endpoints (`/start/stream`, `/action/stream`) were
+    the last callers of the legacy `LLMOrchestrator` (raw `AsyncOpenAI`).
+    They now route through a DSPy-mediated streaming helper, completing the
+    LLM → DSPy migration for **every** LLM interaction. With no callers
+    left, the orchestrator module was deleted.
+  - **`stream_narration_dspy(user_prompt)`** (`dspy_modules.py`): async
+    generator that drives litellm's async streaming (`acompletion(stream=True)`)
+    directly through the DSPy-configured `dspy.LM`, so the streaming path is
+    provider-agnostic (OpenAI / Anthropic / OpenRouter / local) just like the
+    non-streaming DSPy modules. Uses the `DMNarration` signature docstring as
+    the system prompt — **single source of truth for the DM persona** — plus
+    an output-instructions suffix; merges the LM kwargs (temperature /
+    max_tokens / api_base) and passes the resolved API key explicitly for
+    cross-provider robustness. Uses a plain completion (not ChainOfThought)
+    so no reasoning trace is streamed to the player.
+  - **`_extract_stream_delta(chunk)`**: robustly pulls the text delta from
+    litellm streaming chunks (object- *or* dict-shaped); never raises, so one
+    bad chunk can't kill the whole stream.
+  - **`api/game.py`**: dropped the `orchestrator` + `DM_SYSTEM_PROMPT`
+    imports; both `event_stream()` generators now call
+    `stream_narration_dspy(user_prompt=...)`. The SSE contract (chunk → done /
+    error events) is unchanged, so no frontend changes were needed.
+  - **Deprecation**: deleted `app/llm/orchestrator.py` (145 lines —
+    `LLMOrchestrator` / `get_orchestrator` / `_OrchestratorProxy`, zero
+    importers remaining); removed the now-duplicated `DM_SYSTEM_PROMPT` from
+    `dm_prompts.py`; refreshed stale docstrings/comments in `context.py`,
+    `image_client.py`, `images.py`, `dspy_modules.py` that referenced the
+    removed orchestrator.
+  - **Tests**: 15 new (`test_dm_streaming.py` — delta-extraction shapes,
+    persona prompt, ordering, empty-delta skipping, model/stream/messages/
+    api_key forwarding); `test_streaming.py` patch targets updated from
+    `app.api.game.orchestrator.stream_narration` →
+    `app.api.game.stream_narration_dspy`. Verified **2385 backend tests
+    passing, 0 failing** (was 2370, +15).
+
 - [x] **Add DSPy character flavor generation + personality system (DSPy migration step 1 of 8)**
   - First step of the DSPy migration: all LLM interactions must be
     mediated by DSPy (currently character creation is done; the rest
