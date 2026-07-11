@@ -1,31 +1,41 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest, getEquipmentCombatStats, getCharacterFeats } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
 import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats, CharacterFeatsResponse } from '../types'
-import CombatTracker from '../components/CombatTracker'
-import WorldMap from '../components/WorldMap'
-import SkillsPanel from '../components/SkillsPanel'
-import ShopPanel from '../components/ShopPanel'
-import InventoryPanel from '../components/InventoryPanel'
-import BackgroundPanel from '../components/BackgroundPanel'
-import AlignmentPanel from '../components/AlignmentPanel'
-import LanguagesPanel from '../components/LanguagesPanel'
-import EnvironmentPanel from '../components/EnvironmentPanel'
-import CombatActionsPanel from '../components/CombatActionsPanel'
-import TrapsPanel from '../components/TrapsPanel'
-import SocialPanel from '../components/SocialPanel'
-import DowntimePanel from '../components/DowntimePanel'
-import SpellsPanel from '../components/SpellsPanel'
-import FeatsPanel from '../components/FeatsPanel'
-import SubclassPanel from '../components/SubclassPanel'
-import ExhaustionPanel from '../components/ExhaustionPanel'
-import SurvivalPanel from '../components/SurvivalPanel'
-import MountsPanel from '../components/MountsPanel'
-import SavingThrowsPanel from '../components/SavingThrowsPanel'
-import ImagePanel from '../components/ImagePanel'
-import VoicePanel from '../components/VoicePanel'
-import LegendaryPanel from '../components/LegendaryPanel'
+
+// Lazy-load all overlay/panel components for code-splitting. These only load when
+// the user opens the corresponding overlay (e.g., clicking "Mounts", "Voice", etc.).
+// The modal chrome renders immediately; the Suspense fallback shows inside while
+// the chunk loads.
+const CombatTracker = lazy(() => import('../components/CombatTracker'))
+const WorldMap = lazy(() => import('../components/WorldMap'))
+const SkillsPanel = lazy(() => import('../components/SkillsPanel'))
+const ShopPanel = lazy(() => import('../components/ShopPanel'))
+const InventoryPanel = lazy(() => import('../components/InventoryPanel'))
+const BackgroundPanel = lazy(() => import('../components/BackgroundPanel'))
+const AlignmentPanel = lazy(() => import('../components/AlignmentPanel'))
+const LanguagesPanel = lazy(() => import('../components/LanguagesPanel'))
+const EnvironmentPanel = lazy(() => import('../components/EnvironmentPanel'))
+const CombatActionsPanel = lazy(() => import('../components/CombatActionsPanel'))
+const TrapsPanel = lazy(() => import('../components/TrapsPanel'))
+const SocialPanel = lazy(() => import('../components/SocialPanel'))
+const DowntimePanel = lazy(() => import('../components/DowntimePanel'))
+const SpellsPanel = lazy(() => import('../components/SpellsPanel'))
+const FeatsPanel = lazy(() => import('../components/FeatsPanel'))
+const SubclassPanel = lazy(() => import('../components/SubclassPanel'))
+const ExhaustionPanel = lazy(() => import('../components/ExhaustionPanel'))
+const SurvivalPanel = lazy(() => import('../components/SurvivalPanel'))
+const MountsPanel = lazy(() => import('../components/MountsPanel'))
+const SavingThrowsPanel = lazy(() => import('../components/SavingThrowsPanel'))
+const ImagePanel = lazy(() => import('../components/ImagePanel'))
+const VoicePanel = lazy(() => import('../components/VoicePanel'))
+const LegendaryPanel = lazy(() => import('../components/LegendaryPanel'))
+
+// Shared loading fallback for lazy-loaded panels
+const PanelLoader = () => (
+  <div className="text-parchment-400 animate-pulse text-center py-8">Loading…</div>
+)
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
 const ALIGNMENT_LABELS: Record<string, string> = {
@@ -909,14 +919,16 @@ export default function GameView() {
 
         {/* Combat Tracker - Only show during combat */}
         {inCombat && combatState?.encounter && (
-          <CombatTracker
-            combatants={combatState.encounter.combatants}
-            currentTurnId={combatState.current_turn_id || null}
-            roundNumber={combatState.round || 1}
-            isPlayerTurn={isPlayerTurn}
-            onAttack={handleAttack}
-            onNextTurn={handleNextTurn}
-          />
+          <Suspense fallback={<PanelLoader />}>
+            <CombatTracker
+              combatants={combatState.encounter.combatants}
+              currentTurnId={combatState.current_turn_id || null}
+              roundNumber={combatState.round || 1}
+              isPlayerTurn={isPlayerTurn}
+              onAttack={handleAttack}
+              onNextTurn={handleNextTurn}
+            />
+          </Suspense>
         )}
       </div>
 
@@ -943,7 +955,9 @@ export default function GameView() {
             {mapLoading && !worldMap ? (
               <div className="text-parchment-400 animate-pulse text-center py-12">Charting the realm…</div>
             ) : worldMap ? (
-              <WorldMap map={worldMap} traveling={mapLoading} onTravel={handleTravel} />
+              <Suspense fallback={<PanelLoader />}>
+                <WorldMap map={worldMap} traveling={mapLoading} onTravel={handleTravel} />
+              </Suspense>
             ) : (
               <div className="text-parchment-500 text-center py-8">No map data available.</div>
             )}
@@ -1137,7 +1151,9 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <SkillsPanel characterId={gameState.character.id} />
+            <Suspense fallback={<PanelLoader />}>
+              <SkillsPanel characterId={gameState.character.id} />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1161,10 +1177,12 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <SavingThrowsPanel
-              characterId={gameState.character.id}
-              conditions={gameState.game_state.conditions}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <SavingThrowsPanel
+                characterId={gameState.character.id}
+                conditions={gameState.game_state.conditions}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1194,14 +1212,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <BackgroundPanel
-              characterId={gameState.character.id}
-              onChanged={async () => {
-                // Equipment/gold/HP may have changed; refresh game state.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <BackgroundPanel
+                characterId={gameState.character.id}
+                onChanged={async () => {
+                  // Equipment/gold/HP may have changed; refresh game state.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1225,14 +1245,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <AlignmentPanel
-              characterId={gameState.character.id}
-              onChanged={async () => {
-                // The sidebar alignment label + DM context depend on this.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <AlignmentPanel
+                characterId={gameState.character.id}
+                onChanged={async () => {
+                  // The sidebar alignment label + DM context depend on this.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1256,14 +1278,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <LanguagesPanel
-              characterId={gameState.character.id}
-              onChanged={async () => {
-                // Languages shape DM narration & comprehension checks.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <LanguagesPanel
+                characterId={gameState.character.id}
+                onChanged={async () => {
+                  // Languages shape DM narration & comprehension checks.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1287,14 +1311,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <EnvironmentPanel
-              gameId={gameState.game_id}
-              onChanged={async () => {
-                // The scene drives combat modifiers; refresh game state.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <EnvironmentPanel
+                gameId={gameState.game_id}
+                onChanged={async () => {
+                  // The scene drives combat modifiers; refresh game state.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1318,7 +1344,9 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <ShopPanel gameId={gameState.game_id} />
+            <Suspense fallback={<PanelLoader />}>
+              <ShopPanel gameId={gameState.game_id} />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1348,14 +1376,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <InventoryPanel
-              characterId={gameState.character.id}
-              onHpChange={async () => {
-                // Potion use changed HP; refresh game state.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <InventoryPanel
+                characterId={gameState.character.id}
+                onHpChange={async () => {
+                  // Potion use changed HP; refresh game state.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1378,15 +1408,17 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <SpellsPanel
-              characterId={gameState.character.id}
-              activeConditions={gameState.game_state.conditions}
-              onChanged={async () => {
-                // Casting consumes slots / heals / damages — refresh game state.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <SpellsPanel
+                characterId={gameState.character.id}
+                activeConditions={gameState.game_state.conditions}
+                onChanged={async () => {
+                  // Casting consumes slots / heals / damages — refresh game state.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1409,18 +1441,20 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <FeatsPanel
-              characterId={gameState.character.id}
-              onChanged={async () => {
-                // Learning a feat can change ability scores / HP (Tough), which
-                // reshapes AC (Dex/Con) and max HP — refresh state, gear & the
-                // sidebar feat/ASI indicator.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-                await refreshEquipmentStats()
-                await refreshFeatStatus()
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <FeatsPanel
+                characterId={gameState.character.id}
+                onChanged={async () => {
+                  // Learning a feat can change ability scores / HP (Tough), which
+                  // reshapes AC (Dex/Con) and max HP — refresh state, gear & the
+                  // sidebar feat/ASI indicator.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                  await refreshEquipmentStats()
+                  await refreshFeatStatus()
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1444,13 +1478,15 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <SubclassPanel
-              characterId={gameState.character.id}
-              onChanged={async () => {
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <SubclassPanel
+                characterId={gameState.character.id}
+                onChanged={async () => {
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1474,17 +1510,19 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <ExhaustionPanel
-              gameId={gameState.game_id}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                // Changing exhaustion alters the game_state (exhaustion level),
-                // and level 6 drops HP to 0 — refresh state so the sidebar
-                // indicator + HP bar stay in sync.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <ExhaustionPanel
+                gameId={gameState.game_id}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  // Changing exhaustion alters the game_state (exhaustion level),
+                  // and level 6 drops HP to 0 — refresh state so the sidebar
+                  // indicator + HP bar stay in sync.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1508,17 +1546,19 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <SurvivalPanel
-              gameId={gameState.game_id}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                // A survival day can add exhaustion (and at level 6 drop HP
-                // to 0) — refresh state so the sidebar indicator + HP bar
-                // stay in sync.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <SurvivalPanel
+                gameId={gameState.game_id}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  // A survival day can add exhaustion (and at level 6 drop HP
+                  // to 0) — refresh state so the sidebar indicator + HP bar
+                  // stay in sync.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1542,17 +1582,19 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <TrapsPanel
-              gameId={gameState.game_id}
-              inCombat={inCombat}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                // A trap can deal damage or apply conditions — refresh state
-                // so the sidebar / HP bar stay in sync.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <TrapsPanel
+                gameId={gameState.game_id}
+                inCombat={inCombat}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  // A trap can deal damage or apply conditions — refresh state
+                  // so the sidebar / HP bar stay in sync.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1576,14 +1618,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <SocialPanel
-              gameId={gameState.game_id}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <SocialPanel
+                gameId={gameState.game_id}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1607,15 +1651,17 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <DowntimePanel
-              gameId={gameState.game_id}
-              gold={gameState.character?.gold ?? 0}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <DowntimePanel
+                gameId={gameState.game_id}
+                gold={gameState.character?.gold ?? 0}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1639,17 +1685,19 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <MountsPanel
-              gameId={gameState.game_id}
-              characterGold={gameState.character?.gold}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                // Acquiring a mount with payment deducts gold; damage/dismount
-                // can affect HP — refresh the game state to keep things in sync.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <MountsPanel
+                gameId={gameState.game_id}
+                characterGold={gameState.character?.gold}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  // Acquiring a mount with payment deducts gold; damage/dismount
+                  // can affect HP — refresh the game state to keep things in sync.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1673,14 +1721,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <ImagePanel
-              gameId={gameState.game_id}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <ImagePanel
+                gameId={gameState.game_id}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1704,14 +1754,16 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <VoicePanel
-              gameId={gameState.game_id}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <VoicePanel
+                gameId={gameState.game_id}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1735,15 +1787,17 @@ export default function GameView() {
                 ×
               </button>
             </div>
-            <LegendaryPanel
-              gameId={gameState.game_id}
-              onNarration={(entry) => addToStory(entry)}
-              onChanged={async () => {
-                // Legendary/lair attacks can damage the player; refresh state.
-                const state = await getGameState(gameState.game_id)
-                setGameState(state)
-              }}
-            />
+            <Suspense fallback={<PanelLoader />}>
+              <LegendaryPanel
+                gameId={gameState.game_id}
+                onNarration={(entry) => addToStory(entry)}
+                onChanged={async () => {
+                  // Legendary/lair attacks can damage the player; refresh state.
+                  const state = await getGameState(gameState.game_id)
+                  setGameState(state)
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -1753,13 +1807,15 @@ export default function GameView() {
         const enemies = combatState.encounter.combatants.filter((c) => c.side === 'enemy')
         if (!player) return null
         return (
-          <CombatActionsPanel
-            gameId={gid}
-            player={player}
-            enemies={enemies}
-            onResult={handleCombatAction}
-            onClose={() => setShowActions(false)}
-          />
+          <Suspense fallback={<PanelLoader />}>
+            <CombatActionsPanel
+              gameId={gid}
+              player={player}
+              enemies={enemies}
+              onResult={handleCombatAction}
+              onClose={() => setShowActions(false)}
+            />
+          </Suspense>
         )
       })()}
     </div>
