@@ -24,6 +24,7 @@ import SurvivalPanel from '../components/SurvivalPanel'
 import MountsPanel from '../components/MountsPanel'
 import SavingThrowsPanel from '../components/SavingThrowsPanel'
 import ImagePanel from '../components/ImagePanel'
+import VoicePanel from '../components/VoicePanel'
 import LegendaryPanel from '../components/LegendaryPanel'
 
 // Display labels for the canonical nine alignment ids (for the sidebar).
@@ -77,6 +78,7 @@ export default function GameView() {
   const [showDowntime, setShowDowntime] = useState(false)
   const [showMounts, setShowMounts] = useState(false)
   const [showImages, setShowImages] = useState(false)
+  const [showVoice, setShowVoice] = useState(false)
   const [showLegendary, setShowLegendary] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
@@ -548,6 +550,13 @@ export default function GameView() {
               title="AI-generated scene illustrations & NPC portraits (provider-agnostic image API)"
             >
               🖼️ <span className="hidden sm:inline">Images</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowVoice(true)}
+              title="AI-generated DM voice narration (provider-agnostic TTS API)"
+            >
+              🔊 <span className="hidden sm:inline">Voice</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1665,6 +1674,37 @@ export default function GameView() {
               </button>
             </div>
             <ImagePanel
+              gameId={gameState.game_id}
+              onNarration={(entry) => addToStory(entry)}
+              onChanged={async () => {
+                const state = await getGameState(gameState.game_id)
+                setGameState(state)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Voice narration overlay */}
+      {showVoice && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowVoice(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">🔊 Voice Narration</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowVoice(false)}
+              >
+                ×
+              </button>
+            </div>
+            <VoicePanel
               gameId={gameState.game_id}
               onNarration={(entry) => addToStory(entry)}
               onChanged={async () => {

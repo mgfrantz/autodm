@@ -1554,6 +1554,52 @@ export interface ImageGallery {
   configured: boolean;
 }
 
+// --------------------------------------------------------------------------- //
+// Voice Narration (TTS) — AI-generated DM voice (provider-agnostic TTS API)
+// --------------------------------------------------------------------------- //
+
+/** Whether voice narration is configured (GET /tts/status). */
+export interface TTSStatus {
+  configured: boolean;
+  provider: string;
+  model: string;
+  voice: string;
+  format: string;
+  speed: number;
+}
+
+/** A cached narration entry (metadata only — audio bytes served separately). */
+export interface CachedAudio {
+  id: string;
+  label: string;
+  text: string;
+  voice: string;
+  model: string;
+  format: string;
+  speed: number;
+  size_bytes: number;
+  timestamp: string;
+}
+
+/** Result of synthesizing + caching the latest narration (POST /tts/narrate). */
+export interface NarrateResult {
+  audio: CachedAudio;
+  cached_count: number;
+}
+
+/** Cached narrations listing (GET /tts). */
+export interface TTSListResponse {
+  audio: CachedAudio[];
+  count: number;
+  configured: boolean;
+}
+
+/** Result of removing a cached narration (DELETE /tts/{id}). */
+export interface DeleteAudioResult {
+  removed: CachedAudio;
+  remaining_count: number;
+}
+
 /* ------------------------------------------------------------------ *
  * Legendary Actions & Lair Actions — DnD 5e boss-monster combat (MM p.11)
  * A legendary creature's off-turn special action.
