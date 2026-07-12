@@ -15,13 +15,22 @@ Usage::
     if client.is_configured:
         speech = await client.synthesize("The dragon rears back...")
         # speech.audio is raw MP3 bytes
+
+Chunked streaming::
+
+    from app.llm.tts_client import chunk_text_for_speech
+
+    chunks = chunk_text_for_speech("Long narration...")
+    async for idx, result in client.synthesize_chunks(chunks, voice="onyx"):
+        # result.audio is raw MP3 bytes for chunk `idx`
+        # Play or cache each chunk as it arrives
 """
 from __future__ import annotations
 
 import base64
 import re
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Optional
 
 from app.llm.tts_config import TTSConfig, config as _default_config
 
@@ -97,6 +106,73 @@ def clean_text_for_speech(text: str) -> str:
     if len(out) > _MAX_INPUT_LEN:
         out = out[:_MAX_INPUT_LEN].rsplit(" ", 1)[0] + "…"
     return out
+
+
+def chunk_text_for_speech(text: str, max_chars: int = 800) -> list[str]:
+    """Split cleaned text into sentence-ish chunks for streaming synthesis.
+
+    Splits at sentence boundaries (., !, ?) while keeping each chunk under
+    ``max_chars``. Preserves sentence integrity so speech sounds natural.
+    Falls back to word-boundary splitting if sentences are too long.
+
+    Returns a list of cleaned text chunks, each under the TTS limit.
+    """
+    cleaned = clean_text_for_speech(text)
+    if not cleaned:
+        return []
+
+    # Already short enough - single chunk
+    if len(cleaned) <= max_chars:
+        return [cleaned]
+
+    chunks: list[str] = []
+    current = ""
+    # Sentence-ending punctuation (followed by space or end of string)
+    sentence_end = re.compile(r"([.!?])\s+")
+
+    sentences = sentence_end.split(cleaned)
+    # Reconstruct sentences (with their punctuation)
+    rebuilt: list[str] = []
+    for i, part in enumerate(sentences):
+        if i % 2 == 1:  # Punctuation
+            rebuilt.append(part + " ")
+        elif part:  # Sentence text
+            rebuilt.append(part)
+
+    for sentence in rebuilt:
+        if not sentence.strip():
+            continue
+        # If adding this sentence stays under limit, append it
+        if len(current) + len(sentence) <= max_chars:
+            current += sentence
+        else:
+            # Current chunk is full, flush it
+            if current.strip():
+                chunks.append(current.strip())
+            # Start new chunk with this sentence
+            # If the sentence itself is too long, split by word
+            if len(sentence) > max_chars:
+                words = sentence.split()
+                temp = ""
+                for word in words:
+                    if len(temp) + len(word) + 1 <= max_chars:
+                        temp += word + " "
+                    else:
+                        if temp.strip():
+                            chunks.append(temp.strip())
+                        temp = word + " "
+                if temp.strip():
+                    current = temp
+                else:
+                    current = ""
+            else:
+                current = sentence
+
+    # Flush the last chunk
+    if current.strip():
+        chunks.append(current.strip())
+
+    return chunks
 
 
 # --------------------------------------------------------------------------- #
@@ -182,6 +258,40 @@ class TTSClient:
             response_format=fmt,
             speed=sp,
         )
+
+    async def synthesize_chunks(
+        self,
+        chunks: list[str],
+        *,
+        voice: Optional[str] = None,
+        response_format: Optional[str] = None,
+        speed: Optional[float] = None,
+    ) -> AsyncIterator[tuple[int, SpeechResult]]:
+        """Synthesize multiple text chunks, yielding results as they complete.
+
+        Chunks are synthesized sequentially (to avoid overwhelming the API).
+        Yields ``(index, SpeechResult)`` tuples where ``index`` is the chunk's
+        position in the input list. This enables streaming-style playback: the
+        frontend can play chunk 0 as soon as it arrives, then queue chunk 1, etc.
+
+        Uses the same parameters as :meth:`synthesize` for consistency.
+        """
+        v = voice or self._config.voice
+        fmt = (response_format or self._config.response_format or "mp3").lower()
+        sp = self._config.speed if speed is None else speed
+
+        for idx, chunk in enumerate(chunks):
+            cleaned = clean_text_for_speech(chunk)
+            if not cleaned:
+                # Skip empty chunks but maintain index continuity
+                continue
+            result = await self.synthesize(
+                cleaned,
+                voice=v,
+                response_format=fmt,
+                speed=sp,
+            )
+            yield idx, result
 
 
 # --------------------------------------------------------------------------- #

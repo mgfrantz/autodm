@@ -18,6 +18,7 @@ from app.llm.tts_client import (
     TTSClient,
     TTSNotConfiguredError,
     clean_text_for_speech,
+    chunk_text_for_speech,
     get_tts_client,
     reset_tts_client,
 )
@@ -204,6 +205,44 @@ class TestCleanTextForSpeech:
         assert clean_text_for_speech("") == ""
         assert clean_text_for_speech("   ") == ""
 
+    def test_chunk_text_short_single(self):
+        chunks = chunk_text_for_speech("Hello world.")
+        assert len(chunks) == 1
+        assert chunks[0] == "Hello world."
+
+    def test_chunk_text_splits_by_sentence(self):
+        text = "First sentence. Second sentence. Third sentence."
+        # Use a small max_chars so each sentence becomes its own chunk.
+        # The implementation batches sentences together up to max_chars, so a
+        # large limit would (correctly) keep them all in one chunk.
+        chunks = chunk_text_for_speech(text, max_chars=20)
+        assert len(chunks) == 3
+        assert "First sentence" in chunks[0]
+        assert "Second sentence" in chunks[1]
+        assert "Third sentence" in chunks[2]
+
+    def test_chunk_text_respects_max_chars(self):
+        # Long paragraph should be split
+        text = " ".join(["Word"] * 100) + "."  # ~500 chars
+        chunks = chunk_text_for_speech(text, max_chars=100)
+        assert len(chunks) > 1
+        for chunk in chunks:
+            assert len(chunk) <= 100
+
+    def test_chunk_text_empty_input(self):
+        assert chunk_text_for_speech("") == []
+
+    def test_chunk_text_only_whitespace(self):
+        assert chunk_text_for_speech("   \n\n   ") == []
+
+    def test_chunk_text_after_cleaning(self):
+        # Text with dice annotations should be cleaned before chunking
+        text = "You attack [dex check: 14] and hit. Then you run."
+        chunks = chunk_text_for_speech(text)
+        assert len(chunks) >= 1
+        assert "[dex check" not in chunks[0]
+
+
 
 # --------------------------------------------------------------------------- #
 # TTSClient tests
@@ -293,6 +332,48 @@ class TestTTSClient:
         client = TTSClient(cfg)
         with pytest.raises(ValueError):
             await client.synthesize("   ")
+
+    @pytest.mark.asyncio
+    async def test_synthesize_chunks_multiple(self):
+        cfg = TTSConfig(provider="openai", model="tts-1", api_key="key")
+        client = TTSClient(cfg)
+
+        mock_openai = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = b"AUDIO"
+        mock_openai.audio.speech.create = AsyncMock(return_value=mock_response)
+        client._client = mock_openai
+
+        chunks = ["First sentence.", "Second sentence."]
+        results = []
+        async for idx, result in client.synthesize_chunks(chunks):
+            results.append((idx, result))
+
+        assert len(results) == 2
+        assert results[0][0] == 0
+        assert results[1][0] == 1
+        assert mock_openai.audio.speech.create.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_synthesize_chunks_empty_skipped(self):
+        cfg = TTSConfig(provider="openai", model="tts-1", api_key="key")
+        client = TTSClient(cfg)
+
+        mock_openai = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = b"AUDIO"
+        mock_openai.audio.speech.create = AsyncMock(return_value=mock_response)
+        client._client = mock_openai
+
+        # Chunks that get cleaned to empty should be skipped
+        chunks = ["   ", "  \n  ", "Valid sentence."]
+        results = []
+        async for idx, result in client.synthesize_chunks(chunks):
+            results.append((idx, result))
+
+        assert len(results) == 1
+        assert results[0][1].text == "Valid sentence."
+        mock_openai.audio.speech.create.assert_called_once()
 
 
 # --------------------------------------------------------------------------- #
@@ -461,6 +542,56 @@ class TestTTSAPI:
         assert entry["voice"] == "alloy"
         assert entry["label"] == "Latest Narration"
         assert "timestamp" in entry
+
+    def test_stream_narrate_sse_chunks(self, client, game):
+        mock = _mock_client(configured=True)
+        # Configure synthesize_chunks to yield multiple results
+        async def mock_chunks(chunks, **kwargs):
+            for idx, chunk in enumerate(chunks):
+                yield idx, _mock_speech_result(chunk)
+        mock.synthesize_chunks = mock_chunks
+
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.post(f"/api/game/{game.id}/tts/narrate/stream", json={})
+        assert r.status_code == 200
+        assert "text/event-stream" in r.headers["content-type"]
+
+        # Parse SSE stream
+        events = []
+        for line in r.text.split("\n\n"):
+            if line.startswith("data: "):
+                try:
+                    events.append(json.loads(line[6:]))
+                except:
+                    pass
+
+        # Should have at least one chunk event and a done event
+        data_events = [e for e in events if "index" in e]
+        assert len(data_events) >= 1
+
+    def test_stream_narrate_not_configured(self, client, game):
+        mock = _mock_client(configured=False)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.post(f"/api/game/{game.id}/tts/narrate/stream", json={})
+        assert r.status_code == 503
+
+    def test_stream_narrate_caches_full_audio(self, client, game):
+        mock = _mock_client(configured=True)
+        async def mock_chunks(chunks, **kwargs):
+            for idx, chunk in enumerate(chunks):
+                yield idx, _mock_speech_result(chunk)
+        mock.synthesize_chunks = mock_chunks
+
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            # Start streaming
+            r = client.post(f"/api/game/{game.id}/tts/narrate/stream", json={})
+            assert r.status_code == 200
+
+            # After streaming completes, the full audio should be cached
+            listing = client.get(f"/api/game/{game.id}/tts").json()
+            assert listing["count"] == 1
+            entry = listing["audio"][0]
+            assert entry["label"] == "Latest Narration"
 
 
 # --------------------------------------------------------------------------- #

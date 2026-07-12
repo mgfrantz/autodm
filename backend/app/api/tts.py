@@ -32,7 +32,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -42,6 +42,7 @@ from app.llm.tts_client import (
     TTSNotConfiguredError,
     SpeechResult,
     clean_text_for_speech,
+    chunk_text_for_speech,
     get_tts_client,
 )
 from app.llm.tts_config import (
@@ -316,6 +317,111 @@ async def narrate_latest(
     entry = _cache_speech(game_state, result, label=label, voice=voice)
     _persist(save, game_state, db)
     return {"audio": _public_entry(entry), "cached_count": len(_audio_list(game_state))}
+
+
+@router.post("/{game_id}/tts/narrate/stream")
+async def narrate_latest_stream(
+    game_id: int,
+    request: NarrateRequest,
+    db: Session = Depends(get_db),
+):
+    """Stream the latest DM narration in audio chunks (SSE).
+
+    Like ``/tts/narrate``, but streams audio chunks as they're synthesized
+    so playback can start before the full narration is complete. The text is
+    split into sentence-ish chunks (max ~800 chars each), each synthesized
+    independently, and emitted as Server-Sent Events.
+
+    SSE event format:
+      - ``data: {"index": 0, "audio_b64": "...", "text": "..."}`` for each chunk
+      - ``event: done data: {"audio_id": "...", "total_chunks": N, ...}`` when complete
+      - ``event: error data: {"message": "..."}`` on failure
+
+    The full audio is cached (concatenating all chunks) at the end, so the
+    narration can be replayed from the cache.
+    """
+    save = _load_game(db, game_id)
+    client = get_tts_client()
+    if not client.is_configured:
+        raise _not_configured()
+
+    text = request.text or ""
+    if not text:
+        story_log = _story_log(save)
+        text = _latest_dm_narration(story_log)
+    if not text:
+        raise HTTPException(
+            status_code=422,
+            detail="No narration to speak. Take an action first, or pass text.",
+        )
+
+    cleaned = clean_text_for_speech(text)
+    if not cleaned:
+        raise HTTPException(
+            status_code=422,
+            detail="No speakable text after cleaning.",
+        )
+
+    async def event_stream():
+        try:
+            game_state = _game_state(save)
+            voice = resolve_voice_for_npc(game_state, request.npc, request.voice)
+            chunks = chunk_text_for_speech(cleaned)
+
+            if not chunks:
+                err_msg = json.dumps({"message": "No speech chunks generated."})
+                yield f"event: error\ndata: {err_msg}\n\n"
+                return
+
+            # Synthesize each chunk and stream it
+            all_audio_parts = []
+            async for idx, result in client.synthesize_chunks(chunks, voice=voice):
+                all_audio_parts.append(result.audio)
+                chunk_event = {
+                    "index": idx,
+                    "audio_b64": result.audio_b64,
+                    "text": result.text,
+                }
+                yield f"data: {json.dumps(chunk_event)}\n\n"
+
+            # Concatenate all chunks into full audio
+            full_audio = b"".join(all_audio_parts)
+            full_result = SpeechResult(
+                audio=full_audio,
+                model=client.config.model,
+                voice=voice,
+                text=cleaned,
+                response_format="mp3",
+                speed=client.config.speed,
+            )
+
+            # Cache the full audio
+            label = f"{request.npc.strip().title()} Speaks" if request.npc else "Latest Narration"
+            entry = _cache_speech(game_state, full_result, label=label, voice=voice)
+            _persist(save, game_state, db)
+
+            # Emit completion event with cached metadata
+            done_event = {
+                "audio_id": entry["id"],
+                "total_chunks": len(chunks),
+                "label": entry["label"],
+                "size_bytes": entry["size_bytes"],
+                "voice": entry["voice"],
+            }
+            yield f"event: done\ndata: {json.dumps(done_event)}\n\n"
+
+        except TTSNotConfiguredError:
+            err_msg = json.dumps({"message": "Voice narration not configured."})
+            yield f"event: error\ndata: {err_msg}\n\n"
+        except ValueError as exc:
+            err_msg = json.dumps({"message": str(exc)})
+            yield f"event: error\ndata: {err_msg}\n\n"
+        except Exception as exc:
+            err_msg = json.dumps({"message": f"Speech synthesis failed: {str(exc)}"})
+            yield f"event: error\ndata: {err_msg}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
 
 
 @router.get("/{game_id}/tts/audio/{audio_id}")
