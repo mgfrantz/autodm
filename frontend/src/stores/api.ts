@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -74,6 +74,20 @@ export const generateWorld = async (data: {
 
 export const listWorlds = async () => {
   const res = await API.get<World[]>('/world/');
+  return res.data;
+};
+
+// === Curated starter adventures ===
+export const listAdventures = async () => {
+  const res = await API.get<AdventureSummary[]>('/adventures/');
+  return res.data;
+};
+
+export const launchStarterAdventure = async (adventureId: string, name?: string) => {
+  const res = await API.post<StartAdventureResult>('/adventures/start', {
+    adventure_id: adventureId,
+    name,
+  });
   return res.data;
 };
 

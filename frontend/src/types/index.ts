@@ -33,6 +33,21 @@ export interface World {
   tone: string;
 }
 
+// === Curated starter adventures ===
+export interface AdventureSummary {
+  id: string;
+  name: string;
+  tagline: string;
+  blurb: string;
+  tone: string;
+  recommended_level: number;
+  tags: string[];
+}
+
+export interface StartAdventureResult {
+  world_id: number;
+}
+
 export interface StoryEntry {
   role: 'player' | 'dm' | 'system';
   content: string;
