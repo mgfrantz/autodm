@@ -7,6 +7,7 @@ import {
   listCachedAudio,
   deleteCachedAudio,
 } from '../stores/api'
+import { useGameStore } from '../stores/gameStore'
 import type {
   TTSStatus,
   TTSListResponse,
@@ -53,6 +54,11 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
   // Currently-playing cached narration
   const [playingId, setPlayingId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Persisted auto-narrate preference (shared with GameView so it can fire
+  // even when this overlay is closed).
+  const autoNarrate = useGameStore((s) => s.autoNarrate)
+  const setAutoNarrate = useGameStore((s) => s.setAutoNarrate)
 
   const refresh = useCallback(async () => {
     try {
@@ -225,6 +231,28 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
             {' · '}{status?.format} · {status?.speed}× speed
           </span>
         </div>
+      )}
+
+      {/* Auto-narrate toggle — speaks each new DM narration automatically. */}
+      {configured && (
+        <label className="flex items-center gap-3 rounded-lg border border-arcane-700/40 bg-arcane-900/20 p-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded accent-arcane-400"
+            checked={autoNarrate}
+            onChange={(e) => setAutoNarrate(e.target.checked)}
+          />
+          <span className="flex-1">
+            <span className="block text-sm font-semibold text-arcane-200">
+              🔈 Auto-narrate new DM messages
+            </span>
+            <span className="block text-xs text-parchment-500">
+              {autoNarrate
+                ? 'On — every new DM narration is spoken aloud automatically as it arrives.'
+                : 'Off — speak narrations manually with the “Narrate Latest” button.'}
+            </span>
+          </span>
+        </label>
       )}
 
       {/* Error flash */}

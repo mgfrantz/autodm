@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest, getEquipmentCombatStats, getCharacterFeats } from '../stores/api'
+import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest, getEquipmentCombatStats, getCharacterFeats, getTTSStatus, narrateLatest, cachedAudioUrl } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
 import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats, CharacterFeatsResponse } from '../types'
 
@@ -54,7 +54,7 @@ export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
   const gid = parseInt(gameId || '0')
 
-  const { gameState, story, combatState, setGameState, setCombatState, addToStory, setStory, loading, setLoading, error, setError } = useGameStore()
+  const { gameState, story, combatState, setGameState, setCombatState, addToStory, setStory, loading, setLoading, error, setError, autoNarrate } = useGameStore()
   const [actionInput, setActionInput] = useState('')
   const [started, setStarted] = useState(false)
   const [streamingText, setStreamingText] = useState('')
@@ -94,6 +94,12 @@ export default function GameView() {
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
+  // Voice narration (TTS) auto-narration state. `ttsConfigured` is fetched
+  // once per game so we know whether auto-narration can do anything. The
+  // audio element is rendered once and its src swapped per narration.
+  const [ttsConfigured, setTTSConfigured] = useState(false)
+  const autoNarrateRef = useRef<HTMLAudioElement | null>(null)
+
   // Load game state and combat state
   useEffect(() => {
     const loadState = async () => {
@@ -117,6 +123,36 @@ export default function GameView() {
     
     loadState()
   }, [gid])
+
+  // Check whether voice narration (TTS) is configured once per game. This
+  // gates auto-narration so we don't fire doomed requests when no TTS key is
+  // set. Non-fatal — auto-narration simply stays silent if it fails.
+  useEffect(() => {
+    if (!gid) return
+    getTTSStatus(gid)
+      .then((s) => setTTSConfigured(s.configured))
+      .catch(() => { /* TTS optional */ })
+  }, [gid])
+
+  // Auto-narrate the most recent DM narration: synthesize it server-side,
+  // cache it, and play the resulting audio. Called after each new DM
+  // narration lands in the story. Silent no-op when the preference is off,
+  // when TTS isn't configured, or on any error (never disrupts gameplay).
+  const maybeAutoNarrate = useCallback(async () => {
+    if (!autoNarrate || !ttsConfigured || !gid) return
+    try {
+      const result = await narrateLatest(gid)
+      const audioId = result?.audio?.id
+      if (audioId && autoNarrateRef.current) {
+        autoNarrateRef.current.src = cachedAudioUrl(gid, audioId)
+        autoNarrateRef.current.play().catch(() => {
+          /* autoplay can be blocked before a user gesture — ignore */
+        })
+      }
+    } catch {
+      /* non-fatal: narration synthesis is best-effort */
+    }
+  }, [autoNarrate, ttsConfigured, gid])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -179,6 +215,7 @@ export default function GameView() {
         return ''
       })
       setStarted(true)
+      maybeAutoNarrate()
     } catch (err) {
       setError('Failed to start adventure')
     }
@@ -212,6 +249,7 @@ export default function GameView() {
       // Refresh combat state after action
       const combat = await getCombatState(gid)
       setCombatState(combat)
+      maybeAutoNarrate()
     } catch (err) {
       setError('The DM falters... (error processing action)')
     }
@@ -466,6 +504,10 @@ export default function GameView() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row max-w-7xl mx-auto p-2 sm:p-4 gap-4 view-enter">
+      {/* Hidden audio element drives auto-narration playback. Its src is swapped
+          per narration by maybeAutoNarrate(); it plays only when auto-narrate is
+          on and TTS is configured. */}
+      <audio ref={autoNarrateRef} className="hidden" />
       {/* Main Story Panel */}
       <div className={`flex flex-col ${inCombat ? 'lg:flex-[2]' : 'flex-1'}`}>
         {/* Header */}
@@ -562,11 +604,19 @@ export default function GameView() {
               🖼️ <span className="hidden sm:inline">Images</span>
             </button>
             <button
-              className="btn-primary text-sm px-3 py-1.5"
+              className={`btn-primary text-sm px-3 py-1.5 ${autoNarrate && ttsConfigured ? 'ring-1 ring-arcane-400/70' : ''}`}
               onClick={() => setShowVoice(true)}
-              title="AI-generated DM voice narration (provider-agnostic TTS API)"
+              title={autoNarrate && ttsConfigured
+                ? 'AI-generated DM voice narration (auto-narrate is ON)'
+                : 'AI-generated DM voice narration (provider-agnostic TTS API)'}
             >
               🔊 <span className="hidden sm:inline">Voice</span>
+              {autoNarrate && ttsConfigured && (
+                <span
+                  className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-arcane-300 animate-pulse"
+                  aria-label="auto-narrate on"
+                />
+              )}
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import VoicePanel from '../VoicePanel'
+import { useGameStore } from '../../stores/gameStore'
 import {
   getTTSStatus,
   narrateLatest,
@@ -83,6 +84,9 @@ describe('VoicePanel', () => {
       cached_count: 1,
     })
     vi.mocked(synthesizeSpeech).mockResolvedValue('blob:mock-url')
+    // Reset the persisted auto-narrate preference between tests so each test
+    // starts from a clean, predictable state.
+    useGameStore.getState().setAutoNarrate(false)
   })
 
   it('shows the not-configured banner when TTS is disabled', async () => {
@@ -173,5 +177,40 @@ describe('VoicePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /Narrate Latest/i }))
 
     expect(await screen.findByText(/not configured/i)).toBeInTheDocument()
+  })
+
+  it('shows the auto-narrate toggle when configured (off by default)', async () => {
+    render(<VoicePanel gameId={1} />)
+
+    const toggle = await screen.findByRole('checkbox', { name: /Auto-narrate new DM messages/i })
+    expect(toggle).not.toBeChecked()
+    // The helper text reflects the off state.
+    expect(screen.getByText(/speak narrations manually/i)).toBeInTheDocument()
+  })
+
+  it('does not show the auto-narrate toggle when TTS is not configured', async () => {
+    vi.mocked(getTTSStatus).mockResolvedValue(notConfiguredStatus())
+
+    render(<VoicePanel gameId={1} />)
+
+    await screen.findByText(/not configured/i)
+    expect(screen.queryByRole('checkbox', { name: /Auto-narrate/i })).not.toBeInTheDocument()
+  })
+
+  it('flips the auto-narrate preference in the shared store when toggled', async () => {
+    render(<VoicePanel gameId={1} />)
+
+    const toggle = await screen.findByRole('checkbox', { name: /Auto-narrate new DM messages/i })
+    // Sanity: off before the click.
+    expect(useGameStore.getState().autoNarrate).toBe(false)
+
+    fireEvent.click(toggle)
+
+    // The checkbox reflects the new on state...
+    expect(toggle).toBeChecked()
+    // ...and so does the shared store (which GameView reads to fire narration).
+    expect(useGameStore.getState().autoNarrate).toBe(true)
+    // The helper text now describes the on state.
+    expect(screen.getByText(/spoken aloud automatically/i)).toBeInTheDocument()
   })
 })
