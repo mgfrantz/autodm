@@ -4,7 +4,7 @@ FastAPI application entry point for the DnD LLM Game.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import characters, combat, combat_actions, game, world, inventory, spells, leveling, navigation, saves, world_state, homebrew, feats, subclasses, rest, saving_throws, skills, encounters, shop, loot, stealth, concentration, attunement, tools, environment, backgrounds, alignment, languages, exhaustion, starvation, mounts, afflictions, traps, social, downtime, images, legendary, tts
+from app.api import characters, combat, combat_actions, game, world, inventory, spells, leveling, navigation, saves, world_state, homebrew, feats, subclasses, rest, saving_throws, skills, encounters, shop, loot, stealth, concentration, attunement, tools, environment, backgrounds, alignment, languages, exhaustion, starvation, mounts, afflictions, traps, social, downtime, images, legendary, tts, adventures
 
 app = FastAPI(
     title="DnD LLM Game",
@@ -49,6 +49,7 @@ app.include_router(rest.router, prefix="/api/game", tags=["rest"])
 app.include_router(saves.router, prefix="/api/game", tags=["saves"])
 app.include_router(world_state.router, prefix="/api/game", tags=["world_state"])
 app.include_router(world.router, prefix="/api/world", tags=["world"])
+app.include_router(adventures.router, prefix="/api/adventures", tags=["adventures"])
 app.include_router(navigation.router, prefix="/api/navigation", tags=["navigation"])
 app.include_router(homebrew.router, prefix="/api/homebrew", tags=["homebrew"])
 app.include_router(encounters.router, prefix="/api/encounters", tags=["encounters"])
