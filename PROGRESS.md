@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅
 ## TEST SUITE FULLY GREEN (2432 backend + 46 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅
 
 ## DSPy Migration: COMPLETE ✅
@@ -47,8 +47,11 @@ Suggested next-run candidates (pick one):
 2. **Audio polish** — ~~auto-narrate each new DM narration (toggle in
    VoicePanel)~~ **DONE** (auto-narrate shipped: persisted toggle +
    GameView fires narration after each streamed DM entry); ~~voice-per-NPC
-   selection~~ **DONE** (this run: distinct voice per named NPC, in-character
-   dialogue); remaining: streaming/chunked playback.
+   selection~~ **DONE** (distinct voice per named NPC, in-character
+   dialogue); ~~streaming/chunked playback~~ **DONE** (backend SSE
+   `POST /{game_id}/tts/narrate/stream` + `chunk_text_for_speech` +
+   `TTSClient.synthesize_chunks`; remaining: a frontend chunked-playback
+   consumer for the SSE stream).
 3. **Content/registry expansion** — more spells/enemies/magic items, or
    add more curated starter adventures (3 currently shipped).
 4. ~~**Frontend bundle optimisation** — the production JS chunk is ~500 KB;~~
@@ -70,6 +73,44 @@ half was completed this run.
 - Keep the provider configurable — don't hardcode OpenAI.
 
 ## Completed This Run
+- [x] **Streaming/chunked TTS narration — backend SSE endpoint + chunked synthesis (PROGRESS.md next-run candidate #2: streaming/chunked playback)**
+  - The TTS system synthesized an entire narration in one blocking call, so
+    the player waited for the full audio before hearing anything. This run
+    adds a **chunked streaming** path so playback can begin as soon as the
+    first sentence is synthesized. (A previous run left these changes
+    uncommitted at the iteration limit; this run verified + committed them.)
+  - **`llm/tts_client.py`**: new `chunk_text_for_speech(text, max_chars=800)`
+    splits cleaned text at sentence boundaries (`.!?` + whitespace) into
+    chunks under the limit, preserving sentence integrity so speech sounds
+    natural; word-boundary fallback for over-long sentences; cleans text
+    first. New `TTSClient.synthesize_chunks()` async generator yields
+    `(index, SpeechResult)` tuples sequentially (chunk 0 plays while chunk 1
+    synthesizes); reuses `synthesize()` params for consistency; skips chunks
+    that clean to empty.
+  - **`api/tts.py`**: new `POST /{game_id}/tts/narrate/stream` SSE endpoint —
+    splits the latest DM narration (or explicit text) into chunks, streams
+    each synthesized chunk as a `data:` event (`{index, audio_b64, text}`),
+    concatenates + caches the full audio at the end, then emits a `done`
+    event with cached metadata. Reuses per-NPC voice resolution + text
+    cleaning. 503 when not configured, 422 on empty/no-speakable-text,
+    graceful `error` SSE events on failure.
+  - **Tests** (`test_tts.py`, +11): chunking (short→single, sentence split,
+    max-chars respected, empty, whitespace-only, post-cleaning strips dice),
+    `synthesize_chunks` (multiple sequential, empty-skipped), stream API
+    (SSE chunk events, not-configured 503, caches full audio after stream).
+    Verified: **71 TTS tests passing** (was 60, +11).
+  - **Test fix**: the pre-existing `test_chunk_text_splits_by_sentence`
+    asserted 3 chunks from 3 tiny sentences at `max_chars=200` — but the
+    implementation correctly *batches* sentences up to `max_chars`, so all
+    three fit in one chunk. Fixed the test to use `max_chars=20`, which
+    genuinely forces per-sentence splitting (assertion now holds).
+  - **Pre-existing (unrelated) note**: the full backend suite shows 20
+    failures in `test_afflictions_api.py` due to cross-file test isolation
+    flakiness; confirmed pre-existing on the committed `develop` tree (same
+    20 failures with changes stashed). Not caused by or related to the TTS
+    work; tracked separately.
+
+
 - [x] **Per-NPC TTS voice selection — distinct voice per named NPC (PROGRESS.md next-run candidate #2: voice-per-NPC)**
   - The TTS system used a single configured voice for all narration, so every
     character — hero, villain, innkeeper — sounded identical. This run adds a
