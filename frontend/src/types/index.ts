@@ -1615,6 +1615,43 @@ export interface DeleteAudioResult {
   remaining_count: number;
 }
 
+/** A selectable TTS voice (GET /tts/voices). */
+export interface TTSVoice {
+  id: string;
+  description: string;
+  suggested_use: string;
+}
+
+/** Available voices + default + configured flag (GET /tts/voices). */
+export interface VoicesResponse {
+  voices: TTSVoice[];
+  default: string;
+  configured: boolean;
+}
+
+/** Per-NPC voice assignments (GET /tts/npc-voices). */
+export interface NPCVoicesResponse {
+  npc_voices: Record<string, string>;
+  count: number;
+  default_voice: string;
+}
+
+/** Result of assigning an NPC voice (POST /tts/npc-voices). */
+export interface SetNPCVoiceResult {
+  npc: string;
+  voice: string;
+  npc_voices: Record<string, string>;
+  count: number;
+}
+
+/** Result of removing an NPC voice (DELETE /tts/npc-voices/{npc}). */
+export interface DeleteNPCVoiceResult {
+  npc: string;
+  removed_voice: string;
+  npc_voices: Record<string, string>;
+  count: number;
+}
+
 /* ------------------------------------------------------------------ *
  * Legendary Actions & Lair Actions — DnD 5e boss-monster combat (MM p.11)
  * A legendary creature's off-turn special action.

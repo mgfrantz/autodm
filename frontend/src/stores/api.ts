@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, VoicesResponse, NPCVoicesResponse, SetNPCVoiceResult, DeleteNPCVoiceResult, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -1330,10 +1330,12 @@ export const narrateLatest = async (
   gameId: number,
   voice?: string,
   text?: string,
+  npc?: string,
 ): Promise<NarrateResult> => {
   const res = await API.post<NarrateResult>(`/game/${gameId}/tts/narrate`, {
     voice,
     text,
+    npc,
   });
   return res.data;
 };
@@ -1356,6 +1358,50 @@ export const deleteCachedAudio = async (
   audioId: string,
 ): Promise<DeleteAudioResult> => {
   const res = await API.delete<DeleteAudioResult>(`/game/${gameId}/tts/${audioId}`);
+  return res.data;
+};
+
+// ---------------------------------------------------------------------------
+// Voice registry + per-NPC voice mapping
+// ---------------------------------------------------------------------------
+
+/** List the available TTS voices + the configured default. */
+export const listVoices = async (
+  gameId: number,
+): Promise<VoicesResponse> => {
+  const res = await API.get<VoicesResponse>(`/game/${gameId}/tts/voices`);
+  return res.data;
+};
+
+/** Get the per-NPC voice assignments for this game. */
+export const getNPCVoices = async (
+  gameId: number,
+): Promise<NPCVoicesResponse> => {
+  const res = await API.get<NPCVoicesResponse>(`/game/${gameId}/tts/npc-voices`);
+  return res.data;
+};
+
+/** Assign (or update) a voice for an NPC. */
+export const setNPCVoice = async (
+  gameId: number,
+  npc: string,
+  voice: string,
+): Promise<SetNPCVoiceResult> => {
+  const res = await API.post<SetNPCVoiceResult>(
+    `/game/${gameId}/tts/npc-voices`,
+    { npc, voice },
+  );
+  return res.data;
+};
+
+/** Remove an NPC's voice assignment (falls back to the default voice). */
+export const deleteNPCVoice = async (
+  gameId: number,
+  npc: string,
+): Promise<DeleteNPCVoiceResult> => {
+  const res = await API.delete<DeleteNPCVoiceResult>(
+    `/game/${gameId}/tts/npc-voices/${encodeURIComponent(npc)}`,
+  );
   return res.data;
 };
 

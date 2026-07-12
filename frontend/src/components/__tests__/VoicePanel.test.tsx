@@ -8,6 +8,10 @@ import {
   narrateLatest,
   synthesizeSpeech,
   listCachedAudio,
+  listVoices,
+  getNPCVoices,
+  setNPCVoice,
+  deleteNPCVoice,
 } from '../../stores/api'
 import type { TTSStatus, TTSListResponse, CachedAudio, StoryEntry } from '../../types'
 
@@ -17,8 +21,8 @@ import type { TTSStatus, TTSListResponse, CachedAudio, StoryEntry } from '../../
  * The panel is a UI over the already-tested backend TTS API
  * (40 tests). These tests cover the panel's own behaviour: the
  * not-configured banner, the configured narrate-latest flow (with
- * narration), custom-text synthesis, and cached-narration list
- * rendering.
+ * narration), custom-text synthesis, cached-narration list
+ * rendering, and NPC voice assignment.
  * ------------------------------------------------------------------ */
 
 vi.mock('../../stores/api', () => ({
@@ -29,6 +33,10 @@ vi.mock('../../stores/api', () => ({
     `/api/game/${gameId}/tts/audio/${audioId}`,
   listCachedAudio: vi.fn(),
   deleteCachedAudio: vi.fn(),
+  listVoices: vi.fn(),
+  getNPCVoices: vi.fn(),
+  setNPCVoice: vi.fn(),
+  deleteNPCVoice: vi.fn(),
 }))
 
 function configuredStatus(): TTSStatus {
@@ -84,6 +92,32 @@ describe('VoicePanel', () => {
       cached_count: 1,
     })
     vi.mocked(synthesizeSpeech).mockResolvedValue('blob:mock-url')
+    vi.mocked(listVoices).mockResolvedValue({
+      voices: [
+        { id: 'alloy', description: 'Neutral', suggested_use: 'Default' },
+        { id: 'onyx', description: 'Deep', suggested_use: 'Villains' },
+        { id: 'nova', description: 'Bright', suggested_use: 'Heroes' },
+      ],
+      default: 'alloy',
+      configured: true,
+    })
+    vi.mocked(getNPCVoices).mockResolvedValue({
+      npc_voices: {},
+      count: 0,
+      default_voice: 'alloy',
+    })
+    vi.mocked(setNPCVoice).mockResolvedValue({
+      npc: 'Soren',
+      voice: 'onyx',
+      npc_voices: { Soren: 'onyx' },
+      count: 1,
+    })
+    vi.mocked(deleteNPCVoice).mockResolvedValue({
+      npc: 'Soren',
+      removed_voice: 'onyx',
+      npc_voices: {},
+      count: 0,
+    })
     // Reset the persisted auto-narrate preference between tests so each test
     // starts from a clean, predictable state.
     useGameStore.getState().setAutoNarrate(false)
@@ -212,5 +246,83 @@ describe('VoicePanel', () => {
     expect(useGameStore.getState().autoNarrate).toBe(true)
     // The helper text now describes the on state.
     expect(screen.getByText(/spoken aloud automatically/i)).toBeInTheDocument()
+  })
+
+  // --- NPC voice assignment ---
+
+  it('shows the NPC voice section when configured', async () => {
+    render(<VoicePanel gameId={1} />)
+
+    expect(await screen.findByRole('heading', { name: /NPC Voices/i })).toBeInTheDocument()
+    // The assign button is present.
+    expect(screen.getByRole('button', { name: /Assign/i })).toBeInTheDocument()
+  })
+
+  it('does not show the NPC voice section when not configured', async () => {
+    vi.mocked(getTTSStatus).mockResolvedValue(notConfiguredStatus())
+
+    render(<VoicePanel gameId={1} />)
+
+    await screen.findByText(/not configured/i)
+    expect(screen.queryByRole('heading', { name: /NPC Voices/i })).not.toBeInTheDocument()
+  })
+
+  it('assigns a voice to an NPC and shows it in the list', async () => {
+    const onChanged = vi.fn()
+    render(<VoicePanel gameId={1} onChanged={onChanged} />)
+
+    await screen.findByRole('heading', { name: /NPC Voices/i })
+
+    // Type an NPC name.
+    fireEvent.change(screen.getByPlaceholderText(/Soren/i), {
+      target: { value: 'Soren' },
+    })
+    // Pick a voice from the dropdown.
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'onyx' } })
+    // Click assign.
+    fireEvent.click(screen.getByRole('button', { name: /Assign/i }))
+
+    // The API was called with the NPC + voice.
+    await waitFor(() => expect(vi.mocked(setNPCVoice)).toHaveBeenCalledWith(1, 'Soren', 'onyx'))
+    // onChanged was fired (so GameView can refresh).
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('renders the empty NPC voices message', async () => {
+    render(<VoicePanel gameId={1} />)
+
+    expect(await screen.findByText(/No NPC voices assigned yet/i)).toBeInTheDocument()
+  })
+
+  it('disables the Assign button when the NPC name is empty', async () => {
+    render(<VoicePanel gameId={1} />)
+
+    await screen.findByRole('heading', { name: /NPC Voices/i })
+    // The assign button is disabled because the name field is empty.
+    expect(screen.getByRole('button', { name: /Assign/i })).toBeDisabled()
+
+    // Typing a name enables it.
+    fireEvent.change(screen.getByPlaceholderText(/Soren/i), {
+      target: { value: 'Mira' },
+    })
+    expect(screen.getByRole('button', { name: /Assign/i })).not.toBeDisabled()
+  })
+
+  it('removes an assigned NPC voice', async () => {
+    // Start with one assigned voice.
+    vi.mocked(getNPCVoices).mockResolvedValue({
+      npc_voices: { Soren: 'onyx' },
+      count: 1,
+      default_voice: 'alloy',
+    })
+
+    render(<VoicePanel gameId={1} />)
+
+    // Wait for the NPC entry to render.
+    const removeBtn = await screen.findByTitle(/Remove Soren/i)
+
+    fireEvent.click(removeBtn)
+
+    await waitFor(() => expect(vi.mocked(deleteNPCVoice)).toHaveBeenCalledWith(1, 'Soren'))
   })
 })

@@ -6,6 +6,10 @@ import {
   cachedAudioUrl,
   listCachedAudio,
   deleteCachedAudio,
+  listVoices,
+  getNPCVoices,
+  setNPCVoice,
+  deleteNPCVoice,
 } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
 import type {
@@ -13,6 +17,8 @@ import type {
   TTSListResponse,
   CachedAudio,
   StoryEntry,
+  TTSVoice,
+  NPCVoicesResponse,
 } from '../types'
 
 /* ------------------------------------------------------------------ *
@@ -55,6 +61,12 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
   const [playingId, setPlayingId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
+  // NPC voice management state
+  const [voices, setVoices] = useState<TTSVoice[]>([])
+  const [npcVoices, setNpcVoices] = useState<NPCVoicesResponse | null>(null)
+  const [npcName, setNpcName] = useState('')
+  const [npcVoice, setNpcVoice] = useState('')
+
   // Persisted auto-narrate preference (shared with GameView so it can fire
   // even when this overlay is closed).
   const autoNarrate = useGameStore((s) => s.autoNarrate)
@@ -75,9 +87,26 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
     }
   }, [gameId])
 
+  const refreshNpcVoices = useCallback(async () => {
+    try {
+      const [v, nv] = await Promise.all([
+        listVoices(gameId),
+        getNPCVoices(gameId),
+      ])
+      setVoices(v.voices)
+      setNpcVoices(nv)
+      if (!npcVoice && nv.default_voice) {
+        setNpcVoice(nv.default_voice)
+      }
+    } catch {
+      // Non-fatal — NPC section just stays empty
+    }
+  }, [gameId, npcVoice])
+
   useEffect(() => {
     refresh()
-  }, [refresh])
+    refreshNpcVoices()
+  }, [refresh, refreshNpcVoices])
 
   // Revoke any one-shot preview object URL on unmount / change.
   // Guard: some environments (e.g. jsdom) don't implement revokeObjectURL.
@@ -183,6 +212,50 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
       }
     },
     [gameId, playingId, stopPlayback, refresh],
+  )
+
+  // --- NPC voice assignment handlers ---
+  const handleAssignNPCVoice = useCallback(async () => {
+    const name = npcName.trim()
+    if (!name) {
+      setError('Enter an NPC name.')
+      return
+    }
+    if (!npcVoice) {
+      setError('Pick a voice.')
+      return
+    }
+    setError(null)
+    try {
+      const result = await setNPCVoice(gameId, name, npcVoice)
+      setNpcVoices({
+        npc_voices: result.npc_voices,
+        count: result.count,
+        default_voice: npcVoices?.default_voice ?? npcVoice,
+      })
+      setNpcName('')
+      onChanged?.()
+    } catch (err: unknown) {
+      setError(extractError(err, 'Failed to assign voice.'))
+    }
+  }, [gameId, npcName, npcVoice, npcVoices, onChanged])
+
+  const handleRemoveNPCVoice = useCallback(
+    async (npc: string) => {
+      setError(null)
+      try {
+        const result = await deleteNPCVoice(gameId, npc)
+        setNpcVoices({
+          npc_voices: result.npc_voices,
+          count: result.count,
+          default_voice: npcVoices?.default_voice ?? '',
+        })
+        onChanged?.()
+      } catch (err: unknown) {
+        setError(extractError(err, 'Failed to remove voice.'))
+      }
+    },
+    [gameId, npcVoices, onChanged],
   )
 
   if (loading) {
@@ -304,6 +377,87 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
           )}
         </div>
       </div>
+
+      {/* NPC voice assignment — give each NPC a distinct voice */}
+      {configured && voices.length > 0 && (
+        <div className="rounded-lg border border-arcane-700/40 bg-arcane-900/20 p-4">
+          <h3 className="font-fantasy text-lg text-arcane-200 mb-1">
+            🎭 NPC Voices
+          </h3>
+          <p className="text-sm text-parchment-400 mb-3">
+            Assign a distinct voice to named NPCs so dialogue is spoken
+            in-character. Unassigned NPCs use the default voice.
+          </p>
+
+          {/* Assignment form */}
+          <div className="flex flex-wrap items-end gap-2 mb-3">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-xs text-parchment-500 mb-1">NPC name</label>
+              <input
+                className="input w-full"
+                placeholder="e.g. Soren, Mira…"
+                value={npcName}
+                onChange={(e) => setNpcName(e.target.value)}
+              />
+            </div>
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-xs text-parchment-500 mb-1">Voice</label>
+              <select
+                className="input w-full"
+                value={npcVoice}
+                onChange={(e) => setNpcVoice(e.target.value)}
+              >
+                {voices.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.id} — {v.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              className="btn-primary text-sm px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={handleAssignNPCVoice}
+              disabled={!npcName.trim() || !npcVoice}
+            >
+              Assign
+            </button>
+          </div>
+
+          {/* Assigned voices list */}
+          {npcVoices && npcVoices.count > 0 ? (
+            <ul className="space-y-1.5">
+              {Object.entries(npcVoices.npc_voices).map(([npc, voice]) => {
+                const meta = voices.find((v) => v.id === voice)
+                return (
+                  <li
+                    key={npc}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-parchment-700/30 bg-parchment-900/20 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-sm font-semibold text-parchment-200">{npc}</span>
+                      <span className="text-xs text-parchment-500 ml-2">
+                        → {voice}
+                        {meta ? ` (${meta.suggested_use})` : ''}
+                      </span>
+                    </div>
+                    <button
+                      className="w-6 h-6 rounded-full bg-black/40 text-parchment-300 text-xs hover:bg-blood-700 hover:text-parchment-100 shrink-0"
+                      onClick={() => handleRemoveNPCVoice(npc)}
+                      title={`Remove ${npc}'s voice`}
+                    >
+                      ×
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <p className="text-center text-sm text-parchment-500 py-2">
+              No NPC voices assigned yet.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Cached narrations */}
       {configured && (
