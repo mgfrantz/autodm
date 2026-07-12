@@ -44,6 +44,11 @@ from app.llm.tts_client import (
     clean_text_for_speech,
     get_tts_client,
 )
+from app.llm.tts_config import (
+    DEFAULT_VOICE,
+    is_valid_voice,
+    voices_as_dicts,
+)
 
 router = APIRouter()
 
@@ -137,6 +142,46 @@ def _not_configured() -> HTTPException:
 
 
 # --------------------------------------------------------------------------- #
+# NPC voice-mapping helpers
+# --------------------------------------------------------------------------- #
+
+def _npc_voices(game_state: dict) -> dict[str, str]:
+    """Get (or init) the NPC→voice map stored in game_state.
+
+    Stored as ``game_state["npc_voices"]`` — a ``{npc_name: voice_id}`` dict.
+    Keys are stored with a canonical (stripped, title-cased) form so lookups
+    are case-insensitive against the DM's narration.
+    """
+    voices = game_state.get("npc_voices")
+    if not isinstance(voices, dict):
+        voices = {}
+    return voices
+
+
+def _canonical_npc(name: str) -> str:
+    """Normalise an NPC name for storage/lookup (strip + title case)."""
+    return (name or "").strip().title()
+
+
+def resolve_voice_for_npc(
+    game_state: dict, npc: Optional[str], explicit: Optional[str]
+) -> str:
+    """Resolve which voice to use when narrating for an NPC.
+
+    Precedence: an explicit ``explicit`` override > the NPC's mapped voice >
+    the configured default voice.
+    """
+    if explicit:
+        return explicit
+    if npc:
+        voices = _npc_voices(game_state)
+        mapped = voices.get(_canonical_npc(npc))
+        if mapped:
+            return mapped
+    return get_tts_client().config.voice or DEFAULT_VOICE
+
+
+# --------------------------------------------------------------------------- #
 # Request models
 # --------------------------------------------------------------------------- #
 
@@ -154,6 +199,13 @@ class NarrateRequest(BaseModel):
     voice: Optional[str] = Field(
         default=None,
         description="Override the configured voice.",
+    )
+    npc: Optional[str] = Field(
+        default=None,
+        description=(
+            "An NPC name whose mapped voice should be used (ignored when "
+            "`voice` is also given). Resolved from the NPC voice map."
+        ),
     )
     text: Optional[str] = Field(
         default=None,
@@ -249,7 +301,10 @@ async def narrate_latest(
         )
 
     try:
-        result = await client.synthesize(cleaned, voice=request.voice)
+        game_state = _game_state(save)
+        # Resolve the voice: explicit override > NPC's mapped voice > default.
+        voice = resolve_voice_for_npc(game_state, request.npc, request.voice)
+        result = await client.synthesize(cleaned, voice=voice)
     except TTSNotConfiguredError:
         raise _not_configured()
     except ValueError as exc:
@@ -257,9 +312,7 @@ async def narrate_latest(
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Speech synthesis failed: {exc}")
 
-    game_state = _game_state(save)
-    voice = request.voice or client.config.voice
-    label = "Latest Narration"
+    label = f"{request.npc.strip().title()} Speaks" if request.npc else "Latest Narration"
     entry = _cache_speech(game_state, result, label=label, voice=voice)
     _persist(save, game_state, db)
     return {"audio": _public_entry(entry), "cached_count": len(_audio_list(game_state))}
@@ -308,3 +361,98 @@ def delete_audio(game_id: int, audio_id: str, db: Session = Depends(get_db)):
             _persist(save, game_state, db)
             return {"removed": _public_entry(removed), "remaining_count": len(audio)}
     raise HTTPException(status_code=404, detail="Cached narration not found")
+
+
+# --------------------------------------------------------------------------- #
+# Voice registry + per-NPC voice mapping
+# --------------------------------------------------------------------------- #
+#
+# Lets the player assign a distinct TTS voice to named NPCs so dialogue is
+# spoken in-character. The map is stored in ``game_state["npc_voices"]`` as a
+# ``{canonical_npc_name: voice_id}`` dict, so it survives save/load.
+
+@router.get("/{game_id}/tts/voices")
+def list_voices(game_id: int, db: Session = Depends(get_db)):
+    """List the available TTS voices plus the configured default.
+
+    Works whether or not TTS is configured — the voice list is static and
+    useful for the UI even before a key is set. ``configured`` tells the
+    client whether synthesis will actually work.
+    """
+    _load_game(db, game_id)  # validate game exists
+    client = get_tts_client()
+    return {
+        "voices": voices_as_dicts(),
+        "default": client.config.voice or DEFAULT_VOICE,
+        "configured": client.is_configured,
+    }
+
+
+@router.get("/{game_id}/tts/npc-voices")
+def get_npc_voices(game_id: int, db: Session = Depends(get_db)):
+    """Return the per-NPC voice assignments for this game."""
+    save = _load_game(db, game_id)
+    game_state = _game_state(save)
+    voices = _npc_voices(game_state)
+    return {
+        "npc_voices": voices,
+        "count": len(voices),
+        "default_voice": get_tts_client().config.voice or DEFAULT_VOICE,
+    }
+
+
+class NPCVoiceRequest(BaseModel):
+    """Assign (or update) a voice for a named NPC."""
+    npc: str = Field(..., description="The NPC name (case-insensitive).")
+    voice: str = Field(..., description="A voice id from the available voices.")
+
+
+@router.post("/{game_id}/tts/npc-voices")
+def set_npc_voice(
+    game_id: int, request: NPCVoiceRequest, db: Session = Depends(get_db)
+):
+    """Assign or update a voice for an NPC. Persists to game_state."""
+    npc = _canonical_npc(request.npc)
+    if not npc:
+        raise HTTPException(status_code=422, detail="NPC name is required.")
+    if not is_valid_voice(request.voice):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown voice '{request.voice}'. Use GET /tts/voices.",
+        )
+
+    save = _load_game(db, game_id)
+    game_state = _game_state(save)
+    voices = _npc_voices(game_state)
+    voices[npc] = request.voice
+    game_state["npc_voices"] = voices
+    _persist(save, game_state, db)
+    return {
+        "npc": npc,
+        "voice": request.voice,
+        "npc_voices": voices,
+        "count": len(voices),
+    }
+
+
+@router.delete("/{game_id}/tts/npc-voices/{npc}")
+def delete_npc_voice(game_id: int, npc: str, db: Session = Depends(get_db)):
+    """Remove an NPC's voice assignment (falls back to the default voice)."""
+    canonical = _canonical_npc(npc)
+    save = _load_game(db, game_id)
+    game_state = _game_state(save)
+    voices = _npc_voices(game_state)
+    if canonical not in voices:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No voice assigned to '{canonical}'.",
+        )
+    removed = voices.pop(canonical)
+    game_state["npc_voices"] = voices
+    _persist(save, game_state, db)
+    return {
+        "npc": canonical,
+        "removed_voice": removed,
+        "npc_voices": voices,
+        "count": len(voices),
+    }

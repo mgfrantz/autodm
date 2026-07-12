@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.llm.tts_config import TTSConfig, load_config
+from app.llm.tts_config import TTSConfig, load_config, voices_as_dicts, is_valid_voice
 from app.llm.tts_client import (
     SpeechResult,
     TTSClient,
@@ -461,3 +461,192 @@ class TestTTSAPI:
         assert entry["voice"] == "alloy"
         assert entry["label"] == "Latest Narration"
         assert "timestamp" in entry
+
+
+# --------------------------------------------------------------------------- #
+# Voice registry + per-NPC voice mapping
+# --------------------------------------------------------------------------- #
+
+class TestVoiceRegistry:
+    def test_voices_as_dicts_shape(self):
+        voices = voices_as_dicts()
+        assert len(voices) >= 6
+        for v in voices:
+            assert set(v.keys()) == {"id", "description", "suggested_use"}
+            assert v["id"]
+            assert v["description"]
+
+    def test_known_voice_ids_present(self):
+        ids = {v["id"] for v in voices_as_dicts()}
+        assert {"alloy", "echo", "fable", "onyx", "nova", "shimmer"} <= ids
+
+    def test_is_valid_voice(self):
+        assert is_valid_voice("alloy") is True
+        assert is_valid_voice("onyx") is True
+        assert is_valid_voice(None) is True
+        assert is_valid_voice("") is True
+        assert is_valid_voice("bogus") is False
+
+
+class TestResolveVoiceForNpc:
+    def test_explicit_override_wins(self):
+        from app.api.tts import resolve_voice_for_npc
+        gs = {"npc_voices": {"Soren": "onyx"}}
+        assert resolve_voice_for_npc(gs, "soren", "nova") == "nova"
+
+    def test_mapped_voice_used_when_npc_given(self):
+        from app.api.tts import resolve_voice_for_npc
+        gs = {"npc_voices": {"Soren": "onyx"}}
+        assert resolve_voice_for_npc(gs, "soren", None) == "onyx"
+
+    def test_case_insensitive_lookup(self):
+        from app.api.tts import resolve_voice_for_npc
+        gs = {"npc_voices": {"Soren": "echo"}}
+        assert resolve_voice_for_npc(gs, "SOREN", None) == "echo"
+
+    def test_unmapped_npc_falls_back_to_default(self):
+        from app.api.tts import resolve_voice_for_npc
+        assert resolve_voice_for_npc({}, "Stranger", None) == "alloy"
+
+    def test_no_npc_no_explicit_uses_default(self):
+        from app.api.tts import resolve_voice_for_npc
+        assert resolve_voice_for_npc({}, None, None) == "alloy"
+
+
+class TestNPCVoiceAPI:
+    def test_list_voices(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.get(f"/api/game/{game.id}/tts/voices")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["default"] == "alloy"
+        assert body["configured"] is True
+        assert len(body["voices"]) >= 6
+
+    def test_list_voices_works_unconfigured(self, client, game):
+        mock = _mock_client(configured=False)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.get(f"/api/game/{game.id}/tts/voices")
+        assert r.status_code == 200
+        assert r.json()["configured"] is False
+
+    def test_get_npc_voices_empty(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.get(f"/api/game/{game.id}/tts/npc-voices")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["count"] == 0
+        assert body["npc_voices"] == {}
+
+    def test_set_npc_voice(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "  soren  ", "voice": "onyx"},
+            )
+        assert r.status_code == 200
+        body = r.json()
+        # Name is canonicalised (stripped + title-cased).
+        assert body["npc"] == "Soren"
+        assert body["voice"] == "onyx"
+        assert body["npc_voices"] == {"Soren": "onyx"}
+
+    def test_set_npc_voice_persists(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "Soren", "voice": "onyx"},
+            )
+            r = client.get(f"/api/game/{game.id}/tts/npc-voices")
+        assert r.json()["npc_voices"] == {"Soren": "onyx"}
+
+    def test_set_npc_voice_updates_existing(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "Soren", "voice": "onyx"},
+            )
+            client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "soren", "voice": "nova"},
+            )
+            r = client.get(f"/api/game/{game.id}/tts/npc-voices")
+        body = r.json()
+        assert body["count"] == 1
+        assert body["npc_voices"] == {"Soren": "nova"}
+
+    def test_set_npc_voice_invalid_voice(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "Soren", "voice": "bogus"},
+            )
+        assert r.status_code == 422
+
+    def test_set_npc_voice_empty_name(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "   ", "voice": "onyx"},
+            )
+        assert r.status_code == 422
+
+    def test_delete_npc_voice(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "Soren", "voice": "onyx"},
+            )
+            r = client.delete(f"/api/game/{game.id}/tts/npc-voices/Soren")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["removed_voice"] == "onyx"
+        assert body["npc_voices"] == {}
+
+    def test_delete_npc_voice_not_found(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            r = client.delete(f"/api/game/{game.id}/tts/npc-voices/Nobody")
+        assert r.status_code == 404
+
+    def test_narrate_uses_npc_mapped_voice(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "Soren", "voice": "onyx"},
+            )
+            r = client.post(
+                f"/api/game/{game.id}/tts/narrate",
+                json={"npc": "soren"},
+            )
+        assert r.status_code == 200
+        body = r.json()
+        # The cached entry reflects the NPC's mapped voice.
+        assert body["audio"]["voice"] == "onyx"
+        assert body["audio"]["label"] == "Soren Speaks"
+        # And the client was called with the mapped voice.
+        voice_arg = mock.synthesize.call_args.kwargs["voice"]
+        assert voice_arg == "onyx"
+
+    def test_narrate_explicit_voice_beats_npc(self, client, game):
+        mock = _mock_client(configured=True)
+        with patch("app.api.tts.get_tts_client", return_value=mock):
+            client.post(
+                f"/api/game/{game.id}/tts/npc-voices",
+                json={"npc": "Soren", "voice": "onyx"},
+            )
+            r = client.post(
+                f"/api/game/{game.id}/tts/narrate",
+                json={"npc": "soren", "voice": "nova"},
+            )
+        assert r.status_code == 200
+        assert r.json()["audio"]["voice"] == "nova"

@@ -68,5 +68,44 @@ def load_config() -> TTSConfig:
     )
 
 
+# --------------------------------------------------------------------------- #
+# Available voices
+# --------------------------------------------------------------------------- #
+
+#: The six standard OpenAI ``tts-1`` voices. These are also accepted by every
+#: OpenAI-compatible TTS endpoint we've tested. Each entry is
+#: ``(voice_id, human description, suggested use)`` — the description helps
+#: the player pick a fitting voice for a character in the UI.
+AVAILABLE_VOICES: list[tuple[str, str, str]] = [
+    ("alloy",   "Neutral, balanced, and clear",  "Default narrator / general purpose"),
+    ("echo",    "Warm, steady, male-presenting", "Male warriors, dwarves, guards"),
+    ("fable",   "Expressive, slightly eccentric","Wizards, sages, fey creatures"),
+    ("onyx",    "Deep, resonant, male-presenting","Villains, dragons, baritones"),
+    ("nova",    "Bright, female-presenting",     "Female heroes, elves, nobles"),
+    ("shimmer", "Soft, ethereal, female-presenting","Clerics, spirits, mystical beings"),
+]
+
+#: Quick lookup set of valid voice ids.
+_VALID_VOICES: set[str] = {v[0] for v in AVAILABLE_VOICES}
+
+#: The default voice — first in the registry.
+DEFAULT_VOICE: str = AVAILABLE_VOICES[0][0]
+
+
+def voices_as_dicts() -> list[dict[str, str]]:
+    """Return the available voices as a list of JSON-serialisable dicts."""
+    return [
+        {"id": vid, "description": desc, "suggested_use": use}
+        for vid, desc, use in AVAILABLE_VOICES
+    ]
+
+
+def is_valid_voice(voice: Optional[str]) -> bool:
+    """True when ``voice`` is a recognised voice id (or empty/None)."""
+    if not voice:
+        return True
+    return voice in _VALID_VOICES
+
+
 # Default config (loaded once at import time, like app.llm.config / image_config)
 config = load_config()
