@@ -46,8 +46,9 @@ Suggested next-run candidates (pick one):
    span several runs.
 2. **Audio polish** — ~~auto-narrate each new DM narration (toggle in
    VoicePanel)~~ **DONE** (auto-narrate shipped: persisted toggle +
-   GameView fires narration after each streamed DM entry); remaining:
-   voice-per-NPC selection, streaming/chunked playback.
+   GameView fires narration after each streamed DM entry); ~~voice-per-NPC
+   selection~~ **DONE** (this run: distinct voice per named NPC, in-character
+   dialogue); remaining: streaming/chunked playback.
 3. **Content/registry expansion** — more spells/enemies/magic items, or
    add more curated starter adventures (3 currently shipped).
 4. ~~**Frontend bundle optimisation** — the production JS chunk is ~500 KB;~~
@@ -69,6 +70,47 @@ half was completed this run.
 - Keep the provider configurable — don't hardcode OpenAI.
 
 ## Completed This Run
+- [x] **Per-NPC TTS voice selection — distinct voice per named NPC (PROGRESS.md next-run candidate #2: voice-per-NPC)**
+  - The TTS system used a single configured voice for all narration, so every
+    character — hero, villain, innkeeper — sounded identical. This run adds a
+    **voice-per-NPC** system so the player can assign a distinct TTS voice to
+    named NPCs and have dialogue spoken in-character. Builds entirely on the
+    existing provider-agnostic TTS layer; the backend stores the map in
+    `game_state["npc_voices"]` so it survives save/load.
+  - **Backend `llm/tts_config.py`**: new `AVAILABLE_VOICES` registry — the 6
+    standard OpenAI `tts-1` voices (alloy/echo/fable/onyx/nova/shimmer), each
+    with a human description + suggested use (e.g. "onyx — deep, resonant →
+    villains, dragons"). Helpers: `voices_as_dicts()` (JSON-serialisable),
+    `is_valid_voice()` (validation gate), `DEFAULT_VOICE`.
+  - **Backend `api/tts.py`**: 4 new endpoints (mounted `/api/game`):
+    `GET /tts/voices` (registry + default + configured flag — works even when
+    TTS isn't configured so the UI can render the picker), `GET /tts/npc-voices`
+    (current assignments), `POST /tts/npc-voices` (assign/update — case-
+    insensitive via canonical title-cased keys, 422 on invalid voice/empty
+    name), `DELETE /tts/npc-voices/{npc}` (remove → falls back to default).
+    The existing `POST /tts/narrate` gains an optional `npc` field:
+    `resolve_voice_for_npc()` picks explicit override > NPC's mapped voice >
+    configured default, and the cached entry's label becomes `"Soren Speaks"`.
+  - **Frontend `types/index.ts`**: 5 new interfaces (`TTSVoice`,
+    `VoicesResponse`, `NPCVoicesResponse`, `SetNPCVoiceResult`,
+    `DeleteNPCVoiceResult`). **`stores/api.ts`**: 4 new client fns
+    (`listVoices`, `getNPCVoices`, `setNPCVoice`, `deleteNPCVoice`); `narrateLatest`
+    gains optional `npc` param.
+  - **Frontend `components/VoicePanel.tsx`**: new 🎭 **NPC Voices** section
+    (shown only when configured): NPC-name input + voice dropdown (each option
+    shows the id + description) + Assign button (disabled until both filled);
+    assigned-voices list with voice id + suggested-use chip + remove (×)
+    button. Empty-state message when none assigned.
+  - **Tests**: backend `test_tts.py` +20 (3 voice-registry shape/validation,
+    5 voice-resolution precedence, 12 NPC API: list-voices configured/
+    unconfigured, get-empty, set/persist/update/invalid-voice/empty-name,
+    delete/delete-404, narrate-uses-mapped-voice, explicit-beats-NPC).
+    Frontend `VoicePanel.test.tsx` +6 (section shown/hidden, assign flow +
+    onChanged, empty message, disabled-when-empty, remove). Verified:
+    **60 backend TTS tests passing** (was 40, +20); **55 frontend tests
+    passing** (was 49, +6); `tsc --noEmit` clean; `vite build` clean
+    (VoicePanel chunk 9.94 KB, main bundle 290 KB).
+
 - [x] **Auto-narrate each new DM narration — TTS audio polish (PROGRESS.md next-run candidate #2)**
   - The TTS voice system (build priority #12) required pressing "Narrate
     Latest" after every DM message to hear it spoken. This run adds an
