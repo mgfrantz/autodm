@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅
-## TEST SUITE FULLY GREEN (2410 backend + 46 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅
+## TEST SUITE FULLY GREEN (2432 backend + 46 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅
 
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
@@ -46,11 +46,15 @@ Suggested next-run candidates (pick one):
    span several runs.
 2. **Audio polish** — auto-narrate each new DM narration (toggle in
    VoicePanel), voice-per-NPC selection, streaming/chunked playback.
-3. **Content/registry expansion** — more spells/enemies/magic items, or a
-   curated starter adventure (one-shot) the DM can run out of the box.
+3. **Content/registry expansion** — more spells/enemies/magic items, or
+   add more curated starter adventures (3 currently shipped).
 4. ~~**Frontend bundle optimisation** — the production JS chunk is ~500 KB;~~
    **DONE** — dynamic-imported overlay panels, 43% bundle reduction
    (500 KB → 286 KB).
+5. ~~**Curated starter adventure (one-shot) the DM can run out of the box.**~~
+   **DONE** — 3 hand-authored adventures (Cursed Mines of Emberdeep,
+   Whispering Moor, Shattered Spires) playable without an LLM key; full
+   backend registry + API + frontend adventure picker.
 
 ### Voice narration (TTS DM) — COMPLETE ✅ (backend + frontend)
 Build priority #12 is fully shipped. The backend (config + client +
@@ -63,6 +67,49 @@ half was completed this run.
 - Keep the provider configurable — don't hardcode OpenAI.
 
 ## Completed This Run
+- [x] **Add curated starter adventures — 3 hand-authored worlds playable without an LLM key**
+  - The game required an LLM API key to generate a world before you could
+    play — there was no out-of-the-box, no-config path to start an adventure.
+    This run adds a **curated starter adventure** system: three richly
+    detailed, hand-authored adventures that produce world payloads
+    shape-compatible with the LLM generator, so the entire game pipeline
+    (game/create, game/start, combat, navigation) works unchanged. Players
+    pick a starter adventure from the World Generation screen instead of
+    asking the DM to generate a world.
+  - **`backend/app/engine/adventures.py`** (pure, ~400 lines):
+    `StarterAdventure` dataclass (id/name/tagline/blurb/tone/recommended_level/
+    tags/world_data) with `to_dict(include_world_data=)` for light vs detail
+    serialization; `STARTER_ADVENTURES` registry with **3 adventures** —
+    *The Cursed Mines of Emberdeep* (heroic fantasy dungeon crawl, lvl 1),
+    *The Whispering Moor* (gothic horror undead mystery, lvl 2), *The
+    Shattered Spires* (high-magic ruins exploration, lvl 3) — each with a
+    full world_data payload (3 regions, 3-act campaign arc, starting
+    settlement, 5 NPCs, 2 factions, hook) matching the DSPy generator output
+    shape exactly. Lookup helpers: `list_adventures`, `get_adventure`,
+    `world_data_for` (returns an independent copy so callers can't corrupt
+    the registry).
+  - **`backend/app/api/adventures.py`** (3 endpoints, mounted
+    `/api/adventures`): `GET /` (light summary list), `GET /{id}` (full
+    detail incl. world_data), `POST /start` (creates a `World` row —
+    identical schema to an LLM-generated world — returns `{"world_id":int}`,
+    optional name override). A drop-in alternative to `POST /world/generate`.
+  - **`backend/app/main.py`**: mount the adventures router.
+  - **Frontend** `types/index.ts`: `AdventureSummary` + `StartAdventureResult`
+    interfaces. `stores/api.ts`: `listAdventures()` + `launchStarterAdventure()`
+    client fns. `views/WorldGeneration.tsx`: mode toggle (📜 Starter
+    Adventures / ✨ Generate New World) with curated-adventure cards (name,
+    tagline, blurb, recommended-level badge, tone + tag chips); selecting one
+    creates a world + game and navigates straight in. Graceful fallback when
+    the adventure list can't be loaded.
+  - **Tests** (`backend/tests/test_adventures.py`, 22 tests): registry
+    shape-completeness (every world_data has the required keys the game
+    pipeline reads), unique ids, lookup helpers, independent-copy invariant,
+    `to_dict` summary/detail modes, API list/detail/detail-404/start-creates-
+    world/name-override/start-404, world round-trip + game-pipeline
+    compatibility. Verified: **2432 backend tests passing** (was 2410, +22),
+    0 failing; `tsc --noEmit` clean; `vite build` clean (129 modules);
+    **46 frontend tests passing** (unchanged).
+
 - [x] **Frontend bundle optimisation — dynamic-import overlay panels with React.lazy + Suspense**
   - The production bundle was ~500 KB with a Vite warning to use dynamic imports for
     code-splitting. This run converts all 23 overlay/panel components (Skills, Feats,
