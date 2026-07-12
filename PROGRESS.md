@@ -44,8 +44,10 @@ Suggested next-run candidates (pick one):
 1. **Multiplayer foundation (#13)** — party/session model + WebSocket
    fan-out so multiple browser clients share one DM. Largest scope; would
    span several runs.
-2. **Audio polish** — auto-narrate each new DM narration (toggle in
-   VoicePanel), voice-per-NPC selection, streaming/chunked playback.
+2. **Audio polish** — ~~auto-narrate each new DM narration (toggle in
+   VoicePanel)~~ **DONE** (auto-narrate shipped: persisted toggle +
+   GameView fires narration after each streamed DM entry); remaining:
+   voice-per-NPC selection, streaming/chunked playback.
 3. **Content/registry expansion** — more spells/enemies/magic items, or
    add more curated starter adventures (3 currently shipped).
 4. ~~**Frontend bundle optimisation** — the production JS chunk is ~500 KB;~~
@@ -67,6 +69,45 @@ half was completed this run.
 - Keep the provider configurable — don't hardcode OpenAI.
 
 ## Completed This Run
+- [x] **Auto-narrate each new DM narration — TTS audio polish (PROGRESS.md next-run candidate #2)**
+  - The TTS voice system (build priority #12) required pressing "Narrate
+    Latest" after every DM message to hear it spoken. This run adds an
+    **auto-narrate** mode so the DM voice plays automatically as each new
+    narration arrives — a hands-free "the DM talks to you" experience once a
+    `TTS_API_KEY` is configured. Mirrors the existing TTS layer (provider-
+    agnostic); the backend is unchanged.
+  - **`stores/gameStore.ts`**: new persisted `autoNarrate` boolean +
+    `setAutoNarrate` action. Backed by `localStorage` (`dnd-auto-narrate`
+    key) with try/catch guards for restricted environments (jsdom/SSR). It's
+    a UI preference, not game state, so `reset()` deliberately preserves it
+    across games and reloads.
+  - **`components/VoicePanel.tsx`**: new "🔈 Auto-narrate new DM messages"
+    checkbox (shown only when TTS is configured) that reads/writes the shared
+    store. Helper text describes the current on/off behaviour. Because the
+    preference lives in the store (not component state), auto-narration
+    keeps firing even when the Voice overlay is closed.
+  - **`views/GameView.tsx`**: fetches TTS config status once per game
+    (`getTTSStatus` → `ttsConfigured`); new `maybeAutoNarrate()` helper
+    synthesizes the latest DM entry server-side (`narrateLatest`) and plays
+    the resulting cached audio via a single hidden `<audio>` element whose
+    `src` is swapped per narration. Called after every streamed DM narration
+    (both `handleStart` and `handleAction`). Silent no-op when the
+    preference is off, TTS is unconfigured, or on any error — never
+    disrupts gameplay. The 🔊 Voice header button gains a pulsing arcane
+    ring + dot indicator when auto-narrate is active, so the state is
+    discoverable without opening the panel.
+  - **Why it works**: the backend SSE streaming endpoints persist the DM
+    narration to `story_log` *before* emitting the `done` event, so the
+    post-stream `narrateLatest()` call reliably finds the just-arrived
+    narration via `_latest_dm_narration()`.
+  - **Tests** (`VoicePanel.test.tsx`, +3): toggle off-by-default with helper
+    text, toggle hidden when not configured, toggle flips the shared store
+    preference (verified via `useGameStore.getState()`). The shared store
+    reset is added to `beforeEach` for test isolation. Verified: `tsc
+    --noEmit` clean; `vite build` clean (129 modules, main bundle 290 KB);
+    **49 frontend tests passing** (was 46, +3). Backend untouched → 2432
+    backend tests unaffected.
+
 - [x] **Add curated starter adventures — 3 hand-authored worlds playable without an LLM key**
   - The game required an LLM API key to generate a world before you could
     play — there was no out-of-the-box, no-config path to start an adventure.
