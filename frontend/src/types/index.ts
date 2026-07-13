@@ -1774,3 +1774,29 @@ export interface FireLairActionResult {
   lair_last_fired_round: number | null;
   encounter?: unknown;
 }
+
+// === Quest Log ===
+
+/** A single quest in the player's quest log. */
+export interface Quest {
+  id: number;
+  title: string;
+  description: string;
+  status: QuestStatus;
+  giver: string;
+  objective: string;
+  reward_hint: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Quest lifecycle states (mirrors the backend engine). */
+export type QuestStatus = 'active' | 'completed' | 'failed';
+
+/** Response from GET /{game_id}/quests — a list of quests. */
+export interface QuestListResponse {
+  quests: Quest[];
+}
+
+/** Response from PATCH /{game_id}/quests/{id} — the updated quest. */
+export type UpdateQuestResult = Quest;

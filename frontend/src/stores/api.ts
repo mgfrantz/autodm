@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, VoicesResponse, NPCVoicesResponse, SetNPCVoiceResult, DeleteNPCVoiceResult, TTSAudioChunk, TTSDoneEvent, TTSErrorEvent, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, VoicesResponse, NPCVoicesResponse, SetNPCVoiceResult, DeleteNPCVoiceResult, TTSAudioChunk, TTSDoneEvent, TTSErrorEvent, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult, Quest, QuestStatus, QuestListResponse, UpdateQuestResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -1487,4 +1487,43 @@ export async function streamNarrate(
     }
   }
 }
+
+// --------------------------------------------------------------------------- //
+// Quest Log
+// --------------------------------------------------------------------------- //
+
+/**
+ * List the player's quests, optionally filtered by status.
+ * Quests are auto-detected from DM narration; this just reads the log.
+ */
+export const listQuests = async (
+  gameId: number,
+  status?: QuestStatus,
+): Promise<QuestListResponse> => {
+  const params = status ? { params: { status } } : undefined;
+  const res = await API.get<QuestListResponse>(`/game/${gameId}/quests`, params);
+  return res.data;
+};
+
+/** Get a single quest by ID. */
+export const getQuest = async (
+  gameId: number,
+  questId: number,
+): Promise<Quest> => {
+  const res = await API.get<Quest>(`/game/${gameId}/quests/${questId}`);
+  return res.data;
+};
+
+/** Update a quest's status (active → completed / failed, or reopen it). */
+export const updateQuestStatus = async (
+  gameId: number,
+  questId: number,
+  status: QuestStatus,
+): Promise<UpdateQuestResult> => {
+  const res = await API.patch<UpdateQuestResult>(
+    `/game/${gameId}/quests/${questId}`,
+    { status },
+  );
+  return res.data;
+};
 

@@ -31,6 +31,7 @@ const SavingThrowsPanel = lazy(() => import('../components/SavingThrowsPanel'))
 const ImagePanel = lazy(() => import('../components/ImagePanel'))
 const VoicePanel = lazy(() => import('../components/VoicePanel'))
 const LegendaryPanel = lazy(() => import('../components/LegendaryPanel'))
+const QuestLogPanel = lazy(() => import('../components/QuestLogPanel'))
 
 // Shared loading fallback for lazy-loaded panels
 const PanelLoader = () => (
@@ -90,6 +91,7 @@ export default function GameView() {
   const [showImages, setShowImages] = useState(false)
   const [showVoice, setShowVoice] = useState(false)
   const [showLegendary, setShowLegendary] = useState(false)
+  const [showQuests, setShowQuests] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
   const storyEndRef = useRef<HTMLDivElement>(null)
@@ -633,6 +635,13 @@ export default function GameView() {
               title="Legendary actions & lair actions for boss monsters (Monster Manual p.11)"
             >
               🐉 <span className="hidden sm:inline">Legendary</span>
+            </button>
+            <button
+              className="btn-primary text-sm px-3 py-1.5"
+              onClick={() => setShowQuests(true)}
+              title="Quest log — quests auto-detected from the DM's narration"
+            >
+              📜 <span className="hidden sm:inline">Quests</span>
             </button>
             <button
               className="btn-primary text-sm px-3 py-1.5"
@@ -1855,6 +1864,35 @@ export default function GameView() {
                   const state = await getGameState(gameState.game_id)
                   setGameState(state)
                 }}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
+
+      {/* Quest log overlay */}
+      {showQuests && gameState?.game_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-overlay-in"
+          onClick={() => setShowQuests(false)}
+        >
+          <div
+            className="panel max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-fantasy text-2xl text-parchment-200">📜 Quest Log</h2>
+              <button
+                className="text-parchment-400 hover:text-parchment-200 text-2xl leading-none"
+                onClick={() => setShowQuests(false)}
+              >
+                ×
+              </button>
+            </div>
+            <Suspense fallback={<PanelLoader />}>
+              <QuestLogPanel
+                gameId={gameState.game_id}
+                onNarration={(entry) => addToStory(entry)}
               />
             </Suspense>
           </div>
