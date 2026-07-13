@@ -2289,6 +2289,32 @@ half was completed this run.
   - Verified: `tsc --noEmit` clean, `vite build` clean (118 modules); backend
     exhaustion suite 45 passing (frontend UI layer over the already-tested API).
 
+## Class-Appropriate Ability-Score Recommendation ✅ (character creation)
+When generating a character (or via a dedicated button), the creation form now
+**recommends ability scores tuned to the chosen class** and updates the slider
+bars, while enforcing the D&D 5e **Standard Array** point budget.
+
+- **New pure module** `frontend/src/utils/statRecommend.ts`:
+  * `CLASS_STAT_BUILD` — per-class ability priority order (primary casting/attack
+    stat → survivability → dump stat), covering all 12 PHB classes.
+  * `recommendStats(charClass)` — distributes the standard array
+    [15, 14, 13, 12, 10, 8] across the six abilities per the class priority;
+    always totals exactly **72** (`STAT_BUDGET`).
+  * `totalPoints()` / `isOverBudget()` helpers for the budget tracker.
+- **CharacterCreation.tsx** UI changes:
+  * **"🎯 Recommend for {Class}"** button next to the abilities header — one-click
+    auto-fill of the class-optimal standard-array spread.
+  * **Point-budget tracker** — live `Total: N / 72` readout with colour-coded
+    status (green ✓ balanced / amber unused / red ⚠ over budget).
+  * **Generate Character** flow now also applies recommended stats, so the bars
+    animate to the class build alongside the flavour-text generation.
+  * **Create Hero disabled while over budget** — prevents submitting a character
+    that exceeds the standard-array point allowance.
+- **Tests**: `frontend/src/utils/__tests__/statRecommend.test.ts` (14 cases) —
+  verifies the standard-array invariant (total = 72 for every class), correct
+  primary/dump-stat assignment per class, budget math, and build-map integrity.
+- Verified: `tsc --noEmit` clean, `vite build` clean, 69 frontend tests passing.
+
 ## How to Use This File
 When you (the agent) work on the project:
 1. Read this file first

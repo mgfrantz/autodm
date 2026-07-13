@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createCharacter, generateCharacterFlavor, listBackgrounds, getBackground, setCharacterBackground, listAlignments } from '../stores/api'
+import { recommendStats, totalPoints, isOverBudget, STAT_BUDGET, type AbilityScores } from '../utils/statRecommend'
 import type { BackgroundSummary, BackgroundDetail, AlignmentSummary } from '../types'
 
 const RACES = ['Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Elf', 'Half-Orc', 'Tiefling', 'Dragonborn']
@@ -107,6 +108,23 @@ export default function CharacterCreation() {
   const update = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  // --- Ability-score recommendation & budget ---
+  const currentScores: AbilityScores = {
+    strength: form.strength,
+    dexterity: form.dexterity,
+    constitution: form.constitution,
+    intelligence: form.intelligence,
+    wisdom: form.wisdom,
+    charisma: form.charisma,
+  }
+  const spent = totalPoints(currentScores)
+  const overBudget = isOverBudget(currentScores)
+
+  const applyRecommendedStats = (charClass: string) => {
+    const rec = recommendStats(charClass)
+    setForm((prev) => ({ ...prev, ...rec }))
+  }
+
   const handleSubmit = async () => {
     setLoading(true)
     try {
@@ -131,6 +149,8 @@ export default function CharacterCreation() {
   const handleGenerateFlavor = async () => {
     setGenerating(true)
     setGenError(null)
+    // Recommend class-appropriate ability scores alongside the flavour text.
+    applyRecommendedStats(form.char_class)
     try {
       const flavor = await generateCharacterFlavor({
         race: form.race, char_class: form.char_class,
@@ -293,9 +313,31 @@ export default function CharacterCreation() {
 
         {/* Abilities */}
         <div>
-          <p className="text-parchment-400 text-sm mb-4">
-            Assign your ability scores. Standard Array: 15, 14, 13, 12, 10, 8
-          </p>
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <p className="text-parchment-400 text-sm">
+              Assign your ability scores. Standard Array: 15, 14, 13, 12, 10, 8
+            </p>
+            <button
+              type="button"
+              onClick={() => applyRecommendedStats(form.char_class)}
+              className="text-xs px-3 py-1.5 rounded-lg bg-arcane-700 text-arcane-100 hover:bg-arcane-600 transition-colors"
+            >
+              🎯 Recommend for {form.char_class}
+            </button>
+          </div>
+
+          {/* Point budget tracker */}
+          <div className={`flex items-center gap-2 text-sm mb-4 ${overBudget ? 'text-blood-400' : 'text-parchment-300'}`}>
+            <span>Total Points:</span>
+            <span className={`font-fantasy text-lg ${overBudget ? 'text-blood-400' : spent === STAT_BUDGET ? 'text-leaf-400' : 'text-parchment-200'}`}>
+              {spent}
+            </span>
+            <span className="text-parchment-500">/ {STAT_BUDGET}</span>
+            {spent === STAT_BUDGET && <span className="text-leaf-400 text-xs">✓ balanced</span>}
+            {overBudget && <span className="text-blood-400 text-xs font-semibold">⚠ over budget</span>}
+            {spent < STAT_BUDGET && <span className="text-parchment-500 text-xs">({STAT_BUDGET - spent} unused)</span>}
+          </div>
+
           {abilityLabels.map(([label, key]) => (
             <div key={key} className="flex items-center gap-2 sm:gap-4">
               <span className="w-24 sm:w-32 text-parchment-300 font-semibold text-sm sm:text-base">{label}</span>
@@ -394,7 +436,7 @@ export default function CharacterCreation() {
         <button
           className="btn-primary w-full"
           onClick={handleSubmit}
-          disabled={loading || !form.name}
+          disabled={loading || !form.name || overBudget}
         >
           {loading ? 'Creating...' : 'Create Hero ⚔️'}
         </button>
