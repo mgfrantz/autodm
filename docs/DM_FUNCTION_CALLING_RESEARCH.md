@@ -183,6 +183,153 @@ feel more legitimate.
 
 ---
 
+## Game Event UI Layer
+
+> Added 2025-07-13 — Mike wants visible UI elements for dice rolls, checks,
+> and other common game events, not just text narration.
+
+### The Vision
+
+When the DM resolves an action via function calls, the results should render as
+**structured UI elements** in the game log — not just prose. Players should
+*see* the dice, the modifiers, the DC, the outcome. This builds trust ("the
+roll was real, not fabricated") and makes the game feel like a virtual tabletop.
+
+### Proposed UI Event Components
+
+#### 1. 🎲 Dice Roll Card
+Every time `roll_dice()` fires, render a card inline in the narrative log:
+```
+┌────────────────────────────────────┐
+│  🎲 Perception Check               │
+│  [d20] 18 + 3 (WIS) = 21           │
+│  DC 15 → ✅ Success                │
+└────────────────────────────────────┘
+```
+- Animated dice tumble before settling on the result
+- Shows: die type, raw roll, modifier breakdown (stat + proficiency), total,
+  DC (if applicable), pass/fail
+- Colour-coded: green ✅ success, red ❌ fail, gold ✦ crit
+- Supports advantage/disadvantage (shows both rolls, strikes through the unused)
+- Stackable for multi-roll events (e.g. sneak attack: d20 + 6d6)
+
+#### 2. ⚔️ Attack / Damage Card
+When combat resolves via `attack()` / `deal_damage()`:
+```
+┌────────────────────────────────────┐
+│  ⚔️ Longsword Attack vs Goblin     │
+│  [d20] 17 + 5 = 22 vs AC 15 → HIT │
+│  💥 8 slashing damage              │
+│  Goblin: 14 → 6 HP                 │
+└────────────────────────────────────┘
+```
+
+#### 3. 🔮 Spell Cast Card
+When `cast_spell()` fires:
+```
+┌────────────────────────────────────┐
+│  🔮 Fireball (3rd-level)           │
+│  8d6 fire damage → 31              │
+│  Goblin: save DC 15 → ❌ Failed    │
+│  Goblin takes 31 damage → ☠️ DEAD  │
+│  Slot consumed: 3rd-level (2 left) │
+└────────────────────────────────────┘
+```
+
+#### 4. 🎒 Inventory Change Notification
+When `give_item()` / `remove_item()` fires:
+```
+┌────────────────────────────────────┐
+│  🎒 +1 Health Potion acquired      │
+│  From: Goblin loot                 │
+└────────────────────────────────────┘
+```
+- Toast-style or inline; click to inspect item
+
+#### 5. 📊 Condition / Status Applied
+When `apply_condition()` fires:
+```
+┌────────────────────────────────────┐
+│  📊 Goblin is now POISONED         │
+│  Duration: 1 minute (10 rounds)    │
+└────────────────────────────────────┘
+```
+
+#### 6. 📜 Check Prompt (DM-initiated)
+When the DM calls for a check the player must roll:
+```
+┌────────────────────────────────────┐
+│  📜 The DM calls for a roll!       │
+│  "Roll a Perception check"         │
+│  [🎲 Roll] button                  │
+└────────────────────────────────────┘
+```
+- Player clicks the button → real dice roll → result card renders
+- DM narrates the outcome based on the real result
+
+### Architecture: Event Stream
+
+Function-call results produce structured **game events** that flow to the
+frontend alongside (or interleaved with) the narration stream:
+
+```
+Backend:
+  DM calls roll_dice("d20", modifier=3)
+    → GameEvent { type: "dice_roll", label: "Perception", die: "d20",
+                   raw: 18, modifier: 3, total: 21, dc: 15, success: true }
+    → GameEvent { type: "damage", target: "Goblin", amount: 8, ... }
+
+Frontend:
+  NarrationStream ← SSE text chunks (as today)
+  GameEventStream ← SSE structured events (new)
+    → Rendered as inline UI cards between narration paragraphs
+```
+
+This is a **second SSE channel** (or typed events within the existing stream)
+that the frontend renders as rich UI components, interleaved with narration.
+
+### Design Principles for Event UI
+- **Inline, not modal** — events appear in the narrative log flow, not as popups
+- **Trust-building** — always show the raw die, modifiers, and DC so players
+  know the roll was real
+- **Animated but fast** — dice tumble for ~500ms, don't slow down gameplay
+- **Stackable** — multi-die rolls (damage, advantage) show all dice at once
+- **Themable** — match the parchment/fantasy aesthetic (gold for crits, blood
+  red for failures, arcane purple for spells)
+- **Collapsed by default for old events** — recent events expanded, older ones
+  collapse to a one-line summary to keep the log readable
+
+### Open Questions (UI)
+1. **SSE protocol** — separate channel for events, or typed markers in the
+   existing narration stream? (e.g. `[EVENT:dice_roll {...}]` sentinel)
+2. **Animation budget** — how much animation is too much? Dice tumble yes, but
+   should damage cards "shake" the HP bar? (Probably yes — fun feedback)
+3. **Player-initiated vs DM-initiated** — when a player clicks "Cast Fireball"
+   in the Spells panel, should the same event UI render? (Yes — unified)
+4. **History/replay** — should old event cards be expandable for review during
+   long sessions? (Probably yes — collapsed by default)
+5. **Mobile layout** — cards need to work on narrow screens (stack vertically)
+
+---
+
+## Updated Migration Path
+
+| Phase | Scope | Backend | Frontend UI |
+|-------|-------|---------|-------------|
+| **1. Dice** | DM calls `roll_dice()` | Dice engine + event emission | Dice roll card component |
+| **1b. Check Prompts** | DM calls for player check | Check request event | Roll button card |
+| **2. Combat** | DM calls `attack()` / `deal_damage()` | Combat resolution + events | Attack/damage cards |
+| **3. Spells** | DM calls `cast_spell()` | Spell engine + events | Spell cast card |
+| **4. Inventory** | DM calls `give_item()` / `remove_item()` | Inventory update + events | Loot notification |
+| **5. Conditions** | DM calls `apply_condition()` | Condition engine + events | Status applied card |
+| **6. Story State** | DM calls `set_story_flag()` / `offer_quest()` | World state update | Quest/narrative update |
+
+Each phase now has **both** a backend function-calling component and a frontend
+UI event component. Phase 1 (dice + check prompts) is the MVP — it delivers the
+"real dice" feel and the first visible game event UI.
+
+---
+
 ## Related Documents
 - `docs/DSPY_TEXT_GAME_REFERENCE.md` — DSPy text game tutorial analysis;
   `ActionResolver` signature (structured skill-check resolution) is directly
@@ -193,3 +340,6 @@ feel more legitimate.
 
 ## Changelog
 - 2025-07-13: Initial brainstorm, staged as ongoing research theme by Mike
+- 2025-07-13: Added Game Event UI Layer — dice roll cards, check prompts,
+  combat/spell/inventory event components, event stream architecture, updated
+  migration path to include frontend UI per phase
