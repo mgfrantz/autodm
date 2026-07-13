@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅
-## TEST SUITE FULLY GREEN (2432 backend + 46 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅
+## TEST SUITE FULLY GREEN (2461 backend + 46 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅
 
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
@@ -104,6 +104,43 @@ Suggested next-run candidates (pick one):
    **DONE** — 3 hand-authored adventures (Cursed Mines of Emberdeep,
    Whispering Moor, Shattered Spires) playable without an LLM key; full
    backend registry + API + frontend adventure picker.
+6. ~~**Quest detection in dialogue (DSPy pattern #1, HIGH value)**~~ **DONE**
+   — quest log engine + DSPy signature + API endpoints (GET/PATCH) with
+   29 tests. Frontend QuestLogPanel not yet implemented.
+
+## Completed This Run
+- [x] **Quest detection in dialogue (DSPy tutorial pattern #1, HIGH value)**
+  - Implements the DSPy tutorial's quest detection pattern: the DM's
+    narration is automatically analyzed for quest events (quests offered,
+    completed, failed) and important information revealed. This enables
+    an automatic quest log that drives branching story state.
+  - **`backend/app/engine/quests.py`** — Quest and QuestLog dataclasses with
+    auto-incrementing IDs, status tracking (active/completed/failed),
+    serialization/deserialization, title-based lookup, and extraction/merge
+    helpers for game_state persistence. 17 tests.
+  - **`backend/app/llm/dspy_signatures.py`** — `DetectQuests` signature
+    with clear guidance for quest detection: when quests are offered
+    (task/objective presented), completed (objectives fulfilled), or
+    failed (objectives failed). Returns `quests_offered` (list of dict with
+    title/description/giver/objective), `quests_completed` (list of title
+    strings for partial matching), `quests_failed`, and `information_revealed`.
+  - **`backend/app/llm/dspy_modules.py`** — `QuestDetectionModule` (ChainOfThought
+    wrapper) with singleton pattern and graceful failure (returns empty
+    lists on exception). `get_quest_detection_module()` accessor.
+  - **`backend/app/api/game.py`** — integrated quest detection after every
+    DM narration: `_detect_and_update_quests()` runs the DSPy module on
+    the narration, extracts the quest log from game_state, adds new quests,
+    updates statuses for completed/failed quests, and merges back. Applied
+    to all four endpoints: `/start`, `/action`, `/start/stream`,
+    `/action/stream`.
+  - **`backend/app/api/quests.py`** — 3 REST endpoints mounted at
+    `/api/game`: `GET /{game_id}/quests` (list quests, optional status filter
+    query param), `GET /{game_id}/quests/{quest_id}` (get specific quest),
+    `PATCH /{game_id}/quests/{quest_id}` (update quest status). Response
+    models match the Quest dataclass. 12 tests.
+  - **`backend/app/main.py`** — mounted `quests.router` at `/api/game`.
+  - **Tests**: 29 total passing (17 engine tests, 12 API tests). Verified:
+    2461 backend tests passing (was 2432, +29).
 
 ### Voice narration (TTS DM) — COMPLETE ✅ (backend + frontend)
 Build priority #12 is fully shipped. The backend (config + client +
@@ -115,8 +152,7 @@ half was completed this run.
   / `ImagePanel.tsx` (the image system) — the TTS system is its audio analogue.
 - Keep the provider configurable — don't hardcode OpenAI.
 
-## Completed This Run
-- [x] **Streaming/chunked TTS narration — backend SSE endpoint + chunked synthesis (PROGRESS.md next-run candidate #2: streaming/chunked playback)**
+## Previous Runs (most recent first)
   - The TTS system synthesized an entire narration in one blocking call, so
     the player waited for the full audio before hearing anything. This run
     adds a **chunked streaming** path so playback can begin as soon as the
