@@ -10,6 +10,7 @@ import {
   getNPCVoices,
   setNPCVoice,
   deleteNPCVoice,
+  streamNarrate,
 } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
 import type {
@@ -19,6 +20,7 @@ import type {
   StoryEntry,
   TTSVoice,
   NPCVoicesResponse,
+  TTSDoneEvent,
 } from '../types'
 
 /* ------------------------------------------------------------------ *
@@ -71,6 +73,13 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
   // even when this overlay is closed).
   const autoNarrate = useGameStore((s) => s.autoNarrate)
   const setAutoNarrate = useGameStore((s) => s.setAutoNarrate)
+
+  // Streaming chunked playback state
+  const [streamingBusy, setStreamingBusy] = useState(false)
+  const audioQueueRef = useRef<Array<{ url: string; index: number }>>([])
+  const isPlayingQueueRef = useRef(false)
+  const streamAudioRef = useRef<HTMLAudioElement | null>(null)
+  const streamBlobUrlsRef = useRef<string[]>([]) // Track URLs to revoke
 
   const refresh = useCallback(async () => {
     try {
@@ -258,6 +267,90 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
     [gameId, npcVoices, onChanged],
   )
 
+  // --- Streaming chunked playback ---
+
+  // Play the next chunk in the queue when the current one ends
+  const playNextInQueue = useCallback(() => {
+    if (audioQueueRef.current.length === 0) {
+      isPlayingQueueRef.current = false
+      return
+    }
+
+    const next = audioQueueRef.current.shift()
+    if (!next) {
+      isPlayingQueueRef.current = false
+      return
+    }
+
+    if (streamAudioRef.current) {
+      streamAudioRef.current.src = next.url
+      streamAudioRef.current.play().catch(() => {
+        /* autoplay can be blocked */
+      })
+    }
+  }, [])
+
+  // Handle streaming chunk arrival
+  const handleStreamChunk = useCallback((index: number, blobUrl: string, _text: string) => {
+    // Add to queue for sequential playback
+    audioQueueRef.current.push({ url: blobUrl, index })
+    streamBlobUrlsRef.current.push(blobUrl)
+
+    // If not playing, start playback
+    if (!isPlayingQueueRef.current && audioQueueRef.current.length === 1) {
+      isPlayingQueueRef.current = true
+      playNextInQueue()
+    }
+  }, [playNextInQueue])
+
+  // Start streaming narration
+  const handleStreamNarrate = useCallback(async () => {
+    setStreamingBusy(true)
+    setError(null)
+    // Reset queue
+    audioQueueRef.current = []
+    isPlayingQueueRef.current = false
+
+    try {
+      await streamNarrate(
+        gameId,
+        handleStreamChunk,
+        async (metadata: TTSDoneEvent) => {
+          // Stream completed — narrate the result into the story log (mirrors
+          // the one-shot narrate() helper) and refresh the cache list.
+          if (onNarration) {
+            onNarration({
+              role: 'system',
+              content: `🔊 Streamed narration (${metadata.voice}, ${metadata.total_chunks} chunks, ${Math.round(metadata.size_bytes / 1024)} KB).`,
+              timestamp: new Date().toISOString(),
+            })
+          }
+          await refresh()
+          onChanged?.()
+          setStreamingBusy(false)
+        },
+        (message: string) => {
+          setError(`Stream error: ${message}`)
+          setStreamingBusy(false)
+        },
+      )
+    } catch (err: unknown) {
+      setError(extractError(err, 'Failed to stream narration.'))
+      setStreamingBusy(false)
+    }
+  }, [gameId, handleStreamChunk, refresh, onChanged])
+
+  // Revoke blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      streamBlobUrlsRef.current.forEach((url) => {
+        if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+          URL.revokeObjectURL(url)
+        }
+      })
+    }
+  }, [])
+
   if (loading) {
     return (
       <div className="text-center py-8 text-parchment-400">
@@ -279,6 +372,13 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
           className="hidden"
         />
       )}
+
+      {/* Hidden audio element drives streaming chunked playback */}
+      <audio
+        ref={streamAudioRef}
+        onEnded={playNextInQueue}
+        className="hidden"
+      />
 
       {/* Configuration status banner */}
       {!configured && (
@@ -342,13 +442,27 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
           Speak the most recent DM narration aloud. The audio is synthesized, cached,
           and added to the list below for replay.
         </p>
-        <button
-          className="btn-primary text-sm px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed"
-          onClick={handleNarrate}
-          disabled={!configured || busy}
-        >
-          {busy ? 'Synthesizing…' : '🔊 Narrate Latest'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            className="btn-primary text-sm px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={handleNarrate}
+            disabled={!configured || busy || streamingBusy}
+          >
+            {busy ? 'Synthesizing…' : '🔊 Narrate Latest'}
+          </button>
+          <button
+            className="btn-primary text-sm px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={handleStreamNarrate}
+            disabled={!configured || busy || streamingBusy}
+            title="Stream the narration in chunks — you start hearing it as soon as the first sentence is synthesized."
+          >
+            {streamingBusy ? 'Streaming…' : '📡 Stream Narration'}
+          </button>
+        </div>
+        <p className="text-xs text-parchment-500 mt-2">
+          “Stream” begins playback sentence-by-sentence as audio is synthesized, so you
+          hear the DM sooner on long narrations.
+        </p>
       </div>
 
       {/* Speak custom text (one-shot) */}
@@ -368,7 +482,7 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
           <button
             className="btn-primary text-sm px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed"
             onClick={handleSpeak}
-            disabled={!configured || busy || !customText.trim()}
+            disabled={!configured || busy || streamingBusy || !customText.trim()}
           >
             {busy ? 'Synthesizing…' : '🎙️ Speak Text'}
           </button>

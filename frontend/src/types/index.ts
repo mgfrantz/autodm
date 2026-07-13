@@ -1652,6 +1652,31 @@ export interface DeleteNPCVoiceResult {
   count: number;
 }
 
+// --------------------------------------------------------------------------- //
+// TTS Streaming (SSE) — chunked audio playback
+// --------------------------------------------------------------------------- //
+
+/** A single audio chunk from the TTS streaming endpoint (data event). */
+export interface TTSAudioChunk {
+  index: number;
+  audio_b64: string;
+  text: string;
+}
+
+/** The final SSE event when streaming completes (event: done). */
+export interface TTSDoneEvent {
+  audio_id: string;
+  total_chunks: number;
+  label: string;
+  size_bytes: number;
+  voice: string;
+}
+
+/** An SSE error event (event: error). */
+export interface TTSErrorEvent {
+  message: string;
+}
+
 /* ------------------------------------------------------------------ *
  * Legendary Actions & Lair Actions — DnD 5e boss-monster combat (MM p.11)
  * A legendary creature's off-turn special action.

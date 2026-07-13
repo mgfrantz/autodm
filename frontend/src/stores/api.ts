@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, VoicesResponse, NPCVoicesResponse, SetNPCVoiceResult, DeleteNPCVoiceResult, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, VoicesResponse, NPCVoicesResponse, SetNPCVoiceResult, DeleteNPCVoiceResult, TTSAudioChunk, TTSDoneEvent, TTSErrorEvent, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -1404,4 +1404,87 @@ export const deleteNPCVoice = async (
   );
   return res.data;
 };
+
+/**
+ * Stream the latest DM narration in audio chunks (SSE).
+ *
+ * Calls onChunk for each audio chunk (index, blob URL, text), then onDone
+ * when all chunks are synthesized and cached. Chunks are base64-encoded
+ * mp3 audio from the backend; we decode to Blobs and create object URLs
+ * for playback. The caller must revoke each blob URL after use.
+ */
+export async function streamNarrate(
+  gameId: number,
+  onChunk: (index: number, blobUrl: string, text: string) => void,
+  onDone: (metadata: TTSDoneEvent) => void,
+  onError: (message: string) => void,
+  voice?: string,
+  npc?: string,
+): Promise<void> {
+  const res = await fetch(`/api/game/${gameId}/tts/narrate/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voice, npc }),
+  });
+
+  if (!res.ok || !res.body) {
+    throw new Error(`Stream request failed: HTTP ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    // SSE events are separated by a blank line.
+    const blocks = buffer.split('\n\n');
+    buffer = blocks.pop() ?? '';
+
+    for (const block of blocks) {
+      const lines = block.split('\n');
+      let eventType: string | null = null;
+      let dataLine: string | null = null;
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice('event: '.length);
+        } else if (line.startsWith('data: ')) {
+          dataLine = line.slice('data: '.length);
+        }
+      }
+
+      if (!dataLine) continue;
+
+      const payload = JSON.parse(dataLine);
+
+      if (eventType === 'done') {
+        const doneEvent = payload as TTSDoneEvent;
+        onDone(doneEvent);
+        return;
+      } else if (eventType === 'error') {
+        const errorEvent = payload as TTSErrorEvent;
+        onError(errorEvent.message);
+        return;
+      } else if (eventType === null) {
+        // Default event: audio chunk
+        const chunk = payload as TTSAudioChunk;
+        // Decode base64 to Blob
+        const byteCharacters = atob(chunk.audio_b64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'audio/mpeg' });
+        const blobUrl = URL.createObjectURL(blob);
+        onChunk(chunk.index, blobUrl, chunk.text);
+      }
+    }
+  }
+}
 

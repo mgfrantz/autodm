@@ -102,15 +102,22 @@ export default function GameView() {
 
   // Load game state and combat state
   useEffect(() => {
+    // StrictMode double-invokes effects in dev. Guard with an ignore flag so
+    // the discarded first invocation doesn't launch a second opening-narration
+    // stream (which would interleave into the live buffer) or double-add the
+    // story log on reload.
+    let ignore = false
     const loadState = async () => {
       try {
         const state = await getGameState(gid)
+        if (ignore) return
         setGameState(state)
-        
+
         // Check for combat state
         const combat = await getCombatState(gid)
+        if (ignore) return
         setCombatState(combat)
-        
+
         if (state.story_log.length === 0 && !started) {
           handleStart()
         } else {
@@ -120,8 +127,9 @@ export default function GameView() {
         setError('Failed to load game')
       }
     }
-    
+
     loadState()
+    return () => { ignore = true }
   }, [gid])
 
   // Check whether voice narration (TTS) is configured once per game. This
@@ -205,15 +213,17 @@ export default function GameView() {
     setLoading(true)
     setStreamingText('')
     try {
+      let final = ''
       await streamStartAdventure(
         gid,
-        (chunk) => setStreamingText((prev) => prev + chunk),
+        (chunk) => { final += chunk; setStreamingText((prev) => prev + chunk) },
         () => {},
       )
-      setStreamingText((final) => {
-        addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
-        return ''
-      })
+      // Commit the narration once, OUTSIDE the state updater. React StrictMode
+      // double-invokes updater functions, so a side effect inside
+      // setStreamingText would add the entry twice (duplicate panels).
+      addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
+      setStreamingText('')
       setStarted(true)
       maybeAutoNarrate()
     } catch (err) {
@@ -230,10 +240,11 @@ export default function GameView() {
     setLoading(true)
     setStreamingText('')
     try {
+      let final = ''
       await streamPlayerAction(
         gid,
         action,
-        (chunk) => setStreamingText((prev) => prev + chunk),
+        (chunk) => { final += chunk; setStreamingText((prev) => prev + chunk) },
         async (combatActive) => {
           // Check combat state after DM responds
           if (combatActive) {
@@ -242,10 +253,8 @@ export default function GameView() {
           }
         },
       )
-      setStreamingText((final) => {
-        addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
-        return ''
-      })
+      addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
+      setStreamingText('')
       // Refresh combat state after action
       const combat = await getCombatState(gid)
       setCombatState(combat)
@@ -509,7 +518,7 @@ export default function GameView() {
           on and TTS is configured. */}
       <audio ref={autoNarrateRef} className="hidden" />
       {/* Main Story Panel */}
-      <div className={`flex flex-col ${inCombat ? 'lg:flex-[2]' : 'flex-1'}`}>
+      <div className={`flex flex-col min-w-0 ${inCombat ? 'lg:flex-[2]' : 'flex-1'}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4 gap-2">
           <Link to="/" className="text-parchment-400 hover:text-parchment-200 text-sm shrink-0">
@@ -695,7 +704,7 @@ export default function GameView() {
         </div>
 
         {/* Story Log */}
-        <div className="panel flex-1 overflow-y-auto mb-4 min-h-[400px] max-h-[60vh]">
+        <div className="panel flex-1 overflow-y-auto overflow-x-hidden mb-4 min-h-[400px] max-h-[60vh]">
           <div className="space-y-4">
             {story.map((entry, i) => (
               <div
@@ -711,7 +720,7 @@ export default function GameView() {
                 <div className="text-xs text-parchment-500 mb-1 font-semibold uppercase">
                   {entry.role === 'dm' ? '🗡️ Dungeon Master' : entry.role === 'system' ? '⚙️ System' : '🧑 Player'}
                 </div>
-                <div className="text-parchment-200 whitespace-pre-wrap leading-relaxed">
+                <div className="text-parchment-200 whitespace-pre-wrap break-words leading-relaxed">
                   {entry.content}
                 </div>
               </div>
@@ -723,7 +732,7 @@ export default function GameView() {
                   🗡️ Dungeon Master
                   <span className="ml-2 text-arcane-400 animate-pulse">typing...</span>
                 </div>
-                <div className="text-parchment-200 whitespace-pre-wrap leading-relaxed">
+                <div className="text-parchment-200 whitespace-pre-wrap break-words leading-relaxed">
                   {streamingText}
                   <span className="inline-block w-2 h-4 ml-0.5 bg-arcane-400 animate-pulse align-middle" />
                 </div>

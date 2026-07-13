@@ -12,8 +12,9 @@ import {
   getNPCVoices,
   setNPCVoice,
   deleteNPCVoice,
+  streamNarrate,
 } from '../../stores/api'
-import type { TTSStatus, TTSListResponse, CachedAudio, StoryEntry } from '../../types'
+import type { TTSStatus, TTSListResponse, CachedAudio, StoryEntry, TTSDoneEvent } from '../../types'
 
 /* ------------------------------------------------------------------ *
  * Integration tests for the Voice (TTS) panel.
@@ -37,6 +38,7 @@ vi.mock('../../stores/api', () => ({
   getNPCVoices: vi.fn(),
   setNPCVoice: vi.fn(),
   deleteNPCVoice: vi.fn(),
+  streamNarrate: vi.fn(),
 }))
 
 function configuredStatus(): TTSStatus {
@@ -118,6 +120,22 @@ describe('VoicePanel', () => {
       npc_voices: {},
       count: 0,
     })
+    // Default: streamNarrate resolves immediately invoking onDone with metadata.
+    vi.mocked(streamNarrate).mockImplementation(
+      async (
+        _gameId: number,
+        _onChunk: (index: number, blobUrl: string, text: string) => void,
+        onDone: (metadata: TTSDoneEvent) => void,
+      ) => {
+        onDone({
+          audio_id: 'stream-abc',
+          total_chunks: 2,
+          label: 'Latest Narration',
+          size_bytes: 20480,
+          voice: 'alloy',
+        })
+      },
+    )
     // Reset the persisted auto-narrate preference between tests so each test
     // starts from a clean, predictable state.
     useGameStore.getState().setAutoNarrate(false)
