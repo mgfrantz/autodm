@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅
-## TEST SUITE FULLY GREEN (2461 backend + 46 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅
+## TEST SUITE FULLY GREEN (2461 backend + 76 frontend passing, 0 failing) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅
 
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
@@ -106,9 +106,51 @@ Suggested next-run candidates (pick one):
    backend registry + API + frontend adventure picker.
 6. ~~**Quest detection in dialogue (DSPy pattern #1, HIGH value)**~~ **DONE**
    — quest log engine + DSPy signature + API endpoints (GET/PATCH) with
-   29 tests. Frontend QuestLogPanel not yet implemented.
+   29 tests. ~~Frontend QuestLogPanel not yet implemented.~~ **Frontend
+   QuestLogPanel now DONE** (status-grouped cards, filter tabs, manual
+   status controls + narration, 7 tests).
 
 ## Completed This Run
+- [x] **Quest Log panel (frontend) — the frontend half of quest detection**
+  - The quest-detection feature (DSPy tutorial pattern #1, HIGH value)
+    shipped its **backend** last run (quest log engine + `DetectQuests`
+    DSPy signature + `QuestDetectionModule` integration into all four
+    narration endpoints + 3 REST endpoints + 29 tests). This run adds the
+    **frontend** UI the player actually sees — the last piece needed for
+    the feature to be usable end-to-end.
+  - **`frontend/src/types/index.ts`**: 4 new interfaces — `Quest`,
+    `QuestStatus` (`'active' | 'completed' | 'failed'`),
+    `QuestListResponse`, `UpdateQuestResult` — modeled exactly against the
+    backend `QuestResponse` shape.
+  - **`frontend/src/stores/api.ts`**: 3 new client fns — `listQuests(gameId,
+    status?)` (GET, optional status query-param filter), `getQuest(gameId,
+    questId)` (GET single), `updateQuestStatus(gameId, questId, status)`
+    (PATCH). All follow the existing axios-`API` pattern.
+  - **`frontend/src/components/QuestLogPanel.tsx`** (~280 lines): a
+    read-mostly UI over `/api/game/{id}/quests`. Quest cards group by
+    status (active / completed / failed) with stable ordering; each card
+    always shows the at-a-glance **Objective** + the quest **Giver**, and
+    expands to reveal the full description, **Reward hint**, and offer/
+    update timestamps. Filter tabs (📜 All / ⚔️ Active / ✅ Completed /
+    💀 Failed) show live counts. The player can manually **Mark Complete**,
+    **Mark Failed**, or **Reopen** a quest via PATCH — each narrates a
+    `📜 Quest <verb>: <title>` system entry into the DM story bubble.
+    Includes a Refresh button, a no-quests empty state, a per-filter empty
+    state, and graceful error surfacing.
+  - **`frontend/src/views/GameView.tsx`**: new 📜 **Quests** header button
+    + lazy-loaded overlay modal (same chrome as the Images/Voice/Legendary
+    overlays); wired with `onNarration → addToStory`.
+  - **`frontend/src/components/__tests__/QuestLogPanel.test.tsx`** (7
+    integration tests): empty-state banner, quest card renders
+    objective/giver/reward, mark-complete PATCH + narration, reopen a
+    completed quest + narration, status filtering (incl. filtered-empty
+    message), refresh re-reads the log, error surfacing on PATCH failure.
+  - **Verified**: `tsc --noEmit` clean; `vite build` clean (QuestLogPanel
+    is its own lazy chunk, 6.44 kB / 2.33 kB gzip; main bundle 295 kB);
+    **76 frontend tests passing** (+7). Backend untouched; the 29 backend
+    quest tests confirm the contract the panel is built against.
+
+
 - [x] **Quest detection in dialogue (DSPy tutorial pattern #1, HIGH value)**
   - Implements the DSPy tutorial's quest detection pattern: the DM's
     narration is automatically analyzed for quest events (quests offered,
