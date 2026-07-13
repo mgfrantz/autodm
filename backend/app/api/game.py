@@ -3,6 +3,7 @@ Game API — manages the active game session, DM narration, and player actions.
 """
 import json
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -13,10 +14,15 @@ from starlette.concurrency import run_in_threadpool
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.dspy_config import ensure_dspy_configured
-from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy
+from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.context import ContextManager, StorySummary, get_context_manager
+from app.engine.quests import (
+    QuestLog,
+    extract_quest_log_from_game_state,
+    merge_quest_log_into_game_state,
+)
 
 router = APIRouter()
 
@@ -34,6 +40,55 @@ async def _dm_narrate(situation: str) -> str:
         result = module(situation=situation)
         return result.narration
     return await run_in_threadpool(_call)
+
+
+def _detect_and_update_quests(
+    narration: str,
+    game_state: dict[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    """Detect quest events in DM narration and update the quest log.
+
+    Returns:
+        Tuple of (updated game_state, list of information_revealed strings)
+    """
+    quest_log = extract_quest_log_from_game_state(game_state)
+    existing_titles = [q.title for q in quest_log.get_quests_by_status("active")]
+
+    try:
+        ensure_dspy_configured()
+        module = get_quest_detection_module()
+        result = module(narration=narration, existing_quests=existing_titles)
+    except Exception as e:
+        logger = __import__("logging").getLogger(__name__)
+        logger.error(f"Quest detection failed: {e}")
+        return game_state, []
+
+    # Process new quests offered
+    for quest_data in getattr(result, "quests_offered", []):
+        quest_log.add_quest(
+            title=quest_data.get("title", "Untitled Quest"),
+            description=quest_data.get("description", ""),
+            giver=quest_data.get("giver", ""),
+            objective=quest_data.get("objective", ""),
+            reward_hint=quest_data.get("reward_hint", ""),
+        )
+
+    # Process quests completed
+    for title in getattr(result, "quests_completed", []):
+        quest = quest_log.find_quest_by_title(title)
+        if quest and quest.status == "active":
+            quest_log.update_quest_status(quest.id, "completed")
+
+    # Process quests failed
+    for title in getattr(result, "quests_failed", []):
+        quest = quest_log.find_quest_by_title(title)
+        if quest and quest.status == "active":
+            quest_log.update_quest_status(quest.id, "failed")
+
+    # Merge updated quest log back into game state
+    updated_state = merge_quest_log_into_game_state(game_state, quest_log)
+    info_revealed = getattr(result, "information_revealed", [])
+    return updated_state, info_revealed
 
 
 def _sse(payload: dict) -> str:
@@ -125,10 +180,15 @@ End with 2-3 clear choices for the player.
 
     narration = await _dm_narrate(situation=user_prompt)
 
+    # Detect and update quests
+    game_state = json.loads(save.game_state)
+    game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
+
     # Save to story log
     story_log = json.loads(save.story_log)
     story_log.append({"role": "dm", "content": narration, "timestamp": datetime.utcnow().isoformat()})
     save.story_log = json.dumps(story_log)
+    save.game_state = json.dumps(game_state)
     db.commit()
 
     return {"narration": narration}
@@ -322,6 +382,10 @@ End with 2-3 clear choices for the player.
         try:
             save = db.query(GameSave).filter(GameSave.id == game_id).first()
             if save:
+                # Detect and update quests
+                game_state = json.loads(save.game_state)
+                game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
+
                 story_log = json.loads(save.story_log)
                 story_log.append({
                     "role": "dm",
@@ -329,6 +393,7 @@ End with 2-3 clear choices for the player.
                     "timestamp": datetime.utcnow().isoformat(),
                 })
                 save.story_log = json.dumps(story_log)
+                save.game_state = json.dumps(game_state)
                 db.commit()
         finally:
             db.close()
@@ -393,10 +458,14 @@ Boss: {_boss_for_dm(game_state)}
 
     narration = await _dm_narrate(situation=user_prompt)
 
+    # Detect and update quests
+    game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
+
     # Log the exchange
     story_log.append({"role": "player", "content": action.action, "timestamp": datetime.utcnow().isoformat()})
     story_log.append({"role": "dm", "content": narration, "timestamp": datetime.utcnow().isoformat()})
     save.story_log = json.dumps(story_log)
+    save.game_state = json.dumps(game_state)
     save.updated_at = datetime.utcnow()
     
     # Check if we need to summarize
@@ -508,19 +577,24 @@ Boss: {_boss_for_dm(game_state)}
                 log.append({"role": "dm", "content": narration, "timestamp": now})
                 save.story_log = json.dumps(log)
                 save.updated_at = datetime.utcnow()
-                
+
+                # Detect and update quests
+                game_state = json.loads(save.game_state)
+                game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
+                save.game_state = json.dumps(game_state)
+
                 # Check if we need to summarize
                 local_summary = None
                 if save.story_summary and save.story_summary != "null":
                     local_summary_data = json.loads(save.story_summary)
                     local_summary = StorySummary.from_dict(local_summary_data)
-                
+
                 if context_manager.should_summarize(log, local_summary):
                     new_summary = await context_manager.summarize_story(log, local_summary)
                     save.story_summary = json.dumps(new_summary.to_dict())
                     if new_summary.current_act:
                         save.current_act = new_summary.current_act
-                
+
                 db.commit()
         finally:
             db.close()

@@ -103,3 +103,35 @@ class SummarizeStory(dspy.Signature):
     active_quests: list[str] = dspy.OutputField(desc="Current quest objectives")
     completed_quests: list[str] = dspy.OutputField(desc="Finished quests")
     current_act: int = dspy.OutputField(desc="Story act number (1, 2, or 3)")
+
+
+class DetectQuests(dspy.Signature):
+    """You are analyzing a Dungeon Master's narration to detect quest-related
+    events. Given the DM's narration text and a list of currently active quest
+    titles, identify any new quests being offered, quests being completed,
+    quests being failed, and any important information revealed about the world
+    or characters.
+
+    Quest detection:
+    - A quest is OFFERED when the DM presents a task or objective to the player
+      (e.g., "I need you to retrieve the stolen amulet").
+    - A quest is COMPLETED when the DM confirms the player has fulfilled a
+      quest's objectives (e.g., "You have successfully rescued the villagers").
+    - A quest is FAILED when the DM confirms the player has failed to complete
+      a quest (e.g., "The portal closes, and the artifact is lost forever").
+
+    For quests offered, include:
+    - title: A concise, memorable quest title
+    - description: A brief description of the quest
+    - giver: The NPC name offering the quest (if any)
+    - objective: The primary objective
+
+    For quests completed/failed, match to the closest active quest title
+    (case-insensitive partial match)."""
+
+    narration: str = dspy.InputField(desc="The DM's narration text to analyze")
+    existing_quests: list[str] = dspy.InputField(desc="List of currently active quest titles for matching completion/failure", default=[])
+    quests_offered: list[dict] = dspy.OutputField(desc="Quests offered in this narration; each a dict with keys: title, description, giver (optional), objective (optional)")
+    quests_completed: list[str] = dspy.OutputField(desc="Titles of quests completed in this narration (partial matches allowed)")
+    quests_failed: list[str] = dspy.OutputField(desc="Titles of quests failed in this narration (partial matches allowed)")
+    information_revealed: list[str] = dspy.OutputField(desc="Important information revealed about the world, NPCs, or lore")

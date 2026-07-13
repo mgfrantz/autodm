@@ -9,6 +9,7 @@ from app.llm.dspy_signatures import (
     GenerateWorld,
     DMNarration,
     SummarizeStory,
+    DetectQuests,
 )
 
 logger = logging.getLogger(__name__)
@@ -258,3 +259,37 @@ async def stream_narration_dspy(user_prompt: str) -> AsyncIterator[str]:
         content = _extract_stream_delta(chunk)
         if content:
             yield content
+
+
+class QuestDetectionModule(dspy.Module):
+    """Detect quest events in DM narration (quest offered, completed, failed)."""
+
+    def __init__(self):
+        super().__init__()
+        self.detect = dspy.ChainOfThought(DetectQuests)
+
+    def forward(self, *, narration: str, existing_quests: list[str] | None = None):
+        try:
+            return self.detect(
+                narration=narration,
+                existing_quests=existing_quests or [],
+            )
+        except Exception as e:
+            logger.error(f"Quest detection failed: {e}")
+            return dspy.Prediction(
+                quests_offered=[],
+                quests_completed=[],
+                quests_failed=[],
+                information_revealed=[],
+            )
+
+
+# Singleton
+_quest_detection: QuestDetectionModule | None = None
+
+
+def get_quest_detection_module() -> QuestDetectionModule:
+    global _quest_detection
+    if _quest_detection is None:
+        _quest_detection = QuestDetectionModule()
+    return _quest_detection
