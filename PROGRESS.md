@@ -32,6 +32,49 @@ docstring (the old duplicated `DM_SYSTEM_PROMPT` constant was removed).
       `app.api.game.stream_narration_dspy`; new `test_dm_streaming.py`
       covers the helper (15 tests). ✅ DONE
 
+## Design Patterns Research: DSPy Text-Based AI Game Reference
+
+**Reference:** <https://dspy.ai/tutorials/ai_text_game/> — DSPy's official
+text-based adventure game tutorial. Full analysis in
+`docs/DSPY_TEXT_GAME_REFERENCE.md`.
+
+The tutorial builds a simple text adventure with three DSPy signatures
+(`StoryGenerator`, `DialogueGenerator`, `ActionResolver`) composed in a
+`GameAI(dspy.Module)`. Our game is far more sophisticated, but several patterns
+are worth adopting for future enhancement:
+
+### High-Value Patterns (adopt next)
+1. **Quest detection in dialogue** — The tutorial's `DialogueGenerator` outputs
+   `quest_offered: bool` + `information_revealed: str`. Adding quest-detection
+   outputs to narration/dialogue would enable an automatic quest log and drive
+   branching story state.
+2. **NPC mood / relationship tracking** — NPC dialogue returns
+   `mood_change: positive/negative/neutral`. Tracking evolving NPC dispositions
+   could unlock dynamic dialogue (allies→hostile, merchant discounts, etc.).
+
+### Medium-Value Patterns (adopt soon)
+3. **Game flags for branching narrative state** — A simple
+   `story_flags: dict[str, bool]` system for tracking branching story state
+   (e.g. `"met_king": True`). Complements our existing world state persistence.
+4. **Scene-aware action suggestions** — AI generates contextually appropriate
+   `available_actions` per scene. Render as clickable suggestion chips alongside
+   our free-text input for better UX.
+5. **Structured skill-check resolution** — `ActionResolver` returns structured
+   fields (success, stat_changes, items_gained, XP). A separate
+   `SkillCheckResolver` for freeform exploration/social actions that don't map
+   to a standard 5e mechanic.
+
+### Design Patterns (reference)
+6. **Context-specific narration signatures** — Rather than one monolithic
+   `DMNarration`, consider specialized signatures per context (combat, social,
+   exploration) with tailored outputs.
+7. **Module composition pattern** — Confirms our existing approach (separate
+   ChainOfThought modules per task). Already aligned. ✅
+
+### Skipped (we already have better)
+- Dynamic difficulty heuristic (our 5e CR/DC/proficiency system is superior)
+- Story progress counter (our campaign_arc + act tracking is richer)
+
 ## Next Priority: AGENTS.md build priorities #1–#12, #14, #15 all COMPLETE ✅
 Every shipped build priority is done. The single remaining item in
 `AGENTS.md` is **#13 — Multiplayer (party-based)**, currently marked
