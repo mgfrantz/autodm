@@ -493,6 +493,31 @@ register_spell(Spell("Mage Hand", 0, SpellSchool.CONJURATION,
 register_spell(Spell("Minor Illusion", 0, SpellSchool.ILLUSION,
     description="You create a sound or an image of an object.",
     casting_time="1 action", range="30 feet", components="S, M"))
+register_spell(Spell("Chill Touch", 0, SpellSchool.NECROMANCY,
+    description="A spectral hand sears a target. Ranged spell attack; target can't regain HP for a turn.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    requires_attack_roll=True, damage_dice_count=1, damage_dice_sides=8,
+    damage_type="necrotic"))
+register_spell(Spell("Poison Spray", 0, SpellSchool.CONJURATION,
+    description="A noxious gas poisons a nearby creature. Con save.",
+    casting_time="1 action", range="10 feet", components="V, S",
+    save_ability="con", damage_dice_count=1, damage_dice_sides=12,
+    damage_type="poison"))
+register_spell(Spell("Shocking Grasp", 0, SpellSchool.EVOCATION,
+    description="Lightning springs from your hand to a creature. Melee spell attack; advantage vs. metal armor.",
+    casting_time="1 action", range="touch", components="V, S",
+    requires_attack_roll=True, damage_dice_count=1, damage_dice_sides=8,
+    damage_type="lightning"))
+register_spell(Spell("Toll the Dead", 0, SpellSchool.NECROMANCY,
+    description="A dolorous bell tolls for a target. Wis save; 1d12 necrotic if the target is missing HP, else 1d8.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="wis", damage_dice_count=1, damage_dice_sides=8,
+    damage_type="necrotic"))
+register_spell(Spell("Mind Sliver", 0, SpellSchool.ENCHANTMENT,
+    description="A beam of psychic energy pierces a mind. Int save; target subtracts 1d4 from its next save.",
+    casting_time="1 action", range="60 feet", components="V",
+    save_ability="int", damage_dice_count=1, damage_dice_sides=6,
+    damage_type="psychic"))
 
 # --- Level 1 ---------------------------------------------------------------
 register_spell(Spell("Magic Missile", 1, SpellSchool.EVOCATION,
@@ -549,6 +574,42 @@ register_spell(Spell("Hex", 1, SpellSchool.ENCHANTMENT,
     description="Curse a target; extra damage on hits. Concentration.",
     casting_time="1 bonus action", range="90 feet", components="V, S, M",
     concentration=True))
+register_spell(Spell("Shield", 1, SpellSchool.ABJURATION,
+    description="An invisible barrier grants +5 AC until your next turn. Cast as a reaction.",
+    casting_time="1 reaction", range="self", components="V, S",
+    duration="1 round"))
+register_spell(Spell("Mage Armor", 1, SpellSchool.ABJURATION,
+    description="A protective magical force surrounds a creature; its AC becomes 13 + Dex. 8 hours.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="8 hours"))
+register_spell(Spell("Bless", 1, SpellSchool.ENCHANTMENT,
+    description="Up to three creatures add 1d4 to attack rolls and saving throws. Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Bane", 1, SpellSchool.ENCHANTMENT,
+    description="Up to three enemies subtract 1d4 from attack rolls and saving throws. Cha save. Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    save_ability="cha", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Command", 1, SpellSchool.ENCHANTMENT,
+    description="A target obeys a one-word command on its next turn. Wis save.",
+    casting_time="1 action", range="60 feet", components="V",
+    save_ability="wis", duration="1 round"))
+register_spell(Spell("Charm Person", 1, SpellSchool.ENCHANTMENT,
+    description="A humanoid regards you as a friendly acquaintance for 1 hour. Wis save.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    save_ability="wis", duration="1 hour"))
+register_spell(Spell("Hunter's Mark", 1, SpellSchool.DIVINATION,
+    description="Mark a creature; deal an extra 1d6 damage on weapon hits. Concentration.",
+    casting_time="1 bonus action", range="90 feet", components="V",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Faerie Fire", 1, SpellSchool.EVOCATION,
+    description="Outline objects in a 20-foot cube; affected creatures grant attack advantage. Dex save. Concentration.",
+    casting_time="1 action", range="60 feet", components="V",
+    save_ability="dex", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Grease", 1, SpellSchool.CONJURATION,
+    description="Cover a 10-foot square in grease; creatures must save or fall prone. Dex save.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="dex", duration="1 minute"))
 
 # --- Level 2 ---------------------------------------------------------------
 register_spell(Spell("Scorching Ray", 2, SpellSchool.EVOCATION,
@@ -600,6 +661,22 @@ register_spell(Spell("Suggestion", 2, SpellSchool.ENCHANTMENT,
     description="Suggest a course of activity to a creature. Wis save.",
     casting_time="1 action", range="30 feet", components="V, M",
     save_ability="wis", concentration=True))
+register_spell(Spell("Aid", 2, SpellSchool.ABJURATION,
+    description="Up to three creatures' hit point maximum and current HP increase by 5 for 8 hours.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    duration="8 hours"))
+register_spell(Spell("Lesser Restoration", 2, SpellSchool.ABJURATION,
+    description="Touch a creature to end one condition: blinded, deafened, paralyzed, poisoned, or stunned.",
+    casting_time="1 action", range="touch", components="V, S"))
+register_spell(Spell("Melf's Acid Arrow", 2, SpellSchool.EVOCATION,
+    description="A shimmering arrow of acid. Ranged spell attack; 4d4 acid on a hit (2d4 on a miss).",
+    casting_time="1 action", range="90 feet", components="V, S, M",
+    requires_attack_roll=True, damage_dice_count=4, damage_dice_sides=4,
+    damage_type="acid", at_higher_levels_dice=1))
+register_spell(Spell("Enhance Ability", 2, SpellSchool.TRANSMUTATION,
+    description="Touch a creature to grant advantage on one chosen ability's checks. Concentration.",
+    casting_time="1 action", range="touch", components="V, S",
+    concentration=True, duration="up to 1 hour"))
 
 # --- Level 3 ---------------------------------------------------------------
 register_spell(Spell("Fireball", 3, SpellSchool.EVOCATION,
@@ -653,6 +730,15 @@ register_spell(Spell("Thunderwave", 3, SpellSchool.EVOCATION,
     casting_time="1 action", range="self (15-foot cube)", components="V, S",
     save_ability="con", damage_dice_count=2, damage_dice_sides=8,
     damage_type="thunder", at_higher_levels_dice=1))
+register_spell(Spell("Mass Healing Word", 3, SpellSchool.EVOCATION,
+    description="Up to six creatures regain hit points as a bonus action.",
+    casting_time="1 bonus action", range="60 feet", components="V",
+    healing_dice_count=1, healing_dice_sides=4, healing_bonus=0,
+    at_higher_levels_dice=1))
+register_spell(Spell("Fear", 3, SpellSchool.ILLUSION,
+    description="A phantasmal image terrifies creatures in a cone; they become frightened and drop items. Wis save. Concentration.",
+    casting_time="1 action", range="self (30-foot cone)", components="V, S, M",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
 
 # --- Level 4 ---------------------------------------------------------------
 register_spell(Spell("Polymorph", 4, SpellSchool.TRANSMUTATION,
@@ -854,23 +940,24 @@ register_spell(Spell("Foresight", 9, SpellSchool.DIVINATION,
 STARTING_SPELLS = {
     "wizard": {
         "cantrips": ["fire_bolt", "light", "mage_hand"],
-        "spells": ["magic_missile", "burning_hands", "detect_magic", "shield_of_faith"],
+        "spells": ["magic_missile", "burning_hands", "detect_magic", "shield_of_faith",
+                   "shield", "mage_armor"],
     },
     "sorcerer": {
         "cantrips": ["fire_bolt", "ray_of_frost", "acid_splash"],
-        "spells": ["magic_missile", "burning_hands", "chromatic_orb"],
+        "spells": ["magic_missile", "burning_hands", "chromatic_orb", "shield"],
     },
     "cleric": {
         "cantrips": ["sacred_flame", "light", "mage_hand"],
-        "spells": ["cure_wounds", "healing_word", "guiding_bolt", "bless" if False else "shield_of_faith"],
+        "spells": ["cure_wounds", "healing_word", "guiding_bolt", "shield_of_faith", "bless"],
     },
     "druid": {
         "cantrips": ["acid_splash", "minor_illusion", "light"],
-        "spells": ["cure_wounds", "entangle", "healing_word"],
+        "spells": ["cure_wounds", "entangle", "healing_word", "faerie_fire"],
     },
     "bard": {
         "cantrips": ["vicious_mockery", "minor_illusion", "light"],
-        "spells": ["healing_word", "sleep"],
+        "spells": ["healing_word", "sleep", "charm_person"],
     },
     "warlock": {
         "cantrips": ["eldritch_blast", "mage_hand", "minor_illusion"],
@@ -878,11 +965,11 @@ STARTING_SPELLS = {
     },
     "paladin": {
         "cantrips": [],
-        "spells": ["cure_wounds", "shield_of_faith"],
+        "spells": ["cure_wounds", "shield_of_faith", "command"],
     },
     "ranger": {
         "cantrips": [],
-        "spells": ["cure_wounds", "entangle"],
+        "spells": ["cure_wounds", "entangle", "hunter's_mark"],
     },
 }
 
