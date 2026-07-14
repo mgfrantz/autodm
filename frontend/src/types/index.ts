@@ -90,12 +90,23 @@ export interface GameState {
   xp: number;
 }
 
+export interface SkillCheckResolution {
+  success: boolean;
+  degree: string; // great_success | success | partial_success | failure | critical_failure
+  stat_changes: Record<string, number>;
+  items_gained: string[];
+  experience_gained: number;
+  narrative_notes: string;
+}
+
 export interface DMResponse {
   narration: string;
   action_suggestions: string[];
   choices: string[] | null;
   combat_active: boolean;
   roll_requested: boolean;
+  /** Structured mechanical outcome for a freeform action (DSPy pattern #5). */
+  skill_check_resolution?: SkillCheckResolution;
 }
 
 // === Combat Types ===

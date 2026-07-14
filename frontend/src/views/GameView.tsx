@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense, type ReactNod
 import { useParams, Link } from 'react-router-dom'
 import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest, getEquipmentCombatStats, getCharacterFeats, getTTSStatus, narrateLatest, cachedAudioUrl } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats, CharacterFeatsResponse } from '../types'
+import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats, CharacterFeatsResponse, SkillCheckResolution } from '../types'
+import SkillCheckResolutionCard from '../components/SkillCheckResolutionCard'
 
 // Lazy-load all overlay/panel components for code-splitting. These only load when
 // the user opens the corresponding overlay (e.g., clicking "Mounts", "Voice", etc.).
@@ -109,6 +110,7 @@ export default function GameView() {
   const [started, setStarted] = useState(false)
   const [streamingText, setStreamingText] = useState('')
   const [actionSuggestions, setActionSuggestions] = useState<string[]>([])
+  const [skillCheckResolution, setSkillCheckResolution] = useState<SkillCheckResolution | null>(null)
   const [showMap, setShowMap] = useState(false)
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null)
   const [mapLoading, setMapLoading] = useState(false)
@@ -291,6 +293,7 @@ export default function GameView() {
     const action = actionInput.trim()
     setActionInput('')
     setActionSuggestions([])
+    setSkillCheckResolution(null)
     addToStory({ role: 'player', content: action, timestamp: new Date().toISOString() })
     setLoading(true)
     setStreamingText('')
@@ -300,13 +303,14 @@ export default function GameView() {
         gid,
         action,
         (chunk) => { final += chunk; setStreamingText((prev) => prev + chunk) },
-        async (combatActive, suggestions) => {
+        async (combatActive, suggestions, resolution) => {
           // Check combat state after DM responds
           if (combatActive) {
             const combat = await getCombatState(gid)
             setCombatState(combat)
           }
           setActionSuggestions(suggestions)
+          setSkillCheckResolution(resolution ?? null)
         },
       )
       addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
@@ -713,6 +717,12 @@ export default function GameView() {
                 🎲 The DM considers your actions...
               </div>
             )}
+            {/* Structured skill-check resolution (game-event card) — shows the
+                mechanical outcome the DM computed for the last freeform action. */}
+            <SkillCheckResolutionCard
+              resolution={skillCheckResolution}
+              onDismiss={() => setSkillCheckResolution(null)}
+            />
             <div ref={storyEndRef} />
           </div>
         </div>
