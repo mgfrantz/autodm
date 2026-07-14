@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense, type ReactNod
 import { useParams, Link } from 'react-router-dom'
 import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest, getEquipmentCombatStats, getCharacterFeats, getTTSStatus, narrateLatest, cachedAudioUrl } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
-import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats, CharacterFeatsResponse, SkillCheckResolution } from '../types'
+import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats, CharacterFeatsResponse, SkillCheckResolution, GameEvent } from '../types'
 import SkillCheckResolutionCard from '../components/SkillCheckResolutionCard'
+import GameEventRenderer from '../components/GameEventRenderer'
 
 // Lazy-load all overlay/panel components for code-splitting. These only load when
 // the user opens the corresponding overlay (e.g., clicking "Mounts", "Voice", etc.).
@@ -111,6 +112,7 @@ export default function GameView() {
   const [streamingText, setStreamingText] = useState('')
   const [actionSuggestions, setActionSuggestions] = useState<string[]>([])
   const [skillCheckResolution, setSkillCheckResolution] = useState<SkillCheckResolution | null>(null)
+  const [gameEvents, setGameEvents] = useState<GameEvent[]>([])
   const [showMap, setShowMap] = useState(false)
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null)
   const [mapLoading, setMapLoading] = useState(false)
@@ -294,6 +296,7 @@ export default function GameView() {
     setActionInput('')
     setActionSuggestions([])
     setSkillCheckResolution(null)
+    setGameEvents([])
     addToStory({ role: 'player', content: action, timestamp: new Date().toISOString() })
     setLoading(true)
     setStreamingText('')
@@ -303,7 +306,7 @@ export default function GameView() {
         gid,
         action,
         (chunk) => { final += chunk; setStreamingText((prev) => prev + chunk) },
-        async (combatActive, suggestions, resolution) => {
+        async (combatActive, suggestions, resolution, events) => {
           // Check combat state after DM responds
           if (combatActive) {
             const combat = await getCombatState(gid)
@@ -311,6 +314,13 @@ export default function GameView() {
           }
           setActionSuggestions(suggestions)
           setSkillCheckResolution(resolution ?? null)
+          if (events && events.length > 0) {
+            setGameEvents(events)
+          }
+        },
+        (event) => {
+          // Incremental game_event SSE events — add as they arrive
+          setGameEvents((prev) => [...prev, event])
         },
       )
       addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
@@ -723,6 +733,16 @@ export default function GameView() {
               resolution={skillCheckResolution}
               onDismiss={() => setSkillCheckResolution(null)}
             />
+            {/* Game event cards (DM function calling Phase 1) — dice rolls,
+                check prompts rendered inline after the latest DM narration. */}
+            {gameEvents.map((event, idx) => (
+              <GameEventRenderer
+                key={`${event.type}-${idx}`}
+                event={event}
+                gameId={gid}
+                onDismiss={() => setGameEvents((prev) => prev.filter((_, i) => i !== idx))}
+              />
+            ))}
             <div ref={storyEndRef} />
           </div>
         </div>

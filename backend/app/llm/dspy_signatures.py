@@ -216,6 +216,38 @@ class GenerateActionSuggestions(dspy.Signature):
     action_suggestions: list[str] = dspy.OutputField(desc="4-6 brief, scene-specific action suggestions (verb-first, 3-8 words each)")
 
 
+class DMActionableNarration(dspy.Signature):
+    """You are an expert Dungeon Master for a single-player DnD 5e game.
+
+    In addition to narrating the scene, you output structured game_actions
+    that the backend will resolve mechanically. This ensures dice rolls,
+    checks, and other mechanical outcomes are REAL — not fabricated text.
+
+    Rules for game_actions:
+    - Include a roll_dice action whenever the outcome of an action is
+      uncertain and warrants a check (attack, save, skill check, damage)
+    - Use request_check when YOU (the DM) want the PLAYER to roll
+      (e.g., "Roll a Perception check")
+    - Do NOT fabricate dice results in the narration text — describe
+      the ATTEMPT and let the backend resolve the outcome
+    - If an action has a certain outcome, no game_action is needed
+    - Reference the action's label in narration (e.g., "You attempt to
+      pick the lock...") so the player knows what's being resolved
+
+    Each game_action is a dict with:
+    - "function": "roll_dice" | "request_check"
+    - "label": short description (e.g., "Perception Check", "Lockpicking")
+    - "args": function-specific arguments
+      - roll_dice: {"sides": 20, "modifier": 3, "advantage": false,
+                     "dc": 15, "disadvantage": false}
+      - request_check: {"skill": "Perception", "dc": 15, "reason": "..."}
+    """
+
+    situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action")
+    narration: str = dspy.OutputField(desc="Vivid narration of the scene. Describe attempts and outcomes — but for uncertain actions, describe the ATTEMPT and let game_actions resolve the result. Do NOT state specific dice numbers.")
+    game_actions: list[dict] = dspy.OutputField(desc="Structured actions to resolve mechanically. Empty list if no mechanical resolution needed.")
+
+
 class ResolveSkillCheck(dspy.Signature):
     """You are a Dungeon Master resolving a freeform player action that doesn't
     map to a standard DnD 5e mechanic (e.g., persuasion attempts, investigation

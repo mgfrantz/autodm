@@ -12,6 +12,7 @@ The endpoints are mediated by DSPy (``stream_narration_dspy``), which is
 patched here so no live LLM call is made.
 """
 import json
+from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
@@ -69,6 +70,22 @@ async def _fake_stream(*_args, **_kwargs):
     """Async generator mimicking stream_narration_dspy."""
     for piece in ["The ", "tower ", "glows ", "brightly."]:
         yield piece
+
+
+@contextmanager
+def mock_action_stream_llm():
+    """Patch all LLM-calling functions in the /action/stream endpoint."""
+    from unittest.mock import AsyncMock
+    with patch("app.api.game.stream_narration_dspy", new=_fake_stream), \
+         patch("app.api.game._dm_actionable_narrate", new=AsyncMock(
+             return_value=("The tower glows brightly.", [])
+         )), \
+         patch("app.api.game._resolve_skill_check", return_value={}), \
+         patch("app.api.game._detect_and_update_quests", side_effect=lambda n, gs: (gs, [])), \
+         patch("app.api.game._detect_and_update_npc_mood", side_effect=lambda n, gs: gs), \
+         patch("app.api.game._detect_and_update_game_flags", side_effect=lambda n, gs: gs), \
+         patch("app.api.game._generate_action_suggestions", return_value=[]):
+        yield
 
 
 def _parse_sse(text):
@@ -151,7 +168,7 @@ class TestPlayerActionStream:
         """Action stream includes combat flag on the done event."""
         _, _, save = _make_game_save(db_session)
 
-        with patch("app.api.game.stream_narration_dspy", new=_fake_stream):
+        with mock_action_stream_llm():
             response = client.post(
                 f"/api/game/{save.id}/action/stream",
                 json={"action": "I examine the glowing tower."},
@@ -166,7 +183,7 @@ class TestPlayerActionStream:
         """Both the player action and DM response are stored."""
         _, _, save = _make_game_save(db_session)
 
-        with patch("app.api.game.stream_narration_dspy", new=_fake_stream):
+        with mock_action_stream_llm():
             client.post(
                 f"/api/game/{save.id}/action/stream",
                 json={"action": "I approach the door."},
@@ -183,7 +200,7 @@ class TestPlayerActionStream:
 
     def test_missing_game_returns_404(self, client, db_session):
         """A non-existent game id yields a 404."""
-        with patch("app.api.game.stream_narration_dspy", new=_fake_stream):
+        with mock_action_stream_llm():
             response = client.post(
                 "/api/game/9999/action/stream",
                 json={"action": "look"},

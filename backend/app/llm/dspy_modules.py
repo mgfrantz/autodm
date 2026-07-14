@@ -8,6 +8,7 @@ from app.llm.dspy_signatures import (
     GenerateCharacterFlavor,
     GenerateWorld,
     DMNarration,
+    DMActionableNarration,
     SummarizeStory,
     DetectQuests,
     DetectNPCMoodChanges,
@@ -118,6 +119,37 @@ def get_dm_narration_module() -> DMNarrationModule:
     if _dm_narration is None:
         _dm_narration = DMNarrationModule()
     return _dm_narration
+
+
+class DMActionableNarrationModule(dspy.Module):
+    """Generate DM narration with structured game actions for mechanical resolution.
+
+    Like :class:`DMNarrationModule` but the output includes ``game_actions`` —
+    a list of structured action dicts that the backend resolves via the engine
+    (dice rolls, check prompts). Used by the ``/action`` endpoints (not
+    ``/start``) so the opening narration remains backward-compatible.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.generate = dspy.ChainOfThought(DMActionableNarration)
+
+    def forward(self, *, situation):
+        try:
+            return self.generate(situation=situation)
+        except Exception as e:
+            logger.error(f"DM actionable narration failed: {e}")
+            return dspy.Prediction(narration="", game_actions=[])
+
+
+# Singleton
+_dm_actionable_narration: DMActionableNarrationModule | None = None
+
+def get_dm_actionable_narration_module() -> DMActionableNarrationModule:
+    global _dm_actionable_narration
+    if _dm_actionable_narration is None:
+        _dm_actionable_narration = DMActionableNarrationModule()
+    return _dm_actionable_narration
 
 
 class StorySummaryModule(dspy.Module):

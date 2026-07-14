@@ -2,6 +2,7 @@
 Game API — manages the active game session, DM narration, and player actions.
 """
 import json
+import logging
 from datetime import datetime
 from typing import Any
 
@@ -14,9 +15,20 @@ from starlette.concurrency import run_in_threadpool
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.dspy_config import ensure_dspy_configured
-from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module, get_game_flags_detection_module, get_action_suggestions_module, get_skill_check_resolver_module
+from app.llm.dspy_modules import (
+    get_dm_narration_module,
+    get_dm_actionable_narration_module,
+    stream_narration_dspy,
+    get_quest_detection_module,
+    get_npc_mood_detection_module,
+    get_game_flags_detection_module,
+    get_action_suggestions_module,
+    get_skill_check_resolver_module,
+)
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
+from app.engine.game_events import GameEvent
+from app.engine.dm_functions import dm_roll_d20, dm_roll_dice, dm_request_check
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 from app.engine.quests import (
     QuestLog,
@@ -30,6 +42,7 @@ from app.engine.world_state import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 async def _dm_narrate(situation: str) -> str:
@@ -45,6 +58,89 @@ async def _dm_narrate(situation: str) -> str:
         result = module(situation=situation)
         return result.narration
     return await run_in_threadpool(_call)
+
+
+async def _dm_actionable_narrate(situation: str) -> tuple[str, list[dict]]:
+    """Generate DM narration with structured game_actions via DSPy.
+
+    Like :func:`_dm_narrate` but uses :class:`DMActionableNarrationModule`
+    which outputs both narration text and ``game_actions`` (structured
+    action dicts for mechanical resolution).
+
+    Returns:
+        Tuple of (narration_text, game_actions_list). On failure, returns
+        (narration_text, []).
+    """
+    def _call() -> tuple[str, list[dict]]:
+        ensure_dspy_configured()
+        module = get_dm_actionable_narration_module()
+        result = module(situation=situation)
+        narration = result.narration
+        actions = getattr(result, "game_actions", None) or []
+        if not isinstance(actions, list):
+            actions = []
+        return narration, actions
+    return await run_in_threadpool(_call)
+
+
+def _resolve_game_actions(game_actions: list[dict]) -> list[GameEvent]:
+    """Resolve DM-emitted game_actions into GameEvents via the engine.
+
+    Each game_action is a dict with:
+    - ``function``: "roll_dice" | "request_check"
+    - ``label``: short description
+    - ``args``: function-specific arguments
+
+    Unknown or malformed actions are logged and skipped (never crash).
+    """
+    events: list[GameEvent] = []
+    for action in game_actions or []:
+        if not isinstance(action, dict):
+            continue
+        func = action.get("function", "")
+        label = action.get("label", "Unknown")
+        args = action.get("args", {})
+        if not isinstance(args, dict):
+            args = {}
+        try:
+            if func == "roll_dice":
+                sides = args.get("sides", 20)
+                modifier = args.get("modifier", 0)
+                dc = args.get("dc")
+                advantage = args.get("advantage", False)
+                disadvantage = args.get("disadvantage", False)
+                if sides == 20:
+                    events.append(dm_roll_d20(
+                        label, modifier, advantage, disadvantage, dc,
+                    ))
+                else:
+                    count = args.get("count", 1)
+                    events.append(dm_roll_dice(label, count, sides, modifier))
+            elif func == "request_check":
+                events.append(dm_request_check(
+                    skill=args.get("skill", "Unknown"),
+                    dc=args.get("dc"),
+                    reason=args.get("reason", ""),
+                ))
+            else:
+                logger.warning(f"Unknown game_action function: {func}")
+        except Exception as e:
+            logger.error(f"Failed to resolve game action {func}: {e}")
+    return events
+
+
+def _compute_skill_modifier(character: Character, skill: str) -> int:
+    """Compute the skill modifier for a character.
+
+    Uses the existing skills engine (ability mod + proficiency/expertise).
+    Falls back to 0 for unknown skills.
+    """
+    try:
+        from app.engine.skills import calculate_skill_modifier
+        return calculate_skill_modifier(skill, character)
+    except (ValueError, Exception) as e:
+        logger.warning(f"Could not compute skill modifier for '{skill}': {e}")
+        return 0
 
 
 def _detect_and_update_quests(
@@ -282,6 +378,12 @@ class PlayerAction(BaseModel):
     action: str
 
 
+class CheckRequest(BaseModel):
+    """Player-initiated check resolution request (from a check_prompt GameEvent)."""
+    skill: str
+    dc: int | None = None
+
+
 class DMResponse(BaseModel):
     narration: str
     action_suggestions: list[str] = []
@@ -289,6 +391,7 @@ class DMResponse(BaseModel):
     combat_active: bool = False
     roll_requested: bool = False
     skill_check_resolution: dict[str, Any] = {}
+    game_events: list[dict[str, Any]] = []
 
 
 @router.post("/create")
@@ -653,7 +756,8 @@ Boss: {_boss_for_dm(game_state)}
 
 {base_context}"""
 
-    narration = await _dm_narrate(situation=user_prompt)
+    narration, game_actions = await _dm_actionable_narrate(situation=user_prompt)
+    game_events = _resolve_game_actions(game_actions)
 
     # Resolve skill check for structured mechanical outcomes
     skill_check_resolution = _resolve_skill_check(
@@ -702,6 +806,7 @@ Boss: {_boss_for_dm(game_state)}
         action_suggestions=action_suggestions,
         combat_active=game_state.get("in_combat", False),
         skill_check_resolution=skill_check_resolution or {},
+        game_events=[e.to_dict() for e in game_events],
     )
 
 
@@ -853,9 +958,47 @@ Boss: {_boss_for_dm(game_state)}
         finally:
             db.close()
 
-        yield _sse({"type": "done", "combat_active": combat_active, "action_suggestions": action_suggestions, "skill_check_resolution": skill_check_resolution})
+        # Resolve game actions (DM function calling Phase 1).
+        # The streaming path produces narration text via stream_narration_dspy;
+        # we make a separate non-streaming call to get structured game_actions.
+        game_events: list[GameEvent] = []
+        try:
+            _, game_actions = await _dm_actionable_narrate(situation=user_prompt)
+            game_events = _resolve_game_actions(game_actions)
+        except Exception as e:
+            logger.error(f"Game action resolution failed: {e}")
+
+        # Emit game_event SSE events before the done event.
+        for event in game_events:
+            yield _sse({"type": "game_event", "event": event.to_dict()})
+
+        yield _sse({"type": "done", "combat_active": combat_active, "action_suggestions": action_suggestions, "skill_check_resolution": skill_check_resolution, "game_events": [e.to_dict() for e in game_events]})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@router.post("/{game_id}/resolve-check")
+def resolve_check(game_id: int, check: CheckRequest, db: Session = Depends(get_db)):
+    """Resolve a player-initiated check (from a check_prompt GameEvent).
+
+    The DM emits a ``check_prompt`` event asking the player to roll; the
+    frontend renders a roll button. When the player clicks it, this endpoint
+    rolls a real d20 using the character's skill modifier and returns the
+    result as a ``dice_roll`` GameEvent.
+    """
+    save = db.query(GameSave).filter(GameSave.id == game_id).first()
+    if not save:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    character = save.character
+    modifier = _compute_skill_modifier(character, check.skill)
+
+    event = dm_roll_d20(
+        label=f"{check.skill} Check",
+        modifier=modifier,
+        dc=check.dc,
+    )
+    return event.to_dict()
 
 
 @router.get("/{game_id}/state")

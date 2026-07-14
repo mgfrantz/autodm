@@ -107,6 +107,8 @@ export interface DMResponse {
   roll_requested: boolean;
   /** Structured mechanical outcome for a freeform action (DSPy pattern #5). */
   skill_check_resolution?: SkillCheckResolution;
+  /** Structured game events from DM function calling (dice rolls, check prompts). */
+  game_events?: GameEvent[];
 }
 
 // === Combat Types ===
@@ -496,6 +498,31 @@ export interface SkillCheckResult {
   advantage: boolean;
   disadvantage: boolean;
   description: string;
+}
+
+// === Game Events (DM Function Calling Phase 1) ===
+
+export type GameEventType = 'dice_roll' | 'check_prompt';
+
+export interface GameEventData {
+  // dice_roll
+  rolls?: number[];
+  modifier?: number;
+  total?: number;
+  dc?: number | null;
+  success?: boolean | null;
+  advantage?: boolean;
+  disadvantage?: boolean;
+  // check_prompt
+  skill?: string;
+  reason?: string;
+}
+
+export interface GameEvent {
+  type: GameEventType;
+  label: string;
+  data: GameEventData;
+  timestamp: string;
 }
 
 // === Equipment-driven combat stats ===

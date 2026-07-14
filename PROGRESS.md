@@ -1,47 +1,62 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅
-## TEST SUITE FULLY GREEN (2572 backend + 122 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅
+## TEST SUITE FULLY GREEN (2617 backend + 163 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅
 
-## ⚡ NEXT RUN DIRECTIVE: DM Function Calling — Phase 1 (Dice Rolling + Check Prompts)
+## ✅ COMPLETED: DM Function Calling — Phase 1 (Dice Rolling + Check Prompts)
 
-**Read `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 1 Implementation Plan" section for the full spec.**
+**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 1 Implementation Plan"
 
-This is the priority for the next dev agent run. The plan is concrete and
-file-level — follow it step by step:
+Phase 1 is **DONE**. The DM now outputs structured `game_actions` alongside
+narration; the backend resolves them via the real dice engine; results flow
+as `GameEvent` objects to the frontend and render as inline UI cards.
 
-### Backend (do first)
-1. **NEW** `backend/app/engine/game_events.py` — `GameEvent` dataclass + `GameEventType` enum + factory classmethods (`dice_roll`, `check_prompt`)
-2. **NEW** `backend/app/engine/dm_functions.py` — `dm_roll_d20()`, `dm_roll_dice()`, `dm_request_check()` wrapping existing `dice.py` engine
-3. **MODIFY** `backend/app/llm/dspy_signatures.py` — add `DMActionableNarration` signature (narration + `game_actions: list[dict]` output)
-4. **MODIFY** `backend/app/llm/dspy_modules.py` — add `DMActionableNarrationModule` (ChainOfThought + singleton, same pattern as `DMNarrationModule`)
-5. **MODIFY** `backend/app/api/game.py` — `_resolve_game_actions()` helper; integrate into `/action` + `/action/stream`; add `POST /{game_id}/resolve-check` endpoint; add `game_events` to `DMResponse`
-6. **NEW** `backend/tests/test_game_events.py`, `test_dm_functions.py`, `test_dm_actionable_narration.py`, `test_game_events_api.py` (~25 backend tests)
+### Backend (steps 1-6)
+1. **NEW** `backend/app/engine/game_events.py` — `GameEvent` dataclass +
+   `GameEventType` enum + factory classmethods (`dice_roll`, `check_prompt`)
+2. **NEW** `backend/app/engine/dm_functions.py` — `dm_roll_d20()`,
+   `dm_roll_dice()`, `dm_request_check()` wrapping existing `dice.py`
+3. **MODIFIED** `backend/app/llm/dspy_signatures.py` — added
+   `DMActionableNarration` signature (narration + `game_actions` output)
+4. **MODIFIED** `backend/app/llm/dspy_modules.py` — added
+   `DMActionableNarrationModule` (ChainOfThought + singleton)
+5. **MODIFIED** `backend/app/api/game.py`:
+   - `_dm_actionable_narrate()` helper (threadpool wrapper)
+   - `_resolve_game_actions()` helper (resolves game_actions → GameEvents)
+   - `_compute_skill_modifier()` helper (for /resolve-check)
+   - `CheckRequest` model + `POST /{game_id}/resolve-check` endpoint
+   - `game_events` field on `DMResponse`
+   - Non-streaming `/action` uses `DMActionableNarrationModule`
+   - Streaming `/action/stream` emits `game_event` SSE events before `done`
+6. **NEW** tests: `test_game_events.py` (14), `test_dm_functions.py` (12),
+   `test_dm_actionable_narration.py` (7), `test_game_events_api.py` (12)
+   **+ updated** `test_dm_narration.py` and `test_streaming.py` for new
+   narration path + `conftest.py` autouse fixture for LLM call isolation
 
-### Frontend (after backend is green)
-7. **MODIFY** `frontend/src/types/index.ts` — `GameEvent`, `GameEventType` interfaces; add `game_events` to `DMResponse` + `StreamEvent`
-8. **MODIFY** `frontend/src/stores/api.ts` — handle `game_event` SSE type; add `resolveCheck()` client function
-9. **NEW** `frontend/src/utils/gameEvents.ts` — pure formatting functions (roll result, advantage, success label, critical detection)
-10. **NEW** `frontend/src/components/DiceRollCard.tsx` — inline dice roll card (color-coded, advantage display, dismissible)
-11. **NEW** `frontend/src/components/CheckPromptCard.tsx` — check prompt with 🎲 Roll button → calls `resolveCheck` → shows result
-12. **NEW** `frontend/src/components/GameEventRenderer.tsx` — dispatches `GameEvent` to correct component
-13. **MODIFY** `frontend/src/views/GameView.tsx` — `gameEvents` state; render events inline after narration
-14. **NEW** tests: `gameEvents.test.ts`, `DiceRollCard.test.tsx`, `CheckPromptCard.test.tsx` (~19 frontend tests)
+### Frontend (steps 7-14)
+7. **MODIFIED** `types/index.ts` — `GameEvent`, `GameEventType`,
+   `GameEventData` interfaces; `game_events` on `DMResponse` + `StreamEvent`
+8. **MODIFIED** `stores/api.ts` — `game_event` SSE type handling;
+   `onGameEvent` callback on `streamPlayerAction`; `resolveCheck()` function
+9. **NEW** `utils/gameEvents.ts` — pure formatting functions (roll result,
+   advantage, success label, color, critical detection, summary)
+10. **NEW** `components/DiceRollCard.tsx` — inline dice roll card
+    (color-coded, advantage display, critical detection, dismissible)
+11. **NEW** `components/CheckPromptCard.tsx` — check prompt with 🎲 Roll
+    button → calls `resolveCheck` → shows DiceRollCard result
+12. **NEW** `components/GameEventRenderer.tsx` — event dispatcher
+13. **MODIFIED** `views/GameView.tsx` — `gameEvents` state; renders
+    `<GameEventRenderer>` for each event inline after narration
+14. **NEW** tests: `gameEvents.test.ts` (29), `DiceRollCard.test.tsx` (7),
+    `CheckPromptCard.test.tsx` (5)
 
 ### Key Decisions (locked)
-- **Approach C (Hybrid)**: DM outputs `game_actions`, backend resolves via engine, events flow to frontend
-- **New `DMActionableNarration` signature** (don't modify existing `DMNarration` — preserves `/start` endpoints)
-- **Game events emitted after narration stream** (before `done` SSE event) — preserves TTS pipeline
-- **`GameEvent` is a typed dataclass** — extensible for Phase 2+ (combat, spells, inventory)
+- **Approach C (Hybrid)** — DM outputs game_actions, backend resolves, events flow to frontend
+- **New `DMActionableNarration` signature** — preserves backward compat for `/start` endpoints
+- **Game events emitted after narration stream** — preserves TTS pipeline
+- **`GameEvent` as typed dataclass** — extensible for Phase 2+ (combat, spells, inventory)
 - **Inline UI cards** — not modal, rendered in narrative log flow
-
-### Verification
-- `uv run pytest` — all existing 2572 tests still pass + ~25 new tests green
-- `cd frontend && npx tsc --noEmit` — clean
-- `cd frontend && npm run build` — clean
-- `cd frontend && npm test` — all 122 existing + ~19 new tests pass
-- Commit: `feat: DM function calling Phase 1 — dice rolling + check prompts`
-- Push to `develop`
+- **Conftest autouse fixture** — patches DSPy module accessors in game.py to prevent test hangs in environments without LLM API keys
 
 ---
 

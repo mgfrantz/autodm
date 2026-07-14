@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, VoicesResponse, NPCVoicesResponse, SetNPCVoiceResult, DeleteNPCVoiceResult, TTSAudioChunk, TTSDoneEvent, TTSErrorEvent, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult, Quest, QuestStatus, QuestListResponse, UpdateQuestResult, SkillCheckResolution } from '../types';
+import type { Character, World, GameState, DMResponse, CombatState, CombatResult, WorldMapData, TravelResult, SaveSlotSummary, LoadSaveResult, RestInfo, ShortRestResult, LongRestResult, SkillsResponse, SkillCheckResult, CombatActionInfo, CombatActionResult, CombatActionKey, EquipmentCombatStats, InventoryData, UseItemResult, ShopOverview, ShopMerchant, ShopTransactionResult, ShopRestockResult, BackgroundSummary, BackgroundDetail, CharacterBackground, SetBackgroundResult, AlignmentSummary, AlignmentDetail, AlignmentCompatibility, CharacterAlignment, SetAlignmentResult, SuggestedAlignments, LanguageDetail, LanguagesResponse, CharacterLanguageInfo, LanguageValidationResult, EnvironmentRegistry, EnvironmentResponse, EnvironmentRollResult, EnvironmentModifiersResponse, SpellbookResponse, SpellDetail, CastSpellResult, SpellRegistryResponse, FeatInfo, CharacterFeatsResponse, LearnFeatResult, ExhaustionStatus, ExhaustionModifyResult, SurvivalStatus, SurvivalAdvanceResult, SavingThrowProficienciesResponse, SavingThrowRollResult, Trap, TrapInstance, DetectionResult, DisarmResult, TriggerResult, PassiveDetectResult, TrapDmSummary, SocialNPC, ReactionResult, InfluenceResult, InsightResult, DowntimeActivity, DowntimeResolveResult, SubclassInfo, CharacterSubclassResponse, AvailableSubclassesResponse, ChooseSubclassResult, Mount, MountStatusResponse, MountAcquireResult, MountSimpleResult, MountDamageResult, MountHealResult, MountCombatResult, MountTravelResult, ImageGenerationStatus, ImageGenerationResult, ImageGallery, GeneratedImage, TTSStatus, NarrateResult, TTSListResponse, DeleteAudioResult, VoicesResponse, NPCVoicesResponse, SetNPCVoiceResult, DeleteNPCVoiceResult, TTSAudioChunk, TTSDoneEvent, TTSErrorEvent, LegendaryCreaturePreset, LegendaryCombatantView, EncounterLegendaryResponse, LairStateResponse, UseLegendaryActionResult, FireLairActionResult, AdventureSummary, StartAdventureResult, Quest, QuestStatus, QuestListResponse, UpdateQuestResult, SkillCheckResolution, GameEvent } from '../types';
 
 const API = axios.create({
   baseURL: '/api',
@@ -125,12 +125,15 @@ export const listGames = async () => {
 
 /** A single SSE event parsed from the streaming endpoints. */
 export interface StreamEvent {
-  type: 'chunk' | 'done' | 'error';
+  type: 'chunk' | 'done' | 'error' | 'game_event';
   content?: string;
   message?: string;
   combat_active?: boolean;
   action_suggestions?: string[];
   skill_check_resolution?: SkillCheckResolution;
+  game_events?: GameEvent[];
+  /** Present on 'game_event' SSE events — the individual game event payload. */
+  event?: GameEvent;
 }
 
 /**
@@ -203,8 +206,9 @@ export async function streamStartAdventure(
 
 /**
  * Stream the DM's response to a player action. Calls onChunk for each text
- * piece and onDone (with combat state, action suggestions, and the structured
- * skill-check resolution) once the stream completes.
+ * piece, onGameEvent for each game_event SSE event, and onDone (with combat
+ * state, action suggestions, and the structured skill-check resolution) once
+ * the stream completes.
  */
 export async function streamPlayerAction(
   gameId: number,
@@ -214,7 +218,9 @@ export async function streamPlayerAction(
     combatActive: boolean,
     actionSuggestions: string[],
     resolution?: SkillCheckResolution,
+    gameEvents?: GameEvent[],
   ) => void,
+  onGameEvent?: (event: GameEvent) => void,
 ): Promise<void> {
   await consumeSSEStream(
     `/api/game/${gameId}/action/stream`,
@@ -222,11 +228,14 @@ export async function streamPlayerAction(
     (event) => {
       if (event.type === 'chunk' && event.content !== undefined) {
         onChunk(event.content);
+      } else if (event.type === 'game_event' && event.event) {
+        onGameEvent?.(event.event);
       } else if (event.type === 'done') {
         onDone(
           event.combat_active ?? false,
           event.action_suggestions ?? [],
           event.skill_check_resolution,
+          event.game_events,
         );
       } else if (event.type === 'error') {
         throw new Error(event.message ?? 'Streaming error');
@@ -236,6 +245,18 @@ export async function streamPlayerAction(
 }
 
 // === Combat ===
+
+export const resolveCheck = async (
+  gameId: number,
+  skill: string,
+  dc?: number,
+): Promise<GameEvent> => {
+  const res = await API.post<GameEvent>(`/game/${gameId}/resolve-check`, {
+    skill,
+    dc: dc ?? null,
+  });
+  return res.data;
+};
 
 export const startCombat = async (gameId: number, enemies: Array<{
   name: string;

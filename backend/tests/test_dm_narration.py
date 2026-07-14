@@ -5,6 +5,7 @@ Covers the DMNarrationModule, the _dm_narrate threadpool wrapper, and the
 POST /api/game/{id}/start and /action endpoints (non-streaming variants).
 """
 import json
+from contextlib import contextmanager
 from unittest.mock import patch, AsyncMock
 
 import dspy
@@ -12,6 +13,20 @@ import pytest
 
 from app.models.models import Character, World, GameSave
 from app.llm.dspy_modules import DMNarrationModule, get_dm_narration_module
+
+
+@contextmanager
+def mock_action_llm(narration="The door creaks.", game_actions=None):
+    """Patch all LLM-calling functions in the /action endpoint."""
+    with patch("app.api.game._dm_actionable_narrate", new=AsyncMock(
+        return_value=(narration, game_actions or [])
+    )), \
+    patch("app.api.game._resolve_skill_check", return_value={}), \
+    patch("app.api.game._detect_and_update_quests", side_effect=lambda n, gs: (gs, [])), \
+    patch("app.api.game._detect_and_update_npc_mood", side_effect=lambda n, gs: gs), \
+    patch("app.api.game._detect_and_update_game_flags", side_effect=lambda n, gs: gs), \
+    patch("app.api.game._generate_action_suggestions", return_value=["Look around"]):
+        yield
 
 
 def _make_game_save(db_session, story_log=None):
@@ -119,7 +134,7 @@ class TestPlayerAction:
 
     def test_action_returns_narration(self, client, db_session):
         _, _, save = _make_game_save(db_session)
-        with patch("app.api.game._dm_narrate", new=AsyncMock(return_value="The door creaks open.")):
+        with mock_action_llm("The door creaks open."):
             response = client.post(
                 f"/api/game/{save.id}/action",
                 json={"action": "I open the door."},
@@ -131,7 +146,7 @@ class TestPlayerAction:
 
     def test_action_logs_player_and_dm(self, client, db_session):
         _, _, save = _make_game_save(db_session)
-        with patch("app.api.game._dm_narrate", new=AsyncMock(return_value="A goblin appears!")):
+        with mock_action_llm("A goblin appears!"):
             client.post(
                 f"/api/game/{save.id}/action",
                 json={"action": "I attack the goblin."},
@@ -146,9 +161,9 @@ class TestPlayerAction:
         assert log[1]["content"] == "A goblin appears!"
 
     def test_action_missing_game_404(self, client, db_session):
-        with patch("app.api.game._dm_narrate", new=AsyncMock(return_value="x")):
+        with mock_action_llm("x"):
             response = client.post(
-                "/api/game/9999/action",
+                f"/api/game/9999/action",
                 json={"action": "look"},
             )
         assert response.status_code == 404
@@ -160,7 +175,7 @@ class TestPlayerAction:
         save.game_state = json.dumps({"in_combat": True, "location": "Dungeon", "conditions": []})
         db_session.commit()
 
-        with patch("app.api.game._dm_narrate", new=AsyncMock(return_value="You strike!")):
+        with mock_action_llm("You strike!"):
             response = client.post(
                 f"/api/game/{save.id}/action",
                 json={"action": "I swing my sword."},

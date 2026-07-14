@@ -1,6 +1,6 @@
 # Design Research: DM Function Calling (Agent-Based Game State Interaction)
 
-> **Status:** Brainstorming / Design Research — NOT YET IMPLEMENTED
+> **Status:** Phase 1 IMPLEMENTED ✅ — dice rolling + check prompts are live
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
@@ -832,3 +832,8 @@ Dispatches a `GameEvent` to the right component:
   for dice rolling + check prompts (GameEvent system, DM-callable functions,
   DMActionableNarration DSPy signature, resolution pipeline, SSE protocol,
   frontend components). Staged for dev agent execution.
+- 2025-07-14: **Phase 1 IMPLEMENTED** — all 14 steps complete. 2617 backend
+  + 163 frontend tests passing. DM now outputs structured game_actions; backend
+  resolves via real dice engine; GameEvent objects flow as SSE events to
+  frontend and render as inline DiceRollCard / CheckPromptCard components.
+  Added conftest autouse fixture for LLM call isolation in tests.
