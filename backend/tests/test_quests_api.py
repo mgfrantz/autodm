@@ -1,83 +1,19 @@
-"""Tests for the quests API."""
+"""Tests for the quests API.
+
+These tests use the shared, isolated test fixtures from ``conftest.py``
+(``db_session``, ``client``, ``character``, ``world``) so they run against the
+throwaway test database — never the real ``backend/data/dnd_game.db``. A local
+``game_save`` fixture composes the conftest ``character`` + ``world`` fixtures.
+"""
 import json
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
-from app.models.database import SessionLocal
-from app.models.models import Character, World, GameSave
+from app.models.models import GameSave
 
 
 @pytest.fixture
-def db():
-    """Create a fresh database session for each test."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@pytest.fixture
-def client():
-    """Create a test client."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def character(db):
-    """Create a test character."""
-    char = Character(
-        name="Test Hero",
-        race="Human",
-        char_class="Fighter",
-        level=1,
-        current_hp=10,
-        max_hp=10,
-        gold=50,
-        alignment="neutral_good",
-        background="Soldier",
-        strength=16,
-        dexterity=14,
-        constitution=14,
-        intelligence=10,
-        wisdom=12,
-        charisma=10,
-    )
-    db.add(char)
-    db.commit()
-    db.refresh(char)
-    yield char
-    db.delete(char)
-    db.commit()
-
-
-@pytest.fixture
-def world(db):
-    """Create a test world."""
-    world_data = {
-        "name": "Test World",
-        "description": "A test world",
-        "tone": "heroic fantasy",
-        "regions": [],
-        "campaign_arc": {},
-        "starting_settlement": {"name": "Start Town"},
-        "npcs": [],
-        "factions": [],
-        "hook": "Test hook",
-    }
-    world = World(name="Test World", description="Test", world_data=json.dumps(world_data))
-    db.add(world)
-    db.commit()
-    db.refresh(world)
-    yield world
-    db.delete(world)
-    db.commit()
-
-
-@pytest.fixture
-def game_save(db, character, world):
-    """Create a test game save."""
+def game_save(db_session, character, world):
+    """Create a test game save linked to the conftest character + world."""
     game_state = {
         "location": "Start Town",
         "visited_locations": ["Start Town"],
@@ -94,12 +30,10 @@ def game_save(db, character, world):
         game_state=json.dumps(game_state),
         story_log=json.dumps([]),
     )
-    db.add(save)
-    db.commit()
-    db.refresh(save)
-    yield save
-    db.delete(save)
-    db.commit()
+    db_session.add(save)
+    db_session.commit()
+    db_session.refresh(save)
+    return save
 
 
 class TestListQuests:
@@ -112,7 +46,7 @@ class TestListQuests:
         data = response.json()
         assert data["quests"] == []
 
-    def test_list_quests_with_some(self, client, game_save, db):
+    def test_list_quests_with_some(self, client, game_save, db_session):
         """Test listing quests when there are some."""
         # Add quests to game_state
         game_state = json.loads(game_save.game_state)
@@ -144,7 +78,7 @@ class TestListQuests:
             "next_id": 3,
         }
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.get(f"/api/game/{game_save.id}/quests")
         assert response.status_code == 200
@@ -153,7 +87,7 @@ class TestListQuests:
         assert data["quests"][0]["title"] == "Quest 1"
         assert data["quests"][1]["title"] == "Quest 2"
 
-    def test_filter_by_status_active(self, client, game_save, db):
+    def test_filter_by_status_active(self, client, game_save, db_session):
         """Test filtering quests by status (active)."""
         game_state = json.loads(game_save.game_state)
         game_state["quest_log"] = {
@@ -184,7 +118,7 @@ class TestListQuests:
             "next_id": 3,
         }
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.get(f"/api/game/{game_save.id}/quests?status=active")
         assert response.status_code == 200
@@ -192,7 +126,7 @@ class TestListQuests:
         assert len(data["quests"]) == 1
         assert data["quests"][0]["title"] == "Active Quest"
 
-    def test_filter_by_status_completed(self, client, game_save, db):
+    def test_filter_by_status_completed(self, client, game_save, db_session):
         """Test filtering quests by status (completed)."""
         game_state = json.loads(game_save.game_state)
         game_state["quest_log"] = {
@@ -223,7 +157,7 @@ class TestListQuests:
             "next_id": 3,
         }
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.get(f"/api/game/{game_save.id}/quests?status=completed")
         assert response.status_code == 200
@@ -247,7 +181,7 @@ class TestListQuests:
 class TestGetQuest:
     """Test GET /{game_id}/quests/{quest_id} endpoint."""
 
-    def test_get_quest_by_id(self, client, game_save, db):
+    def test_get_quest_by_id(self, client, game_save, db_session):
         """Test getting a specific quest."""
         game_state = json.loads(game_save.game_state)
         game_state["quest_log"] = {
@@ -267,7 +201,7 @@ class TestGetQuest:
             "next_id": 2,
         }
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.get(f"/api/game/{game_save.id}/quests/1")
         assert response.status_code == 200
@@ -275,12 +209,12 @@ class TestGetQuest:
         assert data["id"] == 1
         assert data["title"] == "Test Quest"
 
-    def test_get_nonexistent_quest(self, client, game_save, db):
+    def test_get_nonexistent_quest(self, client, game_save, db_session):
         """Test getting a quest that doesn't exist."""
         game_state = json.loads(game_save.game_state)
         game_state["quest_log"] = {"quests": [], "next_id": 1}
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.get(f"/api/game/{game_save.id}/quests/999")
         assert response.status_code == 404
@@ -290,7 +224,7 @@ class TestGetQuest:
 class TestUpdateQuestStatus:
     """Test PATCH /{game_id}/quests/{quest_id} endpoint."""
 
-    def test_update_quest_status(self, client, game_save, db):
+    def test_update_quest_status(self, client, game_save, db_session):
         """Test updating a quest's status."""
         game_state = json.loads(game_save.game_state)
         game_state["quest_log"] = {
@@ -310,7 +244,7 @@ class TestUpdateQuestStatus:
             "next_id": 2,
         }
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.patch(
             f"/api/game/{game_save.id}/quests/1",
@@ -321,16 +255,16 @@ class TestUpdateQuestStatus:
         assert data["status"] == "completed"
 
         # Verify persistence
-        db.refresh(game_save)
+        db_session.refresh(game_save)
         updated_state = json.loads(game_save.game_state)
         assert updated_state["quest_log"]["quests"][0]["status"] == "completed"
 
-    def test_update_nonexistent_quest(self, client, game_save, db):
+    def test_update_nonexistent_quest(self, client, game_save, db_session):
         """Test updating a quest that doesn't exist."""
         game_state = json.loads(game_save.game_state)
         game_state["quest_log"] = {"quests": [], "next_id": 1}
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.patch(
             f"/api/game/{game_save.id}/quests/999",
@@ -339,7 +273,7 @@ class TestUpdateQuestStatus:
         assert response.status_code == 404
         assert "Quest not found" in response.json()["detail"]
 
-    def test_invalid_status(self, client, game_save, db):
+    def test_invalid_status(self, client, game_save, db_session):
         """Test updating with an invalid status."""
         game_state = json.loads(game_save.game_state)
         game_state["quest_log"] = {
@@ -359,7 +293,7 @@ class TestUpdateQuestStatus:
             "next_id": 2,
         }
         game_save.game_state = json.dumps(game_state)
-        db.commit()
+        db_session.commit()
 
         response = client.patch(
             f"/api/game/{game_save.id}/quests/1",

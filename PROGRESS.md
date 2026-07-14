@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅
-## TEST SUITE FULLY GREEN (2617 backend + 163 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅
+## TEST SUITE FULLY GREEN (2632 backend + 163 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅
 
 ## ✅ COMPLETED: DM Function Calling — Phase 1 (Dice Rolling + Check Prompts)
 
@@ -57,6 +57,24 @@ as `GameEvent` objects to the frontend and render as inline UI cards.
 - **`GameEvent` as typed dataclass** — extensible for Phase 2+ (combat, spells, inventory)
 - **Inline UI cards** — not modal, rendered in narrative log flow
 - **Conftest autouse fixture** — patches DSPy module accessors in game.py to prevent test hangs in environments without LLM API keys
+
+### Fix: quests API test isolation leak (test_quests_api.py)
+`backend/tests/test_quests_api.py` had local `db`/`client`/`character`/`world`
+fixtures that used the real `SessionLocal` (production `backend/data/dnd_game.db`)
+instead of the conftest isolated test DB. Every run wrote characters/worlds/saves
+into the real database, colliding with existing rows and producing 2
+`ERROR at teardown` (`NOT NULL constraint failed: game_saves.world_id`) in the
+full suite. Rewrote the file to use the shared conftest fixtures
+(`db_session`, `client`, `character`, `world`) + a local `game_save` fixture —
+matching every other test file. Verified: full suite now **2632 passed, 0 errors**,
+and the real DB is no longer mutated by tests.
+
+> **Note for Mike (not test-related):** the production DB
+> (`backend/data/dnd_game.db`) currently holds 2 orphaned `game_saves`
+> ("The Cursed Mines of Emberdeep", ids 1–2) whose `character_id`/`world_id`
+> point to rows that no longer exist (0 characters, 0 worlds). Likely from
+> playing a curated starter adventure; loading those saves may error. Left
+> untouched — investigate the starter-adventure save flow separately.
 
 ---
 
