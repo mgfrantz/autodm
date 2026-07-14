@@ -330,6 +330,491 @@ UI event component. Phase 1 (dice + check prompts) is the MVP — it delivers th
 
 ---
 
+## Phase 1 Implementation Plan: Dice Rolling + Check Prompts
+
+> **Status:** Staged for implementation — ready for dev agent execution
+> **Scope:** DM calls `roll_dice()` for all checks/saves/attacks; check prompt
+> UI lets the player click to roll when the DM calls for a check
+> **Approach:** Option C (Hybrid) — DM outputs structured `game_actions` alongside
+> narration; backend resolves via existing dice engine; results flow as
+> `GameEvent` objects to frontend for rendering as inline UI cards
+
+### Why Phase 1 First
+
+- **Single function** (`roll_dice`) — no complex state management
+- **Existing engine** — `backend/app/engine/dice.py` already has `RollResult`,
+  `roll_dice(count, sides, modifier)`, `roll_d20(modifier, advantage, disadvantage)`,
+  `ability_modifier()`, `proficiency_bonus()`. No new mechanics needed.
+- **Immediate payoff** — real dice in narration + visible dice roll cards
+  transforms the game feel from "text adventure" to "virtual tabletop"
+- **Foundation** — establishes the GameEvent pipeline that all later phases
+  (combat, spells, inventory, conditions) will reuse
+
+---
+
+### Architecture: The GameEvent Pipeline
+
+```
+Player Action
+    ↓
+DM Narration (DSPy) → narration text + game_actions: list[GameAction]
+    ↓
+Backend resolves each game_action via engine (dice.py)
+    ↓
+GameEvent objects produced (dice_roll, check_prompt, etc.)
+    ↓
+SSE stream: chunk events (narration text) → game_event events → done event
+    ↓
+Frontend renders narration text + inline GameEvent cards
+```
+
+**Key design decision:** Game events are emitted **after** narration streaming
+completes, before the `done` event. This preserves the existing TTS streaming
+pipeline (narration streams first, audio plays) and appends structured events
+afterward. The frontend renders them inline below the narration.
+
+For **check prompts** (DM calls for a player roll), the flow is:
+1. DM narration includes a `request_check` game action
+2. Backend emits a `check_prompt` GameEvent (no roll yet — waiting for player)
+3. Frontend renders a `CheckPromptCard` with a 🎲 Roll button
+4. Player clicks → `POST /{game_id}/resolve-check` with skill + DC
+5. Backend rolls via dice engine → returns `RollResult` as a `dice_roll` GameEvent
+6. Frontend renders the `DiceRollCard` with the real result
+7. (Optional future: backend triggers a short DM re-narration with the result)
+
+---
+
+### Backend Implementation
+
+#### 1. GameEvent System — `backend/app/engine/game_events.py` (NEW)
+
+A typed event system that all function-call results flow through.
+
+```python
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
+
+class GameEventType(str, Enum):
+    DICE_ROLL = "dice_roll"
+    CHECK_PROMPT = "check_prompt"
+    # Future: ATTACK, DAMAGE, SPELL_CAST, LOOT, CONDITION_APPLIED
+
+@dataclass
+class GameEvent:
+    """A structured game event produced by DM function calls."""
+    type: GameEventType
+    label: str                    # "Perception Check", "Attack vs Goblin"
+    data: dict[str, Any]          # Type-specific payload
+    timestamp: str = ""           # ISO format, set at creation
+
+    def to_dict(self) -> dict:
+        return {
+            "type": self.type.value,
+            "label": self.label,
+            "data": self.data,
+            "timestamp": self.timestamp,
+        }
+
+    @classmethod
+    def dice_roll(cls, label: str, rolls: list[int], modifier: int,
+                  total: int, dc: int | None = None, success: bool | None = None,
+                  advantage: bool = False, disadvantage: bool = False) -> "GameEvent":
+        return cls(
+            type=GameEventType.DICE_ROLL,
+            label=label,
+            data={
+                "rolls": rolls, "modifier": modifier, "total": total,
+                "dc": dc, "success": success,
+                "advantage": advantage, "disadvantage": disadvantage,
+            },
+        )
+
+    @classmethod
+    def check_prompt(cls, skill: str, dc: int | None = None,
+                     reason: str = "") -> "GameEvent":
+        return cls(
+            type=GameEventType.CHECK_PROMPT,
+            label=f"{skill} Check",
+            data={"skill": skill, "dc": dc, "reason": reason},
+        )
+```
+
+**Tests** (`backend/tests/test_game_events.py`):
+- `GameEvent` construction + `to_dict()` serialization
+- `dice_roll()` factory produces correct type/label/data
+- `check_prompt()` factory produces correct type/label/data
+- Enum values are strings (JSON-serializable)
+- Round-trip: `GameEvent.to_dict()` → JSON → parse → matches original
+
+#### 2. DM-Callable Functions — `backend/app/engine/dm_functions.py` (NEW)
+
+Thin wrappers around the existing dice engine that produce `GameEvent` objects.
+
+```python
+"""DM-callable game functions. Each wraps an existing engine function
+and returns a GameEvent for the frontend."""
+import random
+from app.engine.dice import roll_d20, roll_dice as engine_roll_dice, RollResult
+from app.engine.game_events import GameEvent
+
+def dm_roll_d20(label: str, modifier: int = 0, advantage: bool = False,
+                disadvantage: bool = False, dc: int | None = None) -> GameEvent:
+    """Roll a d20 for a check, save, or attack. Returns a dice_roll GameEvent."""
+    result = roll_d20(modifier=modifier, advantage=advantage,
+                      disadvantage=disadvantage)
+    success = None
+    if dc is not None:
+        success = result.total >= dc
+    return GameEvent.dice_roll(
+        label=label,
+        rolls=result.rolls,
+        modifier=result.modifier,
+        total=result.total,
+        dc=dc,
+        success=success,
+        advantage=advantage,
+        disadvantage=disadvantage,
+    )
+
+def dm_roll_dice(label: str, count: int, sides: int, modifier: int = 0) -> GameEvent:
+    """Roll arbitrary dice (e.g. 3d6 for damage). Returns a dice_roll GameEvent."""
+    result = engine_roll_dice(count, sides, modifier)
+    return GameEvent.dice_roll(
+        label=label,
+        rolls=result.rolls,
+        modifier=result.modifier,
+        total=result.total,
+    )
+
+def dm_request_check(skill: str, dc: int | None = None, reason: str = "") -> GameEvent:
+    """The DM calls for a player-initiated check. Returns a check_prompt GameEvent."""
+    return GameEvent.check_prompt(skill=skill, dc=dc, reason=reason)
+```
+
+**Tests** (`backend/tests/test_dm_functions.py`):
+- `dm_roll_d20` produces correct GameEvent with rolls/total/modifier
+- `dm_roll_d20` with DC sets `success` correctly
+- `dm_roll_d20` with advantage produces 2 rolls
+- `dm_roll_dice` produces correct roll count and total
+- `dm_request_check` produces check_prompt event
+- All functions use real randomness (not fabricated)
+
+#### 3. DSPy Signature: Actionable Narration — `backend/app/llm/dspy_signatures.py` (MODIFY)
+
+Add a new signature that extends `DMNarration` with structured game actions.
+Keep the existing `DMNarration` unchanged for backward compatibility; the new
+signature is used by the action endpoints (not start).
+
+```python
+class DMActionableNarration(dspy.Signature):
+    """You are an expert Dungeon Master for a single-player DnD 5e game.
+
+    In addition to narrating the scene, you output structured game_actions
+    that the backend will resolve mechanically. This ensures dice rolls,
+    checks, and other mechanical outcomes are REAL — not fabricated text.
+
+    Rules for game_actions:
+    - Include a roll_dice action whenever the outcome of an action is
+      uncertain and warrants a check (attack, save, skill check, damage)
+    - Use request_check when YOU (the DM) want the PLAYER to roll
+      (e.g., "Roll a Perception check")
+    - Do NOT fabricate dice results in the narration text — describe
+      the ATTEMPT and let the backend resolve the outcome
+    - If an action has a certain outcome, no game_action is needed
+    - Reference the action's label in narration (e.g., "You attempt to
+      pick the lock...") so the player knows what's being resolved
+
+    Each game_action is a dict with:
+    - "function": "roll_dice" | "request_check"
+    - "label": short description (e.g., "Perception Check", "Lockpicking")
+    - "args": function-specific arguments
+      - roll_dice: {"sides": 20, "modifier": 3, "advantage": false,
+                     "dc": 15, "disadvantage": false}
+      - request_check: {"skill": "Perception", "dc": 15, "reason": "..."}
+    """
+
+    situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action")
+    narration: str = dspy.OutputField(desc="Vivid narration of the scene. Describe attempts and outcomes — but for uncertain actions, describe the ATTEMPT and let game_actions resolve the result. Do NOT state specific dice numbers.")
+    game_actions: list[dict] = dspy.OutputField(desc="Structured actions to resolve mechanically. Empty list if no mechanical resolution needed.")
+```
+
+#### 4. DSPy Module — `backend/app/llm/dspy_modules.py` (MODIFY)
+
+Add `DMActionableNarrationModule` following the exact same singleton pattern
+as `DMNarrationModule`.
+
+```python
+class DMActionableNarrationModule(dspy.Module):
+    """Generate DM narration with structured game actions for mechanical resolution."""
+
+    def __init__(self):
+        super().__init__()
+        self.generate = dspy.ChainOfThought(DMActionableNarration)
+
+    def forward(self, *, situation):
+        try:
+            return self.generate(situation=situation)
+        except Exception as e:
+            logger.error(f"DM actionable narration failed: {e}")
+            return dspy.Prediction(narration="", game_actions=[])
+
+# Singleton
+_dm_actionable_narration: DMActionableNarrationModule | None = None
+
+def get_dm_actionable_narration_module() -> DMActionableNarrationModule:
+    global _dm_actionable_narration
+    if _dm_actionable_narration is None:
+        _dm_actionable_narration = DMActionableNarrationModule()
+    return _dm_actionable_narration
+```
+
+#### 5. Resolution Pipeline — `backend/app/api/game.py` (MODIFY)
+
+Add a helper that resolves game_actions into GameEvents:
+
+```python
+def _resolve_game_actions(game_actions: list[dict]) -> list[GameEvent]:
+    """Resolve DM-emitted game_actions into GameEvents via the engine."""
+    from app.engine.dm_functions import dm_roll_d20, dm_roll_dice, dm_request_check
+    events: list[GameEvent] = []
+    for action in game_actions or []:
+        func = action.get("function", "")
+        label = action.get("label", "Unknown")
+        args = action.get("args", {})
+        try:
+            if func == "roll_dice":
+                sides = args.get("sides", 20)
+                modifier = args.get("modifier", 0)
+                dc = args.get("dc")
+                advantage = args.get("advantage", False)
+                disadvantage = args.get("disadvantage", False)
+                if sides == 20:
+                    events.append(dm_roll_d20(label, modifier, advantage,
+                                               disadvantage, dc))
+                else:
+                    count = args.get("count", 1)
+                    events.append(dm_roll_dice(label, count, sides, modifier))
+            elif func == "request_check":
+                events.append(dm_request_check(
+                    skill=args.get("skill", "Unknown"),
+                    dc=args.get("dc"),
+                    reason=args.get("reason", ""),
+                ))
+        except Exception as e:
+            logger.error(f"Failed to resolve game action {func}: {e}")
+    return events
+```
+
+**Integration into endpoints:**
+
+For the **non-streaming** `/action` endpoint:
+1. After DM narration, call `_resolve_game_actions(result.game_actions)`
+2. Add `game_events: list[dict]` to the `DMResponse` model
+3. Return events alongside narration
+
+For the **streaming** `/action/stream` endpoint:
+1. Stream narration as before (chunks)
+2. After narration completes, resolve game_actions
+3. Emit `game_event` SSE events (one per event) before the `done` event
+4. Include events in the `done` payload too (for clients that batch)
+
+```python
+# In the streaming event_stream():
+# ... after narration collected and persisted ...
+
+game_events = _resolve_game_actions(result.game_actions)
+for event in game_events:
+    yield _sse({"type": "game_event", **event.to_dict()})
+
+yield _sse({"type": "done", "action_suggestions": action_suggestions,
+            "game_events": [e.to_dict() for e in game_events]})
+```
+
+**New endpoint for player-initiated check resolution:**
+```python
+@router.post("/{game_id}/resolve-check")
+async def resolve_check(game_id: int, check: CheckRequest, db: Session = Depends(get_db)):
+    """Resolve a player-initiated check (from a check_prompt GameEvent)."""
+    # Load character to compute modifier
+    save = db.query(GameSave).filter(GameSave.id == game_id).first()
+    # ... compute modifier from character stats + proficiency ...
+    event = dm_roll_d20(label=f"{check.skill} Check", modifier=modifier,
+                        dc=check.dc)
+    # Store result in game_state for DM context
+    return event.to_dict()
+```
+
+#### 6. DMResponse Model Update — `backend/app/api/game.py` (MODIFY)
+
+```python
+class DMResponse(BaseModel):
+    narration: str
+    action_suggestions: list[str] = []
+    choices: list[str] | None = None
+    combat_active: bool = False
+    roll_requested: bool = False
+    skill_check_resolution: dict[str, Any] = {}
+    game_events: list[dict[str, Any]] = []  # NEW — structured game events
+```
+
+---
+
+### Frontend Implementation
+
+#### 7. Types — `frontend/src/types/index.ts` (MODIFY)
+
+```typescript
+export type GameEventType = 'dice_roll' | 'check_prompt';
+
+export interface GameEvent {
+  type: GameEventType;
+  label: string;
+  data: {
+    // dice_roll
+    rolls?: number[];
+    modifier?: number;
+    total?: number;
+    dc?: number | null;
+    success?: boolean | null;
+    advantage?: boolean;
+    disadvantage?: boolean;
+    // check_prompt
+    skill?: string;
+    reason?: string;
+  };
+  timestamp: string;
+}
+
+// Add to DMResponse:
+//   game_events: GameEvent[];
+
+// Add to StreamEvent:
+//   type: 'chunk' | 'done' | 'error' | 'game_event';
+//   game_events?: GameEvent[];
+```
+
+#### 8. API Client — `frontend/src/stores/api.ts` (MODIFY)
+
+- Update `StreamEvent` type to include `'game_event'`
+- Update `streamPlayerAction` to handle `game_event` events via a new
+  `onGameEvent` callback
+- Add `resolveCheck(gameId, skill, dc)` function for player-initiated rolls
+
+#### 9. Utils — `frontend/src/utils/gameEvents.ts` (NEW)
+
+Pure functions for event formatting (follows the `skillCheckResolution.ts` pattern):
+
+- `formatRollResult(rolls, modifier, total)` → `"18 + 3 = 21"`
+- `formatAdvantage(rolls, advantage, disadvantage)` → shows both dice, strikes unused
+- `getSuccessLabel(success, dc)` → `"✅ Success"`, `"❌ Failure"`, `""`
+- `getRollColor(success)` → Tailwind color class
+- `isCritical(roll, sides)` → natural 20 / natural 1 detection
+- `summarizeEvent(event)` → one-line summary for aria-labels
+
+**Tests** (`frontend/src/utils/__tests__/gameEvents.test.ts`):
+- Roll formatting (with/without modifier, multiple dice)
+- Advantage/disadvantage display
+- Success/failure labels
+- Critical hit/miss detection
+- Summary generation
+
+#### 10. Components
+
+##### `frontend/src/components/DiceRollCard.tsx` (NEW)
+
+Renders a single dice roll event as an inline card:
+```
+┌────────────────────────────────────┐
+│  🎲 Perception Check               │
+│  [d20] 18 + 3 (WIS) = 21           │
+│  DC 15 → ✅ Success                │
+└────────────────────────────────────┘
+```
+- Color-coded: green success, red failure, gold critical
+- Advantage: shows both rolls, strikes through the lower
+- Purely presentational; uses `gameEvents.ts` utils
+- Dismissible (like `SkillCheckResolutionCard`)
+
+**Tests** (`DiceRollCard.test.tsx`): basic roll, with DC, advantage,
+critical hit, critical miss, dismiss.
+
+##### `frontend/src/components/CheckPromptCard.tsx` (NEW)
+
+Renders a check prompt with a roll button:
+```
+┌────────────────────────────────────┐
+│  📜 The DM calls for a roll!       │
+│  "Roll a Perception check"         │
+│  [🎲 Roll]                         │
+└────────────────────────────────────┘
+```
+- Button triggers `resolveCheck()` API call
+- On result, replaces itself with a `DiceRollCard`
+- Shows DC if known, hidden if not
+
+**Tests** (`CheckPromptCard.test.tsx`): renders prompt, roll button click,
+shows result card after roll, error handling.
+
+##### `frontend/src/components/GameEventRenderer.tsx` (NEW)
+
+Dispatches a `GameEvent` to the right component:
+- `dice_roll` → `<DiceRollCard />`
+- `check_prompt` → `<CheckPromptCard />`
+- Unknown types → null (forward-compatible)
+
+#### 11. GameView Integration — `frontend/src/views/GameView.tsx` (MODIFY)
+
+- Add `gameEvents: GameEvent[]` state
+- In `handleAction`: capture events from streaming `game_event` SSE events
+  and the `done` payload
+- Render `<GameEventRenderer />` for each event inline after DM narration
+- Clear events on next action (like `skillCheckResolution`)
+
+---
+
+### Test Plan Summary
+
+| Layer | File | Tests |
+|-------|------|-------|
+| Engine | `test_game_events.py` | 6 — construction, serialization, factories, enum, round-trip |
+| Engine | `test_dm_functions.py` | 6 — d20 roll, DC success, advantage, damage dice, check prompt, randomness |
+| DSPy | `test_dm_actionable_narration.py` | 5 — signature exists, module init, successful narration+actions, graceful failure, singleton |
+| API | `test_game_events_api.py` | 8 — non-streaming returns events, streaming emits game_event SSE, resolve-check endpoint, empty actions, multiple events, error handling, persistence, DMResponse shape |
+| Frontend utils | `gameEvents.test.ts` | 8 — roll formatting, advantage, success labels, criticals, summary |
+| Frontend components | `DiceRollCard.test.tsx` | 6 — basic, DC, advantage, crit hit, crit miss, dismiss |
+| Frontend components | `CheckPromptCard.test.tsx` | 5 — render, roll click, result display, error, DC hidden |
+| **Total** | | **~44 new tests** |
+
+### Verification Checklist (for dev agent)
+- [ ] `uv run pytest` — all existing tests still pass + new tests green
+- [ ] `cd frontend && npx tsc --noEmit` — no type errors
+- [ ] `cd frontend && npm run build` — clean build
+- [ ] `cd frontend && npm test` — all frontend tests pass
+- [ ] `PROGRESS.md` updated with completed work
+- [ ] `DESIGN.md` updated if architecture changed
+- [ ] Commit with `feat: DM function calling Phase 1 — dice rolling + check prompts`
+- [ ] `git push origin develop`
+
+### Key Design Decisions (locked in for Phase 1)
+1. **Approach C (Hybrid)** — DM outputs game_actions, backend resolves, events flow to frontend
+2. **New signature** (`DMActionableNarration`) rather than modifying `DMNarration` — preserves backward compat for `/start` endpoints
+3. **Game events after narration stream** — doesn't break TTS pipeline
+4. **GameEvent as typed dataclass** — extensible for future phases (combat, spells, etc.)
+5. **Player-initiated checks via new endpoint** — `POST /{game_id}/resolve-check`
+6. **Inline UI cards** — not modal, rendered in narrative log flow
+
+### What Phase 1 Does NOT Include (deferred to later phases)
+- Combat resolution via DM function calls (Phase 2)
+- Spell casting via DM function calls (Phase 3)
+- Inventory operations via DM function calls (Phase 4)
+- Condition application via DM function calls (Phase 5)
+- DM re-narration with resolved results (optional Phase 1 stretch)
+- Dice animation (can be added later as progressive enhancement)
+- Collapsing old events (can be added when log gets long)
+
+---
+
 ## Related Documents
 - `docs/DSPY_TEXT_GAME_REFERENCE.md` — DSPy text game tutorial analysis;
   `ActionResolver` signature (structured skill-check resolution) is directly
@@ -343,3 +828,7 @@ UI event component. Phase 1 (dice + check prompts) is the MVP — it delivers th
 - 2025-07-13: Added Game Event UI Layer — dice roll cards, check prompts,
   combat/spell/inventory event components, event stream architecture, updated
   migration path to include frontend UI per phase
+- 2025-07-14: Added Phase 1 Implementation Plan — concrete file-level plan
+  for dice rolling + check prompts (GameEvent system, DM-callable functions,
+  DMActionableNarration DSPy signature, resolution pipeline, SSE protocol,
+  frontend components). Staged for dev agent execution.
