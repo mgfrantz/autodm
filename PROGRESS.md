@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅
-## TEST SUITE FULLY GREEN (2492 backend + 76 frontend passing, 10 pre-existing failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅
+## TEST SUITE FULLY GREEN (2504 backend + 76 frontend passing, 10 pre-existing failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅
 
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
@@ -58,7 +58,11 @@ are worth adopting for future enhancement:
 ### Medium-Value Patterns (adopt soon)
 3. **Game flags for branching narrative state** — A simple
    `story_flags: dict[str, bool]` system for tracking branching story state
-   (e.g. `"met_king": True`). Complements our existing world state persistence.
+   (e.g. `"met_king": True`). Complements our existing world state persistence. **DONE** —
+   `DetectGameFlags` signature + `GameFlagsModule` + integration into all four
+   narration endpoints. Added to `WorldState` with helper methods (set_flag, clear_flag,
+   get_flag, get_flag_summary_for_context). Reuses existing game state persistence
+   (no new endpoints needed). 15 tests.
 4. **Scene-aware action suggestions** — AI generates contextually appropriate
    `available_actions` per scene. Render as clickable suggestion chips alongside
    our free-text input for better UX.
@@ -129,19 +133,53 @@ Suggested next-run candidates:
 1. **Multiplayer foundation (#13)** — party/session model + WebSocket
    fan-out so multiple browser clients share one DM. Largest scope; would
    span several runs.
-2. **DSPy pattern #3 — Game flags for branching narrative state (MEDIUM)**
-   — A simple `story_flags: dict[str, bool]` system for tracking branching
-   story state (e.g. `"met_king": True`). Complements our existing world state
-   persistence. Backend-only (DSPy signature + integration) with frontend
-   rendering via existing state display.
-3. **DSPy pattern #4 — Scene-aware action suggestions (MEDIUM)**
+2. **DSPy pattern #4 — Scene-aware action suggestions (MEDIUM)**
    — AI generates contextually appropriate `available_actions` per scene.
    Render as clickable suggestion chips alongside the free-text input for
    better UX. Backend signature + frontend suggestion chips.
+3. **DSPy pattern #5 — Structured skill-check resolution (MEDIUM)**
+   — `ActionResolver` returns structured fields (success, stat_changes,
+   items_gained, XP). A separate `SkillCheckResolver` for freeform
+   exploration/social actions that don't map to a standard 5e mechanic.
 4. **Content/registry expansion** — more spells/enemies/magic items, or
    add more curated starter adventures (3 currently shipped).
 
 ## Completed This Run
+- [x] **Game flags for branching narrative state — DSPy pattern #3 (MEDIUM value)**
+  - Implements the DSPy tutorial's game flags pattern: the DM's narration
+    is automatically analyzed for flags to set/clear, enabling dynamic
+    story branching without manual state management. Flags are simple
+    boolean markers (e.g., "met_king", "saved_village", "found_secret_passage").
+  - **`backend/app/llm/dspy_signatures.py`**: `DetectGameFlags` signature —
+    analyzes narration to detect flags to set or clear, with clear guidance
+    on meaningful vs trivial flags (e.g., skip "looked_at_wall", focus on
+    events that could affect future story branches, NPC reactions, or quest
+    outcomes).
+  - **`backend/app/llm/dspy_modules.py`**: `GameFlagsModule` (ChainOfThought
+    wrapper) with singleton pattern and graceful failure (returns empty lists
+    on exception). `get_game_flags_detection_module()` accessor.
+  - **`backend/app/engine/world_state.py`**: Added `story_flags: dict[str, bool]`
+    to `WorldState` dataclass. Helper methods: `set_flag()`, `clear_flag()`,
+    `get_flag()` (with default and whitespace stripping), and
+    `get_flag_summary_for_context()` (sorted list of active flags for DM context).
+    Updated serialization (`to_dict`/`from_dict` validate boolean values, filter
+    non-booleans).
+  - **`backend/app/api/game.py`**: `_detect_and_update_game_flags()` helper
+    processes detection results, strips whitespace, and merges back into game
+    state. Integrated into all four narration endpoints (`/start`, `/action`,
+    `/start/stream`, `/action/stream`) — called after NPC mood detection.
+  - **`backend/app/api/world_state.py`**: Added `flag_summary` to the
+    `GET /{game_id}/world-state/summary` endpoint.
+  - **Tests** (`test_world_state.py`, +15): flag management (set/clear/get,
+    multiple flags, update existing), serialization round-trip, boolean
+    validation, context summary (empty/with flags), game_state integration
+    (merge/extract/round-trip). Verified: **2504 backend tests passing**
+    (+15).
+  - **Pattern alignment**: Follows exact same architecture as quest detection
+    and NPC mood detection — DSPy signature + ChainOfThought module + helper
+    function + integration into narration endpoints. Reuses existing
+    `WorldState` engine and game_state persistence (no new endpoints needed).
+
 - [x] **Quest Log panel (frontend) — the frontend half of quest detection**
   - The quest-detection feature (DSPy tutorial pattern #1, HIGH value)
     shipped its **backend** last run (quest log engine + `DetectQuests`
