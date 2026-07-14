@@ -14,7 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.dspy_config import ensure_dspy_configured
-from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module, get_game_flags_detection_module
+from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module, get_game_flags_detection_module, get_action_suggestions_module
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.context import ContextManager, StorySummary, get_context_manager
@@ -177,6 +177,27 @@ def _detect_and_update_game_flags(
     return updated_state
 
 
+def _generate_action_suggestions(
+    narration: str,
+) -> list[str]:
+    """Generate scene-aware action suggestions based on DM narration.
+
+    Returns:
+        List of 4-6 action suggestions, empty list on failure.
+    """
+    try:
+        ensure_dspy_configured()
+        module = get_action_suggestions_module()
+        result = module(narration=narration)
+        suggestions = getattr(result, "action_suggestions", [])
+        # Ensure we return a list, filter out empty/None suggestions
+        return [s.strip() for s in suggestions if s and s.strip()]
+    except Exception as e:
+        logger = __import__("logging").getLogger(__name__)
+        logger.error(f"Action suggestions generation failed: {e}")
+        return []
+
+
 def _sse(payload: dict) -> str:
     """Format a dict as a Server-Sent Events data line."""
     return f"data: {json.dumps(payload)}\n\n"
@@ -194,6 +215,7 @@ class PlayerAction(BaseModel):
 
 class DMResponse(BaseModel):
     narration: str
+    action_suggestions: list[str] = []
     choices: list[str] | None = None
     combat_active: bool = False
     roll_requested: bool = False
@@ -276,6 +298,9 @@ End with 2-3 clear choices for the player.
     # Detect and update game flags
     game_state = _detect_and_update_game_flags(narration, game_state)
 
+    # Generate action suggestions
+    action_suggestions = _generate_action_suggestions(narration)
+
     # Save to story log
     story_log = json.loads(save.story_log)
     story_log.append({"role": "dm", "content": narration, "timestamp": datetime.utcnow().isoformat()})
@@ -283,7 +308,7 @@ End with 2-3 clear choices for the player.
     save.game_state = json.dumps(game_state)
     db.commit()
 
-    return {"narration": narration}
+    return {"narration": narration, "action_suggestions": action_suggestions}
 
 
 def _alignment_for_dm(alignment: str | None) -> str:
@@ -468,6 +493,7 @@ End with 2-3 clear choices for the player.
             return
 
         narration = "".join(collected)
+        action_suggestions: list[str] = []  # Initialize for use in done event
 
         # Persist the completed narration.
         db = session_factory()
@@ -484,6 +510,9 @@ End with 2-3 clear choices for the player.
                 # Detect and update game flags
                 game_state = _detect_and_update_game_flags(narration, game_state)
 
+                # Generate action suggestions
+                action_suggestions = _generate_action_suggestions(narration)
+
                 story_log = json.loads(save.story_log)
                 story_log.append({
                     "role": "dm",
@@ -496,7 +525,7 @@ End with 2-3 clear choices for the player.
         finally:
             db.close()
 
-        yield _sse({"type": "done"})
+        yield _sse({"type": "done", "action_suggestions": action_suggestions})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -565,13 +594,16 @@ Boss: {_boss_for_dm(game_state)}
     # Detect and update game flags
     game_state = _detect_and_update_game_flags(narration, game_state)
 
+    # Generate action suggestions
+    action_suggestions = _generate_action_suggestions(narration)
+
     # Log the exchange
     story_log.append({"role": "player", "content": action.action, "timestamp": datetime.utcnow().isoformat()})
     story_log.append({"role": "dm", "content": narration, "timestamp": datetime.utcnow().isoformat()})
     save.story_log = json.dumps(story_log)
     save.game_state = json.dumps(game_state)
     save.updated_at = datetime.utcnow()
-    
+
     # Check if we need to summarize
     if context_manager.should_summarize(story_log, summary):
         # Summarize asynchronously (we'll await it since this is already an async function)
@@ -580,11 +612,12 @@ Boss: {_boss_for_dm(game_state)}
         # Update current_act from summary if provided
         if new_summary.current_act:
             save.current_act = new_summary.current_act
-    
+
     db.commit()
 
     return DMResponse(
         narration=narration,
+        action_suggestions=action_suggestions,
         combat_active=game_state.get("in_combat", False),
     )
 
@@ -669,6 +702,7 @@ Boss: {_boss_for_dm(game_state)}
             return
 
         narration = "".join(collected)
+        action_suggestions: list[str] = []  # Initialize for use in done event
 
         # Persist the exchange once streaming is complete.
         db = session_factory()
@@ -692,6 +726,9 @@ Boss: {_boss_for_dm(game_state)}
                 # Detect and update game flags
                 game_state = _detect_and_update_game_flags(narration, game_state)
 
+                # Generate action suggestions
+                action_suggestions = _generate_action_suggestions(narration)
+
                 save.game_state = json.dumps(game_state)
 
                 # Check if we need to summarize
@@ -710,7 +747,7 @@ Boss: {_boss_for_dm(game_state)}
         finally:
             db.close()
 
-        yield _sse({"type": "done", "combat_active": combat_active})
+        yield _sse({"type": "done", "combat_active": combat_active, "action_suggestions": action_suggestions})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 

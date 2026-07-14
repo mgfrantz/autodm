@@ -12,6 +12,7 @@ from app.llm.dspy_signatures import (
     DetectQuests,
     DetectNPCMoodChanges,
     DetectGameFlags,
+    GenerateActionSuggestions,
 )
 
 logger = logging.getLogger(__name__)
@@ -352,3 +353,31 @@ def get_game_flags_detection_module() -> GameFlagsModule:
     if _game_flags_detection is None:
         _game_flags_detection = GameFlagsModule()
     return _game_flags_detection
+
+
+class ActionSuggestionsModule(dspy.Module):
+    """Generate scene-aware action suggestions based on DM narration."""
+
+    def __init__(self):
+        super().__init__()
+        self.generate = dspy.ChainOfThought(GenerateActionSuggestions)
+
+    def forward(self, *, narration: str):
+        try:
+            return self.generate(narration=narration)
+        except Exception as e:
+            logger.error(f"Action suggestions generation failed: {e}")
+            return dspy.Prediction(
+                action_suggestions=[],
+            )
+
+
+# Singleton
+_action_suggestions: ActionSuggestionsModule | None = None
+
+
+def get_action_suggestions_module() -> ActionSuggestionsModule:
+    global _action_suggestions
+    if _action_suggestions is None:
+        _action_suggestions = ActionSuggestionsModule()
+    return _action_suggestions

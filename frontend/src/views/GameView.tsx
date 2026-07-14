@@ -108,6 +108,7 @@ export default function GameView() {
   const [actionInput, setActionInput] = useState('')
   const [started, setStarted] = useState(false)
   const [streamingText, setStreamingText] = useState('')
+  const [actionSuggestions, setActionSuggestions] = useState<string[]>([])
   const [showMap, setShowMap] = useState(false)
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null)
   const [mapLoading, setMapLoading] = useState(false)
@@ -264,12 +265,13 @@ export default function GameView() {
   const handleStart = async () => {
     setLoading(true)
     setStreamingText('')
+    setActionSuggestions([])
     try {
       let final = ''
       await streamStartAdventure(
         gid,
         (chunk) => { final += chunk; setStreamingText((prev) => prev + chunk) },
-        () => {},
+        (suggestions) => { setActionSuggestions(suggestions) },
       )
       // Commit the narration once, OUTSIDE the state updater. React StrictMode
       // double-invokes updater functions, so a side effect inside
@@ -288,6 +290,7 @@ export default function GameView() {
     if (!actionInput.trim() || loading) return
     const action = actionInput.trim()
     setActionInput('')
+    setActionSuggestions([])
     addToStory({ role: 'player', content: action, timestamp: new Date().toISOString() })
     setLoading(true)
     setStreamingText('')
@@ -297,12 +300,13 @@ export default function GameView() {
         gid,
         action,
         (chunk) => { final += chunk; setStreamingText((prev) => prev + chunk) },
-        async (combatActive) => {
+        async (combatActive, suggestions) => {
           // Check combat state after DM responds
           if (combatActive) {
             const combat = await getCombatState(gid)
             setCombatState(combat)
           }
+          setActionSuggestions(suggestions)
         },
       )
       addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
@@ -736,9 +740,25 @@ export default function GameView() {
                 Act
               </button>
             </div>
-            {/* Quick Actions */}
+            {/* Quick Actions - AI Suggestions + Static */}
             <div className="flex gap-2 mt-2 flex-wrap">
-              {['Look around', 'Check inventory', 'Check my stats'].map((q) => (
+              {/* AI-generated suggestions */}
+              {actionSuggestions.length > 0 && (
+                <>
+                  {actionSuggestions.slice(0, 6).map((suggestion, idx) => (
+                    <button
+                      key={`ai-${idx}`}
+                      onClick={() => { setActionInput(suggestion); setActionSuggestions([]) }}
+                      className="text-xs bg-arcane-700 hover:bg-arcane-600 text-arcane-100 px-3 py-1 rounded-full transition-all duration-200 hover:-translate-y-0.5 active:scale-95 border border-arcane-500/50"
+                      title="AI-suggested action"
+                    >
+                      ✨ {suggestion}
+                    </button>
+                  ))}
+                </>
+              )}
+              {/* Static fallback suggestions (shown when no AI suggestions available) */}
+              {actionSuggestions.length === 0 && ['Look around', 'Check inventory', 'Check my stats'].map((q) => (
                 <button
                   key={q}
                   onClick={() => setActionInput(q)}

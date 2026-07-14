@@ -92,6 +92,7 @@ export interface GameState {
 
 export interface DMResponse {
   narration: string;
+  action_suggestions: string[];
   choices: string[] | null;
   combat_active: boolean;
   roll_requested: boolean;

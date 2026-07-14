@@ -129,6 +129,7 @@ export interface StreamEvent {
   content?: string;
   message?: string;
   combat_active?: boolean;
+  action_suggestions?: string[];
 }
 
 /**
@@ -186,13 +187,13 @@ async function consumeSSEStream(
 export async function streamStartAdventure(
   gameId: number,
   onChunk: (text: string) => void,
-  onDone: () => void,
+  onDone: (actionSuggestions: string[]) => void,
 ): Promise<void> {
   await consumeSSEStream(`/api/game/${gameId}/start/stream`, {}, (event) => {
     if (event.type === 'chunk' && event.content !== undefined) {
       onChunk(event.content);
     } else if (event.type === 'done') {
-      onDone();
+      onDone(event.action_suggestions ?? []);
     } else if (event.type === 'error') {
       throw new Error(event.message ?? 'Streaming error');
     }
@@ -201,13 +202,13 @@ export async function streamStartAdventure(
 
 /**
  * Stream the DM's response to a player action. Calls onChunk for each text
- * piece and onDone (with combat state) once the stream completes.
+ * piece and onDone (with combat state and action suggestions) once the stream completes.
  */
 export async function streamPlayerAction(
   gameId: number,
   action: string,
   onChunk: (text: string) => void,
-  onDone: (combatActive: boolean) => void,
+  onDone: (combatActive: boolean, actionSuggestions: string[]) => void,
 ): Promise<void> {
   await consumeSSEStream(
     `/api/game/${gameId}/action/stream`,
@@ -216,7 +217,7 @@ export async function streamPlayerAction(
       if (event.type === 'chunk' && event.content !== undefined) {
         onChunk(event.content);
       } else if (event.type === 'done') {
-        onDone(event.combat_active ?? false);
+        onDone(event.combat_active ?? false, event.action_suggestions ?? []);
       } else if (event.type === 'error') {
         throw new Error(event.message ?? 'Streaming error');
       }

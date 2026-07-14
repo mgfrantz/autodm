@@ -188,3 +188,29 @@ class DetectGameFlags(dspy.Signature):
     narration: str = dspy.InputField(desc="The DM's narration text to analyze")
     flags_to_set: list[str] = dspy.OutputField(desc="Flag names to set to True (e.g., ['met_king', 'found_secret_passage'])")
     flags_to_clear: list[str] = dspy.OutputField(desc="Flag names to clear/set to False (e.g., ['village_safe', 'prisoner_alive'])")
+
+
+class GenerateActionSuggestions(dspy.Signature):
+    """You are a Dungeon Master generating contextually appropriate action
+    suggestions for a player. Given the DM's narration of a scene, produce 4-6
+    brief, specific action suggestions that the player could take next.
+
+    Action suggestions should:
+    - Be specific to the current scene (location, NPCs present, situation)
+    - Cover different approaches (social, combat, exploration, investigation)
+    - Be concise (3-8 words each, verb-first)
+    - Avoid repeating the DM's explicit choices if they're already clear
+    - Reflect the character's likely capabilities (don't suggest spells for a fighter)
+
+    Examples of good suggestions:
+    - "Ask the innkeeper about rumors"
+    - "Search the chest for traps"
+    - "Attack the goblin archer"
+    - "Sneak past the sleeping guards"
+    - "Inspect the ancient mural"
+
+    Avoid trivial actions like "wait" or "do nothing." Focus on actions that
+    advance the story or reveal something interesting."""
+
+    narration: str = dspy.InputField(desc="The DM's narration text to analyze")
+    action_suggestions: list[str] = dspy.OutputField(desc="4-6 brief, scene-specific action suggestions (verb-first, 3-8 words each)")
