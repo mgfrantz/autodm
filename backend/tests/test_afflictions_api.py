@@ -33,17 +33,24 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-
+# The get_db override is applied per-test inside the autouse ``setup_database``
+# fixture below (and removed during teardown). It must NOT be set at module
+# import time: doing so leaks the override to every subsequent test file, and
+# also leaves it vulnerable to being wiped by the shared conftest ``client``
+# fixture's ``app.dependency_overrides.clear()``. Both effects previously caused
+# cross-file test-isolation failures (the override leaking broke later files;
+# the override being cleared broke this file's own 10 tests in the full suite).
 client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def setup_database():
-    """Create tables before each test and drop after."""
+    """Create tables + wire the test DB override before each test; tear down after."""
     from app.models.models import Base
     Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[get_db] = override_get_db
     yield
+    app.dependency_overrides.pop(get_db, None)
     Base.metadata.drop_all(bind=engine)
 
 
