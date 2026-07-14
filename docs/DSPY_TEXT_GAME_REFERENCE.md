@@ -173,11 +173,11 @@ our story log + context summarization, which is more scalable.
 
 | Pattern | Value | Effort | Priority |
 |---|---|---|---|
-| Quest detection in dialogue | High | Medium | 🔜 Next |
-| NPC mood/relationship tracking | High | Medium | 🔜 Next |
-| Game flags for branching state | Medium | Low | 🔜 Soon |
-| Scene-aware action suggestions | Medium | Low | 🔜 Soon |
-| Structured skill-check resolution | Medium | High | 📋 Later |
+| Quest detection in dialogue | High | Medium | ✅ DONE |
+| NPC mood/relationship tracking | High | Medium | ✅ DONE |
+| Game flags for branching state | Medium | Low | ✅ DONE |
+| Scene-aware action suggestions | Medium | Low | ✅ DONE |
+| Structured skill-check resolution | Medium | High | ✅ DONE |
 | Context-specific narration signatures | Design | Medium | 📋 Later |
 | Dynamic difficulty heuristic | Low | — | ⏭️ Skip |
 | Story progress counter | Low | — | ⏭️ Skip |
