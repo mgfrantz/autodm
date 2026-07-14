@@ -2365,3 +2365,25 @@ When you (the agent) work on the project:
 4. Test it
 5. Move it to "Completed" and commit
 6. Report what you did
+
+## Collapsible Character Sheet Sidebar ✅ (GameView UI overhaul)
+The in-game header had ~24 buttons crammed into a horizontal row that wrapped
+and consumed valuable vertical space. Replaced with a **collapsible sidebar**
+that slides in from the left on demand.
+
+- **"📋 Sheets" toggle button** in the header — opens/closes the sidebar.
+- **Organized into 7 groups** by category:
+  - Character (Skills, Saves, Feats, Subclass, Origin, Alignment, Tongues)
+  - Magic (Spells)
+  - Gear (Inventory, Shop)
+  - Adventure (Map, Quests, Rest, Traps)
+  - Environment (Scene, Exhaustion, Survival)
+  - Social (Social, Downtime, Mounts)
+  - Media (Images, Voice, Legendary)
+  - System (Save/Load)
+- **Mobile-friendly** — full-screen backdrop on small screens, dismissible.
+- **Status badges preserved** — ASI count on Feats, exhaustion level on
+  Exhaustion, auto-narrate ring on Voice.
+- **Disabled states preserved** — Shop/Map/Rest disabled during combat.
+- Opening a panel auto-closes the sidebar so the modal is immediately visible.
+- Verified: `tsc --noEmit` clean, `vite build` clean, 76 frontend tests passing.

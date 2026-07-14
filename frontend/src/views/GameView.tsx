@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, type ReactNode } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getGameState, streamStartAdventure, streamPlayerAction, getCombatState, makeAttack, nextTurn, getWorldMap, travelToRegion, createSaveSlot, listSaveSlots, loadSaveSlot, deleteSaveSlot, getRestInfo, shortRest, longRest, getEquipmentCombatStats, getCharacterFeats, getTTSStatus, narrateLatest, cachedAudioUrl } from '../stores/api'
 import { useGameStore } from '../stores/gameStore'
@@ -51,6 +51,55 @@ const ALIGNMENT_LABELS: Record<string, string> = {
   chaotic_evil: 'Chaotic Evil',
 }
 
+// --- Collapsible sidebar helper components ---
+
+function SidebarGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <div className="text-parchment-500 text-xs font-semibold uppercase tracking-wide mb-1.5 px-1">
+        {label}
+      </div>
+      <div className="space-y-1">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function SidebarButton({
+  icon, label, onClick, title, badge, disabled, ring,
+}: {
+  icon: string
+  label: string
+  onClick: () => void
+  title: string
+  badge?: string
+  disabled?: boolean
+  ring?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150
+        ${disabled
+          ? 'opacity-40 cursor-not-allowed bg-parchment-900/40 text-parchment-500'
+          : 'bg-parchment-900/40 text-parchment-200 hover:bg-blood-700/30 hover:text-parchment-50 hover:translate-x-1'
+        }
+        ${ring ? 'ring-1 ring-arcane-400/70' : ''}`}
+    >
+      <span className="text-base shrink-0">{icon}</span>
+      <span className="flex-1 text-left">{label}</span>
+      {badge && (
+        <span className="text-xs font-fantasy bg-gold-600 text-parchment-900 rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
+          {badge}
+        </span>
+      )}
+    </button>
+  )
+}
+
 export default function GameView() {
   const { gameId } = useParams<{ gameId: string }>()
   const gid = parseInt(gameId || '0')
@@ -94,6 +143,7 @@ export default function GameView() {
   const [showQuests, setShowQuests] = useState(false)
   const [equipmentStats, setEquipmentStats] = useState<EquipmentCombatStats | null>(null)
   const [featStatus, setFeatStatus] = useState<CharacterFeatsResponse | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const storyEndRef = useRef<HTMLDivElement>(null)
 
   // Voice narration (TTS) auto-narration state. `ttsConfigured` is fetched
@@ -519,6 +569,87 @@ export default function GameView() {
           per narration by maybeAutoNarrate(); it plays only when auto-narrate is
           on and TTS is configured. */}
       <audio ref={autoNarrateRef} className="hidden" />
+
+      {/* Collapsible Sidebar — slides in from the left */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 lg:z-30">
+          {/* Mobile backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+          {/* Sidebar panel */}
+          <aside className="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-parchment-800 border-r border-parchment-700 overflow-y-auto z-50 animate-slide-up shadow-2xl">
+            <div className="sticky top-0 bg-parchment-800 border-b border-parchment-700 px-4 py-3 flex items-center justify-between">
+              <span className="font-fantasy text-lg text-parchment-200">Character Sheet</span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="text-parchment-400 hover:text-parchment-200 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-3 space-y-5">
+              {/* Character */}
+              <SidebarGroup label="Character">
+                <SidebarButton icon="📜" label="Skills" onClick={() => { setShowSkills(true); setSidebarOpen(false) }} title="View skills & roll checks" />
+                <SidebarButton icon="🛡️" label="Saves" onClick={() => { setShowSavingThrows(true); setSidebarOpen(false) }} title="Saving throws" />
+                <SidebarButton icon="🏆" label="Feats" onClick={() => { setShowFeats(true); setSidebarOpen(false) }} title="Feats & ASI" badge={featStatus?.asi_available ? `${featStatus.asi_available}` : undefined} />
+                <SidebarButton icon="⚔️" label="Subclass" onClick={() => { setShowSubclass(true); setSidebarOpen(false) }} title="Archetype" />
+                <SidebarButton icon="🎭" label="Origin" onClick={() => { setShowBackground(true); setSidebarOpen(false) }} title="Background" />
+                <SidebarButton icon="⚖️" label="Alignment" onClick={() => { setShowAlignment(true); setSidebarOpen(false) }} title="Alignment" />
+                <SidebarButton icon="🗣️" label="Tongues" onClick={() => { setShowLanguages(true); setSidebarOpen(false) }} title="Languages" />
+              </SidebarGroup>
+
+              {/* Magic */}
+              <SidebarGroup label="Magic">
+                <SidebarButton icon="🔮" label="Spells" onClick={() => { setShowSpells(true); setSidebarOpen(false) }} title="Spellbook" />
+              </SidebarGroup>
+
+              {/* Gear */}
+              <SidebarGroup label="Gear">
+                <SidebarButton icon="🎒" label="Inventory" onClick={() => { setShowInventory(true); setSidebarOpen(false) }} title="Inventory" />
+                <SidebarButton icon="🛍️" label="Shop" onClick={() => { setShowShop(true); setSidebarOpen(false) }} title="Shop" disabled={inCombat} />
+              </SidebarGroup>
+
+              {/* Adventure */}
+              <SidebarGroup label="Adventure">
+                <SidebarButton icon="🗺️" label="Map" onClick={() => { handleOpenMap(); setSidebarOpen(false) }} title="World map" disabled={inCombat} />
+                <SidebarButton icon="📜" label="Quests" onClick={() => { setShowQuests(true); setSidebarOpen(false) }} title="Quest log" />
+                <SidebarButton icon="💤" label="Rest" onClick={() => { handleOpenRest(); setSidebarOpen(false) }} title="Rest" disabled={inCombat} />
+                <SidebarButton icon="🪤" label="Traps" onClick={() => { setShowTraps(true); setSidebarOpen(false) }} title="Traps & hazards" />
+              </SidebarGroup>
+
+              {/* Environment */}
+              <SidebarGroup label="Environment">
+                <SidebarButton icon="🌤️" label="Scene" onClick={() => { setShowEnvironment(true); setSidebarOpen(false) }} title="Weather, lighting, terrain" />
+                <SidebarButton icon="🥵" label="Exhaustion" onClick={() => { setShowExhaustion(true); setSidebarOpen(false) }} title="Exhaustion" badge={(gameState.game_state?.exhaustion ?? 0) > 0 ? `${gameState.game_state.exhaustion}` : undefined} />
+                <SidebarButton icon="🍖" label="Survival" onClick={() => { setShowSurvival(true); setSidebarOpen(false) }} title="Food & water" />
+              </SidebarGroup>
+
+              {/* Social */}
+              <SidebarGroup label="Social">
+                <SidebarButton icon="💬" label="Social" onClick={() => { setShowSocial(true); setSidebarOpen(false) }} title="Social interaction" />
+                <SidebarButton icon="⏳" label="Downtime" onClick={() => { setShowDowntime(true); setSidebarOpen(false) }} title="Downtime" />
+                <SidebarButton icon="🐎" label="Mounts" onClick={() => { setShowMounts(true); setSidebarOpen(false) }} title="Mounts & vehicles" />
+              </SidebarGroup>
+
+              {/* Media & Meta */}
+              <SidebarGroup label="Media">
+                <SidebarButton icon="🖼️" label="Images" onClick={() => { setShowImages(true); setSidebarOpen(false) }} title="Scene images" />
+                <SidebarButton icon="🔊" label="Voice" onClick={() => { setShowVoice(true); setSidebarOpen(false) }} title="TTS narration" ring={autoNarrate && ttsConfigured} />
+                <SidebarButton icon="🐉" label="Legendary" onClick={() => { setShowLegendary(true); setSidebarOpen(false) }} title="Legendary actions" />
+              </SidebarGroup>
+
+              {/* System */}
+              <SidebarGroup label="System">
+                <SidebarButton icon="💾" label="Save / Load" onClick={() => { handleOpenSaves(); setSidebarOpen(false) }} title="Save slots" />
+              </SidebarGroup>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* Main Story Panel */}
       <div className={`flex flex-col min-w-0 ${inCombat ? 'lg:flex-[2]' : 'flex-1'}`}>
         {/* Header */}
@@ -529,187 +660,13 @@ export default function GameView() {
           <h1 className="font-fantasy text-lg sm:text-xl text-parchment-300 text-center flex-1 min-w-0 truncate">
             {gameState.world.name}
           </h1>
-          <div className="flex gap-2 shrink-0">
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowSkills(true)}
-              title="View skills & roll checks"
-            >
-              📜 <span className="hidden sm:inline">Skills</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowSavingThrows(true)}
-              title="View saving throw proficiencies & roll saves (feat-granted saves badged)"
-            >
-              🛡️ <span className="hidden sm:inline">Saves</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowSpells(true)}
-              title="View spellbook, cast spells, prepare & learn magic"
-            >
-              🔮 <span className="hidden sm:inline">Spells</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowFeats(true)}
-              title="View learned feats, ASI status & learn available feats"
-            >
-              🏆 <span className="hidden sm:inline">Feats</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowSubclass(true)}
-              title="View your subclass (archetype) & feature timeline, or choose an archetype"
-            >
-              ⚔️ <span className="hidden sm:inline">Subclass</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowExhaustion(true)}
-              title="View exhaustion level & effects, or adjust (hazards/recovery)"
-            >
-              🥵 <span className="hidden sm:inline">Exhaustion</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowSurvival(true)}
-              title="Track food & water (starvation/dehydration) and resolve a survival day"
-            >
-              🍖 <span className="hidden sm:inline">Survival</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowTraps(true)}
-              title="Place, detect, disarm & trigger traps (DMG ch.5)"
-            >
-              🪤 <span className="hidden sm:inline">Traps</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowSocial(true)}
-              title="Reaction rolls, influence checks & insight (DMG ch.4)"
-            >
-              💬 <span className="hidden sm:inline">Social</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowDowntime(true)}
-              title="Between-adventures activities: carouse, crime, gamble, craft, train (PHB ch.8 / XGE ch.2)"
-            >
-              ⏳ <span className="hidden sm:inline">Downtime</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowMounts(true)}
-              title="Acquire, ride & manage mounts and vehicles (mounted travel + combat, PHB ch.5/8/9)"
-            >
-              🐎 <span className="hidden sm:inline">Mounts</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowImages(true)}
-              title="AI-generated scene illustrations & NPC portraits (provider-agnostic image API)"
-            >
-              🖼️ <span className="hidden sm:inline">Images</span>
-            </button>
-            <button
-              className={`btn-primary text-sm px-3 py-1.5 ${autoNarrate && ttsConfigured ? 'ring-1 ring-arcane-400/70' : ''}`}
-              onClick={() => setShowVoice(true)}
-              title={autoNarrate && ttsConfigured
-                ? 'AI-generated DM voice narration (auto-narrate is ON)'
-                : 'AI-generated DM voice narration (provider-agnostic TTS API)'}
-            >
-              🔊 <span className="hidden sm:inline">Voice</span>
-              {autoNarrate && ttsConfigured && (
-                <span
-                  className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full bg-arcane-300 animate-pulse"
-                  aria-label="auto-narrate on"
-                />
-              )}
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowLegendary(true)}
-              title="Legendary actions & lair actions for boss monsters (Monster Manual p.11)"
-            >
-              🐉 <span className="hidden sm:inline">Legendary</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowQuests(true)}
-              title="Quest log — quests auto-detected from the DM's narration"
-            >
-              📜 <span className="hidden sm:inline">Quests</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowBackground(true)}
-              title="View or change background & claim starting gear"
-            >
-              🎭 <span className="hidden sm:inline">Origin</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowAlignment(true)}
-              title="View or change alignment (3×3 grid with relationship preview)"
-            >
-              ⚖️ <span className="hidden sm:inline">Alignment</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowLanguages(true)}
-              title="View or change known languages (racial/background grants + extra choices)"
-            >
-              🗣️ <span className="hidden sm:inline">Tongues</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowEnvironment(true)}
-              title="View or change weather, lighting, terrain & temperature (live combat-modifier preview)"
-            >
-              🌤️ <span className="hidden sm:inline">Scene</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowInventory(true)}
-              title="Manage inventory & equipment"
-            >
-              🎒 <span className="hidden sm:inline">Inventory</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={() => setShowShop(true)}
-              disabled={inCombat}
-              title={inCombat ? 'Cannot trade during combat' : 'Visit the market & trade'}
-            >
-              🛍️ <span className="hidden sm:inline">Shop</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={handleOpenSaves}
-              title="Save or load game"
-            >
-              💾 <span className="hidden sm:inline">Save</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={handleOpenRest}
-              disabled={inCombat}
-              title={inCombat ? 'Cannot rest during combat' : 'Short or long rest'}
-            >
-              💤 <span className="hidden sm:inline">Rest</span>
-            </button>
-            <button
-              className="btn-primary text-sm px-3 py-1.5"
-              onClick={handleOpenMap}
-              disabled={inCombat}
-              title={inCombat ? 'Cannot travel during combat' : 'Open the world map'}
-            >
-              🗺️ <span className="hidden sm:inline">Map</span>
-            </button>
-          </div>
+          <button
+            className="btn-primary text-sm px-3 py-1.5 shrink-0"
+            onClick={() => setSidebarOpen((v) => !v)}
+            title="Open character sheet & panels"
+          >
+            📋 <span className="hidden sm:inline">Sheets</span>
+          </button>
         </div>
 
         {/* Story Log */}
