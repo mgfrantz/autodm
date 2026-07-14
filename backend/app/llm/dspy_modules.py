@@ -10,6 +10,7 @@ from app.llm.dspy_signatures import (
     DMNarration,
     SummarizeStory,
     DetectQuests,
+    DetectNPCMoodChanges,
 )
 
 logger = logging.getLogger(__name__)
@@ -293,3 +294,31 @@ def get_quest_detection_module() -> QuestDetectionModule:
     if _quest_detection is None:
         _quest_detection = QuestDetectionModule()
     return _quest_detection
+
+
+class NPCMoodModule(dspy.Module):
+    """Detect NPC mood/relationship changes in DM narration."""
+
+    def __init__(self):
+        super().__init__()
+        self.detect = dspy.ChainOfThought(DetectNPCMoodChanges)
+
+    def forward(self, *, narration: str):
+        try:
+            return self.detect(narration=narration)
+        except Exception as e:
+            logger.error(f"NPC mood detection failed: {e}")
+            return dspy.Prediction(
+                npc_mood_changes=[],
+            )
+
+
+# Singleton
+_npc_mood_detection: NPCMoodModule | None = None
+
+
+def get_npc_mood_detection_module() -> NPCMoodModule:
+    global _npc_mood_detection
+    if _npc_mood_detection is None:
+        _npc_mood_detection = NPCMoodModule()
+    return _npc_mood_detection

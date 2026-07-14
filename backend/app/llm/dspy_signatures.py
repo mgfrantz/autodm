@@ -135,3 +135,35 @@ class DetectQuests(dspy.Signature):
     quests_completed: list[str] = dspy.OutputField(desc="Titles of quests completed in this narration (partial matches allowed)")
     quests_failed: list[str] = dspy.OutputField(desc="Titles of quests failed in this narration (partial matches allowed)")
     information_revealed: list[str] = dspy.OutputField(desc="Important information revealed about the world, NPCs, or lore")
+
+
+class DetectNPCMoodChanges(dspy.Signature):
+    """You are analyzing a Dungeon Master's narration to detect NPC mood or
+    relationship changes. Given the DM's narration text, identify any NPCs whose
+    disposition toward the player has shifted and the nature of that change.
+
+    Mood detection:
+    - A POSITIVE mood change occurs when an NPC shows approval, gratitude,
+      respect, trust, or warmth toward the player (e.g., "Eldrin smiles warmly",
+      "The captain thanks you for your help", "The shopkeeper gives you a
+      discount because she trusts you").
+    - A NEGATIVE mood change occurs when an NPC shows disapproval, anger,
+      suspicion, distrust, or hostility toward the player (e.g., "The guard
+      glares at you", "The merchant accuses you of theft", "The king furrows his
+      brow in disappointment").
+    - NEUTRAL changes are minor interactions that don't significantly shift the
+      relationship (e.g., simple greetings, factual exchanges).
+
+    For each NPC with a mood change, include:
+    - npc_name: The NPC's name (exactly as mentioned in narration)
+    - mood_change: 'positive', 'negative', or 'neutral'
+    - trust_change: Estimated trust change on a scale of -20 to +20
+      (negative for mood_change=negative, positive for mood_change=positive,
+      near-zero for neutral)
+    - reason: Brief explanation of what caused the change
+
+    Only include NPCs whose mood meaningfully shifts. Don't include NPCs who are
+    merely present without interaction or whose disposition remains the same."""
+
+    narration: str = dspy.InputField(desc="The DM's narration text to analyze")
+    npc_mood_changes: list[dict] = dspy.OutputField(desc="NPC mood changes; each a dict with keys: npc_name, mood_change (positive/negative/neutral), trust_change (-20 to +20), reason (brief explanation)")

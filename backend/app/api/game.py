@@ -14,7 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.dspy_config import ensure_dspy_configured
-from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module
+from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.context import ContextManager, StorySummary, get_context_manager
@@ -22,6 +22,11 @@ from app.engine.quests import (
     QuestLog,
     extract_quest_log_from_game_state,
     merge_quest_log_into_game_state,
+)
+from app.engine.world_state import (
+    WorldState,
+    extract_world_state_from_game_state,
+    merge_world_state_into_game_state,
 )
 
 router = APIRouter()
@@ -89,6 +94,52 @@ def _detect_and_update_quests(
     updated_state = merge_quest_log_into_game_state(game_state, quest_log)
     info_revealed = getattr(result, "information_revealed", [])
     return updated_state, info_revealed
+
+
+def _detect_and_update_npc_mood(
+    narration: str,
+    game_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Detect NPC mood changes in DM narration and update world state.
+
+    Returns:
+        Updated game_state with NPC relationship changes applied.
+    """
+    world_state = extract_world_state_from_game_state(game_state)
+
+    try:
+        ensure_dspy_configured()
+        module = get_npc_mood_detection_module()
+        result = module(narration=narration)
+    except Exception as e:
+        logger = __import__("logging").getLogger(__name__)
+        logger.error(f"NPC mood detection failed: {e}")
+        return game_state
+
+    # Process each detected mood change
+    for mood_change_data in getattr(result, "npc_mood_changes", []):
+        npc_name = mood_change_data.get("npc_name", "").strip()
+        trust_change = mood_change_data.get("trust_change", 0)
+        reason = mood_change_data.get("reason", "")
+
+        if not npc_name:
+            continue
+
+        # Clamp trust change to -20..20 as per signature documented output range.
+        # This is a safety net in case the LLM violates the contract.
+        trust_change = max(-20, min(20, trust_change))
+
+        # Apply the change via world_state
+        interaction_summary = reason or f"Mood detected as {mood_change_data.get('mood_change', 'unknown')}"
+        world_state.update_npc_relationship(
+            npc_name=npc_name,
+            trust_change=trust_change,
+            interaction_summary=interaction_summary,
+        )
+
+    # Merge updated world state back into game state
+    updated_state = merge_world_state_into_game_state(game_state, world_state)
+    return updated_state
 
 
 def _sse(payload: dict) -> str:
@@ -183,6 +234,9 @@ End with 2-3 clear choices for the player.
     # Detect and update quests
     game_state = json.loads(save.game_state)
     game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
+
+    # Detect and update NPC mood
+    game_state = _detect_and_update_npc_mood(narration, game_state)
 
     # Save to story log
     story_log = json.loads(save.story_log)
@@ -386,6 +440,9 @@ End with 2-3 clear choices for the player.
                 game_state = json.loads(save.game_state)
                 game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
 
+                # Detect and update NPC mood
+                game_state = _detect_and_update_npc_mood(narration, game_state)
+
                 story_log = json.loads(save.story_log)
                 story_log.append({
                     "role": "dm",
@@ -460,6 +517,9 @@ Boss: {_boss_for_dm(game_state)}
 
     # Detect and update quests
     game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
+
+    # Detect and update NPC mood
+    game_state = _detect_and_update_npc_mood(narration, game_state)
 
     # Log the exchange
     story_log.append({"role": "player", "content": action.action, "timestamp": datetime.utcnow().isoformat()})
@@ -581,6 +641,9 @@ Boss: {_boss_for_dm(game_state)}
                 # Detect and update quests
                 game_state = json.loads(save.game_state)
                 game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
+
+                # Detect and update NPC mood
+                game_state = _detect_and_update_npc_mood(narration, game_state)
                 save.game_state = json.dumps(game_state)
 
                 # Check if we need to summarize
