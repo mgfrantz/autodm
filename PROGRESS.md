@@ -129,20 +129,58 @@ Suggested next-run candidates (pick one):
 
 **All HIGH-value DSPy tutorial patterns are now complete (#1 and #2).**
 
-**MEDIUM-value patterns: #3 (game flags) DONE, #4 (action suggestions) DONE.**
+**MEDIUM-value patterns: #3 (game flags) DONE, #4 (action suggestions) DONE, #5 (skill check resolution) DONE.**
+
+All DSPy tutorial patterns from the reference doc are now complete.
 
 Suggested next-run candidates:
 1. **Multiplayer foundation (#13)** — party/session model + WebSocket
    fan-out so multiple browser clients share one DM. Largest scope; would
    span several runs.
-2. **DSPy pattern #5 — Structured skill-check resolution (MEDIUM)**
-   — `ActionResolver` returns structured fields (success, stat_changes,
-   items_gained, XP). A separate `SkillCheckResolver` for freeform
-   exploration/social actions that don't map to a standard 5e mechanic.
-3. **Content/registry expansion** — more spells/enemies/magic items, or
+2. **Content/registry expansion** — more spells/enemies/magic items, or
    add more curated starter adventures (3 currently shipped).
+3. **Frontend UI for skill check resolution** — display the structured
+   resolution data (success, degree, XP gained, items, stat changes) in the
+   GameView after each action.
 
 ## Completed This Run
+- [x] **Structured skill-check resolution — DSPy pattern #5 (MEDIUM value)**
+  - Implements the DSPy tutorial's structured action resolution pattern:
+    the DM's narration is complemented by structured mechanical outcomes for
+    freeform player actions that don't map to standard DnD 5e mechanics.
+  - **`backend/app/llm/dspy_signatures.py`**: `ResolveSkillCheck`
+    signature — analyzes a player's action, character capabilities, and
+    scene context to generate structured resolution with clear guidance
+    on fair outcomes, moderate stat changes, and appropriate XP rewards.
+  - **`backend/app/llm/dspy_modules.py`**: `SkillCheckResolverModule`
+    (ChainOfThought wrapper) with singleton pattern and graceful failure
+    (returns empty dict on exception). `get_skill_check_resolver_module()` accessor.
+  - **`backend/app/api/game.py`**: `_resolve_skill_check()` helper
+    builds character context (ability scores, skills, HP, AC, conditions)
+    and scene context (location, recent events), runs the DSPy module,
+    and returns a structured dict (success, degree, stat_changes,
+    items_gained, experience_gained, narrative_notes). Integrated into
+    both non-streaming and streaming `/action` endpoints — called after
+    DM narration, stored in `game_state["skill_check_resolution"]`,
+    and returned in the response.
+  - **`backend/app/api/game.py`**: Updated `DMResponse` model to include
+    `skill_check_resolution: dict[str, Any]`. Streaming SSE `done` event
+    also includes the resolution payload.
+  - **Pattern alignment**: Follows exact same architecture as quest
+    detection, NPC mood detection, game flags, and action suggestions —
+    DSPy signature + ChainOfThought module + helper function + integration
+    into narration endpoints. Reuses existing DSPy infrastructure.
+  - **Tests** (`test_skill_check_resolver.py`, 8): signature exists and
+    has proper docstring, module initialization, successful resolution
+    (mocked), graceful exception handling, singleton pattern, helper
+    integration (returns dict with expected keys). Verified: **2522 backend
+    tests passing** (+8).
+  - **Use case**: For freeform creative actions (persuade with a bribe,
+    swing across a chasm, research ancient lore, intimidate with stories),
+    the resolver provides structured mechanical tracking that the DM
+    narration doesn't mechanically apply. The resolution data is stored
+    for future reference and could be displayed in a UI panel.
+
 - [x] **Scene-aware action suggestions — DSPy pattern #4 (MEDIUM value)**
   - Implements the DSPy tutorial's action suggestions pattern: the DM's
     narration is automatically analyzed to generate 4-6 contextually appropriate
