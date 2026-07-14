@@ -13,6 +13,7 @@ from app.llm.dspy_signatures import (
     DetectNPCMoodChanges,
     DetectGameFlags,
     GenerateActionSuggestions,
+    ResolveSkillCheck,
 )
 
 logger = logging.getLogger(__name__)
@@ -381,3 +382,40 @@ def get_action_suggestions_module() -> ActionSuggestionsModule:
     if _action_suggestions is None:
         _action_suggestions = ActionSuggestionsModule()
     return _action_suggestions
+
+
+class SkillCheckResolverModule(dspy.Module):
+    """Resolve freeform player actions with structured mechanical outcomes."""
+
+    def __init__(self):
+        super().__init__()
+        self.resolve = dspy.ChainOfThought(ResolveSkillCheck)
+
+    def forward(self, *, action: str, character_context: str, scene_context: str):
+        try:
+            return self.resolve(
+                action=action,
+                character_context=character_context,
+                scene_context=scene_context,
+            )
+        except Exception as e:
+            logger.error(f"Skill check resolution failed: {e}")
+            return dspy.Prediction(
+                success=False,
+                degree="failure",
+                stat_changes={},
+                items_gained=[],
+                experience_gained=0,
+                narrative_notes="Resolution failed due to an error.",
+            )
+
+
+# Singleton
+_skill_check_resolver: SkillCheckResolverModule | None = None
+
+
+def get_skill_check_resolver_module() -> SkillCheckResolverModule:
+    global _skill_check_resolver
+    if _skill_check_resolver is None:
+        _skill_check_resolver = SkillCheckResolverModule()
+    return _skill_check_resolver

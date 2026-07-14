@@ -214,3 +214,43 @@ class GenerateActionSuggestions(dspy.Signature):
 
     narration: str = dspy.InputField(desc="The DM's narration text to analyze")
     action_suggestions: list[str] = dspy.OutputField(desc="4-6 brief, scene-specific action suggestions (verb-first, 3-8 words each)")
+
+
+class ResolveSkillCheck(dspy.Signature):
+    """You are a Dungeon Master resolving a freeform player action that doesn't
+    map to a standard DnD 5e mechanic (e.g., persuasion attempts, investigation
+    checks, creative problem-solving, unconventional tactics). Given the player's
+    action description, the character's capabilities, and the current scene
+    context, determine the outcome and any mechanical consequences.
+
+    Resolution guidelines:
+    - Consider the character's relevant ability scores, skills, and class features
+    - Factor in the difficulty and circumstances of the action
+    - Be fair but generous — this is a heroic fantasy game
+    - Success should feel earned but failure should have clear consequences
+    - Reward creativity and clever approaches
+    - Keep stat changes moderate (usually -5 to +5, rarely more extreme)
+    - XP rewards should scale with difficulty (10-50 for minor successes, 50-200 for major achievements)
+
+    Outputs:
+    - success: Whether the action succeeds overall
+    - degree: How well/poorly the action went ('great_success', 'success', 'partial_success', 'failure', 'critical_failure')
+    - stat_changes: Dictionary of character stat changes (e.g., {"gold": 10, "hp": -5})
+    - items_gained: List of items obtained (if any)
+    - experience_gained: XP awarded for the action
+    - narrative_notes: Brief explanation of why the resolution went this way
+
+    Only include items gained if they're clearly obtained in the action (found,
+    looted, gifted, etc.). Don't invent items unless the context makes it obvious.
+    Stat changes should be direct consequences (HP loss from a fall, gold from a
+    reward, etc.), not speculative or long-term effects."""
+
+    action: str = dspy.InputField(desc="The player's freeform action description")
+    character_context: str = dspy.InputField(desc="Character info: level, class, relevant ability scores, skills, and any relevant features")
+    scene_context: str = dspy.InputField(desc="Current scene: location, NPCs present, situation, any relevant conditions or obstacles")
+    success: bool = dspy.OutputField(desc="Whether the action succeeds overall")
+    degree: str = dspy.OutputField(desc="Degree of success/failure: 'great_success', 'success', 'partial_success', 'failure', or 'critical_failure'")
+    stat_changes: dict = dspy.OutputField(desc="Dictionary of stat changes (e.g., {\"gold\": 10, \"hp\": -5})")
+    items_gained: list[str] = dspy.OutputField(desc="List of items obtained (if any)")
+    experience_gained: int = dspy.OutputField(desc="XP awarded for the action")
+    narrative_notes: str = dspy.OutputField(desc="Brief explanation of why the resolution went this way")

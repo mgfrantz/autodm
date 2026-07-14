@@ -14,7 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.dspy_config import ensure_dspy_configured
-from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module, get_game_flags_detection_module, get_action_suggestions_module
+from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module, get_game_flags_detection_module, get_action_suggestions_module, get_skill_check_resolver_module
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.context import ContextManager, StorySummary, get_context_manager
@@ -198,6 +198,75 @@ def _generate_action_suggestions(
         return []
 
 
+def _resolve_skill_check(
+    action: str,
+    character: Character,
+    game_state: dict[str, Any],
+    recent_context: str,
+) -> dict[str, Any]:
+    """Resolve a freeform player action using DSPy skill check resolver.
+
+    This provides structured mechanical outcomes (success, stat changes,
+    items gained, XP) for actions that don't map to standard 5e mechanics.
+
+    Returns:
+        Dict with resolution data:
+        - success: bool
+        - degree: str (great_success, success, partial_success, failure, critical_failure)
+        - stat_changes: dict
+        - items_gained: list
+        - experience_gained: int
+        - narrative_notes: str
+        Empty dict on failure.
+    """
+    try:
+        ensure_dspy_configured()
+        module = get_skill_check_resolver_module()
+
+        # Build character context
+        character_context = f"""\
+Character: {character.name}, Level {character.level} {character.race} {character.char_class}
+Ability Scores: STR {character.strength}, DEX {character.dexterity}, CON {character.constitution},
+               INT {character.intelligence}, WIS {character.wisdom}, CHA {character.charisma}
+HP: {character.current_hp}/{character.max_hp}
+AC: {character.armor_class}
+Conditions: {', '.join(game_state.get('conditions', ['none']))}
+"""
+        # Add skill proficiencies if available
+        try:
+            from app.engine.skills import get_skill_proficiencies
+            skill_profs = get_skill_proficiencies(character)
+            if skill_profs:
+                character_context += f"Skill Proficiencies: {', '.join(sorted(skill_profs))}\n"
+        except Exception:
+            pass  # Skills not critical
+
+        # Build scene context
+        scene_context = f"""\
+Location: {game_state.get('location', 'Unknown')}
+Recent Events: {recent_context[:500]}  # Truncated for brevity
+Active Conditions: {', '.join(game_state.get('conditions', []))}
+"""
+        result = module(
+            action=action,
+            character_context=character_context,
+            scene_context=scene_context,
+        )
+
+        return {
+            "success": getattr(result, "success", False),
+            "degree": getattr(result, "degree", "failure"),
+            "stat_changes": getattr(result, "stat_changes", {}) or {},
+            "items_gained": getattr(result, "items_gained", []) or [],
+            "experience_gained": getattr(result, "experience_gained", 0) or 0,
+            "narrative_notes": getattr(result, "narrative_notes", ""),
+        }
+    except Exception as e:
+        logger = __import__("logging").getLogger(__name__)
+        logger.error(f"Skill check resolution failed: {e}")
+        return {}
+
+
 def _sse(payload: dict) -> str:
     """Format a dict as a Server-Sent Events data line."""
     return f"data: {json.dumps(payload)}\n\n"
@@ -219,6 +288,7 @@ class DMResponse(BaseModel):
     choices: list[str] | None = None
     combat_active: bool = False
     roll_requested: bool = False
+    skill_check_resolution: dict[str, Any] = {}
 
 
 @router.post("/create")
@@ -585,6 +655,18 @@ Boss: {_boss_for_dm(game_state)}
 
     narration = await _dm_narrate(situation=user_prompt)
 
+    # Resolve skill check for structured mechanical outcomes
+    skill_check_resolution = _resolve_skill_check(
+        action=action.action,
+        character=character,
+        game_state=game_state,
+        recent_context=recent_context,
+    )
+
+    # Store resolution in game_state if successful
+    if skill_check_resolution:
+        game_state["skill_check_resolution"] = skill_check_resolution
+
     # Detect and update quests
     game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
 
@@ -619,6 +701,7 @@ Boss: {_boss_for_dm(game_state)}
         narration=narration,
         action_suggestions=action_suggestions,
         combat_active=game_state.get("in_combat", False),
+        skill_check_resolution=skill_check_resolution or {},
     )
 
 
@@ -683,11 +766,16 @@ Boss: {_boss_for_dm(game_state)}
 {base_context}"""
 
         combat_active = game_state.get("in_combat", False)
-        
+
         # Store summary data for later use in the async stream
         summary_data = None
         if summary:
             summary_data = summary.to_dict()
+
+        # Store character and game_state for skill check resolution in stream
+        stored_character = character
+        stored_game_state = game_state
+        stored_recent_context = recent_context
     finally:
         db.close()
 
@@ -703,6 +791,18 @@ Boss: {_boss_for_dm(game_state)}
 
         narration = "".join(collected)
         action_suggestions: list[str] = []  # Initialize for use in done event
+        skill_check_resolution: dict[str, Any] = {}  # Initialize for use in done event
+
+        # Resolve skill check for structured mechanical outcomes
+        try:
+            skill_check_resolution = _resolve_skill_check(
+                action=action.action,
+                character=stored_character,
+                game_state=stored_game_state,
+                recent_context=stored_recent_context,
+            )
+        except Exception:
+            skill_check_resolution = {}
 
         # Persist the exchange once streaming is complete.
         db = session_factory()
@@ -716,8 +816,14 @@ Boss: {_boss_for_dm(game_state)}
                 save.story_log = json.dumps(log)
                 save.updated_at = datetime.utcnow()
 
-                # Detect and update quests
+                # Load fresh game_state
                 game_state = json.loads(save.game_state)
+
+                # Store resolution in game_state if successful
+                if skill_check_resolution:
+                    game_state["skill_check_resolution"] = skill_check_resolution
+
+                # Detect and update quests
                 game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
 
                 # Detect and update NPC mood
@@ -747,7 +853,7 @@ Boss: {_boss_for_dm(game_state)}
         finally:
             db.close()
 
-        yield _sse({"type": "done", "combat_active": combat_active, "action_suggestions": action_suggestions})
+        yield _sse({"type": "done", "combat_active": combat_active, "action_suggestions": action_suggestions, "skill_check_resolution": skill_check_resolution})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
