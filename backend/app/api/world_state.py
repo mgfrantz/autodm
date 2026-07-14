@@ -274,8 +274,10 @@ def get_world_state_summary(game_id: int, db: Session = Depends(get_db)):
 
     npc_summary = world_state.get_npc_summary_for_context()
     faction_summary = world_state.get_faction_summary_for_context()
+    flag_summary = world_state.get_flag_summary_for_context()
 
     return {
         "npc_summary": npc_summary,
         "faction_summary": faction_summary,
+        "flag_summary": flag_summary,
     }

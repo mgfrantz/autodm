@@ -128,9 +128,10 @@ class FactionReputation:
 
 @dataclass
 class WorldState:
-    """Manages all world state (NPCs, factions, etc.)."""
+    """Manages all world state (NPCs, factions, game flags)."""
     npc_relationships: dict[str, NPCRelationship] = field(default_factory=dict)
     faction_reputation: dict[str, FactionReputation] = field(default_factory=dict)
+    story_flags: dict[str, bool] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for JSON storage."""
@@ -143,19 +144,25 @@ class WorldState:
                 name: rep.to_dict()
                 for name, rep in self.faction_reputation.items()
             },
+            "story_flags": dict(self.story_flags),
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "WorldState":
         """Deserialize from dictionary."""
         world_state = cls()
-        
+
         for name, rel_data in data.get("npc_relationships", {}).items():
             world_state.npc_relationships[name] = NPCRelationship.from_dict(rel_data)
-        
+
         for name, rep_data in data.get("faction_reputation", {}).items():
             world_state.faction_reputation[name] = FactionReputation.from_dict(rep_data)
-        
+
+        # Load story flags, validating they're booleans
+        for flag_name, flag_value in data.get("story_flags", {}).items():
+            if isinstance(flag_value, bool):
+                world_state.story_flags[flag_name] = flag_value
+
         return world_state
 
     def get_or_create_npc(self, npc_name: str) -> NPCRelationship:
@@ -229,7 +236,38 @@ class WorldState:
         
         if len(lines) == 1:
             return "No notable faction reputation yet."
-        
+
+        return "\n".join(lines)
+
+    def set_flag(self, flag_name: str, value: bool = True) -> None:
+        """Set a game flag to a boolean value."""
+        self.story_flags[flag_name] = value
+
+    def clear_flag(self, flag_name: str) -> None:
+        """Clear a game flag (set to False)."""
+        self.story_flags[flag_name] = False
+
+    def get_flag(self, flag_name: str, default: bool = False) -> bool:
+        """Get a game flag's value, returning default if not set."""
+        # Strip whitespace from flag name
+        flag_name = flag_name.strip()
+        return self.story_flags.get(flag_name, default)
+
+    def get_flag_summary_for_context(self) -> str:
+        """Generate a summary of notable story flags for DM context."""
+        if not self.story_flags:
+            return "No story flags set yet."
+
+        # Only include True flags (set flags) for context
+        active_flags = [name for name, value in self.story_flags.items() if value]
+
+        if not active_flags:
+            return "No story flags set yet."
+
+        lines = ["Story Flags (set):"]
+        for flag_name in sorted(active_flags):
+            lines.append(f"- {flag_name}")
+
         return "\n".join(lines)
 
 

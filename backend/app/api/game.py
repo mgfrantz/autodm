@@ -14,7 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
 from app.llm.dspy_config import ensure_dspy_configured
-from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module
+from app.llm.dspy_modules import get_dm_narration_module, stream_narration_dspy, get_quest_detection_module, get_npc_mood_detection_module, get_game_flags_detection_module
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.context import ContextManager, StorySummary, get_context_manager
@@ -142,6 +142,41 @@ def _detect_and_update_npc_mood(
     return updated_state
 
 
+def _detect_and_update_game_flags(
+    narration: str,
+    game_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Detect game flags to set/clear in DM narration and update world state.
+
+    Returns:
+        Updated game_state with flag changes applied.
+    """
+    world_state = extract_world_state_from_game_state(game_state)
+
+    try:
+        ensure_dspy_configured()
+        module = get_game_flags_detection_module()
+        result = module(narration=narration)
+    except Exception as e:
+        logger = __import__("logging").getLogger(__name__)
+        logger.error(f"Game flags detection failed: {e}")
+        return game_state
+
+    # Process flags to set
+    for flag_name in getattr(result, "flags_to_set", []):
+        if flag_name:  # Skip empty strings
+            world_state.set_flag(flag_name.strip(), True)
+
+    # Process flags to clear
+    for flag_name in getattr(result, "flags_to_clear", []):
+        if flag_name:  # Skip empty strings
+            world_state.clear_flag(flag_name.strip())
+
+    # Merge updated world state back into game state
+    updated_state = merge_world_state_into_game_state(game_state, world_state)
+    return updated_state
+
+
 def _sse(payload: dict) -> str:
     """Format a dict as a Server-Sent Events data line."""
     return f"data: {json.dumps(payload)}\n\n"
@@ -237,6 +272,9 @@ End with 2-3 clear choices for the player.
 
     # Detect and update NPC mood
     game_state = _detect_and_update_npc_mood(narration, game_state)
+
+    # Detect and update game flags
+    game_state = _detect_and_update_game_flags(narration, game_state)
 
     # Save to story log
     story_log = json.loads(save.story_log)
@@ -443,6 +481,9 @@ End with 2-3 clear choices for the player.
                 # Detect and update NPC mood
                 game_state = _detect_and_update_npc_mood(narration, game_state)
 
+                # Detect and update game flags
+                game_state = _detect_and_update_game_flags(narration, game_state)
+
                 story_log = json.loads(save.story_log)
                 story_log.append({
                     "role": "dm",
@@ -520,6 +561,9 @@ Boss: {_boss_for_dm(game_state)}
 
     # Detect and update NPC mood
     game_state = _detect_and_update_npc_mood(narration, game_state)
+
+    # Detect and update game flags
+    game_state = _detect_and_update_game_flags(narration, game_state)
 
     # Log the exchange
     story_log.append({"role": "player", "content": action.action, "timestamp": datetime.utcnow().isoformat()})
@@ -644,6 +688,10 @@ Boss: {_boss_for_dm(game_state)}
 
                 # Detect and update NPC mood
                 game_state = _detect_and_update_npc_mood(narration, game_state)
+
+                # Detect and update game flags
+                game_state = _detect_and_update_game_flags(narration, game_state)
+
                 save.game_state = json.dumps(game_state)
 
                 # Check if we need to summarize

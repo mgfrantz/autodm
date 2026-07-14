@@ -167,3 +167,24 @@ class DetectNPCMoodChanges(dspy.Signature):
 
     narration: str = dspy.InputField(desc="The DM's narration text to analyze")
     npc_mood_changes: list[dict] = dspy.OutputField(desc="NPC mood changes; each a dict with keys: npc_name, mood_change (positive/negative/neutral), trust_change (-20 to +20), reason (brief explanation)")
+
+
+class DetectGameFlags(dspy.Signature):
+    """You are analyzing a Dungeon Master's narration to detect game flags that
+    should be set or cleared. Game flags are simple boolean markers that track
+    branching narrative state (e.g., "met_king", "saved_village", "found_secret_passage").
+
+    Flag detection:
+    - SET a flag when the DM confirms the player has accomplished something
+      (e.g., "You have finally met King Aldric" → set "met_king").
+    - CLEAR a flag when the DM confirms the player has undone something or
+      circumstances have changed (e.g., "The village has been destroyed" → clear "saved_village").
+    - Use descriptive flag names that are clear and specific (snake_case, lowercase).
+
+    Only detect flags that are meaningful for branching narrative state. Don't
+    include trivial details (e.g., "looked_at_wall" or "walked_north"). Focus on
+    events that could affect future story branches, NPC reactions, or quest outcomes."""
+
+    narration: str = dspy.InputField(desc="The DM's narration text to analyze")
+    flags_to_set: list[str] = dspy.OutputField(desc="Flag names to set to True (e.g., ['met_king', 'found_secret_passage'])")
+    flags_to_clear: list[str] = dspy.OutputField(desc="Flag names to clear/set to False (e.g., ['village_safe', 'prisoner_alive'])")

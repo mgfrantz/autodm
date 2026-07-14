@@ -11,6 +11,7 @@ from app.llm.dspy_signatures import (
     SummarizeStory,
     DetectQuests,
     DetectNPCMoodChanges,
+    DetectGameFlags,
 )
 
 logger = logging.getLogger(__name__)
@@ -322,3 +323,32 @@ def get_npc_mood_detection_module() -> NPCMoodModule:
     if _npc_mood_detection is None:
         _npc_mood_detection = NPCMoodModule()
     return _npc_mood_detection
+
+
+class GameFlagsModule(dspy.Module):
+    """Detect game flags to set/clear in DM narration."""
+
+    def __init__(self):
+        super().__init__()
+        self.detect = dspy.ChainOfThought(DetectGameFlags)
+
+    def forward(self, *, narration: str):
+        try:
+            return self.detect(narration=narration)
+        except Exception as e:
+            logger.error(f"Game flags detection failed: {e}")
+            return dspy.Prediction(
+                flags_to_set=[],
+                flags_to_clear=[],
+            )
+
+
+# Singleton
+_game_flags_detection: GameFlagsModule | None = None
+
+
+def get_game_flags_detection_module() -> GameFlagsModule:
+    global _game_flags_detection
+    if _game_flags_detection is None:
+        _game_flags_detection = GameFlagsModule()
+    return _game_flags_detection

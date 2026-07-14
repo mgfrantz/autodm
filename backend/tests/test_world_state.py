@@ -406,12 +406,187 @@ class TestGameStateIntegration:
         original = WorldState()
         original.update_npc_relationship("Gandalf", 30, "Helped")
         original.update_faction_reputation("Mages Guild", 25)
-        
+
         game_state = {"location": "Shire"}
         game_state = merge_world_state_into_game_state(game_state, original)
         extracted = extract_world_state_from_game_state(game_state)
-        
+
         assert len(extracted.npc_relationships) == 1
         assert extracted.npc_relationships["Gandalf"].trust == 30
         assert len(extracted.faction_reputation) == 1
         assert extracted.faction_reputation["Mages Guild"].reputation == 25
+
+
+class TestGameFlags:
+    """Test game flags for branching narrative state."""
+
+    def test_set_flag(self):
+        """Test setting a game flag."""
+        world_state = WorldState()
+        world_state.set_flag("met_king", True)
+
+        assert world_state.get_flag("met_king") is True
+        assert len(world_state.story_flags) == 1
+
+    def test_clear_flag(self):
+        """Test clearing a game flag."""
+        world_state = WorldState()
+        world_state.set_flag("met_king", True)
+        assert world_state.get_flag("met_king") is True
+
+        world_state.clear_flag("met_king")
+        assert world_state.get_flag("met_king") is False
+
+    def test_get_flag_default(self):
+        """Test getting a flag that doesn't exist returns default."""
+        world_state = WorldState()
+
+        assert world_state.get_flag("nonexistent_flag") is False
+        assert world_state.get_flag("nonexistent_flag", default=True) is True
+
+    def test_set_multiple_flags(self):
+        """Test setting multiple flags."""
+        world_state = WorldState()
+        world_state.set_flag("met_king")
+        world_state.set_flag("saved_village")
+        world_state.set_flag("found_secret_passage")
+
+        assert world_state.get_flag("met_king") is True
+        assert world_state.get_flag("saved_village") is True
+        assert world_state.get_flag("found_secret_passage") is True
+        assert len(world_state.story_flags) == 3
+
+    def test_set_flag_false(self):
+        """Test setting a flag to False explicitly."""
+        world_state = WorldState()
+        world_state.set_flag("met_king", False)
+
+        assert world_state.get_flag("met_king") is False
+        # The flag is still tracked even when False
+        assert "met_king" in world_state.story_flags
+
+    def test_update_existing_flag(self):
+        """Test updating an existing flag."""
+        world_state = WorldState()
+        world_state.set_flag("met_king", True)
+        world_state.set_flag("met_king", False)
+
+        assert world_state.get_flag("met_king") is False
+
+    def test_flag_serialization(self):
+        """Test flag serialization round-trip."""
+        world_state = WorldState()
+        world_state.set_flag("met_king")
+        world_state.set_flag("saved_village")
+        world_state.set_flag("village_destroyed", False)
+
+        data = world_state.to_dict()
+        assert "story_flags" in data
+        assert data["story_flags"]["met_king"] is True
+        assert data["story_flags"]["saved_village"] is True
+        assert data["story_flags"]["village_destroyed"] is False
+
+        world_state2 = WorldState.from_dict(data)
+        assert world_state2.get_flag("met_king") is True
+        assert world_state2.get_flag("saved_village") is True
+        assert world_state2.get_flag("village_destroyed") is False
+
+    def test_flag_serialization_filters_non_booleans(self):
+        """Test that from_dict filters out non-boolean flag values."""
+        world_state = WorldState()
+        # Manually corrupt data
+        world_state.story_flags["valid_flag"] = True
+        world_state.story_flags["invalid_flag"] = "not_a_boolean"
+        world_state.story_flags["another_invalid"] = 42
+
+        data = world_state.to_dict()
+
+        # from_dict should only load valid booleans
+        world_state2 = WorldState.from_dict(data)
+        assert world_state2.get_flag("valid_flag") is True
+        assert world_state2.get_flag("invalid_flag") is False  # Filtered out
+        assert world_state2.get_flag("another_invalid") is False  # Filtered out
+
+    def test_get_flag_summary_for_context_empty(self):
+        """Test flag summary when no flags are set."""
+        world_state = WorldState()
+        summary = world_state.get_flag_summary_for_context()
+        assert "no story flags set yet" in summary.lower()
+
+    def test_get_flag_summary_for_context_with_flags(self):
+        """Test flag summary when flags are set."""
+        world_state = WorldState()
+        world_state.set_flag("met_king")
+        world_state.set_flag("saved_village")
+        world_state.set_flag("village_destroyed", False)
+
+        summary = world_state.get_flag_summary_for_context()
+        assert "Story Flags (set):" in summary
+        assert "met_king" in summary
+        assert "saved_village" in summary
+        # False flags should not appear in the summary
+        assert "village_destroyed" not in summary
+
+    def test_world_state_includes_flags(self):
+        """Test WorldState includes flags in to_dict."""
+        world_state = WorldState()
+        world_state.set_flag("met_king")
+        world_state.update_npc_relationship("Gandalf", 30, "Helped")
+
+        data = world_state.to_dict()
+        assert "story_flags" in data
+        assert data["story_flags"]["met_king"] is True
+        assert "npc_relationships" in data
+
+    def test_merge_flags_into_game_state(self):
+        """Test merging flags into game_state."""
+        world_state = WorldState()
+        world_state.set_flag("met_king")
+
+        game_state = {"location": "Castle"}
+        result = merge_world_state_into_game_state(game_state, world_state)
+
+        assert result["location"] == "Castle"
+        assert "world_state" in result
+        assert result["world_state"]["story_flags"]["met_king"] is True
+
+    def test_extract_flags_from_game_state(self):
+        """Test extracting flags from game_state."""
+        game_state = {
+            "location": "Castle",
+            "world_state": {
+                "npc_relationships": {},
+                "faction_reputation": {},
+                "story_flags": {
+                    "met_king": True,
+                    "saved_village": False,
+                },
+            },
+        }
+
+        world_state = extract_world_state_from_game_state(game_state)
+        assert world_state.get_flag("met_king") is True
+        assert world_state.get_flag("saved_village") is False
+
+    def test_extract_flags_empty_game_state(self):
+        """Test extracting flags when world_state is empty."""
+        game_state = {"location": "Castle"}
+        world_state = extract_world_state_from_game_state(game_state)
+
+        assert isinstance(world_state, WorldState)
+        assert len(world_state.story_flags) == 0
+
+    def test_round_trip_flags_through_game_state(self):
+        """Test flags survive round-trip through game_state."""
+        original = WorldState()
+        original.set_flag("met_king")
+        original.set_flag("saved_village")
+        original.update_npc_relationship("Gandalf", 30, "Helped")
+
+        game_state = {"location": "Shire"}
+        game_state = merge_world_state_into_game_state(game_state, original)
+        extracted = extract_world_state_from_game_state(game_state)
+
+        assert extracted.get_flag("met_king") is True
+        assert extracted.get_flag("saved_village") is True
+        assert extracted.npc_relationships["Gandalf"].trust == 30
