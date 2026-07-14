@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅
-## TEST SUITE FULLY GREEN (2562 backend + 122 frontend passing, 10 pre-existing failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅
+## TEST SUITE FULLY GREEN (2572 backend + 122 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅
 
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
@@ -149,6 +149,28 @@ Suggested next-run candidates:
    renders below the DM narration (43 tests).
 
 ## Completed This Run
+- [x] **Fix cross-file test isolation leak — full backend suite now green**
+  - `test_afflictions_api.py` set `app.dependency_overrides[get_db]` at **module
+    import time** (a global side effect). This caused two coupled failures that
+    only surfaced in the *full* suite (not when files ran alone):
+    1. **Leak to later files** — the override persisted after the file finished,
+       so `test_quests_api.py` (which uses the production `SessionLocal` + its
+       own `client` fixture with no override) had its API calls routed at the
+       afflictions in-memory engine — whose tables were `drop_all`-ed after the
+       last afflictions test → `sqlite3.OperationalError: no such table:
+       game_saves` (2 errors).
+    2. **Vulnerability to the shared conftest** — other files use the conftest
+       `client` fixture, which calls `app.dependency_overrides.clear()` at
+       teardown. That wiped the module-level override, breaking afflictions'
+       own 10 tests in the full suite.
+  - **Fix**: scope the override to the per-test autouse `setup_database` fixture
+    (set on setup, `pop`-ed on teardown) and remove the module-level assignment.
+    No module-level leak; no longer vulnerable to the conftest `clear()`.
+  - **Result**: full backend suite now fully green — **2572 passed, 0 failed,
+    0 errors** (was 2562 passed + 10 failed + 2 errors, all described as
+    "pre-existing flakiness"). Verified stable across multiple orderings.
+  - Verified: 1 file changed (+10/-3); no production code touched.
+
 - [x] **Skill-check resolution UI (frontend) — DSPy pattern #5 frontend half**
   - The backend already returned `skill_check_resolution` from the
     non-streaming and streaming `/action` endpoints (the structured
