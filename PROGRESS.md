@@ -139,11 +139,56 @@ Suggested next-run candidates:
    span several runs.
 2. **Content/registry expansion** — more spells/enemies/magic items, or
    add more curated starter adventures (3 currently shipped).
-3. **Frontend UI for skill check resolution** — display the structured
+3. ~~**Frontend UI for skill check resolution** — display the structured
    resolution data (success, degree, XP gained, items, stat changes) in the
-   GameView after each action.
+   GameView after each action.~~ **DONE** — inline `SkillCheckResolutionCard`
+   renders below the DM narration (43 tests).
 
 ## Completed This Run
+- [x] **Skill-check resolution UI (frontend) — DSPy pattern #5 frontend half**
+  - The backend already returned `skill_check_resolution` from the
+    non-streaming and streaming `/action` endpoints (the structured
+    mechanical outcome the DM computes for freeform player actions:
+    degree, XP, stat changes, items gained, narrative notes). This run
+    adds the **frontend half** that actually surfaces it to the player —
+    the last piece needed for the feature to be usable end-to-end.
+  - **`frontend/src/utils/skillCheckResolution.ts`** (new, pure functions):
+    degree metadata (label/icon/Tailwind colour per degree), `normalizeDegree`,
+    `getDegreeMeta`, `degreeLabel`, stat-change formatting (`formatStatChange` /
+    `formatStatChanges` with friendly stat labels), `hasResolution()` display
+    gate (empty `{}` and bare failures render nothing; positive degrees +
+    any XP/items/notes/stats always surface), and `summarizeResolution()`
+    one-line summary for aria-labels.
+  - **`frontend/src/utils/__tests__/skillCheckResolution.test.ts`** (33 tests):
+    degree normalisation (canonical, spaces/hyphens, unknown→failure),
+    metadata lookup (known + garbage→"Resolved"), stat labels (known +
+    title-case fallback), stat-change formatting (sign/zero/non-number),
+    `hasResolution` display gate (empty/bare-failure→false, success/XP/items/
+    stats/notes→true), `summarizeResolution` (label + XP + item count,
+    singular/plural, empty→'').
+  - **`frontend/src/components/SkillCheckResolutionCard.tsx`** (new): a
+    dismissible inline game-event card rendered below the latest DM
+    narration. Shows a colour-coded degree badge (🌟 great success / ✅
+    success / ⚡ partial / ❌ failure / 💀 critical), italic narrative notes,
+    and mechanical-outcome chips (✨ XP, stat changes with positive=green /
+    negative=red colouring, 🎁 items gained). Uses the pure utils for all
+    formatting; purely presentational.
+  - **`frontend/src/components/__tests__/SkillCheckResolutionCard.test.tsx`**
+    (10 tests): empty/null renders nothing, degree badges, notes display,
+    XP chip, items list, stat-change colouring, dismiss callback, no-callback
+    mode, critical failure.
+  - **`frontend/src/types/index.ts`**: `SkillCheckResolution` interface +
+    `skill_check_resolution?` field on `DMResponse`.
+  - **`frontend/src/stores/api.ts`**: `skill_check_resolution?` on
+    `StreamEvent`; `streamPlayerAction` `onDone` callback now forwards the
+    resolution payload (third argument).
+  - **`frontend/src/views/GameView.tsx`**: `skillCheckResolution` state;
+    `handleAction` captures the resolution from the streaming `done` event and
+    clears it on the next action; renders `SkillCheckResolutionCard` inline
+    after the DM narration with a dismiss handler.
+  - **Verified**: `tsc --noEmit` clean; `vite build` clean (main bundle
+    299 KB); **122 frontend tests passing** (was 79, +43). Backend untouched.
+
 - [x] **Structured skill-check resolution — DSPy pattern #5 (MEDIUM value)**
   - Implements the DSPy tutorial's structured action resolution pattern:
     the DM's narration is complemented by structured mechanical outcomes for
