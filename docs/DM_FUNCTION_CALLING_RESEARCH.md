@@ -815,6 +815,290 @@ Dispatches a `GameEvent` to the right component:
 
 ---
 
+## Phase 2 Implementation Plan — Combat Resolution via DM Function Calls
+
+> **Status:** STAGED — awaiting Mike's green-light. This section is a concrete,
+> file-level implementation plan for Phase 2, modelled on the Phase 1 plan above.
+> The dev agent cron job should execute it when this phase is green-lit in a
+> future directive.
+
+### Goal
+
+Extend the DM function-calling system so the DM can emit **combat**
+`game_actions` (`attack`, `damage`, `roll_initiative`) that the backend
+resolves via the real `Encounter` engine (`backend/app/engine/combat.py`).
+Combat outcomes — hit/miss, critical, damage amount, remaining HP — flow as
+typed `GameEvent` objects to the frontend and render as inline combat cards,
+mirroring the Phase 1 dice/check card UX.
+
+### Why Phase 2 Is Harder Than Phase 1
+
+Phase 1 (dice rolling) was **stateless** — each `roll_dice` call produces an
+independent `GameEvent` with no side effects. Combat is **stateful**:
+
+| Aspect | Phase 1 (dice) | Phase 2 (combat) |
+|--------|----------------|------------------|
+| State | None (pure roll) | `Encounter` in `game_state["combat"]` |
+| Side effects | None | HP changes, conditions, death, XP |
+| Persistence | N/A | Encounter must be re-serialized & saved |
+| Chaining | Independent events | Attack → damage → HP → death cascade |
+| DM context | Just the roll label | Must know combatants, HP, turn order |
+
+The core architectural change: `_resolve_game_actions()` must **load the
+Encounter from game state, resolve combat actions against it, persist the
+mutated encounter back**, and emit GameEvents with the results.
+
+### Architecture: Stateful Resolution
+
+```
+DM narration (DMActionableNarration)
+    │
+    │  game_actions: [{function: "attack", ...}, {function: "damage", ...}]
+    ▼
+_resolve_game_actions(game_actions, game_state)
+    │
+    │  1. Separate stateless (roll_dice, request_check) from stateful (attack, damage) actions
+    │  2. If stateful actions exist, load Encounter.from_dict(game_state["combat"])
+    │  3. Resolve each combat action via the Encounter engine
+    │  4. Serialize the mutated encounter back into game_state["combat"]
+    │  5. Return (events, updated_game_state)
+    ▼
+GameEvents flow as SSE → frontend renders AttackCard / DamageCard
+```
+
+**Signature change:** `_resolve_game_actions(game_actions, game_state) -> tuple[list[GameEvent], dict]`
+
+### New GameEvent Types (`game_events.py`)
+
+```python
+class GameEventType(str, Enum):
+    # Phase 1
+    DICE_ROLL = "dice_roll"
+    CHECK_PROMPT = "check_prompt"
+    # Phase 2
+    ATTACK = "attack"          # a single attack roll + damage
+    DAMAGE = "damage"          # standalone damage (trap, spell AoE, falling)
+    INITIATIVE = "initiative"  # initiative roll results
+```
+
+New factory classmethods on `GameEvent`:
+
+```python
+@classmethod
+def attack(cls, label, attacker, target, attack_total, ac, hit, critical,
+           critical_miss, damage, damage_type, target_remaining_hp, target_max_hp):
+    """Create an ``attack`` event with full to-hit + damage resolution."""
+
+@classmethod
+def damage(cls, label, target, amount, damage_type, target_remaining_hp, target_max_hp):
+    """Create a ``damage`` event (standalone damage application)."""
+
+@classmethod
+def initiative(cls, combatants):
+    """Create an ``initiative`` event — combatants is [{name, initiative, side}, ...] in turn order."""
+```
+
+### New DM-Callable Functions (`dm_functions.py`)
+
+These take the live `Encounter` object (loaded by the resolver) so they can
+call engine methods directly. Each returns a `GameEvent` (or list for
+initiative).
+
+```python
+def dm_attack(encounter: Encounter, attacker_id: str, target_id: str,
+              attack_index: int = 0, advantage: bool = False,
+              disadvantage: bool = False) -> GameEvent:
+    """Resolve an attack via encounter.resolve_attack().
+    Looks up Combatant objects by id, selects the Attack by index,
+    and returns an ``attack`` GameEvent with full resolution."""
+
+def dm_apply_damage(encounter: Encounter, target_id: str, amount: int,
+                    damage_type: str = "slashing") -> GameEvent:
+    """Apply direct damage to a combatant (no to-hit roll).
+    Handles death at 0 HP. Returns a ``damage`` GameEvent."""
+
+def dm_roll_initiative(encounter: Encounter) -> GameEvent:
+    """Roll initiative for all combatants via encounter.roll_initiative().
+    Returns an ``initiative`` GameEvent with the full turn order."""
+```
+
+### DSPy Signature Changes (`dspy_signatures.py`)
+
+**Approach: Expand `DMActionableNarration.game_actions`** (recommended)
+
+Add new function types to the existing signature's docstring guidance:
+
+```
+- attack: {"function": "attack", "label": "Goblin strikes with scimitar",
+           "args": {"attacker_id": "goblin_1", "target_id": "player",
+                    "attack_index": 0}}
+- damage: {"function": "damage", "label": "Fireball engulfs the goblins",
+           "args": {"target_id": "goblin_1", "amount": 28, "damage_type": "fire"}}
+```
+
+The combatant IDs (`goblin_1`, `player`, etc.) must be provided to the DM in
+the situation prompt (from `game_state["combat"]`). The DM references these
+IDs in game_actions so the backend knows who attacks whom.
+
+**Considered & deferred:** A separate `DMCombatNarration` signature with
+richer combat outputs (tactical positioning, multi-attack, legendary
+actions). Not justified for the initial combat bridge — the expanded
+`DMActionableNarration` is sufficient. Revisit in Phase 2.5 if the combat
+guidance grows complex.
+
+### Resolution Pipeline Changes (`api/game.py`)
+
+1. **`_resolve_game_actions()` upgrade** — accept `game_state`, load encounter,
+   resolve combat actions, persist:
+   ```python
+   def _resolve_game_actions(
+       game_actions: list[dict],
+       game_state: dict[str, Any],
+   ) -> tuple[list[GameEvent], dict[str, Any]]:
+       events: list[GameEvent] = []
+       has_combat = any(
+           a.get("function") in ("attack", "damage", "roll_initiative")
+           for a in game_actions if isinstance(a, dict)
+       )
+       encounter = None
+       if has_combat and game_state.get("combat"):
+           try:
+               encounter = Encounter.from_dict(game_state["combat"])
+           except Exception as e:
+               logger.error(f"Failed to load encounter: {e}")
+       for action in game_actions or []:
+           # Phase 1 actions (stateless) — unchanged
+           # Phase 2 actions (stateful) — pass encounter
+           ...
+       # Persist encounter back if it was loaded
+       if encounter is not None:
+           game_state["combat"] = encounter.to_dict()
+       return events, game_state
+   ```
+
+2. **Call sites** — both `/action` and `/action/stream` pass `game_state`
+   and use the returned updated state for persistence.
+
+3. **Situation prompt** — include combatant roster (id, name, side, HP, AC)
+   in the DM situation context so the DM can reference IDs in game_actions.
+
+4. **Error handling** — missing/malformed encounter → skip combat actions,
+   log warning, never crash (same defensive pattern as Phase 1).
+
+### Frontend Components
+
+#### `AttackCard.tsx` (NEW)
+
+```
+┌────────────────────────────────────────┐
+│  ⚔️ Goblin → Player                    │
+│  [d20] 14 + 4 = 18 vs AC 16 → ✅ Hit  │
+│  Damage: 7 slashing                    │
+│  Player HP: ████████░░ 9/12            │
+└────────────────────────────────────────┘
+```
+- Color-coded: green hit, red miss, gold crit, dark-red crit-miss
+- Damage type icon/label
+- Target HP bar (current/max)
+- Dismissible
+
+#### `DamageCard.tsx` (NEW)
+
+```
+┌────────────────────────────────────────┐
+│  💥 Fireball hits Goblin               │
+│  28 fire damage                        │
+│  Goblin HP: ██░░░░░░░░ 4/30            │
+└────────────────────────────────────────┘
+```
+
+#### `InitiativeCard.tsx` (NEW)
+
+```
+┌────────────────────────────────────────┐
+│  🎯 Initiative Order                   │
+│  1. Player (18)  2. Goblin (12)        │
+└────────────────────────────────────────┘
+```
+
+#### Updates
+
+- `GameEventRenderer.tsx` — dispatch `attack`, `damage`, `initiative` types
+- `gameEvents.ts` — add formatting helpers (`damageTypeColor`, `hpBarData`,
+  `attackSummary`, `damageSummary`)
+- `types/index.ts` — extend `GameEventData` with combat fields
+  (`attacker`, `target`, `attack_total`, `ac`, `hit`, `critical`, `damage`,
+  `damage_type`, `target_remaining_hp`, `target_max_hp`, `combatants`)
+
+### File-Level Implementation Plan
+
+| Step | File | Action | Details |
+|------|------|--------|---------|
+| 1 | `backend/app/engine/game_events.py` | MODIFY | Add `ATTACK`, `DAMAGE`, `INITIATIVE` to `GameEventType` + factory classmethods |
+| 2 | `backend/app/engine/dm_functions.py` | MODIFY | Add `dm_attack()`, `dm_apply_damage()`, `dm_roll_initiative()` — wrap `Encounter` engine |
+| 3 | `backend/app/llm/dspy_signatures.py` | MODIFY | Expand `DMActionableNarration` docstring with combat action guidance + combatant ID convention |
+| 4 | `backend/app/api/game.py` | MODIFY | Upgrade `_resolve_game_actions(game_actions, game_state)` → stateful; add combatant roster to situation prompt; update both `/action` and `/action/stream` call sites |
+| 5 | `frontend/src/types/index.ts` | MODIFY | Add combat fields to `GameEventData`; add `'attack' \| 'damage' \| 'initiative'` to `GameEventType` |
+| 6 | `frontend/src/utils/gameEvents.ts` | MODIFY | Add `damageTypeColor()`, `hpBarData()`, `attackSummary()`, `damageSummary()` |
+| 7 | `frontend/src/components/AttackCard.tsx` | NEW | Inline attack result card with HP bar |
+| 8 | `frontend/src/components/DamageCard.tsx` | NEW | Inline damage card with HP bar |
+| 9 | `frontend/src/components/InitiativeCard.tsx` | NEW | Initiative order list |
+| 10 | `frontend/src/components/GameEventRenderer.tsx` | MODIFY | Dispatch new event types |
+| 11 | Tests | NEW | Backend: `test_dm_combat_functions.py`, `test_combat_events_api.py`; Frontend: `AttackCard.test.tsx`, `DamageCard.test.tsx`, `gameEvents.test.ts` additions |
+
+### Test Plan
+
+| Layer | File | Tests |
+|-------|------|-------|
+| Engine | `test_dm_functions.py` (extend) | `dm_attack` hit, miss, crit, crit-miss; `dm_apply_damage` kills target; `dm_roll_initiative` returns order; unknown combatant IDs handled |
+| Engine | `test_game_events.py` (extend) | `attack` factory serialization round-trip; `damage` factory; `initiative` factory; all new types in enum |
+| API | `test_combat_events_api.py` (NEW) | `/action` with combat game_actions emits attack events; encounter persisted with updated HP; streaming emits `game_event` SSE for attacks; missing encounter → graceful skip; DMResponse includes combat events |
+| Frontend utils | `gameEvents.test.ts` (extend) | `damageTypeColor` (fire/poison/cold/etc.); `hpBarData` (full/half/dead); `attackSummary`; `damageSummary` |
+| Frontend components | `AttackCard.test.tsx` (NEW) | hit, miss, crit, crit-miss, HP bar render, dismiss |
+| Frontend components | `DamageCard.test.tsx` (NEW) | damage display, HP bar, death indicator, dismiss |
+| **Total** | | **~30 new tests** |
+
+### Verification Checklist (for dev agent)
+- [ ] `uv run pytest` — all existing tests pass + new combat tests green
+- [ ] `cd frontend && npx tsc --noEmit` — no type errors
+- [ ] `cd frontend && npm run build` — clean build
+- [ ] `cd frontend && npm test` — all frontend tests pass
+- [ ] `PROGRESS.md` updated with completed work
+- [ ] Commit with `feat: DM function calling Phase 2 — combat resolution`
+- [ ] `git push origin develop`
+
+### Key Design Decisions (for Phase 2)
+1. **Stateful resolution** — `_resolve_game_actions` now takes and returns `game_state`; combat actions mutate the live Encounter
+2. **Encounter lives in `game_state["combat"]`** — no new persistence model; reuses existing serialization
+3. **Combatant IDs in DM context** — the situation prompt includes a roster so the DM can reference combatants by stable ID
+4. **Combat actions resolved in order** — state changes propagate between chained actions (attack damage applies before the next action)
+5. **HP always visible** — every attack/damage event includes `target_remaining_hp` + `target_max_hp` for the HP bar
+6. **DM describes intent, engine resolves** — the DM never fabricates attack rolls or damage; the `Encounter.resolve_attack()` does all rolling
+7. **Consistent inline UX** — combat cards follow the same dismissible-inline pattern as Phase 1 dice/check cards
+8. **Graceful degradation** — missing encounter → skip combat actions, log warning, still return Phase 1 events
+
+### What Phase 2 Does NOT Include (deferred)
+- Spell casting via DM function calls (Phase 3)
+- Inventory operations via DM function calls (Phase 4)
+- Condition application via DM function calls (Phase 5)
+- Multi-attack / Extra Attack sequencing (Phase 2.5 — requires action economy tracking)
+- Legendary actions / lair actions DM function calls (Phase 2.5)
+- Tactical grid / positioning (not planned — narrative combat only)
+- DM re-narration with resolved results (Phase 1 stretch, still optional)
+
+### Sub-phase Breakdown (optional, for phased rollout)
+
+If Phase 2 is too large for a single run, it can be split:
+
+- **Phase 2a (core):** `dm_attack` + `AttackCard` — the single most valuable
+  combat bridge. Get attacks flowing through the engine with HP tracking.
+  (~15 tests)
+- **Phase 2b (extensions):** `dm_apply_damage` + `dm_roll_initiative` +
+  `DamageCard` + `InitiativeCard`. Adds standalone damage and initiative
+  visualization. (~15 tests)
+
+---
+
 ## Related Documents
 - `docs/DSPY_TEXT_GAME_REFERENCE.md` — DSPy text game tutorial analysis;
   `ActionResolver` signature (structured skill-check resolution) is directly
@@ -837,3 +1121,13 @@ Dispatches a `GameEvent` to the right component:
   resolves via real dice engine; GameEvent objects flow as SSE events to
   frontend and render as inline DiceRollCard / CheckPromptCard components.
   Added conftest autouse fixture for LLM call isolation in tests.
+- 2025-07-14: **Phase 2 STAGED** — added concrete, file-level implementation
+  plan for combat resolution via DM function calls. Key insight: combat is
+  stateful (unlike Phase 1's stateless dice rolls), so `_resolve_game_actions`
+  must load/mutate/persist the `Encounter` from `game_state["combat"]`. Plan
+  covers new GameEvent types (`ATTACK`, `DAMAGE`, `INITIATIVE`), DM-callable
+  combat functions wrapping `Encounter.resolve_attack()`, DSPy signature
+  expansion for combat game_actions, stateful resolution pipeline, and 3 new
+  frontend cards (AttackCard, DamageCard, InitiativeCard). ~30 new tests.
+  Includes optional sub-phase breakdown (2a: attacks, 2b: damage+initiative).
+  Awaiting Mike's green-light.

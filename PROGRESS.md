@@ -139,6 +139,27 @@ are worth adopting for future enhancement:
 - Dynamic difficulty heuristic (our 5e CR/DC/proficiency system is superior)
 - Story progress counter (our campaign_arc + act tracking is richer)
 
+## DM Function Calling — Phase 2 (Combat) STAGED for Implementation
+
+**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 2 Implementation Plan"
+
+Phase 2 is **staged and ready for Mike's green-light**. The plan covers
+combat resolution via DM function calls — the DM emits `attack` / `damage` /
+`roll_initiative` game_actions that the backend resolves via the real
+`Encounter` engine, with results flowing as typed GameEvents to inline
+combat cards (AttackCard, DamageCard, InitiativeCard).
+
+Key architectural insight: unlike Phase 1's **stateless** dice rolls, combat
+is **stateful** — `_resolve_game_actions()` must load the `Encounter` from
+`game_state["combat"]`, mutate it, and persist it back. The plan includes a
+concrete file-level breakdown (11 steps), ~30 new tests, and an optional
+sub-phase split (2a: attacks, 2b: damage+initiative).
+
+To implement: update the cron directive's "Current Priority" to Phase 2 and
+the dev agent will execute the plan step by step.
+
+---
+
 ## Next Priority: AGENTS.md build priorities #1–#12, #14, #15 all COMPLETE ✅
 Every shipped build priority is done. The single remaining item in
 `AGENTS.md` is **#13 — Multiplayer (party-based)**, currently marked
