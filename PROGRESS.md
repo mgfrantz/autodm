@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅
-## TEST SUITE FULLY GREEN (2504 backend + 76 frontend passing, 10 pre-existing failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅
+## TEST SUITE FULLY GREEN (2504 backend + 76 frontend passing, 10 pre-existing failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (88 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅
 
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
@@ -129,23 +129,60 @@ Suggested next-run candidates (pick one):
 
 **All HIGH-value DSPy tutorial patterns are now complete (#1 and #2).**
 
+**MEDIUM-value patterns: #3 (game flags) DONE, #4 (action suggestions) DONE.**
+
 Suggested next-run candidates:
 1. **Multiplayer foundation (#13)** — party/session model + WebSocket
    fan-out so multiple browser clients share one DM. Largest scope; would
    span several runs.
-2. **DSPy pattern #4 — Scene-aware action suggestions (MEDIUM)**
-   — AI generates contextually appropriate `available_actions` per scene.
-   Render as clickable suggestion chips alongside the free-text input for
-   better UX. Backend signature + frontend suggestion chips.
-3. **DSPy pattern #5 — Structured skill-check resolution (MEDIUM)**
+2. **DSPy pattern #5 — Structured skill-check resolution (MEDIUM)**
    — `ActionResolver` returns structured fields (success, stat_changes,
    items_gained, XP). A separate `SkillCheckResolver` for freeform
    exploration/social actions that don't map to a standard 5e mechanic.
-4. **Content/registry expansion** — more spells/enemies/magic items, or
+3. **Content/registry expansion** — more spells/enemies/magic items, or
    add more curated starter adventures (3 currently shipped).
 
 ## Completed This Run
-- [x] **Game flags for branching narrative state — DSPy pattern #3 (MEDIUM value)**
+- [x] **Scene-aware action suggestions — DSPy pattern #4 (MEDIUM value)**
+  - Implements the DSPy tutorial's action suggestions pattern: the DM's
+    narration is automatically analyzed to generate 4-6 contextually appropriate
+    action suggestions that the player can take next. Suggestions are brief
+    (3-8 words), verb-first, and specific to the current scene (location, NPCs
+    present, situation). They cover different approaches (social, combat,
+    exploration, investigation) and avoid repeating explicit choices already
+    in the narration.
+  - **`backend/app/llm/dspy_signatures.py`**: `GenerateActionSuggestions`
+    signature — analyzes narration to generate scene-specific action
+    suggestions with clear guidance on quality (specific, varied approaches,
+    avoid trivial actions like "wait").
+  - **`backend/app/llm/dspy_modules.py`**: `ActionSuggestionsModule`
+    (ChainOfThought wrapper) with singleton pattern and graceful failure
+    (returns empty list on exception). `get_action_suggestions_module()` accessor.
+  - **`backend/app/api/game.py`**: `_generate_action_suggestions()` helper
+    runs the DSPy module on narration and returns a cleaned list of suggestions
+    (strips whitespace, filters empty/None). Integrated into all four narration
+    endpoints (`/start`, `/action`, `/start/stream`, `/action/stream`) — called
+    after game flags detection.
+  - **`backend/app/api/game.py`**: Updated `DMResponse` model to include
+    `action_suggestions: list[str]`. Both non-streaming and streaming endpoints
+    return suggestions (streaming includes them in the `done` event payload).
+  - **`frontend/src/types/index.ts`**: Added `action_suggestions: string[]` to
+    `DMResponse` interface.
+  - **`frontend/src/stores/api.ts`**: Updated `StreamEvent` type to include
+    `action_suggestions?: string[]`. Updated `streamStartAdventure` and
+    `streamPlayerAction` to pass suggestions to `onDone` callbacks.
+  - **`frontend/src/views/GameView.tsx`**: Added `actionSuggestions` state,
+    renders AI-generated suggestions as clickable chips (with ✨ prefix) in
+    the action input area. Chips auto-fill the input field and are cleared
+    when used. Falls back to static "Look around / Check inventory / Check my
+    stats" chips when no AI suggestions are available. Limits display to 6
+    chips max.
+  - **Tests** (`test_action_suggestions.py`, +10): module initialization,
+    successful generation, returns raw results, handles exceptions gracefully,
+    helper integration, exception handling, whitespace stripping, signature
+    docstring, singleton pattern. Frontend tests (`api.actionSuggestions.test.ts`,
+    +3): StreamEvent type with action_suggestions. Verified: **2514 backend
+    tests passing** (+10), **79 frontend tests passing** (+3).
   - Implements the DSPy tutorial's game flags pattern: the DM's narration
     is automatically analyzed for flags to set/clear, enabling dynamic
     story branching without manual state management. Flags are simple
