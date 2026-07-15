@@ -77,7 +77,7 @@ def _mock_speech_result(text="The dragon roars.") -> SpeechResult:
     )
 
 
-def _mock_client(configured=True):
+def _mock_client(configured=True, cache_audio=True):
     """A mock TTS client that returns canned results without API calls."""
     client = MagicMock()
     client.is_configured = configured
@@ -88,6 +88,7 @@ def _mock_client(configured=True):
         voice="alloy",
         response_format="mp3",
         speed=1.0,
+        cache_audio=cache_audio,
     )
     client.synthesize = AsyncMock(return_value=_mock_speech_result())
     return client
@@ -109,10 +110,20 @@ class TestTTSConfig:
     def test_defaults(self):
         with patch.dict("os.environ", {}, clear=False):
             cfg = load_config()
-            assert cfg.provider == "openai"
-            assert cfg.model == "tts-1"
-            assert cfg.voice == "alloy"
-            assert cfg.response_format == "mp3"
+            # Default is platform-aware: mlx on Apple Silicon, openai elsewhere
+            import platform
+            expected_provider = "mlx" if platform.system() == "Darwin" and platform.machine() == "arm64" else "openai"
+            assert cfg.provider == expected_provider
+            if expected_provider == "mlx":
+                assert cfg.model == "kokoro-82m"
+                assert cfg.voice == "af_heart"
+                assert cfg.response_format == "wav"
+                assert cfg.cache_audio is False  # No caching by default for MLX
+            else:
+                assert cfg.model == "tts-1"
+                assert cfg.voice == "alloy"
+                assert cfg.response_format == "mp3"
+                assert cfg.cache_audio is True  # Caching enabled by default for OpenAI
             assert cfg.speed == 1.0
 
     def test_env_override(self):
@@ -435,7 +446,7 @@ class TestTTSAPI:
         assert "provider down" in r.json()["detail"]
 
     def test_narrate_success_caches(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         with patch("app.api.tts.get_tts_client", return_value=mock):
             r = client.post(f"/api/game/{game.id}/tts/narrate", json={})
         assert r.status_code == 200
@@ -482,7 +493,7 @@ class TestTTSAPI:
         assert r.status_code == 503
 
     def test_get_audio_bytes(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         with patch("app.api.tts.get_tts_client", return_value=mock):
             narrate = client.post(f"/api/game/{game.id}/tts/narrate", json={}).json()
             audio_id = narrate["audio"]["id"]
@@ -505,7 +516,7 @@ class TestTTSAPI:
         assert body["audio"] == []
 
     def test_list_audio_after_narration(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         with patch("app.api.tts.get_tts_client", return_value=mock):
             client.post(f"/api/game/{game.id}/tts/narrate", json={})
             client.post(f"/api/game/{game.id}/tts/narrate", json={})
@@ -518,7 +529,7 @@ class TestTTSAPI:
             assert "audio_b64" not in entry
 
     def test_delete_audio(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         with patch("app.api.tts.get_tts_client", return_value=mock):
             narrate = client.post(f"/api/game/{game.id}/tts/narrate", json={}).json()
             audio_id = narrate["audio"]["id"]
@@ -533,7 +544,7 @@ class TestTTSAPI:
         assert r.status_code == 404
 
     def test_audio_survives_in_game_state(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         with patch("app.api.tts.get_tts_client", return_value=mock):
             client.post(f"/api/game/{game.id}/tts/narrate", json={})
             listing = client.get(f"/api/game/{game.id}/tts").json()
@@ -544,7 +555,7 @@ class TestTTSAPI:
         assert "timestamp" in entry
 
     def test_stream_narrate_sse_chunks(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=False)
         # Configure synthesize_chunks to yield multiple results
         async def mock_chunks(chunks, **kwargs):
             for idx, chunk in enumerate(chunks):
@@ -576,7 +587,7 @@ class TestTTSAPI:
         assert r.status_code == 503
 
     def test_stream_narrate_caches_full_audio(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         async def mock_chunks(chunks, **kwargs):
             for idx, chunk in enumerate(chunks):
                 yield idx, _mock_speech_result(chunk)
@@ -637,11 +648,15 @@ class TestResolveVoiceForNpc:
 
     def test_unmapped_npc_falls_back_to_default(self):
         from app.api.tts import resolve_voice_for_npc
-        assert resolve_voice_for_npc({}, "Stranger", None) == "alloy"
+        import platform
+        expected_default = "af_heart" if platform.system() == "Darwin" and platform.machine() == "arm64" else "alloy"
+        assert resolve_voice_for_npc({}, "Stranger", None) == expected_default
 
     def test_no_npc_no_explicit_uses_default(self):
         from app.api.tts import resolve_voice_for_npc
-        assert resolve_voice_for_npc({}, None, None) == "alloy"
+        import platform
+        expected_default = "af_heart" if platform.system() == "Darwin" and platform.machine() == "arm64" else "alloy"
+        assert resolve_voice_for_npc({}, None, None) == expected_default
 
 
 class TestNPCVoiceAPI:
@@ -651,6 +666,7 @@ class TestNPCVoiceAPI:
             r = client.get(f"/api/game/{game.id}/tts/voices")
         assert r.status_code == 200
         body = r.json()
+        # The mock client's config has provider="openai", voice="alloy"
         assert body["default"] == "alloy"
         assert body["configured"] is True
         assert len(body["voices"]) >= 6
@@ -749,7 +765,7 @@ class TestNPCVoiceAPI:
         assert r.status_code == 404
 
     def test_narrate_uses_npc_mapped_voice(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         with patch("app.api.tts.get_tts_client", return_value=mock):
             client.post(
                 f"/api/game/{game.id}/tts/npc-voices",
@@ -769,7 +785,7 @@ class TestNPCVoiceAPI:
         assert voice_arg == "onyx"
 
     def test_narrate_explicit_voice_beats_npc(self, client, game):
-        mock = _mock_client(configured=True)
+        mock = _mock_client(configured=True, cache_audio=True)
         with patch("app.api.tts.get_tts_client", return_value=mock):
             client.post(
                 f"/api/game/{game.id}/tts/npc-voices",

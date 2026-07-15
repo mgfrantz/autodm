@@ -573,8 +573,8 @@ export default function VoicePanel({ gameId, onNarration, onChanged }: VoicePane
         </div>
       )}
 
-      {/* Cached narrations */}
-      {configured && (
+      {/* Cached narrations — hidden when caching is disabled */}
+      {configured && status?.cache_audio !== false && (
         <div>
           <h3 className="font-fantasy text-lg text-parchment-200 mb-2">
             🎵 Cached Narrations ({list?.count ?? 0})

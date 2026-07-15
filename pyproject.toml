@@ -11,6 +11,8 @@ dependencies = [
     "pydantic>=2.6.0",
     "python-dotenv>=1.0.0",
     "dspy>=3.2.1",
+    "mlx-audio>=0.1.0; sys_platform == 'darwin'",
+    "misaki>=0.1.0; sys_platform == 'darwin'",
 ]
 
 [project.scripts]

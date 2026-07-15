@@ -112,8 +112,15 @@ def _cache_speech(
     *,
     label: str,
     voice: str,
-) -> dict[str, Any]:
-    """Append a synthesized narration to the game_state cache and return it."""
+    cache_enabled: bool = True,
+) -> Optional[dict[str, Any]]:
+    """Append a synthesized narration to the game_state cache (if enabled) and return it.
+
+    When caching is disabled, returns None (no entry added to game_state).
+    """
+    if not cache_enabled:
+        return None
+
     entry: dict[str, Any] = {
         "id": uuid.uuid4().hex,
         "label": label,
@@ -136,8 +143,9 @@ def _not_configured() -> HTTPException:
     return HTTPException(
         status_code=503,
         detail=(
-            "Voice narration (TTS) is not configured. Set TTS_API_KEY in your "
-            ".env (or TTS_PROVIDER=none to suppress this)."
+            "Voice narration (TTS) is not configured. "
+            "Set TTS_API_KEY (cloud), TTS_PROVIDER=mlx (local, Apple Silicon), "
+            "or TTS_PROVIDER=none to disable."
         ),
     )
 
@@ -231,6 +239,7 @@ def get_tts_status(game_id: int, db: Session = Depends(get_db)):
         "voice": cfg.voice,
         "format": cfg.response_format,
         "speed": cfg.speed,
+        "cache_audio": cfg.cache_audio,
     }
 
 
@@ -314,9 +323,26 @@ async def narrate_latest(
         raise HTTPException(status_code=502, detail=f"Speech synthesis failed: {exc}")
 
     label = f"{request.npc.strip().title()} Speaks" if request.npc else "Latest Narration"
-    entry = _cache_speech(game_state, result, label=label, voice=voice)
-    _persist(save, game_state, db)
-    return {"audio": _public_entry(entry), "cached_count": len(_audio_list(game_state))}
+    entry = _cache_speech(
+        game_state,
+        result,
+        label=label,
+        voice=voice,
+        cache_enabled=client.config.cache_audio,
+    )
+
+    if entry:
+        # Caching enabled: persist and return metadata
+        _persist(save, game_state, db)
+        return {
+            "audio": _public_entry(entry),
+            "cached_count": len(_audio_list(game_state)),
+            "cached": True,
+        }
+    else:
+        # Caching disabled: return audio bytes directly
+        media_type = f"audio/{result.response_format}"
+        return Response(content=result.audio, media_type=media_type)
 
 
 @router.post("/{game_id}/tts/narrate/stream")
@@ -391,23 +417,37 @@ async def narrate_latest_stream(
                 model=client.config.model,
                 voice=voice,
                 text=cleaned,
-                response_format="mp3",
+                response_format=client.config.response_format,  # Use the actual format (wav for mlx)
                 speed=client.config.speed,
             )
 
-            # Cache the full audio
+            # Cache the full audio (if enabled)
             label = f"{request.npc.strip().title()} Speaks" if request.npc else "Latest Narration"
-            entry = _cache_speech(game_state, full_result, label=label, voice=voice)
-            _persist(save, game_state, db)
+            entry = _cache_speech(
+                game_state,
+                full_result,
+                label=label,
+                voice=voice,
+                cache_enabled=client.config.cache_audio,
+            )
 
-            # Emit completion event with cached metadata
-            done_event = {
-                "audio_id": entry["id"],
-                "total_chunks": len(chunks),
-                "label": entry["label"],
-                "size_bytes": entry["size_bytes"],
-                "voice": entry["voice"],
-            }
+            if entry:
+                _persist(save, game_state, db)
+                # Emit completion event with cached metadata
+                done_event = {
+                    "audio_id": entry["id"],
+                    "total_chunks": len(chunks),
+                    "label": entry["label"],
+                    "size_bytes": entry["size_bytes"],
+                    "voice": entry["voice"],
+                    "cached": True,
+                }
+            else:
+                # Emit completion event without cache metadata
+                done_event = {
+                    "total_chunks": len(chunks),
+                    "cached": False,
+                }
             yield f"event: done\ndata: {json.dumps(done_event)}\n\n"
 
         except TTSNotConfiguredError:
@@ -426,7 +466,17 @@ async def narrate_latest_stream(
 
 @router.get("/{game_id}/tts/audio/{audio_id}")
 def get_audio_bytes(game_id: int, audio_id: str, db: Session = Depends(get_db)):
-    """Serve the raw audio bytes for a cached narration by its id."""
+    """Serve the raw audio bytes for a cached narration by its id.
+
+    Returns 404 when caching is disabled or the audio_id is not found.
+    """
+    client = get_tts_client()
+    if not client.config.cache_audio:
+        raise HTTPException(
+            status_code=404,
+            detail="Audio caching is disabled for this TTS provider.",
+        )
+
     save = _load_game(db, game_id)
     game_state = _game_state(save)
     for entry in _audio_list(game_state):
@@ -443,20 +493,43 @@ def get_audio_bytes(game_id: int, audio_id: str, db: Session = Depends(get_db)):
 
 @router.get("/{game_id}/tts")
 def list_audio(game_id: int, db: Session = Depends(get_db)):
-    """List cached narrations for this game (metadata only — no audio bytes)."""
+    """List cached narrations for this game (metadata only — no audio bytes).
+
+    Returns empty list when caching is disabled.
+    """
+    client = get_tts_client()
+    if not client.config.cache_audio:
+        return {
+            "audio": [],
+            "count": 0,
+            "configured": client.is_configured,
+            "cached": False,
+        }
+
     save = _load_game(db, game_id)
     game_state = _game_state(save)
     audio = _audio_list(game_state)
     return {
         "audio": [_public_entry(e) for e in audio],
         "count": len(audio),
-        "configured": get_tts_client().is_configured,
+        "configured": client.is_configured,
+        "cached": True,
     }
 
 
 @router.delete("/{game_id}/tts/{audio_id}")
 def delete_audio(game_id: int, audio_id: str, db: Session = Depends(get_db)):
-    """Remove a cached narration by its id."""
+    """Remove a cached narration by its id.
+
+    Returns 404 when caching is disabled or the audio_id is not found.
+    """
+    client = get_tts_client()
+    if not client.config.cache_audio:
+        raise HTTPException(
+            status_code=404,
+            detail="Audio caching is disabled for this TTS provider.",
+        )
+
     save = _load_game(db, game_id)
     game_state = _game_state(save)
     audio = _audio_list(game_state)
@@ -465,7 +538,10 @@ def delete_audio(game_id: int, audio_id: str, db: Session = Depends(get_db)):
             removed = audio.pop(i)
             game_state["audio"] = audio
             _persist(save, game_state, db)
-            return {"removed": _public_entry(removed), "remaining_count": len(audio)}
+            return {
+                "removed": _public_entry(removed),
+                "remaining_count": len(audio),
+            }
     raise HTTPException(status_code=404, detail="Cached narration not found")
 
 
@@ -483,14 +559,15 @@ def list_voices(game_id: int, db: Session = Depends(get_db)):
 
     Works whether or not TTS is configured — the voice list is static and
     useful for the UI even before a key is set. ``configured`` tells the
-    client whether synthesis will actually work.
+    client whether synthesis will actually work. Voices are provider-specific.
     """
     _load_game(db, game_id)  # validate game exists
     client = get_tts_client()
     return {
-        "voices": voices_as_dicts(),
+        "voices": voices_as_dicts(provider=client.config.provider),
         "default": client.config.voice or DEFAULT_VOICE,
         "configured": client.is_configured,
+        "provider": client.config.provider,
     }
 
 
@@ -521,7 +598,9 @@ def set_npc_voice(
     npc = _canonical_npc(request.npc)
     if not npc:
         raise HTTPException(status_code=422, detail="NPC name is required.")
-    if not is_valid_voice(request.voice):
+
+    client = get_tts_client()
+    if not is_valid_voice(request.voice, provider=client.config.provider):
         raise HTTPException(
             status_code=422,
             detail=f"Unknown voice '{request.voice}'. Use GET /tts/voices.",

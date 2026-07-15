@@ -1620,6 +1620,7 @@ export interface TTSStatus {
   voice: string;
   format: string;
   speed: number;
+  cache_audio?: boolean;
 }
 
 /** A cached narration entry (metadata only — audio bytes served separately). */

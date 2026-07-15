@@ -30,7 +30,7 @@ from __future__ import annotations
 import base64
 import re
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Optional
 
 from app.llm.tts_config import TTSConfig, config as _default_config
 
@@ -295,17 +295,24 @@ class TTSClient:
 
 
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
 # Lazy singleton
 # --------------------------------------------------------------------------- #
 
-_tts_client_instance: Optional[TTSClient] = None
+_tts_client_instance: Optional["TTSClient | Any"] = None
 
+def get_tts_client():
+    """Get the singleton TTS client (lazy-initialised).
 
-def get_tts_client() -> TTSClient:
-    """Get the singleton TTS client (lazy-initialised)."""
+    Dispatches to MLXTTSClient for local provider or TTSClient for cloud.
+    """
     global _tts_client_instance
     if _tts_client_instance is None:
-        _tts_client_instance = TTSClient()
+        if _default_config.provider == "mlx":
+            from app.llm.tts_client_local import MLXTTSClient
+            _tts_client_instance = MLXTTSClient(_default_config)
+        else:
+            _tts_client_instance = TTSClient(_default_config)
     return _tts_client_instance
 
 

@@ -58,7 +58,8 @@ All LLM interactions are mediated by DSPy for structured, reliable outputs:
 ### AI-Powered Features
 - **AI-Generated Images** — Provider-agnostic image generation for scenes and NPCs (configurable via `IMAGE_PROVIDER` env var)
 - **In-Game Image Studio** — Visual panel for generating and viewing scene/NPC images with prompts
-- **Voice Narration (TTS)** — Provider-agnostic text-to-speech for DM narration (OpenAI or compatible APIs). Per-NPC voice assignment, auto-narrate toggle, streaming/chunked playback.
+- **Voice Narration (TTS)** — Provider-agnostic text-to-speech for DM narration (OpenAI, Anthropic, or **on-device via mlx-audio/Kokoro** on Apple Silicon). Per-NPC voice assignment, auto-narrate toggle, streaming/chunked playback.
+- **Local TTS (Zero-Config on Apple Silicon)** — On-device synthesis using Kokoro-82M model via Apple's MLX framework. No cloud API key required; automatic fallback to cloud providers on other platforms.
 - **Per-NPC Voice Assignment** — Assign distinct TTS voices to named NPCs for in-character dialogue
 
 ### Frontend
@@ -260,9 +261,9 @@ The game implements comprehensive DnD 5e mechanics:
 
 **Version:** 0.1.0 (MVP + Advanced Features Complete)
 
-**Test Suite:** 2572 backend tests passing + 122 frontend tests passing = **2694 total**, 0 failures ✅
+**Test Suite:** 2632 backend tests passing + 163 frontend tests passing = **2795 total**, 0 failures ✅
 
-**Core Features:** ✅ All MVP features implemented ✅ Advanced features complete ✅ DSPy migration complete ✅ AI features (images, TTS) operational
+**Core Features:** ✅ All MVP features implemented ✅ Advanced features complete ✅ DSPy migration complete ✅ AI features (images, TTS with local support) operational ✅ Local TTS via mlx-audio (Kokoro) complete
 
 **Known Limitations:**
 - Single-player only (multiplayer not yet implemented — AGENTS.md priority #13)
@@ -272,8 +273,8 @@ The game implements comprehensive DnD 5e mechanics:
 See [DESIGN.md](DESIGN.md) for the full architecture, [PROGRESS.md](PROGRESS.md) for detailed progress tracking, and `docs/` for research on upcoming features:
 
 **In Progress / Staged:**
-- **DM Function Calling (Phase 1)** — DM calls `roll_dice()` for real dice rolls + check prompt UI. Staged for implementation (see `docs/DM_FUNCTION_CALLING_RESEARCH.md`)
-- **Local TTS (mlx-audio)** — On-device TTS via Apple MLX with Kokoro model for zero-config voice narration (see `docs/LOCAL_TTS_RESEARCH.md`)
+- **DM Function Calling (Phase 1)** — DM calls `roll_dice()` for real dice rolls + check prompt UI. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
+- **Local TTS (mlx-audio)** — ✅ **COMPLETE** — On-device TTS via Apple MLX with Kokoro model for zero-config voice narration. Default on Apple Silicon; automatic fallback to cloud providers on other platforms.
 
 **Planned:**
 - Multiplayer / party-based play
