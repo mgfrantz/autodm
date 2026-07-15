@@ -78,6 +78,46 @@ and the real DB is no longer mutated by tests.
 
 ---
 
+## ⚡ NEXT SESSION DIRECTIVE: Local TTS via mlx-audio (Kokoro)
+
+**Read `docs/LOCAL_TTS_RESEARCH.md` for the full spec.**
+
+After DM function calling Phase 1 is complete (or in parallel if scope
+allows), implement on-device TTS so the game works without a cloud API key.
+
+### Summary
+- **Provider:** `TTS_PROVIDER=mlx` — default on Apple Silicon, zero-config
+- **Model:** Kokoro-82M (`mlx-community/Kokoro-82M-bf16`) — 82M params, ~330MB download
+- **On-demand:** generate to memory, return WAV bytes, no file caching
+- **No bloat:** `TTS_CACHE=false` by default — game_state stays lean
+
+### Backend
+1. `pyproject.toml` — add `mlx-audio` + `misaki` (platform-marked for darwin)
+2. `tts_config.py` — add `"mlx"` provider, Kokoro voice registry, `cache_audio` flag, OpenAI→Kokoro voice mapping, platform-aware default provider
+3. **NEW** `tts_client_local.py` — `MLXTTSClient` implementing same interface as `TTSClient`: lazy model loading (singleton), `synthesize()` via `asyncio.to_thread`, `_mx_to_wav_bytes()` in-memory conversion
+4. `tts_client.py` — `get_tts_client()` factory dispatches to MLX or OpenAI client based on provider
+5. `api/tts.py` — make caching conditional on `cache_audio`; narrate/stream endpoints return bytes directly when uncached
+6. **NEW** `test_tts_local.py` — voice mapping, WAV conversion, synthesize, chunks, lazy loading, import error (~9 tests)
+
+### Frontend (minimal)
+7. `types/index.ts` — add `cache_audio?: boolean` to TTS status
+8. `VoicePanel.tsx` — hide cached narrations section when uncached; voices already served from backend
+
+### Key decisions
+- WAV not MP3 (no ffmpeg needed)
+- Kokoro model lazy-loads on first synthesis, stays resident
+- Existing NPC voice assignments work via OpenAI→Kokoro mapping
+- `asyncio.to_thread` wraps synchronous mlx-audio generate()
+
+### Verification
+- `uv add mlx-audio misaki` installs on Apple Silicon
+- `uv run pytest` — all existing + ~13 new tests green
+- Manual: `TTS_PROVIDER=mlx`, call `/tts/narrate`, hear audio, verify game_state has no cached audio
+- Commit: `feat: local TTS via mlx-audio (Kokoro) — on-demand, no caching`
+- Push to `develop`
+
+---
+
 ## DSPy Migration: COMPLETE ✅
 All LLM interactions are now mediated by DSPy. The legacy `LLMOrchestrator`
 (raw `AsyncOpenAI`) has been **deleted** — every LLM call routes through DSPy
