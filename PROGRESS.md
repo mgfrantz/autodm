@@ -6,12 +6,15 @@
 ## ✅ COMPLETED: DM Function Calling — Phase 1 (Dice Rolling + Check Prompts)
 
 **Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 1 Implementation Plan"
-
 Phase 1 is **DONE**. The DM now outputs structured `game_actions` alongside
 narration; the backend resolves them via the real dice engine; results flow
 as `GameEvent` objects to the frontend and render as inline UI cards.
 
 ### Backend (steps 1-6)
+
+**📝 README SYNC:** After any dev agent run that makes user-facing changes (features, test counts, content additions), update README.md to keep it in sync with PROGRESS.md. The README is the public-facing documentation — it should reflect the current state, not a stale snapshot.
+
+---
 1. **NEW** `backend/app/engine/game_events.py` — `GameEvent` dataclass +
    `GameEventType` enum + factory classmethods (`dice_roll`, `check_prompt`)
 2. **NEW** `backend/app/engine/dm_functions.py` — `dm_roll_d20()`,
