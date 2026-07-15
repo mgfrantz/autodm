@@ -272,14 +272,18 @@ The game implements comprehensive DnD 5e mechanics:
 
 See [DESIGN.md](DESIGN.md) for the full architecture, [PROGRESS.md](PROGRESS.md) for detailed progress tracking, and `docs/` for research on upcoming features:
 
-**In Progress / Staged:**
+**Recently Completed:**
 - **DM Function Calling (Phase 1)** — DM calls `roll_dice()` for real dice rolls + check prompt UI. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
 - **Local TTS (mlx-audio)** — ✅ **COMPLETE** — On-device TTS via Apple MLX with Kokoro model for zero-config voice narration. Default on Apple Silicon; automatic fallback to cloud providers on other platforms.
+
+**Staged (awaiting green-light):**
+- **DM Function Calling (Phase 2 — Combat)** — DM emits `attack`/`damage`/`roll_initiative` game actions resolved via the real `Encounter` engine; results flow as typed GameEvents and render as inline AttackCard/DamageCard/InitiativeCard components. Concrete file-level plan in `docs/DM_FUNCTION_CALLING_RESEARCH.md` ("Phase 2 Implementation Plan").
 
 **Planned:**
 - Multiplayer / party-based play
 - More homebrew content tools
 - Advanced DSPy patterns (context-specific narration signatures, module composition)
+- DM Function Calling (Phase 3+ — spells, inventory, conditions via DM function calls)
 
 ## Contributing
 
