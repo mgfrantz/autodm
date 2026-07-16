@@ -5,7 +5,7 @@
  * metadata (labels, colors, summaries) so the UI components stay declarative
  * and the logic is trivially unit-testable.
  */
-import type { GameEvent } from '../types';
+import type { GameEvent, InitiativeCombatant } from '../types';
 
 /**
  * Format a roll result as a human-readable string.
@@ -158,6 +158,19 @@ export function summarizeEvent(event: GameEvent): string {
     if (dc !== null && dc !== undefined) parts.push(`DC ${dc}`);
     return parts.join(' — ');
   }
+  if (event.type === 'attack') {
+    const d = event.data;
+    return attackSummary(d.attacker, d.target, d.attack_total, d.ac,
+      d.hit, d.critical, d.critical_miss, d.damage, d.damage_type);
+  }
+  if (event.type === 'damage') {
+    const d = event.data;
+    return damageSummary(d.target, d.amount, d.damage_type,
+      d.target_remaining_hp, d.target_max_hp);
+  }
+  if (event.type === 'initiative') {
+    return initiativeSummary(event.data.combatants);
+  }
   return event.label;
 }
 
@@ -172,4 +185,115 @@ export function inferSides(event: GameEvent): number {
     return 20;
   }
   return 0; // Unknown sides — don't check for crits
+}
+
+// ==========================================================================
+// Phase 2: Combat event helpers
+// ==========================================================================
+
+/**
+ * Tailwind color classes for a given damage type.
+ * Maps common DnD damage types to thematic colours.
+ */
+export function damageTypeColor(damageType: string): { text: string; bg: string; border: string } {
+  const type = (damageType ?? '').toLowerCase();
+  const map: Record<string, { text: string; bg: string; border: string }> = {
+    fire:       { text: 'text-orange-300', bg: 'bg-orange-900/30', border: 'border-orange-700/50' },
+    cold:       { text: 'text-cyan-300',   bg: 'bg-cyan-900/30',   border: 'border-cyan-700/50' },
+    lightning:  { text: 'text-yellow-300', bg: 'bg-yellow-900/30', border: 'border-yellow-700/50' },
+    thunder:    { text: 'text-indigo-300', bg: 'bg-indigo-900/30', border: 'border-indigo-700/50' },
+    poison:     { text: 'text-green-300',  bg: 'bg-green-900/30',  border: 'border-green-700/50' },
+    acid:       { text: 'text-lime-300',   bg: 'bg-lime-900/30',   border: 'border-lime-700/50' },
+    necrotic:   { text: 'text-purple-300', bg: 'bg-purple-900/30', border: 'border-purple-700/50' },
+    radiant:    { text: 'text-amber-200',  bg: 'bg-amber-900/30',  border: 'border-amber-700/50' },
+    psychic:    { text: 'text-fuchsia-300',bg: 'bg-fuchsia-900/30',border: 'border-fuchsia-700/50' },
+    force:      { text: 'text-blue-300',   bg: 'bg-blue-900/30',   border: 'border-blue-700/50' },
+    bludgeoning:{ text: 'text-stone-300',  bg: 'bg-stone-900/30',  border: 'border-stone-700/50' },
+    piercing:   { text: 'text-rose-300',   bg: 'bg-rose-900/30',   border: 'border-rose-700/50' },
+    slashing:   { text: 'text-red-300',    bg: 'bg-red-900/30',    border: 'border-red-700/50' },
+  };
+  return map[type] ?? { text: 'text-parchment-200', bg: 'bg-parchment-900/30', border: 'border-parchment-700/50' };
+}
+
+/**
+ * Compute HP bar display data from remaining/max HP.
+ * Returns percentage (0-100), colour classes, and whether target is dead.
+ */
+export function hpBarData(
+  remainingHp: number | undefined,
+  maxHp: number | undefined,
+): { percentage: number; color: string; isDead: boolean; label: string } {
+  const remaining = remainingHp ?? 0;
+  const max = maxHp ?? 1;
+  const percentage = max > 0 ? Math.max(0, Math.min(100, (remaining / max) * 100)) : 0;
+  const isDead = remaining <= 0;
+  let color: string;
+  if (isDead) {
+    color = 'bg-blood-600';
+  } else if (percentage <= 25) {
+    color = 'bg-blood-500';
+  } else if (percentage <= 50) {
+    color = 'bg-orange-500';
+  } else if (percentage <= 75) {
+    color = 'bg-yellow-500';
+  } else {
+    color = 'bg-emerald-500';
+  }
+  return { percentage, color, isDead, label: `${remaining} / ${max}` };
+}
+
+/**
+ * Generate a one-line summary for an attack event.
+ */
+export function attackSummary(
+  attacker: string | undefined,
+  target: string | undefined,
+  attackTotal: number | undefined,
+  ac: number | undefined,
+  hit: boolean | undefined,
+  critical: boolean | undefined,
+  criticalMiss: boolean | undefined,
+  damage: number | undefined,
+  damageType: string | undefined,
+): string {
+  const att = attacker ?? 'Unknown';
+  const tgt = target ?? 'Unknown';
+  const parts: string[] = [`${att} → ${tgt}`];
+  if (criticalMiss) {
+    parts.push('CRITICAL MISS!');
+  } else if (critical) {
+    parts.push(`CRITICAL HIT! ${damage ?? 0} ${damageType ?? ''} damage`);
+  } else if (hit) {
+    parts.push(`${attackTotal ?? 0} vs AC ${ac ?? 0} — ${damage ?? 0} ${damageType ?? ''} damage`);
+  } else {
+    parts.push(`${attackTotal ?? 0} vs AC ${ac ?? 0} — MISS`);
+  }
+  return parts.join(' — ');
+}
+
+/**
+ * Generate a one-line summary for a damage event.
+ */
+export function damageSummary(
+  target: string | undefined,
+  amount: number | undefined,
+  damageType: string | undefined,
+  remainingHp: number | undefined,
+  maxHp: number | undefined,
+): string {
+  const tgt = target ?? 'Unknown';
+  const dmg = amount ?? 0;
+  const type = damageType ?? '';
+  if ((remainingHp ?? 0) <= 0) {
+    return `${tgt} takes ${dmg} ${type} damage — DEFEATED!`;
+  }
+  return `${tgt} takes ${dmg} ${type} damage (${remainingHp}/${maxHp} HP)`;
+}
+
+/**
+ * Generate a summary for an initiative event.
+ */
+export function initiativeSummary(combatants: InitiativeCombatant[] | undefined): string {
+  if (!combatants || combatants.length === 0) return 'Initiative order';
+  return combatants.map((c, i) => `${i + 1}. ${c.name} (${c.initiative})`).join(', ');
 }

@@ -8,8 +8,13 @@ import {
   isCriticalMiss,
   summarizeEvent,
   inferSides,
+  damageTypeColor,
+  hpBarData,
+  attackSummary,
+  damageSummary,
+  initiativeSummary,
 } from '../gameEvents'
-import type { GameEvent } from '../../types'
+import type { GameEvent, InitiativeCombatant } from '../../types'
 
 /* ------------------------------------------------------------------ *
  * Unit tests for gameEvents utility functions (DM function calling
@@ -195,5 +200,176 @@ describe('inferSides', () => {
       timestamp: '',
     }
     expect(inferSides(event)).toBe(0)
+  })
+})
+
+// ==========================================================================
+// Phase 2: Combat event helpers
+// ==========================================================================
+
+describe('damageTypeColor', () => {
+  it('returns fire colours for fire damage', () => {
+    const colors = damageTypeColor('fire')
+    expect(colors.text).toContain('orange')
+  })
+
+  it('returns cold colours for cold damage', () => {
+    const colors = damageTypeColor('cold')
+    expect(colors.text).toContain('cyan')
+  })
+
+  it('is case-insensitive', () => {
+    const colors = damageTypeColor('FIRE')
+    expect(colors.text).toContain('orange')
+  })
+
+  it('returns neutral colours for unknown types', () => {
+    const colors = damageTypeColor('radiant-explosion')
+    expect(colors.text).toContain('parchment')
+  })
+
+  it('handles undefined gracefully', () => {
+    const colors = damageTypeColor(undefined as unknown as string)
+    expect(colors.text).toContain('parchment')
+  })
+})
+
+describe('hpBarData', () => {
+  it('computes percentage from remaining/max', () => {
+    const hp = hpBarData(15, 30)
+    expect(hp.percentage).toBe(50)
+    expect(hp.isDead).toBe(false)
+    expect(hp.label).toBe('15 / 30')
+  })
+
+  it('marks dead at 0 HP', () => {
+    const hp = hpBarData(0, 30)
+    expect(hp.isDead).toBe(true)
+    expect(hp.percentage).toBe(0)
+  })
+
+  it('clamps percentage to 100 for overheal', () => {
+    const hp = hpBarData(40, 30)
+    expect(hp.percentage).toBe(100)
+  })
+
+  it('handles undefined values gracefully', () => {
+    const hp = hpBarData(undefined, undefined)
+    expect(hp.isDead).toBe(true)
+  })
+
+  it('uses blood color for low HP', () => {
+    const hp = hpBarData(5, 30) // ~17%
+    expect(hp.color).toContain('blood')
+  })
+
+  it('uses emerald color for high HP', () => {
+    const hp = hpBarData(28, 30) // ~93%
+    expect(hp.color).toContain('emerald')
+  })
+
+  it('uses blood color for dead', () => {
+    const hp = hpBarData(0, 30)
+    expect(hp.color).toContain('blood')
+  })
+})
+
+describe('attackSummary', () => {
+  it('summarizes a hit', () => {
+    const s = attackSummary('Hero', 'Goblin', 18, 13, true, false, false, 8, 'slashing')
+    expect(s).toContain('Hero → Goblin')
+    expect(s).toContain('18 vs AC 13')
+    expect(s).toContain('8 slashing')
+  })
+
+  it('summarizes a critical hit', () => {
+    const s = attackSummary('Hero', 'Goblin', 25, 13, true, true, false, 16, 'slashing')
+    expect(s).toContain('CRITICAL HIT!')
+    expect(s).toContain('16 slashing')
+  })
+
+  it('summarizes a miss', () => {
+    const s = attackSummary('Hero', 'Goblin', 8, 13, false, false, false, 0, 'slashing')
+    expect(s).toContain('MISS')
+  })
+
+  it('summarizes a critical miss', () => {
+    const s = attackSummary('Hero', 'Goblin', 6, 13, false, false, true, 0, 'slashing')
+    expect(s).toContain('CRITICAL MISS!')
+  })
+})
+
+describe('damageSummary', () => {
+  it('summarizes damage with remaining HP', () => {
+    const s = damageSummary('Goblin', 5, 'fire', 7, 12)
+    expect(s).toContain('Goblin takes 5 fire')
+    expect(s).toContain('7/12 HP')
+  })
+
+  it('shows DEFEATED at 0 HP', () => {
+    const s = damageSummary('Goblin', 12, 'fire', 0, 12)
+    expect(s).toContain('DEFEATED!')
+  })
+})
+
+describe('initiativeSummary', () => {
+  it('lists combatants in order', () => {
+    const combatants: InitiativeCombatant[] = [
+      { id: 'gob1', name: 'Goblin', initiative: 19, side: 'enemy' },
+      { id: 'hero', name: 'Hero', initiative: 14, side: 'player' },
+    ]
+    const s = initiativeSummary(combatants)
+    expect(s).toContain('1. Goblin (19)')
+    expect(s).toContain('2. Hero (14)')
+  })
+
+  it('returns fallback for empty list', () => {
+    expect(initiativeSummary([])).toBe('Initiative order')
+    expect(initiativeSummary(undefined)).toBe('Initiative order')
+  })
+})
+
+describe('summarizeEvent for combat types', () => {
+  it('summarizes an attack event', () => {
+    const event: GameEvent = {
+      type: 'attack',
+      label: 'Hero → Goblin',
+      data: { attacker: 'Hero', target: 'Goblin', attack_total: 18, ac: 13,
+        hit: true, critical: false, critical_miss: false, damage: 8,
+        damage_type: 'slashing', target_remaining_hp: 4, target_max_hp: 12 },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Hero → Goblin')
+    expect(s).toContain('18 vs AC 13')
+    expect(s).toContain('8 slashing')
+  })
+
+  it('summarizes a damage event', () => {
+    const event: GameEvent = {
+      type: 'damage',
+      label: 'Fire damage',
+      data: { target: 'Goblin', amount: 5, damage_type: 'fire',
+        target_remaining_hp: 7, target_max_hp: 12 },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Goblin')
+    expect(s).toContain('5')
+    expect(s).toContain('fire')
+  })
+
+  it('summarizes an initiative event', () => {
+    const event: GameEvent = {
+      type: 'initiative',
+      label: 'Initiative Order',
+      data: { combatants: [
+        { id: 'g1', name: 'Goblin', initiative: 15, side: 'enemy' },
+      ] },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Goblin')
+    expect(s).toContain('15')
   })
 })

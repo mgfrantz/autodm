@@ -41,6 +41,11 @@ All LLM interactions are mediated by DSPy for structured, reliable outputs:
 - **Action Suggestions** — Contextually appropriate action suggestions rendered as clickable chips in the game view
 - **Skill Check Resolution** — Structured mechanical outcomes for freeform player actions (degree, XP gained, stat changes, items)
 
+### DM Function Calling (Real Game Mechanics)
+The DM doesn't just narrate — it calls real game engine functions. Results flow as typed `GameEvent` objects to inline UI cards:
+- **Phase 1 (Dice + Checks)** — DM calls `roll_dice()` for real d20 rolls; renders inline DiceRollCard (color-coded by outcome, advantage/disadvantage support) and CheckPromptCard (DM calls for a roll → player clicks → real resolution)
+- **Phase 2 (Combat Resolution)** — DM emits `attack`/`damage`/`roll_initiative` game actions resolved via the real `Encounter` engine. The DM never fabricates attack rolls or damage — it describes intent, the engine resolves. Results render as inline AttackCard (hit/miss/crit/fumble color-coding + HP bar), DamageCard (damage-type-themed colors + HP bar + death indicator), and InitiativeCard (turn order with player/enemy highlighting). Combat state is persisted to `game_state["combat"]`.
+
 ### Content
 - **108 Spells** — Including 20 iconic PHB/XGE spells (Chill Touch, Poison Spray, Shield, Mage Armor, Bless, Command, Hunter's Mark, etc.)
 - **116 Enemies** — From CR 0 to CR 10+ (Goblins, Skeletons, Owlbears, Dragons, Giants, Devils, etc.)
@@ -261,7 +266,7 @@ The game implements comprehensive DnD 5e mechanics:
 
 **Version:** 0.1.0 (MVP + Advanced Features Complete)
 
-**Test Suite:** 2651 backend tests passing + 163 frontend tests passing = **2814 total**, 0 failures ✅
+**Test Suite:** 2675 backend tests passing + 206 frontend tests passing = **2881 total**, 0 failures ✅
 
 **Core Features:** ✅ All MVP features implemented ✅ Advanced features complete ✅ DSPy migration complete ✅ AI features (images, TTS with local support) operational ✅ Local TTS via mlx-audio (Kokoro) complete
 
@@ -273,11 +278,9 @@ The game implements comprehensive DnD 5e mechanics:
 See [DESIGN.md](DESIGN.md) for the full architecture, [PROGRESS.md](PROGRESS.md) for detailed progress tracking, and `docs/` for research on upcoming features:
 
 **Recently Completed:**
+- **DM Function Calling (Phase 2 — Combat Resolution)** — DM emits `attack`/`damage`/`roll_initiative` game actions resolved via the real `Encounter` engine; results flow as typed GameEvents (ATTACK/DAMAGE/INITIATIVE) and render as inline AttackCard/DamageCard/InitiativeCard components with HP bars, hit/miss/crit colour-coding, and death indicators. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
 - **DM Function Calling (Phase 1)** — DM calls `roll_dice()` for real dice rolls + check prompt UI. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
 - **Local TTS (mlx-audio)** — ✅ **COMPLETE** — On-device TTS via Apple MLX with Kokoro model for zero-config voice narration. Default on Apple Silicon; automatic fallback to cloud providers on other platforms.
-
-**Staged (awaiting green-light):**
-- **DM Function Calling (Phase 2 — Combat)** — DM emits `attack`/`damage`/`roll_initiative` game actions resolved via the real `Encounter` engine; results flow as typed GameEvents and render as inline AttackCard/DamageCard/InitiativeCard components. Concrete file-level plan in `docs/DM_FUNCTION_CALLING_RESEARCH.md` ("Phase 2 Implementation Plan").
 
 **Planned:**
 - Multiplayer / party-based play

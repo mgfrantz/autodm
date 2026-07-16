@@ -500,9 +500,16 @@ export interface SkillCheckResult {
   description: string;
 }
 
-// === Game Events (DM Function Calling Phase 1) ===
+// === Game Events (DM Function Calling Phase 1 + 2) ===
 
-export type GameEventType = 'dice_roll' | 'check_prompt';
+export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative';
+
+export interface InitiativeCombatant {
+  id: string;
+  name: string;
+  initiative: number;
+  side: 'player' | 'enemy';
+}
 
 export interface GameEventData {
   // dice_roll
@@ -516,6 +523,22 @@ export interface GameEventData {
   // check_prompt
   skill?: string;
   reason?: string;
+  // attack (Phase 2)
+  attacker?: string;
+  target?: string;
+  attack_total?: number;
+  ac?: number;
+  hit?: boolean;
+  critical?: boolean;
+  critical_miss?: boolean;
+  damage?: number;
+  damage_type?: string;
+  target_remaining_hp?: number;
+  target_max_hp?: number;
+  // damage (Phase 2) — shares target/damage_type/target_remaining_hp/target_max_hp
+  amount?: number;
+  // initiative (Phase 2)
+  combatants?: InitiativeCombatant[];
 }
 
 export interface GameEvent {

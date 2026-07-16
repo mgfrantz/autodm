@@ -1,6 +1,7 @@
 # Design Research: DM Function Calling (Agent-Based Game State Interaction)
 
 > **Status:** Phase 1 IMPLEMENTED ✅ — dice rolling + check prompts are live
+> Phase 2 IMPLEMENTED ✅ — combat resolution (attack/damage/initiative) is live
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
