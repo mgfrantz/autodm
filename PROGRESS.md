@@ -157,42 +157,44 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: Local TTS via mlx-audio (Kokoro)
+## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 2 (Combat Resolution)
 
-**Read `docs/LOCAL_TTS_RESEARCH.md` for the full spec.**
+**GREEN-LIT by Mike (2026-07-15).**
 
-After DM function calling Phase 1 is complete (or in parallel if scope
-allows), implement on-device TTS so the game works without a cloud API key.
+Read `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 2 Implementation Plan" section.
+This is a concrete, file-level implementation plan with 11 steps + ~30 new tests.
 
 ### Summary
-- **Provider:** `TTS_PROVIDER=mlx` — default on Apple Silicon, zero-config
-- **Model:** Kokoro-82M (`mlx-community/Kokoro-82M-bf16`) — 82M params, ~330MB download
-- **On-demand:** generate to memory, return WAV bytes, no file caching
-- **No bloat:** `TTS_CACHE=false` by default — game_state stays lean
+Extend the DM function-calling system so the DM can emit **combat**
+`game_actions` (`attack`, `damage`, `roll_initiative`) that the backend
+resolves via the real `Encounter` engine (`backend/app/engine/combat.py`).
+Combat outcomes — hit/miss, critical, damage amount, remaining HP — flow as
+typed `GameEvent` objects to the frontend and render as inline combat cards
+(AttackCard, DamageCard, InitiativeCard).
 
-### Backend
-1. `pyproject.toml` — add `mlx-audio` + `misaki` (platform-marked for darwin)
-2. `tts_config.py` — add `"mlx"` provider, Kokoro voice registry, `cache_audio` flag, OpenAI→Kokoro voice mapping, platform-aware default provider
-3. **NEW** `tts_client_local.py` — `MLXTTSClient` implementing same interface as `TTSClient`: lazy model loading (singleton), `synthesize()` via `asyncio.to_thread`, `_mx_to_wav_bytes()` in-memory conversion
-4. `tts_client.py` — `get_tts_client()` factory dispatches to MLX or OpenAI client based on provider
-5. `api/tts.py` — make caching conditional on `cache_audio`; narrate/stream endpoints return bytes directly when uncached
-6. **NEW** `test_tts_local.py` — voice mapping, WAV conversion, synthesize, chunks, lazy loading, import error (~9 tests)
+### Key architectural change from Phase 1
+Phase 1 (dice) was **stateless**. Phase 2 (combat) is **stateful** —
+`_resolve_game_actions()` must load the `Encounter` from
+`game_state["combat"]`, resolve combat actions against it, persist the
+mutated encounter back, and return `(events, updated_game_state)`.
 
-### Frontend (minimal)
-7. `types/index.ts` — add `cache_audio?: boolean` to TTS status
-8. `VoicePanel.tsx` — hide cached narrations section when uncached; voices already served from backend
+### Steps (see design doc for full detail)
+1. `game_events.py` — ATTACK, DAMAGE, INITIATIVE enum + factory classmethods
+2. `dm_functions.py` — dm_attack(), dm_apply_damage(), dm_roll_initiative()
+3. `dspy_signatures.py` — expand DMActionableNarration docstring for combat
+4. `api/game.py` — stateful _resolve_game_actions(game_actions, game_state)
+5-6. Frontend types + utils
+7-10. AttackCard, DamageCard, InitiativeCard + GameEventRenderer
+11. Tests (~30 new)
 
-### Key decisions
-- WAV not MP3 (no ffmpeg needed)
-- Kokoro model lazy-loads on first synthesis, stays resident
-- Existing NPC voice assignments work via OpenAI→Kokoro mapping
-- `asyncio.to_thread` wraps synchronous mlx-audio generate()
+### Optional sub-phase split
+- Phase 2a (core): dm_attack + AttackCard (~15 tests)
+- Phase 2b (extensions): dm_apply_damage + dm_roll_initiative + DamageCard + InitiativeCard (~15 tests)
 
 ### Verification
-- `uv add mlx-audio misaki` installs on Apple Silicon
-- `uv run pytest` — all existing + ~13 new tests green
-- Manual: `TTS_PROVIDER=mlx`, call `/tts/narrate`, hear audio, verify game_state has no cached audio
-- Commit: `feat: local TTS via mlx-audio (Kokoro) — on-demand, no caching`
+- `uv run pytest` — all existing + new combat tests green
+- `cd frontend && npx tsc --noEmit && npm run build && npm test` — clean
+- Commit: `feat: DM function calling Phase 2 — combat resolution`
 - Push to `develop`
 
 ---
@@ -276,13 +278,13 @@ are worth adopting for future enhancement:
 - Dynamic difficulty heuristic (our 5e CR/DC/proficiency system is superior)
 - Story progress counter (our campaign_arc + act tracking is richer)
 
-## DM Function Calling — Phase 2 (Combat) STAGED for Implementation
+## DM Function Calling — Phase 2 (Combat) GREEN-LIT — Executing
 
 **Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 2 Implementation Plan"
 
-Phase 2 is **staged and ready for Mike's green-light**. The plan covers
-combat resolution via DM function calls — the DM emits `attack` / `damage` /
-`roll_initiative` game_actions that the backend resolves via the real
+Phase 2 is **green-lit by Mike (2026-07-15)**. The dev agent cron directive
+has been updated to execute the plan — combat resolution via DM function
+calls. The DM emits `attack` / `damage` / `roll_initiative` game_actions that the backend resolves via the real
 `Encounter` engine, with results flowing as typed GameEvents to inline
 combat cards (AttackCard, DamageCard, InitiativeCard).
 
@@ -292,8 +294,8 @@ is **stateful** — `_resolve_game_actions()` must load the `Encounter` from
 concrete file-level breakdown (11 steps), ~30 new tests, and an optional
 sub-phase split (2a: attacks, 2b: damage+initiative).
 
-To implement: update the cron directive's "Current Priority" to Phase 2 and
-the dev agent will execute the plan step by step.
+The dev agent cron directive has been updated. Next run (~23:09 PT tonight)
+will begin Phase 2 execution.
 
 ---
 

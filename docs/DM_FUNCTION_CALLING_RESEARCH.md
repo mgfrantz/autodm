@@ -817,10 +817,9 @@ Dispatches a `GameEvent` to the right component:
 
 ## Phase 2 Implementation Plan — Combat Resolution via DM Function Calls
 
-> **Status:** STAGED — awaiting Mike's green-light. This section is a concrete,
+> **Status:** GREEN-LIT by Mike (2026-07-15) — executing. This is a concrete,
 > file-level implementation plan for Phase 2, modelled on the Phase 1 plan above.
-> The dev agent cron job should execute it when this phase is green-lit in a
-> future directive.
+> The dev agent cron job is now directed to execute it.
 
 ### Goal
 
@@ -1130,4 +1129,5 @@ If Phase 2 is too large for a single run, it can be split:
   expansion for combat game_actions, stateful resolution pipeline, and 3 new
   frontend cards (AttackCard, DamageCard, InitiativeCard). ~30 new tests.
   Includes optional sub-phase breakdown (2a: attacks, 2b: damage+initiative).
-  Awaiting Mike's green-light.
+- 2025-07-15: **Phase 2 GREEN-LIT by Mike** — dev agent cron directive updated
+  to execute the Phase 2 plan. Status changed from STAGED to executing.
