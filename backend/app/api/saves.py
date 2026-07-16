@@ -16,7 +16,7 @@ Endpoints
 * ``DELETE /api/game/{game_id}/saves/{slot_id}``    — delete a snapshot
 """
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -162,7 +162,7 @@ def load_save(game_id: int, slot_id: int, db: Session = Depends(get_db)):
     save.current_act = slot.current_act or 1
     # Restore XP from the character snapshot
     save.xp = json.loads(slot.character_snapshot or "{}").get("xp", 0)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
 
     # Restore the live character's mutable state.
     snapshot = json.loads(slot.character_snapshot or "{}")

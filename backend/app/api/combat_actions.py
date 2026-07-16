@@ -6,7 +6,7 @@ Dash, Disengage, Dodge, Help, Unarmed Strike, Off-Hand Attack, Escape Grapple,
 Opportunity Attack) by key, plus a discovery endpoint listing every available
 action with its description and cost.
 """
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -58,7 +58,7 @@ def _persist_encounter(save: GameSave, game_state: dict, encounter: Encounter, d
     if player is not None:
         save.character.current_hp = player.current_hp
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 

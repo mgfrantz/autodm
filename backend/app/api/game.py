@@ -3,7 +3,7 @@ Game API — manages the active game session, DM narration, and player actions.
 """
 import json
 import logging
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -476,7 +476,7 @@ End with 2-3 clear choices for the player.
 
     # Save to story log
     story_log = json.loads(save.story_log)
-    story_log.append({"role": "dm", "content": narration, "timestamp": datetime.utcnow().isoformat()})
+    story_log.append({"role": "dm", "content": narration, "timestamp": utcnow().isoformat()})
     save.story_log = json.dumps(story_log)
     save.game_state = json.dumps(game_state)
     db.commit()
@@ -690,7 +690,7 @@ End with 2-3 clear choices for the player.
                 story_log.append({
                     "role": "dm",
                     "content": narration,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": utcnow().isoformat(),
                 })
                 save.story_log = json.dumps(story_log)
                 save.game_state = json.dumps(game_state)
@@ -784,11 +784,11 @@ Boss: {_boss_for_dm(game_state)}
     action_suggestions = _generate_action_suggestions(narration)
 
     # Log the exchange
-    story_log.append({"role": "player", "content": action.action, "timestamp": datetime.utcnow().isoformat()})
-    story_log.append({"role": "dm", "content": narration, "timestamp": datetime.utcnow().isoformat()})
+    story_log.append({"role": "player", "content": action.action, "timestamp": utcnow().isoformat()})
+    story_log.append({"role": "dm", "content": narration, "timestamp": utcnow().isoformat()})
     save.story_log = json.dumps(story_log)
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
 
     # Check if we need to summarize
     if context_manager.should_summarize(story_log, summary):
@@ -915,11 +915,11 @@ Boss: {_boss_for_dm(game_state)}
             save = db.query(GameSave).filter(GameSave.id == game_id).first()
             if save:
                 log = json.loads(save.story_log)
-                now = datetime.utcnow().isoformat()
+                now = utcnow().isoformat()
                 log.append({"role": "player", "content": action.action, "timestamp": now})
                 log.append({"role": "dm", "content": narration, "timestamp": now})
                 save.story_log = json.dumps(log)
-                save.updated_at = datetime.utcnow()
+                save.updated_at = utcnow()
 
                 # Load fresh game_state
                 game_state = json.loads(save.game_state)

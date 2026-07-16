@@ -9,7 +9,7 @@ Provides endpoints for:
 - Managing loot from enemies
 """
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -274,7 +274,7 @@ def add_item(character_id: int, request: ItemCreate, db: Session = Depends(get_d
     inventory.add_item(item)
     
     _save_inventory(character, inventory)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
     
     return _inventory_to_response(inventory)
@@ -294,7 +294,7 @@ def remove_item(character_id: int, item_id: str, quantity: int = 1, db: Session 
         raise HTTPException(status_code=400, detail="Item not found or insufficient quantity")
     
     _save_inventory(character, inventory)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
     
     return _inventory_to_response(inventory)
@@ -317,7 +317,7 @@ def equip_item(character_id: int, item_id: str, db: Session = Depends(get_db)):
     _recalc_armor_class(character, inventory)
 
     _save_inventory(character, inventory)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
 
     return _inventory_to_response(inventory)
@@ -340,7 +340,7 @@ def unequip_item(character_id: int, item_id: str, db: Session = Depends(get_db))
     _recalc_armor_class(character, inventory)
 
     _save_inventory(character, inventory)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
 
     return _inventory_to_response(inventory)
@@ -369,7 +369,7 @@ def use_item(character_id: int, item_id: str, db: Session = Depends(get_db)):
         message += f" (Healed for {healing} HP)"
     
     _save_inventory(character, inventory)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
     
     return {
@@ -394,7 +394,7 @@ def initialize_inventory(character_id: int, db: Session = Depends(get_db)):
     _recalc_armor_class(character, inventory)
 
     _save_inventory(character, inventory)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
     
     return {

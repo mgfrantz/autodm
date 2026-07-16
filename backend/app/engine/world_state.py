@@ -2,7 +2,7 @@
 World State Engine — tracks NPC relationships and faction reputation.
 """
 from dataclasses import dataclass, field
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any
 import json
 
@@ -45,7 +45,7 @@ class NPCRelationship:
             interaction_summary: Brief description of what happened
         """
         self.trust = max(-100, min(100, self.trust + change))
-        self.last_interacted = datetime.utcnow().isoformat()
+        self.last_interacted = utcnow().isoformat()
         self.interactions.append(interaction_summary)
         
         # Update attitude string based on trust score

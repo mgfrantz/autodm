@@ -15,7 +15,7 @@ Routes (mounted under ``/api/game``):
 """
 import json
 import random
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -156,7 +156,7 @@ def set_environment(
 
     _store_environment(game_state, env)
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return _env_response(env)
@@ -235,7 +235,7 @@ def roll_environment(
 
     _store_environment(game_state, env)
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return {

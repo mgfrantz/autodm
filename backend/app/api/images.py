@@ -24,7 +24,7 @@ Endpoints (mounted under /api/game):
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -64,7 +64,7 @@ def _game_state(save: GameSave) -> dict:
 
 def _persist(save: GameSave, game_state: dict, db: Session) -> None:
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 
@@ -108,7 +108,7 @@ def _cache_image(
         "model": result.model,
         "size": result.size,
         "quality": result.quality,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     }
     images = _images(game_state)
     images.append(entry)

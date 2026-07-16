@@ -12,7 +12,7 @@ Summarization is mediated by DSPy (``StorySummaryModule``).
 import asyncio
 import logging
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any, Optional
 
 from app.llm.dspy_config import ensure_dspy_configured
@@ -138,7 +138,7 @@ class ContextManager:
         
         # Build StorySummary from the DSPy Prediction (with graceful
         # fallbacks if the module returned an empty/None result).
-        now = datetime.utcnow().isoformat()
+        now = utcnow().isoformat()
         entries_count = len(story_log)
         
         summary = StorySummary(

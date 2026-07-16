@@ -9,7 +9,7 @@ Endpoints (mounted under /api/game):
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -91,7 +91,7 @@ def _log(save: GameSave, role: str, content: str) -> None:
     story_log.append({
         "role": role,
         "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     })
     save.story_log = json.dumps(story_log)
 
@@ -172,9 +172,9 @@ def short_rest(game_id: int, request: ShortRestRequest | None = None, db: Sessio
     if result.success:
         character.current_hp = result.hp_after
         character.hit_dice_used = (character.hit_dice_used or 0) + result.hit_dice_spent
-        character.updated_at = datetime.utcnow()
+        character.updated_at = utcnow()
         _log(save, "system", f"Short rest: {result.message}")
-        save.updated_at = datetime.utcnow()
+        save.updated_at = utcnow()
         db.commit()
         db.refresh(character)
 
@@ -240,9 +240,9 @@ def long_rest(game_id: int, db: Session = Depends(get_db)):
     if result.conditions_cleared or result.exhaustion_reduced:
         save.game_state = json.dumps(game_state)
 
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     _log(save, "system", result.message)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
     db.refresh(character)
 

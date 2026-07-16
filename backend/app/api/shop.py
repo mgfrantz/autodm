@@ -15,7 +15,7 @@ Endpoints (mounted under /api/game):
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -93,7 +93,7 @@ def _log(save: GameSave, role: str, content: str) -> None:
     story_log.append({
         "role": role,
         "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     })
     save.story_log = json.dumps(story_log)
 
@@ -223,7 +223,7 @@ def get_merchant(game_id: int, merchant_type: str, db: Session = Depends(get_db)
     merchant = _get_or_create_merchant(save, state, merchant_type)
     # Persist creation + commit (idempotent if already present).
     _persist_merchant(save, state, merchant)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     inventory = _load_inventory(character)
@@ -261,8 +261,8 @@ def buy_item(
         _save_inventory(character, inventory)
         _persist_merchant(save, state, merchant)
         _log(save, "system", result.message)
-        character.updated_at = datetime.utcnow()
-        save.updated_at = datetime.utcnow()
+        character.updated_at = utcnow()
+        save.updated_at = utcnow()
         db.commit()
         db.refresh(character)
 
@@ -301,8 +301,8 @@ def sell_item(
         _save_inventory(character, inventory)
         _persist_merchant(save, state, merchant)
         _log(save, "system", result.message)
-        character.updated_at = datetime.utcnow()
-        save.updated_at = datetime.utcnow()
+        character.updated_at = utcnow()
+        save.updated_at = utcnow()
         db.commit()
         db.refresh(character)
 
@@ -328,7 +328,7 @@ def restock_merchant(
     _persist_merchant(save, state, merchant)
     _log(save, "system",
          f"{merchant.name} restocked their shelves (gold: {merchant.gold} gp).")
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return {

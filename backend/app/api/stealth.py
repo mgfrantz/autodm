@@ -7,7 +7,7 @@ Endpoints:
 - GET /{game_id}/combat/stealth/visible — get visible enemies
 - POST /{game_id}/combat/stealth/reveal/{id} — reveal a combatant (manual)
 """
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -79,7 +79,7 @@ def _persist_encounter(save: GameSave, game_state: dict, encounter: Encounter, d
     if player is not None:
         save.character.current_hp = player.current_hp
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 

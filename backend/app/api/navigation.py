@@ -6,7 +6,7 @@ connections, terrain) is derived deterministically from the world data, so only
 the player's position is persisted in the game state.
 """
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -107,7 +107,7 @@ def travel(game_id: int, request: TravelRequest, db: Session = Depends(get_db)):
                 visited_locations.add(settlement)
         game_state["visited_locations"] = sorted(visited_locations)
         save.game_state = json.dumps(game_state)
-        save.updated_at = datetime.utcnow()
+        save.updated_at = utcnow()
         db.commit()
 
     return result.to_dict()

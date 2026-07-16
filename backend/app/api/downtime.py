@@ -26,7 +26,7 @@ Endpoints:
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -62,7 +62,7 @@ def _game_state(save: GameSave) -> dict:
 
 def _persist(save: GameSave, game_state: dict, db: Session) -> None:
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 
@@ -74,7 +74,7 @@ def _log(save: GameSave, content: str) -> None:
     story_log.append({
         "role": "system",
         "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     })
     save.story_log = json.dumps(story_log)
 
@@ -458,7 +458,7 @@ def resolve_downtime(
         "activity": result.activity,
         "name": activity.name,
         "gold_after": new_gold,
-        "when": datetime.utcnow().isoformat(),
+        "when": utcnow().isoformat(),
     }
 
     # Training completion grants a language or tool proficiency.

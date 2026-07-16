@@ -2,7 +2,7 @@
 Database models using SQLAlchemy.
 """
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from sqlalchemy import Column, DateTime, Integer, String, Text, ForeignKey
 from sqlalchemy.orm import relationship, declarative_base
@@ -86,7 +86,7 @@ class Character(Base):
     spells = Column(Text, default="{}")  # JSON: spellbook data
     personality = Column(Text, default="{}")  # JSON: {ideal: str, bond: str, flaw: str}
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     # Relationship
     saves = relationship("GameSave", back_populates="character")
@@ -170,7 +170,7 @@ class World(Base):
     world_data = Column(Text, nullable=False)  # Full JSON: regions, NPCs, quests, factions
     tone = Column(String(50), default="heroic fantasy")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     # Relationship
     world_saves = relationship("GameSave", back_populates="world")
@@ -195,8 +195,8 @@ class GameSave(Base):
     current_act = Column(Integer, default=1)
     xp = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     character = relationship("Character", back_populates="saves")
     world = relationship("World", back_populates="world_saves")
@@ -223,7 +223,7 @@ class SaveSlot(Base):
     story_summary = Column(Text, default="null")  # JSON
     current_act = Column(Integer, default=1)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     game_save = relationship("GameSave", back_populates="save_slots")
 
@@ -243,7 +243,7 @@ class HomebrewItem(Base):
 
     # Metadata
     creator_name = Column(String(100), nullable=True)  # Optional: player who created it
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     def to_dict(self):
         """Convert to dictionary for API responses."""

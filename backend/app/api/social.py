@@ -33,7 +33,7 @@ Endpoints:
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -72,7 +72,7 @@ def _game_state(save: GameSave) -> dict:
 
 def _persist(save: GameSave, game_state: dict, db: Session) -> None:
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 
@@ -84,7 +84,7 @@ def _log(save: GameSave, content: str) -> None:
     story_log.append({
         "role": "system",
         "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     })
     save.story_log = json.dumps(story_log)
 
@@ -281,7 +281,7 @@ def roll_reaction(
     # Set trust to the band midpoint (this is an *initial* reaction, not a delta).
     npc.trust = target_trust
     npc.attitude = result.attitude
-    npc.last_interacted = datetime.utcnow().isoformat()
+    npc.last_interacted = utcnow().isoformat()
     npc.interactions.append(f"Initial reaction: {result.description}")
     game_state = _save_world_state(save, game_state, ws)
 
@@ -343,7 +343,7 @@ def influence_npc(
         npc.trust = max(-100, min(100, npc.trust + result.trust_delta))
     # Re-derive the stored attitude string from the (possibly new) trust.
     npc.attitude = social.attitude_for_trust(npc.trust)
-    npc.last_interacted = datetime.utcnow().isoformat()
+    npc.last_interacted = utcnow().isoformat()
     npc.interactions.append(result.description)
     game_state = _save_world_state(save, game_state, ws)
 

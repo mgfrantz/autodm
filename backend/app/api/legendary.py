@@ -12,7 +12,7 @@ Exposes the legendary/lair engine (``engine/legendary.py``) over REST:
 All in-combat mutations persist the encounter back to ``game_state['combat']``
 and append a story-log entry so the DM narration reflects the boss's moves.
 """
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -65,7 +65,7 @@ def _persist(save: GameSave, game_state: dict, encounter: Encounter, db: Session
     if player is not None:
         save.character.current_hp = player.current_hp
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 
@@ -76,7 +76,7 @@ def _log_to_story(save: GameSave, content: str) -> None:
     story_log.append({
         "role": "dm",
         "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     })
     save.story_log = json.dumps(story_log)
 

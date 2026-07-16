@@ -8,7 +8,7 @@ Trap instances are persisted in ``game_state["traps"]`` as a JSON list.
 """
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -392,7 +392,7 @@ def _log_to_story(game: GameSave, message: str) -> None:
     entry = {
         "type": "system",
         "content": message,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     }
     story.append(entry)
     game.story_log = json.dumps(story)

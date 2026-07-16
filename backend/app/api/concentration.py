@@ -4,7 +4,7 @@ Concentration API — exposes concentration management via REST endpoints.
 Allows starting and stopping concentration on spells during combat.
 """
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -53,7 +53,7 @@ def start_concentration(game_id: int, request: StartConcentrationRequest, db: Se
     # Save updated encounter
     game_state["combat"] = encounter.to_dict()
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return {
@@ -87,7 +87,7 @@ def end_concentration(game_id: int, combatant_id: str, db: Session = Depends(get
     # Save updated encounter
     game_state["combat"] = encounter.to_dict()
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return {

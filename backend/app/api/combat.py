@@ -4,7 +4,7 @@ Combat API — exposes the combat engine via REST endpoints.
 Manages combat encounters, turn order, attacks, and combat state persistence.
 """
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -148,7 +148,7 @@ def start_combat(game_id: int, request: StartCombatRequest, db: Session = Depend
     game_state["combat"] = encounter.to_dict()
 
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return {
@@ -209,7 +209,7 @@ def next_turn(game_id: int, db: Session = Depends(get_db)):
     save.character.current_hp = player_combatant.current_hp
 
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     # Check if combat ended
@@ -310,7 +310,7 @@ def make_attack(game_id: int, request: AttackRequest, db: Session = Depends(get_
             _stage_pending_loot(game_state, loot_drop)
 
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     response = {
@@ -350,7 +350,7 @@ def end_combat(game_id: int, db: Session = Depends(get_db)):
     game_state["in_combat"] = False
     game_state["combat"] = None
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return {"message": "Combat ended manually"}
@@ -381,7 +381,7 @@ def _persist_encounter(save: GameSave, game_state: dict, encounter: Encounter, d
     if player_combatant is not None:
         save.character.current_hp = player_combatant.current_hp
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 

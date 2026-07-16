@@ -25,7 +25,7 @@ Endpoints:
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -58,7 +58,7 @@ def _game_state(save: GameSave) -> dict:
 
 def _persist(save: GameSave, game_state: dict, db: Session) -> None:
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 
@@ -70,7 +70,7 @@ def _log(save: GameSave, content: str) -> None:
     story_log.append({
         "role": "system",
         "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     })
     save.story_log = json.dumps(story_log)
 

@@ -28,7 +28,7 @@ from __future__ import annotations
 import base64
 import json
 import uuid
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -74,7 +74,7 @@ def _game_state(save: GameSave) -> dict:
 
 def _persist(save: GameSave, game_state: dict, db: Session) -> None:
     save.game_state = json.dumps(game_state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
 
@@ -130,7 +130,7 @@ def _cache_speech(
         "format": result.response_format,
         "speed": result.speed,
         "size_bytes": result.size_bytes,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
         "audio_b64": result.audio_b64,
     }
     audio = _audio_list(game_state)

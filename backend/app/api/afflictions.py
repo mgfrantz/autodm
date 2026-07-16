@@ -353,7 +353,7 @@ def _save_affliction_status(game: GameSave, status: AfflictionStatus) -> None:
 def _log_to_story(game: GameSave, message: str) -> None:
     """Add a message to the story log."""
     import json
-    from datetime import datetime
+    from app.utils.time_utils import utcnow
 
     try:
         story = json.loads(game.story_log or "[]")
@@ -363,7 +363,7 @@ def _log_to_story(game: GameSave, message: str) -> None:
     entry = {
         "type": "system",
         "content": message,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": utcnow().isoformat()
     }
     story.append(entry)
     game.story_log = json.dumps(story)

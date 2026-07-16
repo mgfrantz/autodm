@@ -18,7 +18,7 @@ max/current HP retroactively (+2 per level already attained).
 """
 from __future__ import annotations
 
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -342,7 +342,7 @@ def learn_feat(
     # Increment ASI used
     character.asi_used = (character.asi_used or 0) + 1
 
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
     db.refresh(character)
 

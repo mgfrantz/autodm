@@ -18,7 +18,7 @@ to the character's inventory, then logs the haul to the story.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -65,7 +65,7 @@ def _log(save: GameSave, role: str, content: str) -> None:
     story_log.append({
         "role": role,
         "content": content,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utcnow().isoformat(),
     })
     save.story_log = json.dumps(story_log)
 
@@ -129,8 +129,8 @@ def _apply_loot_to_character(
     _save_inventory(character, inventory)
     save.game_state = json.dumps(state)
     _log(save, "system", _loot_narration(result, "You found"))
-    character.updated_at = datetime.utcnow()
-    save.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
+    save.updated_at = utcnow()
     db.commit()
     db.refresh(character)
 
@@ -242,7 +242,7 @@ def collect_pending_loot(game_id: int, db: Session = Depends(get_db)):
         "items": [],
     }
     save.game_state = json.dumps(state)
-    save.updated_at = datetime.utcnow()
+    save.updated_at = utcnow()
     db.commit()
 
     return {

@@ -9,7 +9,7 @@ Endpoints (mounted under /api/characters):
 """
 from __future__ import annotations
 
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -262,7 +262,7 @@ def award_xp(character_id: int, request: AwardXPRequest, db: Session = Depends(g
     if to_level_total <= from_level_total:
         # No level up, just update XP
         character.xp = xp_total
-        character.updated_at = datetime.utcnow()
+        character.updated_at = utcnow()
         db.commit()
         db.refresh(character)
 
@@ -313,7 +313,7 @@ def award_xp(character_id: int, request: AwardXPRequest, db: Session = Depends(g
     character.max_hp = (character.max_hp or 0) + hp_gained
     character.current_hp = (character.current_hp or 0) + hp_gained
 
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
     db.refresh(character)
 
@@ -425,7 +425,7 @@ def apply_asi_endpoint(
     character.asi_used = (character.asi_used or 0) + 1
     if con_changed:
         _recompute_max_hp(character)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
     db.refresh(character)
 

@@ -10,7 +10,7 @@ Provides endpoints for:
 - Recovering slots on a long rest
 """
 import json
-from datetime import datetime
+from app.utils.time_utils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -223,7 +223,7 @@ def initialize_spellbook(character_id: int, db: Session = Depends(get_db)):
 
     spellbook = get_starting_spellbook(character.char_class, character.level)
     _save_spellbook(character, spellbook)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
 
     return _spellbook_to_response(spellbook)
@@ -243,7 +243,7 @@ def learn_spell(character_id: int, request: LearnSpellRequest, db: Session = Dep
         raise HTTPException(status_code=400, detail="Spell not found or already known")
 
     _save_spellbook(character, spellbook)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
 
     return _spellbook_to_response(spellbook)
@@ -266,7 +266,7 @@ def prepare_spell(character_id: int, request: PrepareSpellRequest, db: Session =
             raise HTTPException(status_code=400, detail="Spell not known or cannot be prepared")
 
     _save_spellbook(character, spellbook)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
 
     return _spellbook_to_response(spellbook)
@@ -293,7 +293,7 @@ def cast_spell(character_id: int, request: CastSpellRequest, db: Session = Depen
         raise HTTPException(status_code=400, detail=outcome.message)
 
     _save_spellbook(character, spellbook)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
 
     return _cast_outcome_to_response(outcome, spellbook)
@@ -309,7 +309,7 @@ def long_rest(character_id: int, db: Session = Depends(get_db)):
     spellbook = _load_spellbook(character)
     spellbook.long_rest()
     _save_spellbook(character, spellbook)
-    character.updated_at = datetime.utcnow()
+    character.updated_at = utcnow()
     db.commit()
 
     return _spellbook_to_response(spellbook)

@@ -5,7 +5,7 @@ Follows the DSPy tutorial pattern: the DM narration is analyzed for
 quest hooks (quests offered) and quest completion/failure.
 """
 from dataclasses import dataclass, field
-from datetime import datetime
+from app.utils.time_utils import utcnow
 from typing import Any
 
 
@@ -83,7 +83,7 @@ class QuestLog:
         reward_hint: str = "",
     ) -> Quest:
         """Add a new quest to the log."""
-        now = datetime.utcnow().isoformat()
+        now = utcnow().isoformat()
         quest = Quest(
             id=self.next_id,
             title=title,
@@ -103,7 +103,7 @@ class QuestLog:
         for quest in self.quests:
             if quest.id == quest_id:
                 quest.status = new_status
-                quest.updated_at = datetime.utcnow().isoformat()
+                quest.updated_at = utcnow().isoformat()
                 return quest
         return None
 
