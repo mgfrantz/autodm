@@ -228,23 +228,40 @@ class DMActionableNarration(dspy.Signature):
       uncertain and warrants a check (attack, save, skill check, damage)
     - Use request_check when YOU (the DM) want the PLAYER to roll
       (e.g., "Roll a Perception check")
+    - For COMBAT actions in an active encounter:
+      - Use attack when a combatant makes a weapon/spell attack. You must
+        reference the combatant by ID (see COMBATANT_IDS in the situation).
+        Args: {"attacker_id": "...", "target_id": "...", "attack_index": 0}
+      - Use damage for direct damage without an attack roll (spell AoE,
+        trap damage, falling damage). Args: {"target_id": "...", "amount": 10,
+        "damage_type": "fire"}
+      - Use roll_initiative at the start of combat to establish turn order.
+        No args needed.
+      - Combatant IDs are provided in the situation prompt under
+        COMBATANT_ROSTER (id, name, side, HP, AC). Always use the exact id.
     - Do NOT fabricate dice results in the narration text — describe
       the ATTEMPT and let the backend resolve the outcome
+    - Do NOT state HP numbers, damage amounts, or initiative order in narration;
+      the backend will provide these via game_actions
     - If an action has a certain outcome, no game_action is needed
     - Reference the action's label in narration (e.g., "You attempt to
       pick the lock...") so the player knows what's being resolved
 
     Each game_action is a dict with:
-    - "function": "roll_dice" | "request_check"
-    - "label": short description (e.g., "Perception Check", "Lockpicking")
+    - "function": "roll_dice" | "request_check" | "attack" | "damage" | "roll_initiative"
+    - "label": short description (e.g., "Perception Check", "Goblin strikes",
+                  "Fireball engulfs enemies")
     - "args": function-specific arguments
       - roll_dice: {"sides": 20, "modifier": 3, "advantage": false,
                      "dc": 15, "disadvantage": false}
       - request_check: {"skill": "Perception", "dc": 15, "reason": "..."}
+      - attack: {"attacker_id": "...", "target_id": "...", "attack_index": 0}
+      - damage: {"target_id": "...", "amount": 10, "damage_type": "fire"}
+      - roll_initiative: {} (no args)
     """
 
-    situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action")
-    narration: str = dspy.OutputField(desc="Vivid narration of the scene. Describe attempts and outcomes — but for uncertain actions, describe the ATTEMPT and let game_actions resolve the result. Do NOT state specific dice numbers.")
+    situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action. Includes COMBATANT_ROSTER with id/name/side/HP/AC for active encounters.")
+    narration: str = dspy.OutputField(desc="Vivid narration of the scene. Describe attempts and outcomes — but for uncertain actions, describe the ATTEMPT and let game_actions resolve the result. For combat, describe the narrative action (e.g., 'The goblin lunges at you') but do NOT fabricate hit/miss/crit/damage numbers or HP totals.")
     game_actions: list[dict] = dspy.OutputField(desc="Structured actions to resolve mechanically. Empty list if no mechanical resolution needed.")
 
 

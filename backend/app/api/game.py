@@ -28,7 +28,14 @@ from app.llm.dspy_modules import (
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
 from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
 from app.engine.game_events import GameEvent
-from app.engine.dm_functions import dm_roll_d20, dm_roll_dice, dm_request_check
+from app.engine.dm_functions import (
+    dm_roll_d20,
+    dm_roll_dice,
+    dm_request_check,
+    dm_attack,
+    dm_apply_damage,
+    dm_roll_initiative,
+)
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 from app.engine.quests import (
     QuestLog,
@@ -83,17 +90,70 @@ async def _dm_actionable_narrate(situation: str) -> tuple[str, list[dict]]:
     return await run_in_threadpool(_call)
 
 
-def _resolve_game_actions(game_actions: list[dict]) -> list[GameEvent]:
+def _combatant_roster_for_dm(game_state: dict[str, Any]) -> str:
+    """Build a combatant roster string for the DM context.
+
+    Returns a formatted list of combatants (id, name, side, HP, AC) if combat
+    is active, or an empty string.
+    """
+    combat_data = game_state.get("combat")
+    if not combat_data:
+        return ""
+
+    try:
+        from app.engine.combat import Encounter
+        encounter = Encounter.from_dict(combat_data)
+        if not encounter.combatants:
+            return ""
+
+        lines = ["COMBATANT_ROSTER:"]
+        for c in encounter.combatants:
+            lines.append(
+                f"  - ID: {c.id} | {c.name} ({c.side}) | HP: {c.current_hp}/{c.max_hp} | AC: {c.armor_class}"
+            )
+        lines.append("Use these IDs in combat game_actions (attack, damage).")
+        return "\n".join(lines)
+    except Exception as e:
+        logger.error(f"Failed to build combatant roster: {e}")
+        return ""
+
+
+def _resolve_game_actions(
+    game_actions: list[dict],
+    game_state: dict[str, Any],
+) -> tuple[list[GameEvent], dict[str, Any]]:
     """Resolve DM-emitted game_actions into GameEvents via the engine.
 
     Each game_action is a dict with:
-    - ``function``: "roll_dice" | "request_check"
+    - ``function``: "roll_dice" | "request_check" | "attack" | "damage" | "roll_initiative"
     - ``label``: short description
     - ``args``: function-specific arguments
 
+    Combat actions (attack, damage, roll_initiative) are stateful: they load
+    the Encounter from game_state["combat"], mutate it, and persist it back.
+    Returns (events, updated_game_state) so the caller can persist changes.
+
     Unknown or malformed actions are logged and skipped (never crash).
     """
+    from app.engine.combat import Encounter
+
     events: list[GameEvent] = []
+
+    # Check if any combat actions are present
+    has_combat = any(
+        a.get("function") in ("attack", "damage", "roll_initiative")
+        for a in game_actions or []
+        if isinstance(a, dict)
+    )
+
+    # Load encounter if combat actions exist
+    encounter: Encounter | None = None
+    if has_combat and game_state.get("combat"):
+        try:
+            encounter = Encounter.from_dict(game_state["combat"])
+        except Exception as e:
+            logger.error(f"Failed to load encounter from game_state: {e}")
+
     for action in game_actions or []:
         if not isinstance(action, dict):
             continue
@@ -122,11 +182,57 @@ def _resolve_game_actions(game_actions: list[dict]) -> list[GameEvent]:
                     dc=args.get("dc"),
                     reason=args.get("reason", ""),
                 ))
+            elif func == "attack":
+                if encounter is None:
+                    logger.warning("Skipping attack action: no encounter loaded")
+                    continue
+                attacker_id = args.get("attacker_id")
+                target_id = args.get("target_id")
+                attack_index = args.get("attack_index", 0)
+                advantage = args.get("advantage", False)
+                disadvantage = args.get("disadvantage", False)
+                if not attacker_id or not target_id:
+                    logger.warning("Skipping attack action: missing attacker_id or target_id")
+                    continue
+                events.append(dm_attack(
+                    encounter=encounter,
+                    attacker_id=attacker_id,
+                    target_id=target_id,
+                    attack_index=attack_index,
+                    advantage=advantage,
+                    disadvantage=disadvantage,
+                ))
+            elif func == "damage":
+                if encounter is None:
+                    logger.warning("Skipping damage action: no encounter loaded")
+                    continue
+                target_id = args.get("target_id")
+                amount = args.get("amount", 0)
+                damage_type = args.get("damage_type", "slashing")
+                if not target_id:
+                    logger.warning("Skipping damage action: missing target_id")
+                    continue
+                events.append(dm_apply_damage(
+                    encounter=encounter,
+                    target_id=target_id,
+                    amount=amount,
+                    damage_type=damage_type,
+                ))
+            elif func == "roll_initiative":
+                if encounter is None:
+                    logger.warning("Skipping roll_initiative action: no encounter loaded")
+                    continue
+                events.append(dm_roll_initiative(encounter=encounter))
             else:
                 logger.warning(f"Unknown game_action function: {func}")
         except Exception as e:
             logger.error(f"Failed to resolve game action {func}: {e}")
-    return events
+
+    # Persist encounter back if it was loaded and mutated
+    if encounter is not None:
+        game_state["combat"] = encounter.to_dict()
+
+    return events, game_state
 
 
 def _compute_skill_modifier(character: Character, skill: str) -> int:
@@ -743,6 +849,7 @@ Mount: {_mount_for_dm(game_state)}
 Downtime: {_downtime_for_dm(game_state, character)}
 Subclass: {_subclass_for_dm(character)}
 Boss: {_boss_for_dm(game_state)}
+{_combatant_roster_for_dm(game_state)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -757,7 +864,7 @@ Boss: {_boss_for_dm(game_state)}
 {base_context}"""
 
     narration, game_actions = await _dm_actionable_narrate(situation=user_prompt)
-    game_events = _resolve_game_actions(game_actions)
+    game_events, game_state = _resolve_game_actions(game_actions, game_state)
 
     # Resolve skill check for structured mechanical outcomes
     skill_check_resolution = _resolve_skill_check(
@@ -857,6 +964,7 @@ Mount: {_mount_for_dm(game_state)}
 Downtime: {_downtime_for_dm(game_state, character)}
 Subclass: {_subclass_for_dm(character)}
 Boss: {_boss_for_dm(game_state)}
+{_combatant_roster_for_dm(game_state)}
 """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -923,6 +1031,7 @@ Boss: {_boss_for_dm(game_state)}
 
                 # Load fresh game_state
                 game_state = json.loads(save.game_state)
+                stored_game_state = game_state  # Update for later use
 
                 # Store resolution in game_state if successful
                 if skill_check_resolution:
@@ -958,15 +1067,25 @@ Boss: {_boss_for_dm(game_state)}
         finally:
             db.close()
 
-        # Resolve game actions (DM function calling Phase 1).
+        # Resolve game actions (DM function calling Phase 1/2).
         # The streaming path produces narration text via stream_narration_dspy;
         # we make a separate non-streaming call to get structured game_actions.
         game_events: list[GameEvent] = []
         try:
             _, game_actions = await _dm_actionable_narrate(situation=user_prompt)
-            game_events = _resolve_game_actions(game_actions)
+            game_events, stored_game_state = _resolve_game_actions(game_actions, stored_game_state)
         except Exception as e:
             logger.error(f"Game action resolution failed: {e}")
+
+        # Persist updated game_state (combat mutations from DM function calls)
+        db = session_factory()
+        try:
+            save = db.query(GameSave).filter(GameSave.id == game_id).first()
+            if save:
+                save.game_state = json.dumps(stored_game_state)
+                db.commit()
+        finally:
+            db.close()
 
         # Emit game_event SSE events before the done event.
         for event in game_events:

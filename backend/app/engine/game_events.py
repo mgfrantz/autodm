@@ -23,9 +23,11 @@ class GameEventType(str, Enum):
 
     DICE_ROLL = "dice_roll"
     CHECK_PROMPT = "check_prompt"
+    # Phase 2: Combat
+    ATTACK = "attack"
+    DAMAGE = "damage"
+    INITIATIVE = "initiative"
     # Future phases:
-    # ATTACK = "attack"
-    # DAMAGE = "damage"
     # SPELL_CAST = "spell_cast"
     # LOOT = "loot"
     # CONDITION_APPLIED = "condition_applied"
@@ -99,4 +101,75 @@ class GameEvent:
             type=GameEventType.CHECK_PROMPT,
             label=f"{skill} Check",
             data={"skill": skill, "dc": dc, "reason": reason},
+        )
+
+    @classmethod
+    def attack(
+        cls,
+        label: str,
+        attacker: str,
+        target: str,
+        attack_total: int,
+        ac: int,
+        hit: bool,
+        critical: bool,
+        critical_miss: bool,
+        damage: int,
+        damage_type: str,
+        target_remaining_hp: int,
+        target_max_hp: int,
+    ) -> "GameEvent":
+        """Create an ``attack`` event with full to-hit + damage resolution."""
+        return cls(
+            type=GameEventType.ATTACK,
+            label=label,
+            data={
+                "attacker": attacker,
+                "target": target,
+                "attack_total": attack_total,
+                "ac": ac,
+                "hit": hit,
+                "critical": critical,
+                "critical_miss": critical_miss,
+                "damage": damage,
+                "damage_type": damage_type,
+                "target_remaining_hp": target_remaining_hp,
+                "target_max_hp": target_max_hp,
+            },
+        )
+
+    @classmethod
+    def damage(
+        cls,
+        label: str,
+        target: str,
+        amount: int,
+        damage_type: str,
+        target_remaining_hp: int,
+        target_max_hp: int,
+    ) -> "GameEvent":
+        """Create a ``damage`` event (standalone damage application)."""
+        return cls(
+            type=GameEventType.DAMAGE,
+            label=label,
+            data={
+                "target": target,
+                "amount": amount,
+                "damage_type": damage_type,
+                "target_remaining_hp": target_remaining_hp,
+                "target_max_hp": target_max_hp,
+            },
+        )
+
+    @classmethod
+    def initiative(cls, label: str, combatants: list[dict]) -> "GameEvent":
+        """Create an ``initiative`` event.
+
+        ``combatants`` is a list of dicts in turn order:
+        ``[{name, initiative, side}, ...]``
+        """
+        return cls(
+            type=GameEventType.INITIATIVE,
+            label=label,
+            data={"combatants": combatants},
         )
