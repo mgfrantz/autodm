@@ -2,6 +2,7 @@
 
 > **Status:** Phase 1 IMPLEMENTED ✅ — dice rolling + check prompts are live
 > Phase 2 IMPLEMENTED ✅ — combat resolution (attack/damage/initiative) is live
+> Phase 3 STAGED 📋 — spell casting implementation plan written; awaiting Mike's green-light
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
@@ -1099,6 +1100,332 @@ If Phase 2 is too large for a single run, it can be split:
 
 ---
 
+## Phase 3 Implementation Plan — Spell Casting via DM Function Calls
+
+> **Status:** STAGED (2026-07-16) — awaiting Mike's green-light. This is a
+> concrete, file-level implementation plan modelled on the Phase 1 and Phase 2
+> plans above. The dev agent cron job will execute it once Mike green-lights it.
+> **No code changes until green-light** — this section is research/staging only.
+
+### Goal
+
+Extend the DM function-calling system so the DM can emit **spell-casting**
+`game_actions` (`cast_spell`) that the backend resolves via the real spell
+engine (`backend/app/engine/spells.py`). When a player or NPC casts a spell —
+*Fire Bolt*, *Cure Wounds*, *Fireball* — the backend consumes the real spell
+slot, rolls the real damage/healing via the existing engine, and the outcome
+flows as a typed `SPELL_CAST` `GameEvent` to the frontend, rendering as an
+inline **SpellCastCard** that mirrors the Phase 1/2 card UX.
+
+The DM describes the *intent* ("the wizard hurls a Fire Bolt at the goblin");
+the engine resolves the *mechanics* (slot consumed, attack roll, save DC,
+damage). The DM never fabricates spell outcomes.
+
+### Why Phase 3 Is Harder Than Phase 2
+
+Phase 2 (combat) was stateful against **one** store (`game_state["combat"]`).
+Spell casting touches **two** stateful stores:
+
+| Aspect | Phase 2 (combat) | Phase 3 (spells) |
+|--------|------------------|------------------|
+| Slot state | Encounter in `game_state["combat"]` | Spellbook on **`character.spells`** (JSON column) |
+| Source of truth | `game_state["combat"]` | `character.spells` (also read/written by the Spells panel + `/cast` endpoint) |
+| Cross-store coupling | None | A combat spell's damage must also reduce combatant HP in the Encounter |
+| DM context needed | Combatant roster | Available spells (name, level, school) + remaining slots |
+| Persistence target | `game_state["combat"]` → `GameSave.game_state` | `character.spells` → `Character.spells` |
+
+The core architectural change: `_resolve_game_actions()` must now also receive
+the **Character** object (the Spellbook's home), cast through `Spellbook.cast()`
+(which consumes a slot), and persist the mutated Spellbook back to
+`character.spells`. When the spell deals damage to a combatant in an active
+Encounter, that damage also flows into `game_state["combat"]`.
+
+### Architecture: Dual-State Resolution
+
+```
+DM narration (DMActionableNarration)
+    │
+    │  game_actions: [{function: "cast_spell", args: {spell_id, target_id, slot_level}}]
+    ▼
+_resolve_game_actions(game_actions, game_state, character)
+    │
+    │  1. Separate stateless (roll_dice, request_check),
+    │     combat (attack, damage, roll_initiative), and spell (cast_spell) actions
+    │  2. If spell actions exist, load Spellbook.from_dict(json.loads(character.spells))
+    │  3. For each cast_spell action:
+    │     a. Derive caster_mod from the character's casting ability
+    │     b. If a target_id is given and an Encounter is loaded, look up
+    │        target_ac (attack spells) / target_save_total (save spells)
+    │     c. Call spellbook.cast(spell_id, slot_level, caster_mod, ...) → CastOutcome
+    │     d. If the spell dealt damage AND the target is an Encounter combatant,
+    │        apply the damage to the Encounter (combatant.take_damage) + emit
+    │        a follow-up DAMAGE event
+    │  4. Persist mutated Spellbook back to character.spells
+    │  5. Persist mutated Encounter back to game_state["combat"]
+    ▼
+GameEvents flow as SSE → frontend renders SpellCastCard (+ optional DamageCard)
+```
+
+**Signature change:** `_resolve_game_actions(game_actions, game_state, character=None) -> tuple[list[GameEvent], dict[str, Any]]`
+
+The caller (`/action` and `/action/stream`) already has the `character` in
+scope (`character = save.character`). After resolution, it persists
+`character.spells` (a JSON column) the same way it already persists
+`game_state`.
+
+### Existing Engine (no new mechanics — pure exposure)
+
+The spell engine is already comprehensive and unit-tested:
+
+- **`Spell`** dataclass — name, level, school, `requires_attack_roll`,
+  `save_ability`, damage/healing dice, upcasting (`at_higher_levels_dice`),
+  cantrip scaling. `to_dict()` / `from_dict()` for serialization.
+- **`SPELL_REGISTRY` + `get_spell(spell_id)`** — lookup by id
+  (e.g. `fire_bolt`) or name (e.g. `Fire Bolt`). 108 spells registered.
+- **`Spellbook`** — per-character book with slot accounting:
+  - `cast(spell_id, slot_level, caster_mod, target_ac, target_save_total, active_conditions)` →
+    `CastOutcome` (consumes a slot, resolves the effect via `resolve_spell_effect`)
+  - `spell_attack_bonus`, `spell_save_dc` (derived from level + casting ability)
+  - `available_slots(level)`, `slots_overview()`, `can_cast(spell_id)`
+  - `to_dict()` / `from_dict()` — persistence (the source of truth is
+    `character.spells` JSON)
+- **`SpellEffectResult`** — outcome of effect resolution: `rolled_attack`,
+  `hit`, `made_save`, `damage`, `healing`, `damage_type`, `half_damage`
+- **`resolve_spell_effect(...)`** — handles attack-roll spells (d20 vs AC),
+  saving-throw spells (half damage on save), direct-damage (Magic Missile),
+  healing, and utility spells.
+
+**The work is purely *exposing* `Spellbook.cast()` as a DM-callable function
+and threading the result into the GameEvent pipeline — no new spell mechanics.**
+
+### New GameEvent Type (`game_events.py`)
+
+```python
+class GameEventType(str, Enum):
+    # Phase 1
+    DICE_ROLL = "dice_roll"
+    CHECK_PROMPT = "check_prompt"
+    # Phase 2
+    ATTACK = "attack"
+    DAMAGE = "damage"
+    INITIATIVE = "initiative"
+    # Phase 3
+    SPELL_CAST = "spell_cast"
+```
+
+New factory classmethod on `GameEvent`:
+
+```python
+@classmethod
+def spell_cast(
+    cls,
+    label: str,
+    spell_name: str,
+    spell_id: str,
+    level: int,                 # base spell level (0 = cantrip)
+    school: str,
+    slot_level: int | None,     # slot expended (None for cantrips / failed cast)
+    success: bool,              # whether the cast succeeded
+    attack_total: int | None,   # attack-roll spells only
+    hit: bool | None,           # attack-roll spells only
+    made_save: bool | None,     # saving-throw spells only
+    save_dc: int | None,        # save spells
+    save_ability: str | None,   # save spells ("dex", "wis", ...)
+    damage: int,                # resolved damage (0 if none)
+    healing: int,               # resolved healing (0 if none)
+    damage_type: str,
+    half_damage: bool,          # saved for half
+    target: str,                # target name (or "" if self/utility)
+    target_remaining_hp: int | None,   # if target is an encounter combatant
+    target_max_hp: int | None,         # if target is an encounter combatant
+    message: str,               # failure reason, or short outcome description
+    slots_remaining: list[dict] | None = None,  # [{level, available}, ...] post-cast
+) -> "GameEvent":
+    """Create a ``spell_cast`` event with full resolution + HP tracking."""
+```
+
+### New DM-Callable Function (`dm_functions.py`)
+
+```python
+def dm_cast_spell(
+    spellbook: Spellbook,
+    spell_id: str,
+    slot_level: int | None = None,
+    caster_mod: int = 0,
+    target_ac: int | None = None,
+    target_save_total: int | None = None,
+    active_conditions: list[str] | None = None,
+) -> GameEvent:
+    """Resolve a spell cast via spellbook.cast().
+
+    Looks up the spell in the registry, consumes a slot, rolls the real
+    damage/healing/attack, and returns a ``spell_cast`` GameEvent. If the cast
+    fails (no slots, not known, component-blocked), returns a spell_cast event
+    with ``success=False`` and a human-readable ``message``.
+
+    Args:
+        spellbook: The character's live Spellbook (consumes a slot on success).
+        spell_id: Spell id or name (e.g. "fire_bolt", "Cure Wounds").
+        slot_level: Desired slot level for upcasting (None = auto/lowest).
+        caster_mod: Casting-ability modifier (INT/WIS/CHA).
+        target_ac: Target AC for attack-roll spells.
+        target_save_total: Target's save total for saving-throw spells.
+        active_conditions: Caster's conditions (may block V/S components).
+
+    Returns:
+        A ``spell_cast`` GameEvent.
+    """
+```
+
+### DSPy Signature Changes (`dspy_signatures.py`)
+
+Expand `DMActionableNarration` docstring with spell-casting guidance:
+
+```
+- cast_spell: {"function": "cast_spell", "label": "Wizard casts Fire Bolt",
+               "args": {"spell_id": "fire_bolt", "target_id": "goblin_1",
+                        "slot_level": null}}
+  Use for ANY spell cast — cantrip or leveled. The backend consumes the real
+  slot, rolls the real attack/damage/save. Reference a real spell_id from the
+  available-spells roster provided in the situation context.
+  - slot_level: null (auto/lowest) or an int for upcasting.
+  - target_id: a combatant id from the roster (for attack/save/damage spells),
+    or omit for self/utility spells (Cure Wounds on self, Mage Armor, etc.).
+```
+
+The situation prompt must include the player's **available spells roster**
+(name, id, level, school, one-line effect) + **remaining slots** per level, so
+the DM references real spell IDs. (Mirrors the Phase 2 combatant roster.)
+
+### Resolution Pipeline Changes (`api/game.py`)
+
+1. **`_resolve_game_actions()` upgrade** — accept `character`:
+   ```python
+   def _resolve_game_actions(
+       game_actions: list[dict],
+       game_state: dict[str, Any],
+       character: "Character | None" = None,
+   ) -> tuple[list[GameEvent], dict[str, Any]]:
+       # ... existing stateless + combat handling ...
+       # NEW: spell handling
+       has_spell = any(a.get("function") == "cast_spell" ...)
+       spellbook = None
+       if has_spell and character is not None:
+           spellbook = _load_spellbook(character)   # reuse api/spells.py helper
+       for action in ...:
+           if func == "cast_spell":
+               # derive caster_mod from character's casting ability
+               # resolve target_ac/target_save_total from encounter if target_id given
+               # dm_cast_spell(spellbook, ...) → event
+               # if spell dealt damage to an encounter combatant → also apply + DAMAGE event
+       if spellbook is not None:
+           _save_spellbook(character, spellbook)    # persist back to character.spells
+       if encounter is not None:
+           game_state["combat"] = encounter.to_dict()
+       return events, game_state
+   ```
+   The caller persists `character` (the `spells` column) via `db.commit()`.
+
+2. **Call sites** — both `/action` and `/action/stream` pass `character`.
+
+3. **Situation prompt** — add an available-spells roster (only for casters) so
+   the DM can emit real `cast_spell` actions. Helper:
+   `_available_spells_for_dm(character) -> str`.
+
+4. **Error handling** — non-caster / unknown spell / no slots / component-blocked
+   → `cast_spell` event with `success=False` + message (never crash). Same
+   defensive pattern as Phase 1/2.
+
+### Frontend Components
+
+#### `SpellCastCard.tsx` (NEW)
+
+```
+┌────────────────────────────────────────────┐
+│  🔮 Fire Bolt (Evocation cantrip)          │
+│  [d20] 16 + 5 = 21 vs AC 14 → ✅ Hit      │
+│  💥 10 fire damage                         │
+│  Goblin HP: ████████░░ 14/22               │
+└────────────────────────────────────────────┘
+```
+- School-themed accent colors (evocation=orange, necromancy=dark-green,
+  abjuration=blue, illusion=purple, etc.) — reuse `damageTypeColor()` pattern
+- Three resolution modes: attack-roll (d20 vs AC), saving-throw (DC + made/failed),
+  auto (Magic Missile) / healing / utility
+- HP bar when target is a combatant (reuse `hpBarData()`)
+- Failed cast: muted card showing the reason ("No spell slots available")
+- Dismissible (same pattern as Phase 1/2 cards)
+
+#### Updates
+- `GameEventRenderer.tsx` — dispatch `spell_cast` type
+- `gameEvents.ts` — add `spellSchoolColor()`, `spellCastSummary()`
+- `types/index.ts` — extend `GameEventData` with spell fields + add
+  `'spell_cast'` to `GameEventType`
+
+### File-Level Implementation Plan
+
+| Step | File | Action | Details |
+|------|------|--------|---------|
+| 1 | `backend/app/engine/game_events.py` | MODIFY | Add `SPELL_CAST` to enum + `spell_cast()` factory classmethod |
+| 2 | `backend/app/engine/dm_functions.py` | MODIFY | Add `dm_cast_spell()` wrapping `Spellbook.cast()` |
+| 3 | `backend/app/llm/dspy_signatures.py` | MODIFY | Expand `DMActionableNarration` docstring with `cast_spell` guidance |
+| 4 | `backend/app/api/game.py` | MODIFY | Upgrade `_resolve_game_actions(..., character=None)`; add `_available_spells_for_dm()` roster helper; thread `character` through both endpoints; spell-damage-to-encounter coupling |
+| 5 | `frontend/src/types/index.ts` | MODIFY | Add spell fields to `GameEventData`; add `'spell_cast'` to `GameEventType` |
+| 6 | `frontend/src/utils/gameEvents.ts` | MODIFY | Add `spellSchoolColor()`, `spellCastSummary()` |
+| 7 | `frontend/src/components/SpellCastCard.tsx` | NEW | Inline spell cast card (attack/save/auto/healing modes + HP bar) |
+| 8 | `frontend/src/components/GameEventRenderer.tsx` | MODIFY | Dispatch `spell_cast` event type |
+| 9 | Tests | NEW/EXTEND | Backend: `test_dm_spell_functions.py`, `test_spell_events_api.py`; Frontend: `SpellCastCard.test.tsx`, `gameEvents.test.ts` additions |
+
+### Test Plan
+
+| Layer | File | Tests |
+|-------|------|-------|
+| Engine | `test_dm_functions.py` (extend) | `dm_cast_spell` attack-roll hit/miss; save spell half-damage; healing spell; auto-damage (Magic Missile); cantrip (no slot consumed); failed cast (no slots / unknown / component-blocked) |
+| Engine | `test_game_events.py` (extend) | `spell_cast` factory serialization round-trip; enum value |
+| API | `test_spell_events_api.py` (NEW) | `/action` with `cast_spell` game_action emits SPELL_CAST event; slot persisted to `character.spells`; spell damage reduces encounter combatant HP (+ DAMAGE event); streaming emits `game_event` SSE; non-caster → graceful skip; failed cast event has `success=False` |
+| Frontend utils | `gameEvents.test.ts` (extend) | `spellSchoolColor` (8 schools); `spellCastSummary` (hit/miss/save/heal/fail) |
+| Frontend components | `SpellCastCard.test.tsx` (NEW) | attack hit, attack miss, save half-damage, healing, failed cast, HP bar render, dismiss |
+| **Total** | | **~25 new tests** |
+
+### Verification Checklist (for dev agent)
+- [ ] `uv run pytest` — all existing tests pass + new spell tests green
+- [ ] `cd frontend && npx tsc --noEmit` — no type errors
+- [ ] `cd frontend && npm run build` — clean build
+- [ ] `cd frontend && npm test` — all frontend tests pass
+- [ ] PROGRESS.md updated with completed work
+- [ ] Commit with `feat: DM function calling Phase 3 — spell casting`
+- [ ] `git push origin develop`
+
+### Key Design Decisions (for Phase 3)
+1. **Spellbook source of truth = `character.spells`** — not duplicated into `game_state`. The resolver loads/saves via the same `_load_spellbook` / `_save_spellbook` helpers the Spells API uses, keeping a single source of truth.
+2. **`_resolve_game_actions` gains a `character` param** — needed to reach the Spellbook. Backward-compatible default `None`.
+3. **Dual-state coupling** — a damage-dealing spell targeting an encounter combatant reduces both the Spellbook (slot) and the Encounter (HP). Resolved in order: cast → apply damage to encounter → emit SPELL_CAST + DAMAGE events.
+4. **Casting mod derived, not DM-supplied** — the DM emits only `spell_id` + `target_id` + optional `slot_level`; the backend computes `caster_mod`, `spell_save_dc`, `target_ac`/`target_save_total` from real character + encounter data.
+5. **DM never fabricates spell outcomes** — attack rolls, saves, damage, and healing all come from the engine.
+6. **Failed casts are first-class events** — no slots / unknown spell / component-blocked render as a muted card with the reason, so the player sees *why* the cast failed.
+7. **Graceful degradation** — non-caster / missing character → skip spell actions, log warning, still return Phase 1/2 events.
+8. **Consistent inline UX** — SpellCastCard follows the same dismissible-inline pattern as the DiceRollCard / AttackCard.
+
+### What Phase 3 Does NOT Include (deferred)
+- Inventory operations via DM function calls (Phase 4)
+- Condition application via DM function calls (Phase 5)
+- Concentration tracking through the DM pipeline (the spell engine supports it; DM-callable exposure is a Phase 3.5 stretch)
+- AoE spell resolution against multiple combatants in one call (Phase 3.5 — initial scope is single-target; multi-target can iterate over `cast_spell` actions or a future `cast_spell_aoe` function)
+- Spell scroll / wand charge consumption (out of scope)
+
+### Sub-phase Breakdown (optional, for phased rollout)
+
+If Phase 3 is too large for a single run, it can be split:
+
+- **Phase 3a (core):** `dm_cast_spell` + `SpellCastCard` for single-target
+  attack/save/healing spells, slot consumption, `character.spells` persistence.
+  The single most valuable spell bridge. (~15 tests)
+- **Phase 3b (combat coupling):** spell-damage-to-encounter coupling (reduce
+  combatant HP + follow-up DAMAGE event), available-spells roster in DM prompt,
+  multi-target iteration. (~10 tests)
+
+---
+
 ## Related Documents
 - `docs/DSPY_TEXT_GAME_REFERENCE.md` — DSPy text game tutorial analysis;
   `ActionResolver` signature (structured skill-check resolution) is directly
@@ -1132,3 +1459,18 @@ If Phase 2 is too large for a single run, it can be split:
   Includes optional sub-phase breakdown (2a: attacks, 2b: damage+initiative).
 - 2025-07-15: **Phase 2 GREEN-LIT by Mike** — dev agent cron directive updated
   to execute the Phase 2 plan. Status changed from STAGED to executing.
+- 2026-07-16: **Phase 2 IMPLEMENTED** — all 12 steps complete (backend +
+  frontend). 2690 backend + 206 frontend tests passing. DM emits
+  attack/damage/roll_initiative game_actions; backend resolves via the real
+  Encounter engine; results flow as ATTACK/DAMAGE/INITIATIVE GameEvents and
+  render as inline AttackCard/DamageCard/InitiativeCard components.
+- 2026-07-16: **Phase 3 STAGED** — added concrete, file-level implementation
+  plan for spell casting via DM function calls. Key insight: unlike Phase 2's
+  single-state Encounter, spell casting touches **two** stateful stores — the
+  Spellbook on `character.spells` (slot consumption) AND the Encounter in
+  `game_state["combat"]` (combat spell damage). `_resolve_game_actions` gains a
+  `character` param to reach the Spellbook. Plan covers new SPELL_CAST
+  GameEvent type, `dm_cast_spell()` wrapping `Spellbook.cast()`, DSPy signature
+  expansion, dual-state resolution pipeline, and a SpellCastCard component.
+  ~25 new tests. Includes optional sub-phase breakdown (3a: core single-target,
+  3b: combat coupling). Awaiting Mike's green-light.

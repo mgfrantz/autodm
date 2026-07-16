@@ -235,33 +235,39 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 2 (Combat Resolution — Frontend Cards)
+## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 3 (Spell Casting) STAGED, awaiting Mike's green-light
 
-**Phase 2 backend complete (commit 9ffa5fe).** Frontend work next (steps 5-11).
+**Phase 2 (Combat Resolution) is FULLY COMPLETE** (commit `66b55cb` — backend +
+frontend). The previous directive (Phase 2 frontend cards) is done. There is
+currently **no green-lit work** to execute.
 
-Read `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 2 Implementation Plan" section.
-Backend is done; now need to create visual components for combat events.
+### What happened this run (2026-07-16)
+- Verified the full suite is green: **2690 backend + 206 frontend tests**, clean
+  `tsc`/`build`. README is in sync (2896 total).
+- Recognized the cron directive was stale (pointed at completed Phase 2).
+- **Staged Phase 3 (Spell Casting)** — wrote a concrete, file-level
+  implementation plan in `docs/DM_FUNCTION_CALLING_RESEARCH.md` (search for
+  "Phase 3 Implementation Plan"). Modeled on the Phase 1/2 plans.
 
-### Summary (Frontend work)
-Create inline combat cards (AttackCard, DamageCard, InitiativeCard) that render
-combat `GameEvent` objects flowing from the backend via SSE. Cards follow the
-same dismissible-inline pattern as Phase 1 DiceRollCard and CheckPromptCard.
+### Phase 3 in one paragraph
+Let the DM emit `cast_spell` game_actions. The backend resolves them via the
+real spell engine (`Spellbook.cast()`), consuming a real spell slot, rolling
+real attack/damage/save, and flowing a typed `SPELL_CAST` GameEvent to a new
+inline `SpellCastCard`. The architectural wrinkle vs Phase 2: spells touch
+**two** stateful stores — the Spellbook on `character.spells` (slot
+consumption) AND the Encounter in `game_state["combat"]` (combat spell damage)
+— so `_resolve_game_actions` gains a `character` param.
 
-### Steps (see design doc for full detail)
-5. `types/index.ts` — add combat fields to GameEventData
-6. `utils/gameEvents.ts` — damageTypeColor(), hpBarData(), attackSummary(), damageSummary()
-7. `components/AttackCard.tsx` — inline attack result with HP bar (hit/miss/crit color-coded)
-8. `components/DamageCard.tsx` — inline damage card with HP bar + death indicator
-9. `components/InitiativeCard.tsx` — initiative order list
-10. `components/GameEventRenderer.tsx` — dispatch new event types
-11. Tests (~15 new frontend tests)
+### Awaiting green-light — DO NOT IMPLEMENT YET
+Per the staging workflow, Phase 3 is **research/docs only** until Mike says
+"green-light". When Mike green-lights, follow the Phase Green-Light sequence:
+update this directive, update the design doc status to "GREEN-LIT — executing",
+update the cron prompt, then execute the 9-step plan (~25 new tests).
 
-### Verification
-- `cd frontend && npx tsc --noEmit` — no type errors
-- `cd frontend && npm run build` — clean build
-- `cd frontend && npm test` — all frontend tests pass
-- Commit: `feat: DM function calling Phase 2 — combat cards (frontend)`
-- Push to `develop`
+### If this runs again before green-light
+Re-verify the suite is green (`uv run pytest`, `cd frontend && npm test`),
+check PROGRESS.md / `git log` for any other agent's work, keep README synced,
+and report status. Do not implement Phase 3 without the green-light.
 
 ---
 
