@@ -2,7 +2,7 @@
 
 > **Status:** Phase 1 IMPLEMENTED ✅ — dice rolling + check prompts are live
 > Phase 2 IMPLEMENTED ✅ — combat resolution (attack/damage/initiative) is live
-> Phase 3 STAGED 📋 — spell casting implementation plan written; awaiting Mike's green-light
+> Phase 3 GREEN-LIT ✅ by Mike (2026-07-16) — spell casting implementation EXECUTING
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
@@ -1102,10 +1102,9 @@ If Phase 2 is too large for a single run, it can be split:
 
 ## Phase 3 Implementation Plan — Spell Casting via DM Function Calls
 
-> **Status:** STAGED (2026-07-16) — awaiting Mike's green-light. This is a
-> concrete, file-level implementation plan modelled on the Phase 1 and Phase 2
-> plans above. The dev agent cron job will execute it once Mike green-lights it.
-> **No code changes until green-light** — this section is research/staging only.
+> **Status:** GREEN-LIT by Mike (2026-07-16) — EXECUTING. The dev agent cron
+> job has been updated with the Phase 3 directive and will implement this plan
+> on its next scheduled run (~every 2h).
 
 ### Goal
 
@@ -1464,6 +1463,10 @@ If Phase 3 is too large for a single run, it can be split:
   attack/damage/roll_initiative game_actions; backend resolves via the real
   Encounter engine; results flow as ATTACK/DAMAGE/INITIATIVE GameEvents and
   render as inline AttackCard/DamageCard/InitiativeCard components.
+- 2026-07-16: **Phase 3 GREEN-LIT by Mike** — dev agent cron directive updated
+  to execute the Phase 3 spell casting plan. Status changed from STAGED to
+  EXECUTING. The DM will gain `cast_spell` game_actions resolved via the real
+  Spellbook engine.
 - 2026-07-16: **Phase 3 STAGED** — added concrete, file-level implementation
   plan for spell casting via DM function calls. Key insight: unlike Phase 2's
   single-state Encounter, spell casting touches **two** stateful stores — the

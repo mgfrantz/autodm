@@ -235,19 +235,11 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 3 (Spell Casting) STAGED, awaiting Mike's green-light
+## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 3 (Spell Casting) GREEN-LIT — EXECUTING
 
 **Phase 2 (Combat Resolution) is FULLY COMPLETE** (commit `66b55cb` — backend +
-frontend). The previous directive (Phase 2 frontend cards) is done. There is
-currently **no green-lit work** to execute.
-
-### What happened this run (2026-07-16)
-- Verified the full suite is green: **2690 backend + 206 frontend tests**, clean
-  `tsc`/`build`. README is in sync (2896 total).
-- Recognized the cron directive was stale (pointed at completed Phase 2).
-- **Staged Phase 3 (Spell Casting)** — wrote a concrete, file-level
-  implementation plan in `docs/DM_FUNCTION_CALLING_RESEARCH.md` (search for
-  "Phase 3 Implementation Plan"). Modeled on the Phase 1/2 plans.
+frontend). Mike has **green-lit Phase 3 (Spell Casting)** as of 2026-07-16.
+The dev agent cron directive has been updated to execute the 9-step plan.
 
 ### Phase 3 in one paragraph
 Let the DM emit `cast_spell` game_actions. The backend resolves them via the
@@ -258,16 +250,43 @@ inline `SpellCastCard`. The architectural wrinkle vs Phase 2: spells touch
 consumption) AND the Encounter in `game_state["combat"]` (combat spell damage)
 — so `_resolve_game_actions` gains a `character` param.
 
-### Awaiting green-light — DO NOT IMPLEMENT YET
-Per the staging workflow, Phase 3 is **research/docs only** until Mike says
-"green-light". When Mike green-lights, follow the Phase Green-Light sequence:
-update this directive, update the design doc status to "GREEN-LIT — executing",
-update the cron prompt, then execute the 9-step plan (~25 new tests).
+### What to do this run
+1. Read `PROGRESS.md` (this section is authoritative) + the full Phase 3 plan
+   in `docs/DM_FUNCTION_CALLING_RESEARCH.md` (search "Phase 3 Implementation
+   Plan").
+2. `git pull origin develop` + `git log --oneline -15` to sync any recent changes.
+3. Verify the suite is green before starting: `uv run pytest` (expect 2690) +
+   `cd frontend && npm test` (expect 206).
+4. **Execute the 9-step Phase 3 plan** (file-level table in the design doc):
+   - Step 1: `game_events.py` — add `SPELL_CAST` enum + `spell_cast()` factory
+   - Step 2: `dm_functions.py` — add `dm_cast_spell()` wrapping `Spellbook.cast()`
+   - Step 3: `dspy_signatures.py` — expand `DMActionableNarration` docstring
+   - Step 4: `api/game.py` — upgrade `_resolve_game_actions(..., character=None)`;
+     add `_available_spells_for_dm()` roster helper; thread `character` through
+     both endpoints; spell-damage-to-encounter coupling
+   - Step 5: `frontend/src/types/index.ts` — spell fields + `'spell_cast'` type
+   - Step 6: `frontend/src/utils/gameEvents.ts` — `spellSchoolColor()`, `spellCastSummary()`
+   - Step 7: `frontend/src/components/SpellCastCard.tsx` — NEW card component
+   - Step 8: `frontend/src/components/GameEventRenderer.tsx` — dispatch `spell_cast`
+   - Step 9: Tests — `test_dm_spell_functions.py`, `test_spell_events_api.py`,
+     `SpellCastCard.test.tsx`, `gameEvents.test.ts` additions (~25 new tests)
+5. Optional sub-phase split if the run is too long: **3a** (core single-target,
+   steps 1-7, ~15 tests) → checkpoint → **3b** (combat coupling + roster, step 4
+   damage-to-encounter + roster, ~10 tests).
+6. Run the full verification checklist (see design doc).
+7. Commit: `feat: DM function calling Phase 3 — spell casting`
+8. `git push origin develop`
+9. Update PROGRESS.md with completed work + update README.md to sync.
 
-### If this runs again before green-light
-Re-verify the suite is green (`uv run pytest`, `cd frontend && npm test`),
-check PROGRESS.md / `git log` for any other agent's work, keep README synced,
-and report status. Do not implement Phase 3 without the green-light.
+### Verification Checklist
+- [ ] `uv run pytest` — all existing + new spell tests green
+- [ ] `cd frontend && npx tsc --noEmit` — no type errors
+- [ ] `cd frontend && npm run build` — clean build
+- [ ] `cd frontend && npm test` — all frontend tests pass
+- [ ] PROGRESS.md updated with completed work
+- [ ] README.md synced (test counts, feature list)
+- [ ] Commit: `feat: DM function calling Phase 3 — spell casting`
+- [ ] `git push origin develop`
 
 ---
 
