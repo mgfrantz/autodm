@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅
-## TEST SUITE FULLY GREEN (2651 backend + 163 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅
+## TEST SUITE FULLY GREEN (2651 backend + 163 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅
 
 ## ✅ COMPLETED: Deprecation cleanup — `datetime.utcnow()` → `utcnow()` helper
 
@@ -26,6 +26,65 @@ are completely unaffected.
   SQLAlchemy/Pydantic/DSPy deprecations); `2647 → 2651` backend tests (+4 new),
   all green. Pure `refactor:` — no behaviour change, symmetric diff
   (113 insertions / 113 deletions).
+
+---
+
+## ✅ COMPLETED: DM Function Calling — Phase 2 (Combat Resolution — Backend)
+
+**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md`
+
+Extended the DM function-calling system so the DM can emit **combat**
+`game_actions` (`attack`, `damage`, `roll_initiative`) that the backend
+resolves via the real `Encounter` engine.
+
+### Backend Changes (Steps 1-4 complete)
+
+1. **`backend/app/engine/game_events.py`** — Added ATTACK, DAMAGE, INITIATIVE
+   to `GameEventType` enum with factory classmethods:
+   - `attack()` — hit/miss/critical roll, attack roll, target AC, damage preview
+   - `damage()` — damage amount, type, target remaining/max HP, death indicator
+   - `initiative()` — full initiative order list with combatant details
+
+2. **`backend/app/engine/dm_functions.py`** — Added DM-callable combat functions:
+   - `dm_attack()` — wraps `Encounter.resolve_attack()` with advantage/disadvantage
+   - `dm_apply_damage()` — wraps `Encounter.apply_damage()` with HP tracking
+   - `dm_roll_initiative()` — wraps `Encounter.roll_initiative()` for all combatants
+
+3. **`backend/app/llm/dspy_signatures.py`** — Updated `DMActionableNarration`
+   signature docstring with combat function guidance and combatant ID convention
+
+4. **`backend/app/api/game.py`** — Upgraded to stateful resolution:
+   - `_resolve_game_actions()` now accepts `game_state` and returns `(events, game_state)`
+   - Loads `Encounter.from_dict(game_state["combat"])` when combat actions are present
+   - Mutates encounter via engine, persists back to `game_state["combat"]`
+   - Added `_combatant_roster_for_dm()` helper to inject combatant roster into DM prompt
+   - Updated both `/action` and `/action/stream` endpoints to use stateful resolution
+   - Graceful degradation: missing encounter → skip combat actions, log warning
+
+### Key Architectural Decisions
+
+- **Stateful resolution** — Phase 1 dice rolls were stateless; Phase 2 combat is stateful
+- **Encounter lives in `game_state["combat"]`** — no new persistence model
+- **Combatant IDs in DM context** — situation prompt includes roster (id, name, side, HP, AC)
+- **Combat actions resolved in order** — state changes propagate between chained actions
+- **HP always visible** — every attack/damage event includes `target_remaining_hp` + `target_max_hp`
+- **DM describes intent, engine resolves** — DM never fabricates attack rolls or damage
+- **Graceful degradation** — missing encounter → skip combat actions, still return Phase 1 events
+
+### Verification
+
+- ✅ `uv run pytest` — all 2651 backend tests passing (no new test files yet — frontend cards are next)
+- ✅ LSP diagnostics clean (except benign "possibly unbound" warnings for `stored_game_state`)
+- ✅ Commit: `feat: DM function calling Phase 2 — combat resolution`
+- ✅ Push to `develop`
+
+### Next Steps (Frontend — Steps 5-11)
+
+5. Modify `types/index.ts` — add combat fields to GameEventData
+6. Add utility functions in `utils/gameEvents.ts` (damageTypeColor, hpBarData, etc.)
+7. Create `AttackCard.tsx`, `DamageCard.tsx`, `InitiativeCard.tsx` components
+8. Update `GameEventRenderer.tsx` to dispatch new event types
+9. Add tests for all new utils + components (~15 new tests expected)
 
 ---
 
@@ -157,44 +216,32 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 2 (Combat Resolution)
+## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 2 (Combat Resolution — Frontend Cards)
 
-**GREEN-LIT by Mike (2026-07-15).**
+**Phase 2 backend complete (commit 9ffa5fe).** Frontend work next (steps 5-11).
 
 Read `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 2 Implementation Plan" section.
-This is a concrete, file-level implementation plan with 11 steps + ~30 new tests.
+Backend is done; now need to create visual components for combat events.
 
-### Summary
-Extend the DM function-calling system so the DM can emit **combat**
-`game_actions` (`attack`, `damage`, `roll_initiative`) that the backend
-resolves via the real `Encounter` engine (`backend/app/engine/combat.py`).
-Combat outcomes — hit/miss, critical, damage amount, remaining HP — flow as
-typed `GameEvent` objects to the frontend and render as inline combat cards
-(AttackCard, DamageCard, InitiativeCard).
-
-### Key architectural change from Phase 1
-Phase 1 (dice) was **stateless**. Phase 2 (combat) is **stateful** —
-`_resolve_game_actions()` must load the `Encounter` from
-`game_state["combat"]`, resolve combat actions against it, persist the
-mutated encounter back, and return `(events, updated_game_state)`.
+### Summary (Frontend work)
+Create inline combat cards (AttackCard, DamageCard, InitiativeCard) that render
+combat `GameEvent` objects flowing from the backend via SSE. Cards follow the
+same dismissible-inline pattern as Phase 1 DiceRollCard and CheckPromptCard.
 
 ### Steps (see design doc for full detail)
-1. `game_events.py` — ATTACK, DAMAGE, INITIATIVE enum + factory classmethods
-2. `dm_functions.py` — dm_attack(), dm_apply_damage(), dm_roll_initiative()
-3. `dspy_signatures.py` — expand DMActionableNarration docstring for combat
-4. `api/game.py` — stateful _resolve_game_actions(game_actions, game_state)
-5-6. Frontend types + utils
-7-10. AttackCard, DamageCard, InitiativeCard + GameEventRenderer
-11. Tests (~30 new)
-
-### Optional sub-phase split
-- Phase 2a (core): dm_attack + AttackCard (~15 tests)
-- Phase 2b (extensions): dm_apply_damage + dm_roll_initiative + DamageCard + InitiativeCard (~15 tests)
+5. `types/index.ts` — add combat fields to GameEventData
+6. `utils/gameEvents.ts` — damageTypeColor(), hpBarData(), attackSummary(), damageSummary()
+7. `components/AttackCard.tsx` — inline attack result with HP bar (hit/miss/crit color-coded)
+8. `components/DamageCard.tsx` — inline damage card with HP bar + death indicator
+9. `components/InitiativeCard.tsx` — initiative order list
+10. `components/GameEventRenderer.tsx` — dispatch new event types
+11. Tests (~15 new frontend tests)
 
 ### Verification
-- `uv run pytest` — all existing + new combat tests green
-- `cd frontend && npx tsc --noEmit && npm run build && npm test` — clean
-- Commit: `feat: DM function calling Phase 2 — combat resolution`
+- `cd frontend && npx tsc --noEmit` — no type errors
+- `cd frontend && npm run build` — clean build
+- `cd frontend && npm test` — all frontend tests pass
+- Commit: `feat: DM function calling Phase 2 — combat cards (frontend)`
 - Push to `develop`
 
 ---
