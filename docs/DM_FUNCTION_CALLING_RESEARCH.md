@@ -3,7 +3,7 @@
 > **Status:** Phase 1 IMPLEMENTED ✅ — dice rolling + check prompts are live
 > Phase 2 IMPLEMENTED ✅ — combat resolution (attack/damage/initiative) is live
 > Phase 3 IMPLEMENTED ✅ — spell casting (cast_spell, dual-state coupling) is live
-> Phase 4 GREEN-LIT ✅ by Mike (2026-07-17) — inventory operations EXECUTING
+> Phase 4 IMPLEMENTED ✅ — inventory operations (give_item/remove_item/equip_item/use_item) are live
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
@@ -1430,7 +1430,7 @@ If Phase 3 is too large for a single run, it can be split:
 
 ## Phase 4 Implementation Plan: Inventory Operations
 
-> **Status:** GREEN-LIT by Mike (2026-07-17) — ready for dev agent execution
+> **Status:** IMPLEMENTED ✅ by Mike green-light (2026-07-17) — all 9 steps complete
 > **Scope:** DM emits `give_item` / `remove_item` / `equip_item` / `use_item`
 > game_actions; backend resolves via the real `Inventory` engine; results flow
 > as `LOOT` GameEvent objects to inline `LootCard` components
@@ -1823,3 +1823,17 @@ If Phase 4 is too large for a single run, it can be split:
   DSPy signature expansion, `_inventory_for_dm` roster helper, and a
   `LootCard` component (rarity-themed colors, operation icons, AC/healing
   indicators). ~25 backend / ~15 frontend tests. Awaiting Mike's green-light.
+- 2026-07-17: **Phase 4 IMPLEMENTED** — all 9 steps complete (backend +
+  frontend). 2763 backend + 261 frontend tests passing. The DM now emits
+  `give_item` / `remove_item` / `equip_item` / `use_item` game_actions
+  resolved via the real `Inventory` engine. Key delivery: `LOOT` GameEvent
+  type + `loot()` factory, 4 DM-callable inventory functions (`dm_give_item`,
+  `dm_remove_item`, `dm_equip_item`, `dm_use_item`) with item-type/rarity/
+  armor/dice normalisation, single-state resolution in
+  `_resolve_game_actions` (load via `_load_inventory`, mutate, persist via
+  `_save_inventory`) with AC recalc on equip (`_recalc_armor_class`) and HP
+  heal on use_item (2d4+2), `_inventory_for_dm` roster injected into the DM
+  situation prompt, `LootCard` component (rarity-themed colors, operation
+  icons, quantity/value/healing/AC/uses indicators, failed-operation card,
+  source provenance), and `GameEventRenderer` dispatch. +40 backend /
+  +27 frontend tests.

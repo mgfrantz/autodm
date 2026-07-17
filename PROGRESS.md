@@ -1,7 +1,162 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ GREEN-LIT ✅
-## TEST SUITE FULLY GREEN (2723 backend + 234 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅
+## TEST SUITE FULLY GREEN (2763 backend + 261 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅
+
+## ✅ COMPLETED: DM Function Calling — Phase 4 (Inventory Operations)
+
+**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 4 Implementation Plan"
+
+Extended the DM function-calling system so the DM can emit **inventory**
+`game_actions` (`give_item`, `remove_item`, `equip_item`, `use_item`)
+resolved via the real `Inventory` engine. The DM describes *intent*
+("the goblin drops a glowing potion"); the engine resolves the *mechanics*
+(real Item creation, stacking, equip-slot exclusivity, AC recalc, HP heal).
+The DM never fabricates inventory changes.
+
+### The architectural insight (vs Phase 3)
+
+Phase 3 (spells) was **dual-state** (Spellbook + Encounter). Phase 4
+(inventory) is **single-state** (`character.inventory`) but has two
+**coupling side-effects**:
+
+| Coupling | Trigger | Effect |
+|----------|---------|--------|
+| **AC recalc** | equip/unequip armor/shield | `character.armor_class` updated via `_recalc_armor_class()` |
+| **HP heal** | use_item on a healing potion | `character.current_hp` increased (2d4+2) |
+
+`_resolve_game_actions()` loads the `Inventory` via `_load_inventory(character)`,
+mutates it, applies side-effects (AC recalc / HP heal), and persists back via
+`_save_inventory(character, inventory)` — same pattern as Phase 3's spellbook,
+just with a different store and two coupling hooks instead of one.
+
+### Backend Changes (Steps 1-4)
+
+1. **`backend/app/engine/game_events.py`** — Added `LOOT` to `GameEventType`
+   + `loot()` factory classmethod capturing the full resolution: operation
+   (`gained`/`removed`/`equipped`/`used`), item name/id/type, quantity,
+   rarity, value, source, operation-specific fields (`healing`, `ac_after`,
+   `uses_remaining`), `success` flag, and failure `message`.
+2. **`backend/app/engine/dm_functions.py`** — Added four inventory functions:
+   - `dm_give_item(inventory, item_name, item_type, ...)` — constructs a real
+     `Item` from DM-supplied details (item-type/rarity/armor-type/dice
+     normalisation), calls `inventory.add_item()` (stacking), returns a `LOOT`
+     event with `operation="gained"`. Invalid item_type → `success=False`.
+   - `dm_remove_item(inventory, item_id, quantity)` — `remove_item()` →
+     `LOOT` (`operation="removed"`); not found → `success=False`.
+   - `dm_equip_item(inventory, item_id)` — `equip_item()` → `LOOT`
+     (`operation="equipped"`); leaves `ac_after=None` for the caller to fill
+     after AC recalc; non-equippable / not found → `success=False`.
+   - `dm_use_item(inventory, item_id)` — `use_item()` → `LOOT`
+     (`operation="used"`); reports `uses_remaining` (None if consumed);
+     leaves `healing=None` for the caller; depleted/non-consumable/not-found
+     → `success=False`.
+   - Helpers `_norm_item_type` / `_norm_rarity` / `_norm_armor_type` /
+     `_parse_damage_dice` normalise DM-supplied strings.
+3. **`backend/app/llm/dspy_signatures.py`** — Expanded `DMActionableNarration`
+   docstring with inventory guidance: `give_item` creates items (name, type,
+   qty, optional rarity/value/damage_dice/armor_type/description/uses);
+   `remove_item`/`equip_item`/`use_item` reference `item_id`s from
+   `INVENTORY_ROSTER`. Added all four functions to the function list and args
+   schema.
+4. **`backend/app/api/game.py`** — Single-state inventory resolution:
+   - `_resolve_game_actions` loads the `Inventory` via `_load_inventory`
+     when inventory actions are present, dispatches each action to the right
+     `dm_*` function, and persists via `_save_inventory`.
+   - **AC coupling:** a successful `equip_item` triggers
+     `_recalc_armor_class(character, inventory)` and fills `ac_after`.
+   - **HP coupling:** a `use_item` on a healing potion rolls 2d4+2 and
+     increases `character.current_hp`, filling the `healing` field.
+   - `_inventory_for_dm(character)` roster helper injects the character's
+     inventory items (id, name, type, qty, equipped, rarity) into the DM
+     situation prompt (mirrors `_combatant_roster_for_dm` /
+     `_available_spells_for_dm`). Empty if no inventory.
+   - Both `/action` and `/action/stream` thread `character` through; the
+     streaming path persists `character.inventory` + `current_hp` +
+     `armor_class` onto the session-attached character.
+   - Missing character / inventory load failure → graceful skip + warning,
+     still returning Phase 1-3 events.
+
+### Frontend (Steps 5-8)
+
+5. **`types/index.ts`** — Added `'loot'` to `GameEventType`; added loot fields
+   to `GameEventData` (`operation`, `item_name`, `item_type`, `item_id`,
+   `quantity`, `rarity`, `value`, `source`, `ac_after`, `uses_remaining`).
+   Made the shared `healing` field nullable (`number | null`) since loot
+   events send `null` when no healing applies.
+6. **`utils/gameEvents.ts`** — Added `itemRarityColor()` (5 tiers:
+   common=gray, uncommon=green, rare=blue, very_rare=purple, legendary=gold),
+   `lootSummary()` (per-operation one-liner), `lootIcon()` (6 item types);
+   updated `summarizeEvent()` to dispatch `loot`.
+7. **`components/LootCard.tsx`** (NEW) — Inline inventory change card:
+   - Rarity-themed accent colours (gray→gold by tier)
+   - Operation badges with glyphs (🎁 gained, 📤 removed, ⚔️ equipped, 🧪 used)
+   - Quantity badge (`×2`) and value badge (`50 gp`) for gains/removals
+   - Healing indicator (`✨ +7 HP`) when `healing` is present
+   - AC indicator (`🛡️ AC 16`) when `ac_after` is present
+   - Uses-remaining indicator (`1 use left` / `consumed`)
+   - Source provenance (`From: Goblin loot`)
+   - Failed operation: muted card with the reason
+   - Dismissible (same pattern as DiceRollCard / SpellCastCard)
+8. **`components/GameEventRenderer.tsx`** — Dispatches `loot` to `LootCard`.
+
+### Key Architectural Decisions
+
+- **Inventory source of truth = `character.inventory`** — not duplicated into
+  game_state. Load/save via `_load_inventory` / `_save_inventory` (same helpers
+  the Inventory API uses).
+- **`give_item` creates new items** — DM provides construction details; the
+  engine normalises (case-insensitive types, plurals) and validates. Quantity
+  is the amount gained (stacking handled by the engine).
+- **`remove_item` / `equip_item` / `use_item` reference existing item_ids** —
+  from `INVENTORY_ROSTER` in the DM situation prompt.
+- **Two coupling hooks (AC + HP)** — applied by the caller after the engine
+  call; the `dm_*` functions leave the operation-specific fields (`ac_after`,
+  `healing`) as `None` for the caller to fill.
+- **DM never fabricates inventory** — the engine creates real Items and
+  persists them.
+- **Failed operations are first-class events** — render as a muted LootCard
+  with the reason.
+- **Graceful degradation** — missing character / inventory load failure → skip
+  inventory actions, log warning, still return Phase 1-3 events.
+- **Consistent inline UX** — LootCard follows the same dismissible-inline
+  pattern as DiceRollCard / AttackCard / SpellCastCard.
+
+### Tests (Step 9) — +40 backend, +27 frontend
+
+- **`test_dm_inventory_functions.py`** (NEW, 21 tests) — `dm_give_item`
+  (potion/weapon dice/armor type/uses, stacking, case-insensitive types,
+  invalid type), `dm_remove_item` (success/zero-qty-removes-slot/not-found),
+  `dm_equip_item` (weapon/armor/non-equippable/not-found), `dm_use_item`
+  (charges-left/consumed/non-consumable/not-found/depleted), event
+  serialization + failed-event message.
+- **`test_inventory_events_api.py`** (NEW, 13 tests) — `/action` with
+  `give_item` (loot event + persistence, stacking, weapon details),
+  `remove_item` (persisted), `equip_item` (AC recalculated + `ac_after`),
+  `use_item` (healing potion → HP + `healing`), failed operations
+  (invalid type / not found); streaming emits `game_event` SSE + persists
+  inventory + persists HP; `_inventory_for_dm` roster helper (lists items /
+  empty).
+- **`test_game_events.py`** (extended, 5 tests) — `loot` factory serialization
+  round-trip, enum value, gained/equipped-with-AC/failed/default fields.
+- **`LootCard.test.tsx`** (NEW, 11 tests) — gained (icon/quantity badge),
+  removed, equipped (AC indicator), used (healing + uses remaining), failed
+  card, weapon/armor icons, source label, dismiss, no-callback.
+- **`gameEvents.test.ts`** (extended, 16 tests) — `itemRarityColor` (tiers +
+  fallback + case-insensitive), `lootIcon` (6 types + fallback), `lootSummary`
+  (5 operations + failure + source + undefined inputs), `summarizeEvent`
+  loot dispatch.
+
+### Verification
+
+- ✅ `uv run pytest` — **2763 backend tests passing** (+40 new inventory tests)
+- ✅ `npx tsc --noEmit` — no type errors
+- ✅ `npm run build` — clean production build
+- ✅ `npm test` — **261 frontend tests passing** (+27 new inventory tests)
+- ✅ Commit: `feat: DM function calling Phase 4 — inventory operations`
+- ✅ Push to `develop`
+
+---
 
 ## ✅ COMPLETED: DM Function Calling — Phase 3 (Spell Casting)
 
@@ -368,57 +523,24 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: Phase 4 (Inventory Operations) GREEN-LIT ✅ — Executing
+## ⚡ NEXT SESSION DIRECTIVE: Phase 4 (Inventory Operations) COMPLETE ✅ — awaiting next green-light
 
-**Phase 4 is GREEN-LIT by Mike (2026-07-17).** The dev agent cron directive
-has been updated to execute the plan — inventory operations via DM function
-calls. The DM emits `give_item` / `remove_item` / `equip_item` / `use_item`
-game_actions that the backend resolves via the real `Inventory` engine, with
-results flowing as typed `LOOT` GameEvents to inline `LootCard` components.
+**Phase 4 is COMPLETE (2026-07-17).** All 9 steps shipped: the DM now emits
+`give_item` / `remove_item` / `equip_item` / `use_item` game_actions resolved
+via the real `Inventory` engine, with results flowing as `LOOT` GameEvents to
+inline `LootCard` components. Two coupling side-effects implemented: AC recalc
+on equip, HP heal on use_item (2d4+2). 2763 backend + 261 frontend tests green.
 
-**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 4 Implementation
-Plan" (concrete file-level breakdown, ~40 new tests).
+**Awaiting Mike's next green-light.** The next staged phase in the design doc
+is **Phase 5 (Conditions)** — `dm_apply_condition` / `dm_remove_condition`
+game_actions resolved via the condition engine, with a `ConditionCard`
+component. See `docs/DM_FUNCTION_CALLING_RESEARCH.md` migration path (Phase 5).
+No code changes should be made until Mike green-lights Phase 5.
 
-### Architecture summary (single state, two couplings)
-
-Phase 4 is **single-state** (`character.inventory`) with two coupling
-side-effects:
-
-| Coupling | Trigger | Effect |
-|----------|---------|--------|
-| **AC recalc** | equip/unequip armor/shield | `character.armor_class` updated via `_recalc_armor_class()` |
-| **HP heal** | use_item on healing potion | `character.current_hp` increased (2d4+2) |
-
-The DM never fabricates inventory changes — the engine creates real Items and
-persists them. `give_item` creates new items; `remove_item` / `equip_item` /
-`use_item` reference existing item_ids from the `INVENTORY_ROSTER` injected
-into the DM situation prompt.
-
-### 9-step plan (backend + frontend + tests)
-
-**Backend (Steps 1-4):**
-1. `game_events.py` — `LOOT` event type + `loot()` factory
-2. `dm_functions.py` — `dm_give_item`, `dm_remove_item`, `dm_equip_item`, `dm_use_item`
-3. `dspy_signatures.py` — inventory guidance in `DMActionableNarration` docstring
-4. `game.py` — inventory loading/resolution/persistence in `_resolve_game_actions`, `_inventory_for_dm` roster helper
-
-**Frontend (Steps 5-8):**
-5. `types/index.ts` — `'loot'` event type + loot fields
-6. `utils/gameEvents.ts` — `itemRarityColor`, `lootSummary`, `lootIcon`, dispatch
-7. `components/LootCard.tsx` (NEW) — rarity-themed inline card
-8. `components/GameEventRenderer.tsx` — dispatch `loot`
-
-**Tests (Step 9):** ~25 backend (`test_dm_inventory_functions.py` ~14, `test_inventory_events_api.py` ~11) + ~15 frontend (`LootCard.test.tsx` ~10, `gameEvents.test.ts` extended)
-
-### Verification requirements
-- ✅ `uv run pytest` — all existing tests + new tests, 0 failures
-- ✅ `npx tsc --noEmit` — no type errors
-- ✅ `npm run build` — clean production build
-- ✅ `npm test` — all frontend tests + new tests
-- ✅ Commit with `feat: DM function calling Phase 4 — inventory operations`
-- ✅ Push to `develop`
-- ✅ Update PROGRESS.md with completion details
-- ✅ Update README.md to reflect new feature (README SYNC)
+Until then, the dev agent should:
+- Keep the full suite green (`uv run pytest`, `npm test`)
+- Watch for README/PROGRESS drift and sync them
+- Pick up any quick fixes / content registry expansions if surfaced
 
 ---
 
