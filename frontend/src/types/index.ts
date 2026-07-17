@@ -502,7 +502,7 @@ export interface SkillCheckResult {
 
 // === Game Events (DM Function Calling Phase 1 + 2) ===
 
-export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative';
+export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative' | 'spell_cast';
 
 export interface InitiativeCombatant {
   id: string;
@@ -528,7 +528,7 @@ export interface GameEventData {
   target?: string;
   attack_total?: number;
   ac?: number;
-  hit?: boolean;
+  hit?: boolean | null;       // bool for attacks; null for non-attack spells
   critical?: boolean;
   critical_miss?: boolean;
   damage?: number;
@@ -539,6 +539,19 @@ export interface GameEventData {
   amount?: number;
   // initiative (Phase 2)
   combatants?: InitiativeCombatant[];
+  // spell_cast (Phase 3)
+  spell_name?: string;
+  spell_id?: string;
+  level?: number;            // base spell level (0 = cantrip)
+  school?: string;
+  slot_level?: number | null; // expended slot (null = cantrip / failed cast)
+  made_save?: boolean | null; // saving-throw spells only
+  save_dc?: number | null;
+  save_ability?: string | null;
+  healing?: number;
+  half_damage?: boolean;
+  message?: string;
+  slots_remaining?: Array<{ level: number; max?: number; used?: number; available?: number }> | null;
 }
 
 export interface GameEvent {

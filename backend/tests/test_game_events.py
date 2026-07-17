@@ -171,3 +171,81 @@ class TestGameEventRoundTrip:
         assert parsed["data"]["skill"] == "Stealth"
         assert parsed["data"]["dc"] == 12
         assert parsed["data"]["reason"] == "Sneaking past guards."
+
+
+class TestSpellCastFactory:
+    """Phase 3: the spell_cast() factory classmethod + serialization."""
+
+    def test_spell_cast_enum_value(self):
+        assert GameEventType.SPELL_CAST.value == "spell_cast"
+
+    def test_spell_cast_factory_success(self):
+        event = GameEvent.spell_cast(
+            label="🔮 Fire Bolt",
+            spell_name="Fire Bolt",
+            spell_id="fire_bolt",
+            level=0,
+            school="evocation",
+            slot_level=None,
+            success=True,
+            attack_total=18,
+            hit=True,
+            damage=10,
+            damage_type="fire",
+            target="Goblin",
+            target_remaining_hp=2,
+            target_max_hp=12,
+            message="Fire Bolt hit for 10 fire damage.",
+            slots_remaining=[{"level": 1, "available": 3}],
+        )
+        assert event.type == GameEventType.SPELL_CAST
+        assert event.label == "🔮 Fire Bolt"
+        assert event.data["spell_name"] == "Fire Bolt"
+        assert event.data["spell_id"] == "fire_bolt"
+        assert event.data["level"] == 0
+        assert event.data["school"] == "evocation"
+        assert event.data["slot_level"] is None
+        assert event.data["success"] is True
+        assert event.data["hit"] is True
+        assert event.data["damage"] == 10
+        assert event.data["damage_type"] == "fire"
+        assert event.data["target"] == "Goblin"
+        assert event.data["target_remaining_hp"] == 2
+
+    def test_spell_cast_factory_failed(self):
+        event = GameEvent.spell_cast(
+            label="🔮 Fireball (cast failed)",
+            spell_name="Fireball",
+            spell_id="fireball",
+            level=3,
+            school="evocation",
+            slot_level=None,
+            success=False,
+            message="No spell slots available for Fireball",
+        )
+        assert event.data["success"] is False
+        assert event.data["damage"] == 0
+        assert event.data["hit"] is None
+        assert event.data["message"] == "No spell slots available for Fireball"
+
+    def test_spell_cast_round_trip(self):
+        original = GameEvent.spell_cast(
+            label="🔮 Cure Wounds",
+            spell_name="Cure Wounds",
+            spell_id="cure_wounds",
+            level=1,
+            school="evocation",
+            slot_level=1,
+            success=True,
+            healing=8,
+            target="Lyra",
+            target_remaining_hp=18,
+            target_max_hp=24,
+            message="Cure Wounds restores 8 HP.",
+        )
+        parsed = json.loads(json.dumps(original.to_dict()))
+        assert parsed["type"] == "spell_cast"
+        assert parsed["data"]["spell_name"] == "Cure Wounds"
+        assert parsed["data"]["healing"] == 8
+        assert parsed["data"]["slot_level"] == 1
+        assert parsed["data"]["target_remaining_hp"] == 18

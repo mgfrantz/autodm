@@ -35,6 +35,7 @@ from app.engine.dm_functions import (
     dm_attack,
     dm_apply_damage,
     dm_roll_initiative,
+    dm_cast_spell,
 )
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 from app.engine.quests import (
@@ -118,19 +119,103 @@ def _combatant_roster_for_dm(game_state: dict[str, Any]) -> str:
         return ""
 
 
+# Mapping of casting-ability keys (as stored on a Spellbook) to the matching
+# Character column name.
+_ABILITY_TO_COLUMN = {
+    "str": "strength",
+    "dex": "dexterity",
+    "con": "constitution",
+    "int": "intelligence",
+    "wis": "wisdom",
+    "cha": "charisma",
+}
+
+
+def _caster_modifier_for_character(character: "Character", spellbook) -> int:
+    """Derive the casting-ability modifier from the character's real scores.
+
+    Uses the Spellbook's ``casting_ability`` (e.g. ``"int"``) to look up the
+    matching ability score column on the Character, then computes the standard
+    DnD ability modifier ``(score - 10) // 2``. Falls back to 0 on any error.
+    """
+    try:
+        col = _ABILITY_TO_COLUMN.get(spellbook.casting_ability, "intelligence")
+        score = getattr(character, col, 10) or 10
+        return ability_modifier(score)
+    except Exception:
+        return 0
+
+
+def _combatant_save_total(combatant, save_ability: str | None) -> int:
+    """Roll a combatant's saving throw total for a given ability.
+
+    Combatants reliably track Strength and Dexterity; other abilities default
+    to a score of 10 (modifier 0) and no save proficiency, which is a
+    reasonable approximation for most monsters. Returns ``d20 + modifier``.
+    """
+    ability = (save_ability or "").lower()
+    col = _ABILITY_TO_COLUMN.get(ability)
+    score = getattr(combatant, col, 10) if col else 10
+    return roll_d20(modifier=ability_modifier(score)).total
+
+
+def _available_spells_for_dm(character: "Character") -> str:
+    """Build an available-spells roster string for the DM context (casters only).
+
+    Mirrors :func:`_combatant_roster_for_dm`: lists the character's castable
+    spells (id, name, school, level) and remaining slots so the DM can emit
+    real ``cast_spell`` game_actions. Returns an empty string for non-casters.
+    """
+    try:
+        from app.api.spells import _load_spellbook
+        spellbook = _load_spellbook(character)
+    except Exception as e:
+        logger.error(f"Failed to load spellbook for DM roster: {e}")
+        return ""
+
+    if not spellbook.is_caster:
+        return ""
+
+    castable = spellbook.castable_spells()
+    if not castable:
+        return ""
+
+    lines = ["AVAILABLE_SPELLS:"]
+    for spell in castable:
+        slot = "cantrip" if spell.is_cantrip else f"level {spell.level}"
+        school = spell.school.value if hasattr(spell.school, "value") else str(spell.school)
+        lines.append(f"  - ID: {spell.id} | {spell.name} ({school}, {slot})")
+
+    slots = spellbook.slots_overview()
+    avail = [f"L{sl['level']}:{sl['available']}" for sl in slots if sl.get("max", 0) > 0]
+    if avail:
+        lines.append(f"REMAINING_SLOTS: {', '.join(avail)}")
+    lines.append("Use cast_spell with a real spell_id from this roster.")
+    return "\n".join(lines)
+
+
 def _resolve_game_actions(
     game_actions: list[dict],
     game_state: dict[str, Any],
+    character: "Character | None" = None,
 ) -> tuple[list[GameEvent], dict[str, Any]]:
     """Resolve DM-emitted game_actions into GameEvents via the engine.
 
     Each game_action is a dict with:
-    - ``function``: "roll_dice" | "request_check" | "attack" | "damage" | "roll_initiative"
+    - ``function``: "roll_dice" | "request_check" | "attack" | "damage" |
+      "roll_initiative" | "cast_spell"
     - ``label``: short description
     - ``args``: function-specific arguments
 
     Combat actions (attack, damage, roll_initiative) are stateful: they load
     the Encounter from game_state["combat"], mutate it, and persist it back.
+
+    Spell actions (cast_spell) are doubly stateful: they load the Spellbook
+    from ``character.spells`` (consuming a real slot), and — when a damage
+    spell targets an encounter combatant — also reduce that combatant's HP in
+    the Encounter (dual-state coupling). The mutated Spellbook is persisted
+    back to ``character.spells``; the caller's ``db.commit()`` persists it.
+
     Returns (events, updated_game_state) so the caller can persist changes.
 
     Unknown or malformed actions are logged and skipped (never crash).
@@ -146,13 +231,39 @@ def _resolve_game_actions(
         if isinstance(a, dict)
     )
 
-    # Load encounter if combat actions exist
+    # Check if any spell actions are present
+    has_spell = any(
+        a.get("function") == "cast_spell"
+        for a in game_actions or []
+        if isinstance(a, dict)
+    )
+
+    # Load encounter if combat actions (or spell damage coupling) need it
     encounter: Encounter | None = None
     if has_combat and game_state.get("combat"):
         try:
             encounter = Encounter.from_dict(game_state["combat"])
         except Exception as e:
             logger.error(f"Failed to load encounter from game_state: {e}")
+
+    # An encounter is also useful for spell-damage coupling even without
+    # explicit combat actions (a cast_spell targeting a combatant).
+    if encounter is None and has_spell and game_state.get("combat"):
+        try:
+            encounter = Encounter.from_dict(game_state["combat"])
+        except Exception as e:
+            logger.error(f"Failed to load encounter for spell coupling: {e}")
+
+    # Load spellbook if spell actions exist and a character is available
+    spellbook = None
+    spellbook_loaded = False
+    if has_spell and character is not None:
+        try:
+            from app.api.spells import _load_spellbook
+            spellbook = _load_spellbook(character)
+            spellbook_loaded = True
+        except Exception as e:
+            logger.error(f"Failed to load spellbook for DM spell casting: {e}")
 
     for action in game_actions or []:
         if not isinstance(action, dict):
@@ -223,10 +334,150 @@ def _resolve_game_actions(
                     logger.warning("Skipping roll_initiative action: no encounter loaded")
                     continue
                 events.append(dm_roll_initiative(encounter=encounter))
+            elif func == "cast_spell":
+                if character is None:
+                    logger.warning(
+                        "Skipping cast_spell action: no character available"
+                    )
+                    continue
+                if spellbook is None or not spellbook.is_caster:
+                    # Non-caster (or spellbook load failure) — skip gracefully
+                    # per the graceful-degradation design decision.
+                    logger.warning(
+                        "Skipping cast_spell action: character is not a caster"
+                    )
+                    continue
+                spell_id = args.get("spell_id")
+                if not spell_id:
+                    logger.warning("Skipping cast_spell action: missing spell_id")
+                    continue
+                target_id = args.get("target_id")
+                requested_slot = args.get("slot_level")
+
+                # Resolve target combatant (AC / save) from the encounter, if any
+                from app.engine.spells import get_spell as _get_spell
+                looked_up = _get_spell(spell_id)
+                save_ability = looked_up.save_ability if looked_up else None
+
+                # An attack-roll spell requires a target AC to resolve. If the
+                # DM emitted one without a target combatant, fail gracefully
+                # (first-class failed-cast event) rather than crashing inside
+                # resolve_spell_effect — and without consuming a slot.
+                if looked_up and looked_up.requires_attack_roll and (
+                    not target_id or encounter is None
+                ):
+                    events.append(GameEvent.spell_cast(
+                        label=f"🔮 {looked_up.name} (cast failed)",
+                        spell_name=looked_up.name,
+                        spell_id=looked_up.id,
+                        level=looked_up.level,
+                        school=looked_up.school.value if hasattr(looked_up.school, "value") else str(looked_up.school),
+                        slot_level=None,
+                        success=False,
+                        message=f"{looked_up.name} requires a target to resolve.",
+                    ))
+                    continue
+
+                target_combatant = None
+                target_ac = None
+                target_save_total = None
+                target_name = ""
+                if target_id and encounter is not None:
+                    for c in encounter.combatants:
+                        if c.id == target_id:
+                            target_combatant = c
+                            break
+                    if target_combatant is not None:
+                        target_ac = target_combatant.armor_class
+                        target_name = target_combatant.name
+                        if save_ability:
+                            target_save_total = _combatant_save_total(
+                                target_combatant, save_ability
+                            )
+
+                caster_mod = _caster_modifier_for_character(character, spellbook)
+                active_conditions = game_state.get("conditions", []) or []
+
+                spell_event = dm_cast_spell(
+                    spellbook=spellbook,
+                    spell_id=spell_id,
+                    slot_level=requested_slot,
+                    caster_mod=caster_mod,
+                    target_ac=target_ac,
+                    target_save_total=target_save_total,
+                    active_conditions=active_conditions,
+                )
+
+                # Attach the target name (dm_cast_spell does not know it).
+                if target_name:
+                    spell_event.data["target"] = target_name
+
+                # Dual-state coupling: a damage/healing spell targeting an
+                # encounter combatant also mutates that combatant's HP.
+                if (
+                    target_combatant is not None
+                    and spell_event.data.get("success")
+                ):
+                    dmg = spell_event.data.get("damage", 0) or 0
+                    heal = spell_event.data.get("healing", 0) or 0
+                    if dmg > 0:
+                        new_hp = target_combatant.take_damage(dmg)
+                        spell_event.data["target_remaining_hp"] = new_hp
+                        spell_event.data["target_max_hp"] = target_combatant.max_hp
+                    elif heal > 0:
+                        new_hp = target_combatant.heal(heal)
+                        spell_event.data["target_remaining_hp"] = new_hp
+                        spell_event.data["target_max_hp"] = target_combatant.max_hp
+                elif (
+                    target_combatant is None
+                    and spell_event.data.get("success")
+                    and (spell_event.data.get("healing", 0) or 0) > 0
+                    and character is not None
+                ):
+                    # Self/utility healing outside combat updates character HP.
+                    heal_amt = spell_event.data["healing"]
+                    before = int(character.current_hp or 0)
+                    max_hp = int(character.max_hp or before)
+                    character.current_hp = min(max_hp, before + heal_amt)
+                    spell_event.data["target"] = spell_event.data.get("target") or character.name
+                    spell_event.data["target_remaining_hp"] = character.current_hp
+                    spell_event.data["target_max_hp"] = character.max_hp
+
+                events.append(spell_event)
+
+                # Follow-up DAMAGE event when a combatant took spell damage,
+                # mirroring the Phase 2 DamageCard so the combat UI stays
+                # consistent (the SpellCastCard shows the spell mechanics +
+                # HP bar; the DamageCard surfaces the HP delta).
+                if (
+                    target_combatant is not None
+                    and spell_event.data.get("success")
+                    and (spell_event.data.get("damage", 0) or 0) > 0
+                ):
+                    events.append(GameEvent.damage(
+                        label=(
+                            f"💥 {target_combatant.name} takes "
+                            f"{spell_event.data['damage']} "
+                            f"{spell_event.data.get('damage_type', '')} damage"
+                        ),
+                        target=target_combatant.name,
+                        amount=spell_event.data["damage"],
+                        damage_type=spell_event.data.get("damage_type", ""),
+                        target_remaining_hp=target_combatant.current_hp,
+                        target_max_hp=target_combatant.max_hp,
+                    ))
             else:
                 logger.warning(f"Unknown game_action function: {func}")
         except Exception as e:
             logger.error(f"Failed to resolve game action {func}: {e}")
+
+    # Persist spellbook back to character.spells if it was loaded/mutated
+    if spellbook_loaded and spellbook is not None:
+        try:
+            from app.api.spells import _save_spellbook
+            _save_spellbook(character, spellbook)
+        except Exception as e:
+            logger.error(f"Failed to persist spellbook after DM spell casting: {e}")
 
     # Persist encounter back if it was loaded and mutated
     if encounter is not None:
@@ -850,6 +1101,7 @@ Downtime: {_downtime_for_dm(game_state, character)}
 Subclass: {_subclass_for_dm(character)}
 Boss: {_boss_for_dm(game_state)}
 {_combatant_roster_for_dm(game_state)}
+{_available_spells_for_dm(character)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -864,7 +1116,7 @@ Boss: {_boss_for_dm(game_state)}
 {base_context}"""
 
     narration, game_actions = await _dm_actionable_narrate(situation=user_prompt)
-    game_events, game_state = _resolve_game_actions(game_actions, game_state)
+    game_events, game_state = _resolve_game_actions(game_actions, game_state, character=character)
 
     # Resolve skill check for structured mechanical outcomes
     skill_check_resolution = _resolve_skill_check(
@@ -965,7 +1217,8 @@ Downtime: {_downtime_for_dm(game_state, character)}
 Subclass: {_subclass_for_dm(character)}
 Boss: {_boss_for_dm(game_state)}
 {_combatant_roster_for_dm(game_state)}
-"""
+{_available_spells_for_dm(character)}
+        """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(
             location=game_state.get("location", "Unknown"),
@@ -1073,16 +1326,23 @@ Boss: {_boss_for_dm(game_state)}
         game_events: list[GameEvent] = []
         try:
             _, game_actions = await _dm_actionable_narrate(situation=user_prompt)
-            game_events, stored_game_state = _resolve_game_actions(game_actions, stored_game_state)
+            game_events, stored_game_state = _resolve_game_actions(
+                game_actions, stored_game_state, character=stored_character
+            )
         except Exception as e:
             logger.error(f"Game action resolution failed: {e}")
 
         # Persist updated game_state (combat mutations from DM function calls)
+        # and character.spells (slot consumption from DM spell casting).
         db = session_factory()
         try:
             save = db.query(GameSave).filter(GameSave.id == game_id).first()
             if save:
                 save.game_state = json.dumps(stored_game_state)
+                # Spell casting mutates stored_character.spells; copy it onto
+                # the session-attached character so the commit persists it.
+                if stored_character is not None:
+                    save.character.spells = stored_character.spells
                 db.commit()
         finally:
             db.close()

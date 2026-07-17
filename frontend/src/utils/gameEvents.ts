@@ -171,6 +171,13 @@ export function summarizeEvent(event: GameEvent): string {
   if (event.type === 'initiative') {
     return initiativeSummary(event.data.combatants);
   }
+  if (event.type === 'spell_cast') {
+    const d = event.data;
+    return spellCastSummary(
+      d.spell_name, d.level, d.school, d.success, d.hit, d.made_save,
+      d.damage, d.healing, d.damage_type, d.half_damage, d.target, d.message,
+    );
+  }
   return event.label;
 }
 
@@ -250,7 +257,7 @@ export function attackSummary(
   target: string | undefined,
   attackTotal: number | undefined,
   ac: number | undefined,
-  hit: boolean | undefined,
+  hit: boolean | null | undefined,
   critical: boolean | undefined,
   criticalMiss: boolean | undefined,
   damage: number | undefined,
@@ -296,4 +303,72 @@ export function damageSummary(
 export function initiativeSummary(combatants: InitiativeCombatant[] | undefined): string {
   if (!combatants || combatants.length === 0) return 'Initiative order';
   return combatants.map((c, i) => `${i + 1}. ${c.name} (${c.initiative})`).join(', ');
+}
+
+// ==========================================================================
+// Phase 3: Spell event helpers
+// ==========================================================================
+
+/**
+ * Tailwind color classes for a given DnD spell school.
+ * Maps the eight schools to thematic accent colours.
+ */
+export function spellSchoolColor(school: string | undefined): { text: string; bg: string; border: string } {
+  const s = (school ?? '').toLowerCase();
+  const map: Record<string, { text: string; bg: string; border: string }> = {
+    abjuration:  { text: 'text-sky-300',     bg: 'bg-sky-900/30',     border: 'border-sky-700/50' },
+    conjuration: { text: 'text-amber-300',   bg: 'bg-amber-900/30',   border: 'border-amber-700/50' },
+    divination:  { text: 'text-teal-300',    bg: 'bg-teal-900/30',    border: 'border-teal-700/50' },
+    enchantment: { text: 'text-pink-300',    bg: 'bg-pink-900/30',    border: 'border-pink-700/50' },
+    evocation:   { text: 'text-orange-300',  bg: 'bg-orange-900/30',  border: 'border-orange-700/50' },
+    illusion:    { text: 'text-violet-300',  bg: 'bg-violet-900/30',  border: 'border-violet-700/50' },
+    necromancy:  { text: 'text-emerald-300', bg: 'bg-emerald-900/30', border: 'border-emerald-700/50' },
+    transmutation:{ text: 'text-lime-300',   bg: 'bg-lime-900/30',    border: 'border-lime-700/50' },
+  };
+  return map[s] ?? { text: 'text-parchment-200', bg: 'bg-parchment-900/30', border: 'border-parchment-700/50' };
+}
+
+/**
+ * A human-readable level label for a spell (cantrip / level N).
+ */
+export function spellLevelLabel(level: number | undefined): string {
+  const lvl = level ?? 0;
+  return lvl === 0 ? 'cantrip' : `level ${lvl}`;
+}
+
+/**
+ * Generate a one-line summary for a spell_cast event.
+ */
+export function spellCastSummary(
+  spellName: string | undefined,
+  level: number | undefined,
+  school: string | undefined,
+  success: boolean | null | undefined,
+  hit: boolean | null | undefined,
+  madeSave: boolean | null | undefined,
+  damage: number | undefined,
+  healing: number | undefined,
+  damageType: string | undefined,
+  halfDamage: boolean | undefined,
+  target: string | undefined,
+  message: string | undefined,
+): string {
+  const name = spellName ?? 'Unknown spell';
+  const parts: string[] = [`${name} (${spellLevelLabel(level)} ${school ?? ''})`.trim()];
+  if (success === false) {
+    parts.push('FAILED');
+    if (message) parts.push(message);
+    return parts.join(' — ');
+  }
+  if (healing && healing > 0) {
+    parts.push(`+${healing} HP${target ? ` to ${target}` : ''}`);
+  }
+  if (damage && damage > 0) {
+    parts.push(`${damage} ${damageType ?? ''} damage${halfDamage ? ' (half)' : ''}`);
+  }
+  if (hit === true) parts.push('hit');
+  else if (hit === false) parts.push('miss');
+  if (madeSave === true) parts.push('target saved');
+  else if (madeSave === false) parts.push('target failed save');
+  return parts.join(' — ');
 }

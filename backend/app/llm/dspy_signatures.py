@@ -239,6 +239,22 @@ class DMActionableNarration(dspy.Signature):
         No args needed.
       - Combatant IDs are provided in the situation prompt under
         COMBATANT_ROSTER (id, name, side, HP, AC). Always use the exact id.
+    - For SPELL CASTING (any time a character or NPC casts a spell):
+      - Use cast_spell for ANY spell cast — cantrip or leveled. Reference a
+        REAL spell_id from the AVAILABLE_SPELLS roster in the situation prompt.
+        Args: {"spell_id": "fire_bolt", "target_id": "goblin_1",
+               "slot_level": null}
+      - The backend consumes the real spell slot and rolls the real
+        attack/damage/save. NEVER fabricate spell outcomes, damage, or saves
+        in the narration — describe the INTENT (e.g., "the wizard hurls a
+        Fire Bolt at the goblin") and let the backend resolve the result.
+      - slot_level: null (auto/lowest) or an int for upcasting.
+      - target_id: a combatant id from the COMBATANT_ROSTER (for attack/save/
+        damage spells), or omit for self/utility spells (Cure Wounds on self,
+        Mage Armor, etc.).
+      - Available spell ids are provided under AVAILABLE_SPELLS (id, name,
+        school, level) with REMAINING_SLOTS. Only emit cast_spell for spells
+        in that roster.
     - Do NOT fabricate dice results in the narration text — describe
       the ATTEMPT and let the backend resolve the outcome
     - Do NOT state HP numbers, damage amounts, or initiative order in narration;
@@ -248,9 +264,10 @@ class DMActionableNarration(dspy.Signature):
       pick the lock...") so the player knows what's being resolved
 
     Each game_action is a dict with:
-    - "function": "roll_dice" | "request_check" | "attack" | "damage" | "roll_initiative"
+    - "function": "roll_dice" | "request_check" | "attack" | "damage" |
+                  "roll_initiative" | "cast_spell"
     - "label": short description (e.g., "Perception Check", "Goblin strikes",
-                  "Fireball engulfs enemies")
+                  "Fireball engulfs enemies", "Wizard casts Fire Bolt")
     - "args": function-specific arguments
       - roll_dice: {"sides": 20, "modifier": 3, "advantage": false,
                      "dc": 15, "disadvantage": false}
@@ -258,6 +275,8 @@ class DMActionableNarration(dspy.Signature):
       - attack: {"attacker_id": "...", "target_id": "...", "attack_index": 0}
       - damage: {"target_id": "...", "amount": 10, "damage_type": "fire"}
       - roll_initiative: {} (no args)
+      - cast_spell: {"spell_id": "fire_bolt", "target_id": "goblin_1",
+                     "slot_level": null}
     """
 
     situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action. Includes COMBATANT_ROSTER with id/name/side/HP/AC for active encounters.")

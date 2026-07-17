@@ -45,6 +45,7 @@ All LLM interactions are mediated by DSPy for structured, reliable outputs:
 The DM doesn't just narrate — it calls real game engine functions. Results flow as typed `GameEvent` objects to inline UI cards:
 - **Phase 1 (Dice + Checks)** — DM calls `roll_dice()` for real d20 rolls; renders inline DiceRollCard (color-coded by outcome, advantage/disadvantage support) and CheckPromptCard (DM calls for a roll → player clicks → real resolution)
 - **Phase 2 (Combat Resolution)** — DM emits `attack`/`damage`/`roll_initiative` game actions resolved via the real `Encounter` engine. The DM never fabricates attack rolls or damage — it describes intent, the engine resolves. Results render as inline AttackCard (hit/miss/crit/fumble color-coding + HP bar), DamageCard (damage-type-themed colors + HP bar + death indicator), and InitiativeCard (turn order with player/enemy highlighting). Combat state is persisted to `game_state["combat"]`.
+- **Phase 3 (Spell Casting)** — DM emits `cast_spell` game actions resolved via the real `Spellbook.cast()` engine. The backend consumes the real spell slot, rolls the real attack/save/damage, and flows a typed `SPELL_CAST` GameEvent. Touches two stateful stores — the Spellbook on `character.spells` (slot consumption) AND the Encounter in `game_state["combat"]` (combat spell damage) — so a damage spell targeting a combatant reduces both. Results render as an inline SpellCastCard with school-themed colors, attack-roll/save/auto-damage/healing resolution modes, HP bar, slot-level badge, and failed-cast (muted) rendering. The DM never fabricates spell outcomes.
 
 ### Content
 - **108 Spells** — Including 20 iconic PHB/XGE spells (Chill Touch, Poison Spray, Shield, Mage Armor, Bless, Command, Hunter's Mark, etc.)
@@ -266,7 +267,7 @@ The game implements comprehensive DnD 5e mechanics:
 
 **Version:** 0.1.0 (MVP + Advanced Features Complete)
 
-**Test Suite:** 2690 backend tests passing + 206 frontend tests passing = **2896 total**, 0 failures ✅
+**Test Suite:** 2723 backend tests passing + 234 frontend tests passing = **2957 total**, 0 failures ✅
 
 **Core Features:** ✅ All MVP features implemented ✅ Advanced features complete ✅ DSPy migration complete ✅ AI features (images, TTS with local support) operational ✅ Local TTS via mlx-audio (Kokoro) complete
 
@@ -278,6 +279,7 @@ The game implements comprehensive DnD 5e mechanics:
 See [DESIGN.md](DESIGN.md) for the full architecture, [PROGRESS.md](PROGRESS.md) for detailed progress tracking, and `docs/` for research on upcoming features:
 
 **Recently Completed:**
+- **DM Function Calling (Phase 3 — Spell Casting)** — DM emits `cast_spell` game actions resolved via the real `Spellbook.cast()` engine; the backend consumes the real spell slot and rolls the real attack/save/damage. Dual-state resolution couples the Spellbook (`character.spells`) with the Encounter (`game_state["combat"]`) so combat spell damage reduces combatant HP (+ follow-up DAMAGE event). Results flow as a typed SPELL_CAST GameEvent and render as an inline SpellCastCard (school-themed colors, attack/save/heal modes, HP bar, failed-cast rendering). ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
 - **DM Function Calling (Phase 2 — Combat Resolution)** — DM emits `attack`/`damage`/`roll_initiative` game actions resolved via the real `Encounter` engine; results flow as typed GameEvents (ATTACK/DAMAGE/INITIATIVE) and render as inline AttackCard/DamageCard/InitiativeCard components with HP bars, hit/miss/crit colour-coding, and death indicators. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
 - **DM Function Calling (Phase 1)** — DM calls `roll_dice()` for real dice rolls + check prompt UI. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
 - **Local TTS (mlx-audio)** — ✅ **COMPLETE** — On-device TTS via Apple MLX with Kokoro model for zero-config voice narration. Default on Apple Silicon; automatic fallback to cloud providers on other platforms.
@@ -286,7 +288,7 @@ See [DESIGN.md](DESIGN.md) for the full architecture, [PROGRESS.md](PROGRESS.md)
 - Multiplayer / party-based play
 - More homebrew content tools
 - Advanced DSPy patterns (context-specific narration signatures, module composition)
-- DM Function Calling (Phase 3+ — spells, inventory, conditions via DM function calls)
+- DM Function Calling (Phase 4+ — inventory, conditions via DM function calls; Phase 3 spell casting is complete)
 
 ## Contributing
 

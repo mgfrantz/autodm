@@ -1102,9 +1102,11 @@ If Phase 2 is too large for a single run, it can be split:
 
 ## Phase 3 Implementation Plan — Spell Casting via DM Function Calls
 
-> **Status:** GREEN-LIT by Mike (2026-07-16) — EXECUTING. The dev agent cron
-> job has been updated with the Phase 3 directive and will implement this plan
-> on its next scheduled run (~every 2h).
+> **Status:** ✅ IMPLEMENTED (2026-07-16). The dev agent shipped the full 9-step
+> plan — `dm_cast_spell()`, `SPELL_CAST` GameEvent, dual-state resolution
+> (Spellbook slot + Encounter HP), `_available_spells_for_dm` roster,
+> `SpellCastCard` component, and +33 backend / +28 frontend tests. See the
+> "COMPLETED: DM Function Calling — Phase 3" section in `PROGRESS.md`.
 
 ### Goal
 
@@ -1477,3 +1479,14 @@ If Phase 3 is too large for a single run, it can be split:
   expansion, dual-state resolution pipeline, and a SpellCastCard component.
   ~25 new tests. Includes optional sub-phase breakdown (3a: core single-target,
   3b: combat coupling). Awaiting Mike's green-light.
+- 2026-07-16: **Phase 3 IMPLEMENTED** — all 9 steps complete (backend +
+  frontend). 2723 backend + 234 frontend tests passing. The DM now emits
+  `cast_spell` game_actions resolved via the real `Spellbook.cast()` engine.
+  Key delivery: `SPELL_CAST` GameEvent type + `spell_cast()` factory,
+  `dm_cast_spell()` DM-callable function, dual-state resolution in
+  `_resolve_game_actions(character=...)` (Spellbook slot consumption +
+  Encounter HP coupling with follow-up DAMAGE event), `_available_spells_for_dm`
+  roster injected into the DM situation prompt, `SpellCastCard` component
+  (school-themed colors, attack/save/auto/heal modes, HP bar, failed-cast
+  rendering), and `GameEventRenderer` dispatch. +33 backend / +28 frontend
+  tests.

@@ -27,8 +27,9 @@ class GameEventType(str, Enum):
     ATTACK = "attack"
     DAMAGE = "damage"
     INITIATIVE = "initiative"
+    # Phase 3: Spells
+    SPELL_CAST = "spell_cast"
     # Future phases:
-    # SPELL_CAST = "spell_cast"
     # LOOT = "loot"
     # CONDITION_APPLIED = "condition_applied"
 
@@ -172,4 +173,65 @@ class GameEvent:
             type=GameEventType.INITIATIVE,
             label=label,
             data={"combatants": combatants},
+        )
+
+    @classmethod
+    def spell_cast(
+        cls,
+        label: str,
+        spell_name: str,
+        spell_id: str,
+        level: int,
+        school: str,
+        slot_level: int | None,
+        success: bool,
+        attack_total: int | None = None,
+        hit: bool | None = None,
+        made_save: bool | None = None,
+        save_dc: int | None = None,
+        save_ability: str | None = None,
+        damage: int = 0,
+        healing: int = 0,
+        damage_type: str = "",
+        half_damage: bool = False,
+        target: str = "",
+        target_remaining_hp: int | None = None,
+        target_max_hp: int | None = None,
+        message: str = "",
+        slots_remaining: list[dict] | None = None,
+    ) -> "GameEvent":
+        """Create a ``spell_cast`` event with full spell resolution + HP tracking.
+
+        Captures the outcome of a DM-emitted ``cast_spell`` game_action resolved
+        via the real ``Spellbook.cast()`` engine: the expended slot, to-hit roll
+        (attack spells), saving throw (save spells), damage/healing, and — when
+        the target is an encounter combatant — its remaining/max HP. Failed
+        casts (no slots / unknown / component-blocked) carry ``success=False``
+        and a human-readable ``message``.
+        """
+        return cls(
+            type=GameEventType.SPELL_CAST,
+            label=label,
+            data={
+                "spell_name": spell_name,
+                "spell_id": spell_id,
+                "level": level,
+                "school": school,
+                "slot_level": slot_level,
+                "success": success,
+                "attack_total": attack_total,
+                "hit": hit,
+                "made_save": made_save,
+                "save_dc": save_dc,
+                "save_ability": save_ability,
+                "damage": damage,
+                "healing": healing,
+                "damage_type": damage_type,
+                "half_damage": half_damage,
+                "target": target,
+                "target_remaining_hp": target_remaining_hp,
+                "target_max_hp": target_max_hp,
+                "message": message,
+                "slots_remaining": slots_remaining,
+            },
         )

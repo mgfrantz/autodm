@@ -9,10 +9,12 @@ dice rolling and check prompts; Phase 2 adds combat functions wrapping the
 from app.engine.combat import Attack, AttackResult, Combatant, Encounter
 from app.engine.dice import (
     RollResult,
+    proficiency_bonus,
     roll_dice as engine_roll_dice,
     roll_d20,
 )
 from app.engine.game_events import GameEvent
+from app.engine.spells import Spellbook
 
 
 def dm_roll_d20(
@@ -253,4 +255,132 @@ def dm_roll_initiative(encounter: Encounter) -> GameEvent:
     return GameEvent.initiative(
         label="🎯 Initiative Order",
         combatants=combatants_list,
+    )
+
+
+# --- Phase 3: Spell functions -----------------------------------------------
+
+
+def _norm_spell_id(spell_id: str) -> str:
+    """Normalise a spell id/name to the registry key form."""
+    return (spell_id or "").lower().replace(" ", "_")
+
+
+def dm_cast_spell(
+    spellbook: Spellbook,
+    spell_id: str,
+    slot_level: int | None = None,
+    caster_mod: int = 0,
+    target_ac: int | None = None,
+    target_save_total: int | None = None,
+    active_conditions: list[str] | None = None,
+) -> GameEvent:
+    """Resolve a spell cast via ``spellbook.cast()``.
+
+    Looks up the spell in the registry, consumes a real spell slot, rolls the
+    real attack/damage/save via the spell engine, and returns a ``spell_cast``
+    :class:`GameEvent`. If the cast fails (no slots, not known, or
+    component-blocked by an active condition), returns a ``spell_cast`` event
+    with ``success=False`` and a human-readable ``message``.
+
+    The caller is responsible for:
+
+    * deriving ``caster_mod`` from the character's casting ability,
+    * looking up ``target_ac`` / ``target_save_total`` from the encounter, and
+    * applying any damage/healing to an encounter combatant (dual-state
+      coupling) and augmenting the returned event's HP fields afterwards.
+
+    Args:
+        spellbook: The character's live Spellbook (consumes a slot on success).
+        spell_id: Spell id or name (e.g. ``"fire_bolt"``, ``"Cure Wounds"``).
+        slot_level: Desired slot level for upcasting (``None`` = auto/lowest).
+        caster_mod: Casting-ability modifier (INT/WIS/CHA).
+        target_ac: Target AC for attack-roll spells.
+        target_save_total: Target's save total for saving-throw spells.
+        active_conditions: Caster's conditions (may block V/S components).
+
+    Returns:
+        A ``spell_cast`` GameEvent describing the full resolution.
+    """
+    try:
+        outcome = spellbook.cast(
+            spell_id=spell_id,
+            slot_level=slot_level,
+            caster_mod=caster_mod,
+            target_ac=target_ac,
+            target_save_total=target_save_total,
+            active_conditions=active_conditions,
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        # Defensive: resolve_spell_effect raises for attack-roll spells without
+        # a target_ac, or on any unexpected engine error. Surface it as a
+        # first-class failed-cast event with a human-readable message.
+        sid = _norm_spell_id(spell_id)
+        return GameEvent.spell_cast(
+            label=f"🔮 {spell_id} (cast failed)",
+            spell_name=spell_id,
+            spell_id=sid,
+            level=0,
+            school="",
+            slot_level=None,
+            success=False,
+            message=f"Spell cast could not be resolved: {exc}",
+        )
+
+    spell = outcome.spell
+    effect = outcome.effect
+
+    if spell is not None:
+        spell_name = spell.name
+        sid = spell.id
+        level = spell.level
+        school = spell.school.value if hasattr(spell.school, "value") else str(spell.school)
+        save_ability = spell.save_ability
+        damage_type = effect.damage_type if (effect and effect.damage_type) else spell.damage_type
+    else:
+        # Unknown spell — degrade gracefully with the raw id.
+        spell_name = spell_id
+        sid = _norm_spell_id(spell_id)
+        level = 0
+        school = ""
+        save_ability = None
+        damage_type = ""
+
+    # Compute the save DC the same way resolve_spell_effect does (8 + prof +
+    # casting_mod), since Spellbook.spell_save_dc uses a placeholder ability
+    # modifier of 0 and would under-report the real DC.
+    save_dc = (
+        8 + proficiency_bonus(spellbook.level) + caster_mod
+        if (spell is not None and save_ability)
+        else None
+    )
+
+    # Cantrips report slot_level 0 from the engine; normalise to None so the
+    # event carries "no slot expended" (None) for cantrips and failed casts,
+    # and the real expended slot level (1-9) for leveled spells.
+    expended_slot = outcome.slot_level if (outcome.slot_level and outcome.slot_level > 0) else None
+
+    label = f"🔮 {spell_name}"
+    if not outcome.success:
+        label = f"🔮 {spell_name} (cast failed)"
+
+    return GameEvent.spell_cast(
+        label=label,
+        spell_name=spell_name,
+        spell_id=sid,
+        level=level,
+        school=school,
+        slot_level=expended_slot,
+        success=outcome.success,
+        attack_total=effect.rolled_attack if effect else None,
+        hit=effect.hit if effect else None,
+        made_save=effect.made_save if effect else None,
+        save_dc=save_dc,
+        save_ability=save_ability,
+        damage=effect.damage if effect else 0,
+        healing=effect.healing if effect else 0,
+        damage_type=damage_type,
+        half_damage=effect.half_damage if effect else False,
+        message=outcome.message,
+        slots_remaining=spellbook.slots_overview() if outcome.success else None,
     )

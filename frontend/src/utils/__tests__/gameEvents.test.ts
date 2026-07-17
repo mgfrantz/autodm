@@ -13,6 +13,9 @@ import {
   attackSummary,
   damageSummary,
   initiativeSummary,
+  spellSchoolColor,
+  spellLevelLabel,
+  spellCastSummary,
 } from '../gameEvents'
 import type { GameEvent, InitiativeCombatant } from '../../types'
 
@@ -371,5 +374,138 @@ describe('summarizeEvent for combat types', () => {
     const s = summarizeEvent(event)
     expect(s).toContain('Goblin')
     expect(s).toContain('15')
+  })
+})
+
+// ==========================================================================
+// Phase 3: Spell event helpers
+// ==========================================================================
+
+describe('spellSchoolColor', () => {
+  it('returns orange colours for evocation', () => {
+    const c = spellSchoolColor('evocation')
+    expect(c.text).toContain('orange')
+    expect(c.border).toContain('orange')
+  })
+
+  it('returns necromancy colours (not dark-green literal)', () => {
+    const c = spellSchoolColor('necromancy')
+    expect(c.text).toContain('emerald')
+  })
+
+  it('is case-insensitive', () => {
+    const c = spellSchoolColor('ILLUSION')
+    expect(c.text).toContain('violet')
+  })
+
+  it('returns distinct colours for all eight schools', () => {
+    const schools = [
+      'abjuration', 'conjuration', 'divination', 'enchantment',
+      'evocation', 'illusion', 'necromancy', 'transmutation',
+    ]
+    const texts = schools.map((s) => spellSchoolColor(s).text)
+    expect(new Set(texts).size).toBe(8)
+  })
+
+  it('returns neutral colours for unknown / undefined school', () => {
+    const c = spellSchoolColor(undefined)
+    expect(c.text).toContain('parchment')
+    const c2 = spellSchoolColor('not-a-school')
+    expect(c2.text).toContain('parchment')
+  })
+})
+
+describe('spellLevelLabel', () => {
+  it('returns "cantrip" for level 0', () => {
+    expect(spellLevelLabel(0)).toBe('cantrip')
+    expect(spellLevelLabel(undefined)).toBe('cantrip')
+  })
+
+  it('returns "level N" for leveled spells', () => {
+    expect(spellLevelLabel(1)).toBe('level 1')
+    expect(spellLevelLabel(3)).toBe('level 3')
+    expect(spellLevelLabel(9)).toBe('level 9')
+  })
+})
+
+describe('spellCastSummary', () => {
+  it('summarizes an attack-roll hit with damage', () => {
+    const s = spellCastSummary('Fire Bolt', 0, 'evocation', true, true, null,
+      10, 0, 'fire', false, 'Goblin', '')
+    expect(s).toContain('Fire Bolt')
+    expect(s).toContain('cantrip')
+    expect(s).toContain('10 fire damage')
+    expect(s).toContain('hit')
+  })
+
+  it('summarizes a miss', () => {
+    const s = spellCastSummary('Fire Bolt', 0, 'evocation', true, false, null,
+      0, 0, 'fire', false, 'Goblin', '')
+    expect(s).toContain('miss')
+  })
+
+  it('summarizes a save spell with half damage', () => {
+    const s = spellCastSummary('Sacred Flame', 0, 'evocation', true, null, true,
+      4, 0, 'radiant', true, 'Goblin', '')
+    expect(s).toContain('4 radiant damage')
+    expect(s).toContain('(half)')
+    expect(s).toContain('target saved')
+  })
+
+  it('summarizes a healing spell', () => {
+    const s = spellCastSummary('Cure Wounds', 1, 'evocation', true, null, null,
+      0, 8, '', false, 'Lyra', '')
+    expect(s).toContain('+8 HP')
+    expect(s).toContain('Lyra')
+  })
+
+  it('summarizes a failed cast', () => {
+    const s = spellCastSummary('Fireball', 3, 'evocation', false, null, null,
+      0, 0, 'fire', false, '', 'No spell slots available')
+    expect(s).toContain('FAILED')
+    expect(s).toContain('No spell slots available')
+  })
+
+  it('handles undefined inputs gracefully', () => {
+    const s = spellCastSummary(undefined, undefined, undefined, true,
+      null, null, 0, 0, undefined, false, undefined, undefined)
+    expect(s).toContain('Unknown spell')
+  })
+})
+
+describe('summarizeEvent for spell_cast', () => {
+  it('summarizes a spell cast hit', () => {
+    const event: GameEvent = {
+      type: 'spell_cast',
+      label: '🔮 Fire Bolt',
+      data: {
+        spell_name: 'Fire Bolt', spell_id: 'fire_bolt', level: 0,
+        school: 'evocation', slot_level: null, success: true,
+        hit: true, attack_total: 18, damage: 10, damage_type: 'fire',
+        target: 'Goblin', target_remaining_hp: 2, target_max_hp: 12,
+        message: '',
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Fire Bolt')
+    expect(s).toContain('10 fire damage')
+    expect(s).toContain('hit')
+  })
+
+  it('summarizes a failed spell cast', () => {
+    const event: GameEvent = {
+      type: 'spell_cast',
+      label: '🔮 Fireball (failed)',
+      data: {
+        spell_name: 'Fireball', spell_id: 'fireball', level: 3,
+        school: 'evocation', slot_level: null, success: false,
+        message: 'No spell slots available for Fireball',
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('FAILED')
+    expect(s).toContain('No spell slots')
   })
 })

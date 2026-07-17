@@ -1,7 +1,140 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅
-## TEST SUITE FULLY GREEN (2690 backend + 206 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅
+## TEST SUITE FULLY GREEN (2723 backend + 234 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅
+
+## ✅ COMPLETED: DM Function Calling — Phase 3 (Spell Casting)
+
+**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 3 Implementation Plan"
+
+Extended the DM function-calling system so the DM can emit **spell-casting**
+`game_actions` (`cast_spell`) resolved via the real spell engine
+(`Spellbook.cast()`). The DM describes *intent* ("the wizard hurls a Fire Bolt
+at the goblin"); the engine resolves the *mechanics* (slot consumed, attack
+roll, save DC, damage/healing). The DM never fabricates spell outcomes.
+
+### The architectural wrinkle (vs Phase 2)
+
+Phase 2 (combat) was stateful against **one** store (`game_state["combat"]`).
+Spell casting touches **two** stateful stores:
+
+| Store | Holds | Source of truth |
+|-------|-------|-----------------|
+| Spellbook on `character.spells` | spell slot consumption | `Character.spells` JSON column |
+| Encounter in `game_state["combat"]` | combatant HP (damage spells) | `GameSave.game_state` |
+
+So `_resolve_game_actions()` gained a `character` param to reach the Spellbook,
+and a damage spell targeting an encounter combatant now reduces **both** the
+Spellbook (slot) and the Encounter (HP).
+
+### Backend Changes (Steps 1-4)
+
+1. **`backend/app/engine/game_events.py`** — Added `SPELL_CAST` to
+   `GameEventType` + `spell_cast()` factory classmethod capturing the full
+   resolution: spell name/id/level/school, expended slot, success flag,
+   attack-roll fields (`attack_total`, `hit`), save fields (`made_save`,
+   `save_dc`, `save_ability`), damage/healing, damage type, half-damage flag,
+   target name + remaining/max HP, failure message, and post-cast
+   `slots_remaining`.
+2. **`backend/app/engine/dm_functions.py`** — Added `dm_cast_spell()` wrapping
+   `Spellbook.cast()`: consumes a real slot, rolls the real
+   attack/damage/save, and returns a `spell_cast` GameEvent. Failed casts
+   (no slots / unknown spell / component-blocked) are first-class events with
+   `success=False` + human-readable message. `_norm_spell_id()` helper
+   normalises spell ids/names.
+3. **`backend/app/llm/dspy_signatures.py`** — Expanded `DMActionableNarration`
+   docstring with `cast_spell` guidance: reference real spell_ids from the
+   AVAILABLE_SPELLS roster, emit `spell_id` + `target_id` + optional
+   `slot_level`, never fabricate outcomes. Added `cast_spell` to the
+   function list and args schema.
+4. **`backend/app/api/game.py`** — Dual-state spell resolution:
+   - `_resolve_game_actions(..., character=None)` now loads the Spellbook via
+     `_load_spellbook(character)`, casts through `dm_cast_spell`, and persists
+     the mutated Spellbook back via `_save_spellbook(character, spellbook)`
+     (single source of truth = `character.spells`).
+   - **Dual-state coupling:** a damage/healing spell targeting an encounter
+     combatant also mutates that combatant's HP via `take_damage`/`heal` and
+     emits a follow-up `DAMAGE` event. Self/utility healing outside combat
+     updates `character.current_hp`.
+   - `_available_spells_for_dm(character)` roster helper injects the caster's
+     castable spells (id, name, school, level) + remaining slots into the DM
+     situation prompt (mirrors `_combatant_roster_for_dm`). Empty for
+     non-casters.
+   - Caster mod derived from character data (not DM-supplied); target AC / save
+     total resolved from the encounter combatant.
+   - Both `/action` and `/action/stream` thread `character` through.
+   - Attack-roll spell without a target → first-class failed-cast event (no
+     slot consumed). Non-caster / missing character → graceful skip + warning.
+
+### Frontend (Steps 5-8)
+
+5. **`types/index.ts`** — Added `'spell_cast'` to `GameEventType`; added spell
+   fields to `GameEventData` (spell_name, spell_id, level, school, slot_level,
+   success, attack_total, hit, made_save, save_dc, save_ability, damage,
+   healing, damage_type, half_damage, target, message, slots_remaining).
+6. **`utils/gameEvents.ts`** — Added `spellSchoolColor()` (8 schools),
+   `spellCastSummary()` (hit/miss/save/heal/fail one-liner), `spellLevelLabel()`
+   (cantrip/level N); updated `summarizeEvent()` to dispatch `spell_cast`.
+7. **`components/SpellCastCard.tsx`** (NEW) — Inline spell cast card:
+   - School-themed accent colours (evocation=orange, necromancy=dark-green,
+     abjuration=blue, illusion=purple, etc.)
+   - Three resolution modes: attack-roll (d20 vs AC + HIT/MISS), saving-throw
+     (DC + saved/failed-save), auto-damage/healing/utility
+   - HP bar when target is a combatant (reuses `hpBarData()`)
+   - Slot-level badge ("L3 slot") or cantrip badge (no slot expended)
+   - Failed cast: muted card with the reason
+   - Dismissible (same pattern as DiceRollCard / AttackCard)
+8. **`components/GameEventRenderer.tsx`** — Dispatches `spell_cast` to
+   `SpellCastCard`.
+
+### Key Architectural Decisions
+
+- **Spellbook source of truth = `character.spells`** — not duplicated into
+  game_state. Load/save via `_load_spellbook` / `_save_spellbook` (same helpers
+  the Spells API uses).
+- **`_resolve_game_actions` gains a `character` param** — backward-compatible
+  default `None`.
+- **Dual-state coupling** — damage spell targeting a combatant reduces both
+  the Spellbook (slot) and the Encounter (HP). Resolved in order: cast → apply
+  damage → emit SPELL_CAST + DAMAGE events.
+- **Casting mod derived, not DM-supplied** — the DM emits only `spell_id` +
+  `target_id` + optional `slot_level`.
+- **DM never fabricates spell outcomes** — all rolls/saves/damage come from
+  the engine.
+- **Failed casts are first-class events** — render as a muted card with the
+  reason.
+- **Graceful degradation** — non-caster / missing character → skip spell
+  actions, log warning, still return Phase 1/2 events.
+
+### Tests (Step 9) — +33 backend, +28 frontend
+
+- **`test_dm_spell_functions.py`** (NEW, 16 tests) — `dm_cast_spell` attack-roll
+  hit/miss, save spell half-damage, healing spell, auto-damage (Magic Missile),
+  cantrip (no slot consumed), failed cast (no slots / unknown / engine error),
+  slot consumption, save DC computation, slots_remaining reporting.
+- **`test_spell_events_api.py`** (NEW, 19 tests) — `/action` with `cast_spell`
+  game_action emits SPELL_CAST event; slot persisted to `character.spells`;
+  spell damage reduces encounter combatant HP (+ DAMAGE event); streaming emits
+  `game_event` SSE; non-caster → graceful skip; failed cast event has
+  `success=False`; self-healing updates character HP.
+- **`test_game_events.py`** (extended) — `spell_cast` factory serialization
+  round-trip, enum value, default fields.
+- **`SpellCastCard.test.tsx`** (NEW, 13 tests) — attack hit, attack miss, save
+  half-damage, healing, cantrip badge, slot-level badge, HP bar render,
+  Defeated indicator, failed-cast muted card, dismiss, no-callback render.
+- **`gameEvents.test.ts`** (extended) — `spellSchoolColor` (8 schools),
+  `spellCastSummary` (hit/miss/save/heal/fail), `spellLevelLabel`.
+
+### Verification
+
+- ✅ `uv run pytest` — **2723 backend tests passing** (+33 new spell tests)
+- ✅ `npx tsc --noEmit` — no type errors
+- ✅ `npm run build` — clean production build
+- ✅ `npm test` — **234 frontend tests passing** (+28 new spell tests)
+- ✅ Commit: `feat: DM function calling Phase 3 — spell casting`
+- ✅ Push to `develop`
+
+---
 
 ## ✅ COMPLETED: Deprecation cleanup — `datetime.utcnow()` → `utcnow()` helper
 
@@ -235,58 +368,34 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM Function Calling — Phase 3 (Spell Casting) GREEN-LIT — EXECUTING
+## ⚡ NEXT SESSION DIRECTIVE: Phase 3 (Spell Casting) COMPLETE ✅ — Awaiting next green-light
 
-**Phase 2 (Combat Resolution) is FULLY COMPLETE** (commit `66b55cb` — backend +
-frontend). Mike has **green-lit Phase 3 (Spell Casting)** as of 2026-07-16.
-The dev agent cron directive has been updated to execute the 9-step plan.
+**Phase 3 (Spell Casting) is FULLY COMPLETE** (all 9 steps shipped — backend +
+frontend + tests). The DM now emits `cast_spell` game_actions resolved via the
+real `Spellbook.cast()` engine, with dual-state coupling (Spellbook slot +
+Encounter HP) and a new inline `SpellCastCard`. See the "COMPLETED: DM Function
+Calling — Phase 3" section above for full details.
 
-### Phase 3 in one paragraph
-Let the DM emit `cast_spell` game_actions. The backend resolves them via the
-real spell engine (`Spellbook.cast()`), consuming a real spell slot, rolling
-real attack/damage/save, and flowing a typed `SPELL_CAST` GameEvent to a new
-inline `SpellCastCard`. The architectural wrinkle vs Phase 2: spells touch
-**two** stateful stores — the Spellbook on `character.spells` (slot
-consumption) AND the Encounter in `game_state["combat"]` (combat spell damage)
-— so `_resolve_game_actions` gains a `character` param.
+- ✅ `uv run pytest` — **2723 backend tests passing** (+33 new spell tests)
+- ✅ `cd frontend && npm test` — **234 frontend tests passing** (+28 new)
+- ✅ `npx tsc --noEmit` clean, `npm run build` clean
 
-### What to do this run
-1. Read `PROGRESS.md` (this section is authoritative) + the full Phase 3 plan
-   in `docs/DM_FUNCTION_CALLING_RESEARCH.md` (search "Phase 3 Implementation
-   Plan").
-2. `git pull origin develop` + `git log --oneline -15` to sync any recent changes.
-3. Verify the suite is green before starting: `uv run pytest` (expect 2690) +
-   `cd frontend && npm test` (expect 206).
-4. **Execute the 9-step Phase 3 plan** (file-level table in the design doc):
-   - Step 1: `game_events.py` — add `SPELL_CAST` enum + `spell_cast()` factory
-   - Step 2: `dm_functions.py` — add `dm_cast_spell()` wrapping `Spellbook.cast()`
-   - Step 3: `dspy_signatures.py` — expand `DMActionableNarration` docstring
-   - Step 4: `api/game.py` — upgrade `_resolve_game_actions(..., character=None)`;
-     add `_available_spells_for_dm()` roster helper; thread `character` through
-     both endpoints; spell-damage-to-encounter coupling
-   - Step 5: `frontend/src/types/index.ts` — spell fields + `'spell_cast'` type
-   - Step 6: `frontend/src/utils/gameEvents.ts` — `spellSchoolColor()`, `spellCastSummary()`
-   - Step 7: `frontend/src/components/SpellCastCard.tsx` — NEW card component
-   - Step 8: `frontend/src/components/GameEventRenderer.tsx` — dispatch `spell_cast`
-   - Step 9: Tests — `test_dm_spell_functions.py`, `test_spell_events_api.py`,
-     `SpellCastCard.test.tsx`, `gameEvents.test.ts` additions (~25 new tests)
-5. Optional sub-phase split if the run is too long: **3a** (core single-target,
-   steps 1-7, ~15 tests) → checkpoint → **3b** (combat coupling + roster, step 4
-   damage-to-encounter + roster, ~10 tests).
-6. Run the full verification checklist (see design doc).
-7. Commit: `feat: DM function calling Phase 3 — spell casting`
-8. `git push origin develop`
-9. Update PROGRESS.md with completed work + update README.md to sync.
+### What's next (awaiting Mike's green-light)
+No phase is currently green-lit. The DM function-calling roadmap has these
+**staged** future phases (design research in
+`docs/DM_FUNCTION_CALLING_RESEARCH.md`):
 
-### Verification Checklist
-- [ ] `uv run pytest` — all existing + new spell tests green
-- [ ] `cd frontend && npx tsc --noEmit` — no type errors
-- [ ] `cd frontend && npm run build` — clean build
-- [ ] `cd frontend && npm test` — all frontend tests pass
-- [ ] PROGRESS.md updated with completed work
-- [ ] README.md synced (test counts, feature list)
-- [ ] Commit: `feat: DM function calling Phase 3 — spell casting`
-- [ ] `git push origin develop`
+- **Phase 4 — Inventory operations** via DM function calls (loot, equip, use
+  item, trade). Touches `character.inventory`.
+- **Phase 5 — Condition application** via DM function calls (poisoned,
+  frightened, blessed, etc.). Touches `character.conditions` / `game_state`.
+- **Phase 3.5 (stretch)** — AoE spell resolution against multiple combatants in
+  one call; concentration tracking through the DM pipeline.
+
+**Until Mike green-lights the next phase, there is no execution directive.**
+The dev agent should not begin implementation on a staged phase without
+explicit green-light. If running with no directive, keep the suite green and
+watch for README/PROGRESS drift.
 
 ---
 

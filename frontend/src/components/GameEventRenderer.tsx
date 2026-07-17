@@ -4,6 +4,7 @@ import CheckPromptCard from './CheckPromptCard'
 import AttackCard from './AttackCard'
 import DamageCard from './DamageCard'
 import InitiativeCard from './InitiativeCard'
+import SpellCastCard from './SpellCastCard'
 
 /* ------------------------------------------------------------------ *
  * GameEventRenderer — dispatches a GameEvent to the correct component.
@@ -13,7 +14,8 @@ import InitiativeCard from './InitiativeCard'
  * - attack → <AttackCard />
  * - damage → <DamageCard />
  * - initiative → <InitiativeCard />
- * - unknown types → null (forward-compatible with Phase 3+)
+ * - spell_cast → <SpellCastCard />
+ * - unknown types → null (forward-compatible with future phases)
  * ------------------------------------------------------------------ */
 
 interface GameEventRendererProps {
@@ -34,6 +36,8 @@ export default function GameEventRenderer({ event, gameId, onDismiss }: GameEven
       return <DamageCard event={event} onDismiss={onDismiss} />
     case 'initiative':
       return <InitiativeCard event={event} onDismiss={onDismiss} />
+    case 'spell_cast':
+      return <SpellCastCard event={event} onDismiss={onDismiss} />
     default:
       // Unknown event type — forward-compatible, render nothing
       return null
