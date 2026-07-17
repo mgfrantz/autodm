@@ -2,7 +2,8 @@
 
 > **Status:** Phase 1 IMPLEMENTED ✅ — dice rolling + check prompts are live
 > Phase 2 IMPLEMENTED ✅ — combat resolution (attack/damage/initiative) is live
-> Phase 3 GREEN-LIT ✅ by Mike (2026-07-16) — spell casting implementation EXECUTING
+> Phase 3 IMPLEMENTED ✅ — spell casting (cast_spell, dual-state coupling) is live
+> Phase 4 GREEN-LIT ✅ by Mike (2026-07-17) — inventory operations EXECUTING
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
@@ -1427,6 +1428,323 @@ If Phase 3 is too large for a single run, it can be split:
 
 ---
 
+## Phase 4 Implementation Plan: Inventory Operations
+
+> **Status:** GREEN-LIT by Mike (2026-07-17) — ready for dev agent execution
+> **Scope:** DM emits `give_item` / `remove_item` / `equip_item` / `use_item`
+> game_actions; backend resolves via the real `Inventory` engine; results flow
+> as `LOOT` GameEvent objects to inline `LootCard` components
+> **Approach:** Same Option C (Hybrid) as Phases 1-3
+
+### Why Phase 4 Now
+
+- **All prior phases shipped** — dice, combat, and spells are all live with
+  2723 backend + 234 frontend tests passing.
+- **Inventory engine is robust** — `backend/app/engine/inventory.py` already has
+  `Inventory.add_item()`, `remove_item()`, `equip_item()`, `unequip_item()`,
+  `use_item()` with stacking, equip-slot exclusivity, consumable charges, and
+  AC recalculation via the equipment engine. No new mechanics needed.
+- **Inventory API is the persistence blueprint** — `_load_inventory()` /
+  `_save_inventory()` / `_recalc_armor_class()` in `api/inventory.py` show
+  exactly how to load from `character.inventory`, mutate, and persist.
+- **Closes the loot loop** — the DM can narrate "the goblin drops a Health
+  Potion" and the inventory *actually changes*, instead of requiring a manual
+  UI click.
+
+### The architectural insight (vs Phase 3)
+
+Phase 3 (spells) was **dual-state**: Spellbook (`character.spells`) + Encounter
+(`game_state["combat"]`). Phase 4 (inventory) is **single-state** but has two
+**coupling side-effects**:
+
+| Coupling | Trigger | Effect |
+|----------|---------|--------|
+| **AC recalc** | equip/unequip armor or shield | `character.armor_class` updated via `_recalc_armor_class()` |
+| **HP heal** | use_item on a healing potion | `character.current_hp` increased (2d4+2) |
+
+So `_resolve_game_actions()` loads the `Inventory` via `_load_inventory(character)`,
+mutates it, applies side-effects (AC recalc / HP heal), and persists back via
+`_save_inventory(character, inventory)` — same pattern as Phase 3's spellbook,
+just with a different store and two coupling hooks instead of one.
+
+### Game actions the DM can emit
+
+| Action | Args | Effect |
+|--------|------|--------|
+| `give_item` | `{item_name, item_type, quantity, ...details}` | Create Item, add to inventory (stacking) |
+| `remove_item` | `{item_id, quantity}` | Remove from inventory (item_id from INVENTORY_ROSTER) |
+| `equip_item` | `{item_id}` | Equip existing item + AC recalc |
+| `use_item` | `{item_id}` | Use consumable + apply effects (healing etc.) |
+
+**`give_item` creates new items** — the DM provides enough detail to construct
+an `Item` (name, type, quantity, and optionally damage_dice for weapons,
+armor_type/bonus for armor, effect for potions). For potions, the `description`
+field doubles as the effect description.
+
+**`remove_item` / `equip_item` / `use_item` reference existing items** — the DM
+uses `item_id` from the `INVENTORY_ROSTER` injected into the situation prompt
+(mirrors `_combatant_roster_for_dm` / `_available_spells_for_dm`).
+
+### Backend Implementation (Steps 1-4)
+
+#### 1. `backend/app/engine/game_events.py` — Add LOOT event type
+
+Add `LOOT = "loot"` to `GameEventType` enum + `loot()` factory classmethod:
+
+```python
+LOOT = "loot"
+
+@classmethod
+def loot(
+    cls,
+    label: str,
+    operation: str,          # "gained" | "removed" | "used" | "equipped"
+    item_name: str,
+    item_type: str,          # weapon, armor, potion, scroll, misc, quest
+    item_id: str,
+    quantity: int = 1,
+    rarity: str = "common",
+    value: int = 0,
+    source: str = "",        # "Goblin loot", "Merchant trade", etc.
+    # Operation-specific fields
+    healing: int | None = None,         # used: healing amount
+    ac_after: int | None = None,        # equipped: new AC
+    uses_remaining: int | None = None,  # used: charges left on item
+    success: bool = True,
+    message: str = "",      # failure reason if success=False
+) -> "GameEvent":
+```
+
+Uncomment the `LOOT` line in the "Future phases" comment block.
+
+#### 2. `backend/app/engine/dm_functions.py` — Add inventory functions
+
+Add a `# --- Phase 4: Inventory functions ---` section with:
+
+- **`dm_give_item(inventory, item_name, item_type, quantity=1, ...)`** —
+  constructs an `Item` from the DM-supplied details (name, type, rarity, value,
+  damage_dice for weapons, armor_type/bonus for armor, uses for consumables),
+  calls `inventory.add_item()`, returns a `LOOT` event with `operation="gained"`.
+  Handles item_type normalisation (case-insensitive), default rarity/value.
+
+- **`dm_remove_item(inventory, item_id, quantity=1)`** — calls
+  `inventory.remove_item()`, returns `LOOT` event with `operation="removed"`.
+  Failed removal (item not found) → `success=False` event with message.
+
+- **`dm_equip_item(inventory, item_id)`** — calls `inventory.equip_item()`,
+  returns `LOOT` event with `operation="equipped"`. Includes `ac_after` field
+  (caller fills in after AC recalc). Failed equip → `success=False`.
+
+- **`dm_use_item(inventory, item_id)`** — calls `inventory.use_item()`, returns
+  `LOOT` event with `operation="used"`. Includes `uses_remaining` and `healing`
+  fields (caller fills in after applying healing effect). Failed use →
+  `success=False` with the engine message.
+
+All functions accept a live `Inventory` object (loaded by the caller from
+`character.inventory`) and never crash — defensive try/except like `dm_cast_spell`.
+
+#### 3. `backend/app/llm/dspy_signatures.py` — Expand DMActionableNarration
+
+Add inventory guidance to the docstring:
+
+```
+- For INVENTORY operations:
+  - Use give_item when the player ACQUIRES an item (loot, reward, purchase,
+    gift). Args: {"item_name": "Health Potion", "item_type": "potion",
+                  "quantity": 2}
+  - Use remove_item when the player LOSES an item (consumed, stolen, given
+    away, sacrificed). Reference the item_id from INVENTORY_ROSTER.
+    Args: {"item_id": "...", "quantity": 1}
+  - Use equip_item when the player or NPC equips gear (auto-equip found
+    armor, don found weapon). Reference item_id from INVENTORY_ROSTER.
+    Args: {"item_id": "..."}
+  - Use use_item when a consumable is used (drink potion, read scroll).
+    Reference item_id from INVENTORY_ROSTER.
+    Args: {"item_id": "..."}
+  - The DM should ONLY give items that make narrative sense. Don't spawn
+    legendary items from thin air. Follow the scene's logic.
+  - Available items are shown under INVENTORY_ROSTER (id, name, type, qty).
+  - Optional give_item details: rarity, value, damage_dice (weapons),
+    armor_type/bonus (armor), description (potions = effect text).
+```
+
+Add the new functions to the `function` enum and `args` schema:
+
+```
+"function": "roll_dice" | "request_check" | "attack" | "damage" |
+            "roll_initiative" | "cast_spell" |
+            "give_item" | "remove_item" | "equip_item" | "use_item"
+```
+
+#### 4. `backend/app/api/game.py` — Inventory resolution in `_resolve_game_actions`
+
+- **Inventory loading**: When any inventory action (`give_item`, `remove_item`,
+  `equip_item`, `use_item`) is present and a character is available, load via
+  `_load_inventory(character)` (from `api.inventory`).
+
+- **Inventory roster for DM**: Add `_inventory_for_dm(character)` helper that
+  returns a formatted string listing current inventory items (id, name, type,
+  qty, equipped, rarity). Empty if no inventory. Inject into the situation
+  prompt alongside `_combatant_roster_for_dm` and `_available_spells_for_dm`.
+
+- **Resolution**: Dispatch each inventory action:
+  - `give_item`: call `dm_give_item(inventory, ...)` → LOOT event
+  - `remove_item`: call `dm_remove_item(inventory, item_id, qty)` → LOOT event
+  - `equip_item`: call `dm_equip_item(inventory, item_id)` → LOOT event,
+    then `_recalc_armor_class(character, inventory)` → fill `ac_after`
+  - `use_item`: call `dm_use_item(inventory, item_id)` → LOOT event,
+    then apply healing if item name contains "healing" (2d4+2 like the API),
+    fill `healing` field
+
+- **Persistence**: After resolving all actions, if inventory was loaded and
+  mutated, call `_save_inventory(character, inventory)`. The caller's existing
+  `db.commit()` persists it.
+
+- **Graceful degradation**: Missing character or inventory load failure → skip
+  inventory actions, log warning, still return Phase 1-3 events (same pattern
+  as spell casting graceful degradation).
+
+### Frontend (Steps 5-8)
+
+#### 5. `frontend/src/types/index.ts` — Add loot event type
+
+- Add `'loot'` to `GameEventType`
+- Add loot fields to `GameEventData`: `operation`, `item_name`, `item_type`,
+  `item_id`, `quantity`, `rarity`, `value`, `source`, `healing`, `ac_after`,
+  `uses_remaining`, `success`, `message`
+
+#### 6. `frontend/src/utils/gameEvents.ts` — Loot utilities
+
+- `itemRarityColor(rarity)` — Tailwind classes per rarity tier:
+  common=gray, uncommon=green, rare=blue, very_rare=purple, legendary=gold
+- `lootSummary(event)` — one-liner per operation:
+  - gained: "+2 Health Potion acquired"
+  - removed: "1 Longsword consumed"
+  - equipped: "Equipped Chain Mail"
+  - used: "Used Health Potion (+8 HP healed)"
+  - failed: "Failed: item not found"
+- `lootIcon(item_type)` — emoji per type: ⚔️ weapon, 🛡️ armor, 🧪 potion,
+  📜 scroll, 📦 misc, 🗝️ quest
+- Update `summarizeEvent()` to dispatch `loot`
+
+#### 7. `frontend/src/components/LootCard.tsx` (NEW)
+
+Inline inventory change card:
+- Rarity-themed accent colours (gray→gold gradient by rarity)
+- Operation icons: 🎁 gained, ❌ removed, ⚔️ equipped, 🧪 used
+- Quantity badge for stackable items
+- Healing indicator (green +N HP) when `healing` is present
+- AC indicator (🛡️ AC 16) when `ac_after` is present
+- Failed operation: muted card with reason
+- Source label ("From: Goblin loot") when present
+- Dismissible (same pattern as DiceRollCard / SpellCastCard)
+
+#### 8. `frontend/src/components/GameEventRenderer.tsx`
+
+Dispatch `loot` event type to `LootCard`.
+
+### Tests (Step 9) — ~25 backend, ~15 frontend
+
+#### Backend tests
+
+**`backend/tests/test_dm_inventory_functions.py`** (NEW, ~14 tests):
+- `dm_give_item` creates Item, adds to inventory, returns LOOT event with
+  `operation="gained"`
+- `dm_give_item` with weapon details (damage_dice), armor details (armor_type),
+  potion details (uses)
+- `dm_give_item` stacks consumables
+- `dm_remove_item` reduces quantity, returns LOOT event with `operation="removed"`
+- `dm_remove_item` failure (item not found) → `success=False`
+- `dm_equip_item` equips weapon, returns LOOT event with `operation="equipped"`
+- `dm_equip_item` equips armor (body + shield exclusivity)
+- `dm_equip_item` failure (not equippable / not found) → `success=False`
+- `dm_use_item` consumes charge, returns LOOT event with `operation="used"`
+- `dm_use_item` on depleted item → `success=False`
+- `dm_use_item` on non-consumable → `success=False`
+
+**`backend/tests/test_inventory_events_api.py`** (NEW, ~11 tests):
+- `/action` with `give_item` game_action → LOOT event emitted + item persisted
+  to `character.inventory`
+- `give_item` with quantity > 1 → stacking
+- `give_item` with weapon/armor details → proper Item construction
+- `/action` with `remove_item` → item removed from `character.inventory`
+- `/action` with `equip_item` → item equipped + AC recalculated
+- `/action` with `use_item` on healing potion → HP increased + healing in event
+- `/action` streaming emits `game_event` SSE for loot
+- INVENTORY_ROSTER present in DM situation prompt
+- Missing character → graceful skip + warning
+- Failed give_item (invalid item_type) → `success=False` event
+
+**`backend/tests/test_game_events.py`** (extended):
+- `loot` factory serialization round-trip
+- `LOOT` enum value
+- Default fields
+
+#### Frontend tests
+
+**`frontend/src/components/__tests__/LootCard.test.tsx`** (NEW, ~10 tests):
+- Gained item card (rarity colors, quantity badge)
+- Removed item card (muted styling)
+- Equipped item card (AC indicator)
+- Used item card (healing indicator)
+- Failed operation (muted card with reason)
+- Different item types (weapon, armor, potion icons)
+- Rarity tier color variations
+- Dismissible
+- No-callback render
+- Source label display
+
+**`frontend/src/utils/__tests__/gameEvents.test.ts`** (extended):
+- `itemRarityColor` (5 rarity tiers)
+- `lootSummary` (5 operations + failure)
+- `lootIcon` (6 item types)
+
+### Key Architectural Decisions
+
+- **Inventory source of truth = `character.inventory`** — not duplicated into
+  game_state. Load/save via `_load_inventory` / `_save_inventory` (same helpers
+  the Inventory API uses).
+- **`_resolve_game_actions` loads inventory** when inventory actions present —
+  backward-compatible (no change to existing action types).
+- **AC coupling** — equip/unequip triggers `_recalc_armor_class()` (same as the
+  Inventory API `equip_item` / `unequip_item` endpoints).
+- **HP coupling** — `use_item` on healing potions increases `character.current_hp`
+  (same 2d4+2 formula as the Inventory API `use_item` endpoint).
+- **DM never fabricates inventory** — the DM describes the narrative ("the goblin
+  drops a glowing potion") and emits a `give_item` action; the engine creates
+  the real Item and persists it.
+- **give_item creates new items** — DM provides construction details; the engine
+  normalises and validates.
+- **remove/equip/use reference existing item_ids** — from the INVENTORY_ROSTER
+  in the DM situation prompt.
+- **Failed operations are first-class events** — render as a muted LootCard with
+  the reason.
+- **Graceful degradation** — missing character / inventory load failure → skip
+  inventory actions, log warning, still return Phase 1-3 events.
+- **Consistent inline UX** — LootCard follows the same dismissible-inline pattern
+  as DiceRollCard / AttackCard / SpellCastCard.
+
+### What Phase 4 Does NOT Include (deferred)
+
+- Condition application via DM function calls (Phase 5)
+- Loot engine integration (DM emits `give_item` with specific items; generating
+  random loot from CR/loot tables is a Phase 4.5 stretch)
+- Trading / economy via DM function calls (shop transactions stay via the Shop API)
+- Attunement via DM function calls (the attunement engine exists; DM-callable
+  exposure is a future enhancement)
+
+### Sub-phase Breakdown (optional, for phased rollout)
+
+If Phase 4 is too large for a single run, it can be split:
+
+- **Phase 4a (core):** `dm_give_item` + `dm_remove_item` + `LootCard` for
+  gained/removed operations. The single most valuable inventory bridge —
+  closes the loot loop. (~12 tests)
+- **Phase 4b (equip + use):** `dm_equip_item` (AC coupling) + `dm_use_item`
+  (HP healing coupling). (~13 tests)
+
+---
+
 ## Related Documents
 - `docs/DSPY_TEXT_GAME_REFERENCE.md` — DSPy text game tutorial analysis;
   `ActionResolver` signature (structured skill-check resolution) is directly
@@ -1490,3 +1808,18 @@ If Phase 3 is too large for a single run, it can be split:
   (school-themed colors, attack/save/auto/heal modes, HP bar, failed-cast
   rendering), and `GameEventRenderer` dispatch. +33 backend / +28 frontend
   tests.
+
+- 2026-07-17: **Phase 4 GREEN-LIT by Mike** — dev agent cron directive updated
+  to execute the Phase 4 inventory operations plan. Status changed from STAGED
+  to EXECUTING. The DM will gain `give_item` / `remove_item` / `equip_item` /
+  `use_item` game_actions resolved via the real `Inventory` engine.
+- 2026-07-17: **Phase 4 STAGED** — added concrete, file-level implementation
+  plan for inventory operations via DM function calls. Key insight: Phase 4 is
+  single-state (`character.inventory`) but has two coupling side-effects (AC
+  recalc on equip, HP heal on use). `_resolve_game_actions` loads the Inventory
+  via `_load_inventory(character)` and persists via `_save_inventory`. Plan
+  covers new `LOOT` GameEvent type, 4 DM-callable inventory functions wrapping
+  `Inventory.add_item()` / `remove_item()` / `equip_item()` / `use_item()`,
+  DSPy signature expansion, `_inventory_for_dm` roster helper, and a
+  `LootCard` component (rarity-themed colors, operation icons, AC/healing
+  indicators). ~25 backend / ~15 frontend tests. Awaiting Mike's green-light.

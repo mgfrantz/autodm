@@ -1,6 +1,6 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ GREEN-LIT ✅
 ## TEST SUITE FULLY GREEN (2723 backend + 234 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅
 
 ## ✅ COMPLETED: DM Function Calling — Phase 3 (Spell Casting)
@@ -368,34 +368,57 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: Phase 3 (Spell Casting) COMPLETE ✅ — Awaiting next green-light
+## ⚡ NEXT SESSION DIRECTIVE: Phase 4 (Inventory Operations) GREEN-LIT ✅ — Executing
 
-**Phase 3 (Spell Casting) is FULLY COMPLETE** (all 9 steps shipped — backend +
-frontend + tests). The DM now emits `cast_spell` game_actions resolved via the
-real `Spellbook.cast()` engine, with dual-state coupling (Spellbook slot +
-Encounter HP) and a new inline `SpellCastCard`. See the "COMPLETED: DM Function
-Calling — Phase 3" section above for full details.
+**Phase 4 is GREEN-LIT by Mike (2026-07-17).** The dev agent cron directive
+has been updated to execute the plan — inventory operations via DM function
+calls. The DM emits `give_item` / `remove_item` / `equip_item` / `use_item`
+game_actions that the backend resolves via the real `Inventory` engine, with
+results flowing as typed `LOOT` GameEvents to inline `LootCard` components.
 
-- ✅ `uv run pytest` — **2723 backend tests passing** (+33 new spell tests)
-- ✅ `cd frontend && npm test` — **234 frontend tests passing** (+28 new)
-- ✅ `npx tsc --noEmit` clean, `npm run build` clean
+**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 4 Implementation
+Plan" (concrete file-level breakdown, ~40 new tests).
 
-### What's next (awaiting Mike's green-light)
-No phase is currently green-lit. The DM function-calling roadmap has these
-**staged** future phases (design research in
-`docs/DM_FUNCTION_CALLING_RESEARCH.md`):
+### Architecture summary (single state, two couplings)
 
-- **Phase 4 — Inventory operations** via DM function calls (loot, equip, use
-  item, trade). Touches `character.inventory`.
-- **Phase 5 — Condition application** via DM function calls (poisoned,
-  frightened, blessed, etc.). Touches `character.conditions` / `game_state`.
-- **Phase 3.5 (stretch)** — AoE spell resolution against multiple combatants in
-  one call; concentration tracking through the DM pipeline.
+Phase 4 is **single-state** (`character.inventory`) with two coupling
+side-effects:
 
-**Until Mike green-lights the next phase, there is no execution directive.**
-The dev agent should not begin implementation on a staged phase without
-explicit green-light. If running with no directive, keep the suite green and
-watch for README/PROGRESS drift.
+| Coupling | Trigger | Effect |
+|----------|---------|--------|
+| **AC recalc** | equip/unequip armor/shield | `character.armor_class` updated via `_recalc_armor_class()` |
+| **HP heal** | use_item on healing potion | `character.current_hp` increased (2d4+2) |
+
+The DM never fabricates inventory changes — the engine creates real Items and
+persists them. `give_item` creates new items; `remove_item` / `equip_item` /
+`use_item` reference existing item_ids from the `INVENTORY_ROSTER` injected
+into the DM situation prompt.
+
+### 9-step plan (backend + frontend + tests)
+
+**Backend (Steps 1-4):**
+1. `game_events.py` — `LOOT` event type + `loot()` factory
+2. `dm_functions.py` — `dm_give_item`, `dm_remove_item`, `dm_equip_item`, `dm_use_item`
+3. `dspy_signatures.py` — inventory guidance in `DMActionableNarration` docstring
+4. `game.py` — inventory loading/resolution/persistence in `_resolve_game_actions`, `_inventory_for_dm` roster helper
+
+**Frontend (Steps 5-8):**
+5. `types/index.ts` — `'loot'` event type + loot fields
+6. `utils/gameEvents.ts` — `itemRarityColor`, `lootSummary`, `lootIcon`, dispatch
+7. `components/LootCard.tsx` (NEW) — rarity-themed inline card
+8. `components/GameEventRenderer.tsx` — dispatch `loot`
+
+**Tests (Step 9):** ~25 backend (`test_dm_inventory_functions.py` ~14, `test_inventory_events_api.py` ~11) + ~15 frontend (`LootCard.test.tsx` ~10, `gameEvents.test.ts` extended)
+
+### Verification requirements
+- ✅ `uv run pytest` — all existing tests + new tests, 0 failures
+- ✅ `npx tsc --noEmit` — no type errors
+- ✅ `npm run build` — clean production build
+- ✅ `npm test` — all frontend tests + new tests
+- ✅ Commit with `feat: DM function calling Phase 4 — inventory operations`
+- ✅ Push to `develop`
+- ✅ Update PROGRESS.md with completion details
+- ✅ Update README.md to reflect new feature (README SYNC)
 
 ---
 
