@@ -5,6 +5,7 @@ import AttackCard from './AttackCard'
 import DamageCard from './DamageCard'
 import InitiativeCard from './InitiativeCard'
 import SpellCastCard from './SpellCastCard'
+import LootCard from './LootCard'
 
 /* ------------------------------------------------------------------ *
  * GameEventRenderer — dispatches a GameEvent to the correct component.
@@ -15,6 +16,7 @@ import SpellCastCard from './SpellCastCard'
  * - damage → <DamageCard />
  * - initiative → <InitiativeCard />
  * - spell_cast → <SpellCastCard />
+ * - loot → <LootCard />
  * - unknown types → null (forward-compatible with future phases)
  * ------------------------------------------------------------------ */
 
@@ -38,6 +40,8 @@ export default function GameEventRenderer({ event, gameId, onDismiss }: GameEven
       return <InitiativeCard event={event} onDismiss={onDismiss} />
     case 'spell_cast':
       return <SpellCastCard event={event} onDismiss={onDismiss} />
+    case 'loot':
+      return <LootCard event={event} onDismiss={onDismiss} />
     default:
       // Unknown event type — forward-compatible, render nothing
       return null

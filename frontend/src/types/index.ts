@@ -502,7 +502,7 @@ export interface SkillCheckResult {
 
 // === Game Events (DM Function Calling Phase 1 + 2) ===
 
-export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative' | 'spell_cast';
+export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative' | 'spell_cast' | 'loot';
 
 export interface InitiativeCombatant {
   id: string;
@@ -548,10 +548,21 @@ export interface GameEventData {
   made_save?: boolean | null; // saving-throw spells only
   save_dc?: number | null;
   save_ability?: string | null;
-  healing?: number;
+  healing?: number | null;
   half_damage?: boolean;
   message?: string;
   slots_remaining?: Array<{ level: number; max?: number; used?: number; available?: number }> | null;
+  // loot (Phase 4)
+  operation?: 'gained' | 'removed' | 'equipped' | 'used' | string;
+  item_name?: string;
+  item_type?: string;       // weapon, armor, potion, scroll, misc, quest
+  item_id?: string;
+  quantity?: number;        // how many gained/removed
+  rarity?: string;          // common, uncommon, rare, very_rare, legendary
+  value?: number;
+  source?: string;          // provenance, e.g. "Goblin loot"
+  ac_after?: number | null; // equipped: new AC
+  uses_remaining?: number | null; // used: charges left
 }
 
 export interface GameEvent {

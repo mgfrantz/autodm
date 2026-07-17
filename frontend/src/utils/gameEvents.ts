@@ -172,13 +172,20 @@ export function summarizeEvent(event: GameEvent): string {
     return initiativeSummary(event.data.combatants);
   }
   if (event.type === 'spell_cast') {
-    const d = event.data;
+    const d = event.data
     return spellCastSummary(
       d.spell_name, d.level, d.school, d.success, d.hit, d.made_save,
       d.damage, d.healing, d.damage_type, d.half_damage, d.target, d.message,
-    );
+    )
   }
-  return event.label;
+  if (event.type === 'loot') {
+    const d = event.data
+    return lootSummary(
+      d.operation, d.item_name, d.item_type, d.quantity, d.success,
+      d.healing, d.ac_after, d.uses_remaining, d.message, d.source,
+    )
+  }
+  return event.label
 }
 
 /**
@@ -347,7 +354,7 @@ export function spellCastSummary(
   hit: boolean | null | undefined,
   madeSave: boolean | null | undefined,
   damage: number | undefined,
-  healing: number | undefined,
+  healing: number | null | undefined,
   damageType: string | undefined,
   halfDamage: boolean | undefined,
   target: string | undefined,
@@ -371,4 +378,91 @@ export function spellCastSummary(
   if (madeSave === true) parts.push('target saved');
   else if (madeSave === false) parts.push('target failed save');
   return parts.join(' — ');
+}
+
+// ==========================================================================
+// Phase 4: Loot (inventory) event helpers
+// ==========================================================================
+
+/**
+ * Tailwind color classes for a given item rarity tier.
+ * common=gray, uncommon=green, rare=blue, very_rare=purple, legendary=gold.
+ */
+export function itemRarityColor(rarity: string | undefined): { text: string; bg: string; border: string } {
+  const r = (rarity ?? 'common').toLowerCase();
+  const map: Record<string, { text: string; bg: string; border: string }> = {
+    common:     { text: 'text-parchment-200', bg: 'bg-parchment-900/30', border: 'border-parchment-700/50' },
+    uncommon:   { text: 'text-emerald-300',   bg: 'bg-emerald-900/30',   border: 'border-emerald-700/50' },
+    rare:       { text: 'text-sky-300',       bg: 'bg-sky-900/30',       border: 'border-sky-700/50' },
+    very_rare:  { text: 'text-violet-300',    bg: 'bg-violet-900/30',    border: 'border-violet-700/50' },
+    legendary:  { text: 'text-amber-300',     bg: 'bg-amber-900/30',     border: 'border-amber-700/50' },
+  };
+  return map[r] ?? map.common;
+}
+
+/**
+ * Emoji icon for a given item type.
+ */
+export function lootIcon(itemType: string | undefined): string {
+  switch ((itemType ?? '').toLowerCase()) {
+    case 'weapon': return '⚔️';
+    case 'armor':  return '🛡️';
+    case 'potion': return '🧪';
+    case 'scroll': return '📜';
+    case 'quest':  return '🗝️';
+    case 'misc':   return '📦';
+    default:       return '🎒';
+  }
+}
+
+/**
+ * Generate a one-line summary for a loot (inventory) event.
+ */
+export function lootSummary(
+  operation: string | undefined,
+  itemName: string | undefined,
+  itemType: string | undefined,
+  quantity: number | undefined,
+  success: boolean | null | undefined,
+  healing: number | null | undefined,
+  acAfter: number | null | undefined,
+  usesRemaining: number | null | undefined,
+  message: string | undefined,
+  source: string | undefined,
+): string {
+  const name = itemName ?? 'Unknown item';
+  const qty = quantity ?? 1;
+  const op = (operation ?? 'gained').toLowerCase();
+
+  if (success === false) {
+    const reason = message ?? 'failed';
+    return `Failed: ${name} — ${reason}`;
+  }
+
+  let prefix = '';
+  switch (op) {
+    case 'gained':    prefix = `+${qty > 1 ? qty : ''} ${name} acquired`; break;
+    case 'removed':   prefix = `${qty > 1 ? `${qty}× ` : ''}${name} removed`; break;
+    case 'equipped':  prefix = `Equipped ${name}`; break;
+    case 'used':      prefix = `Used ${name}`; break;
+    default:          prefix = `${op} ${name}`;
+  }
+  const parts: string[] = [prefix.trim()];
+
+  if (healing !== null && healing !== undefined && healing > 0) {
+    parts.push(`+${healing} HP healed`);
+  }
+  if (acAfter !== null && acAfter !== undefined) {
+    parts.push(`AC ${acAfter}`);
+  }
+  if (usesRemaining !== null && usesRemaining !== undefined) {
+    parts.push(usesRemaining > 0 ? `${usesRemaining} use${usesRemaining === 1 ? '' : 's'} left` : 'consumed');
+  }
+  if (source) {
+    parts.push(`from ${source}`);
+  }
+  if (itemType) {
+    parts.unshift(`${lootIcon(itemType)}`);
+  }
+  return parts.join(' — ').trim();
 }

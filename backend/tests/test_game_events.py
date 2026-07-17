@@ -249,3 +249,93 @@ class TestSpellCastFactory:
         assert parsed["data"]["healing"] == 8
         assert parsed["data"]["slot_level"] == 1
         assert parsed["data"]["target_remaining_hp"] == 18
+
+
+class TestLootFactory:
+    """Phase 4: the loot() factory classmethod + serialization."""
+
+    def test_loot_enum_value(self):
+        assert GameEventType.LOOT.value == "loot"
+
+    def test_loot_factory_gained(self):
+        event = GameEvent.loot(
+            label="🎁 Health Potion acquired",
+            operation="gained",
+            item_name="Health Potion",
+            item_type="potion",
+            item_id="abc-123",
+            quantity=2,
+            rarity="common",
+            value=50,
+            source="Goblin loot",
+        )
+        assert event.type == GameEventType.LOOT
+        assert event.label == "🎁 Health Potion acquired"
+        assert event.data["operation"] == "gained"
+        assert event.data["item_name"] == "Health Potion"
+        assert event.data["item_type"] == "potion"
+        assert event.data["item_id"] == "abc-123"
+        assert event.data["quantity"] == 2
+        assert event.data["rarity"] == "common"
+        assert event.data["value"] == 50
+        assert event.data["source"] == "Goblin loot"
+        assert event.data["success"] is True
+
+    def test_loot_factory_equipped_with_ac(self):
+        event = GameEvent.loot(
+            label="⚔️ Equipped Chain Mail",
+            operation="equipped",
+            item_name="Chain Mail",
+            item_type="armor",
+            item_id="armor-1",
+            ac_after=16,
+        )
+        assert event.data["operation"] == "equipped"
+        assert event.data["ac_after"] == 16
+        assert event.data["success"] is True
+
+    def test_loot_factory_failed(self):
+        event = GameEvent.loot(
+            label="🎒 Longsword (give failed)",
+            operation="gained",
+            item_name="Longsword",
+            item_type="weapon",
+            success=False,
+            message="Unknown item type: 'bogus'",
+        )
+        assert event.data["success"] is False
+        assert event.data["message"] == "Unknown item type: 'bogus'"
+        # Operation-specific fields default to None / sensible values.
+        assert event.data["healing"] is None
+        assert event.data["ac_after"] is None
+        assert event.data["uses_remaining"] is None
+
+    def test_loot_factory_round_trip(self):
+        original = GameEvent.loot(
+            label="🧪 Used Health Potion",
+            operation="used",
+            item_name="Health Potion",
+            item_type="potion",
+            item_id="pot-1",
+            healing=7,
+            uses_remaining=None,
+        )
+        parsed = json.loads(json.dumps(original.to_dict()))
+        assert parsed["type"] == "loot"
+        assert parsed["data"]["operation"] == "used"
+        assert parsed["data"]["item_name"] == "Health Potion"
+        assert parsed["data"]["healing"] == 7
+        assert parsed["data"]["uses_remaining"] is None
+
+    def test_loot_factory_defaults(self):
+        event = GameEvent.loot(
+            label="🎁 Gold acquired",
+            operation="gained",
+            item_name="Gold",
+            item_type="misc",
+        )
+        assert event.data["quantity"] == 1
+        assert event.data["rarity"] == "common"
+        assert event.data["value"] == 0
+        assert event.data["success"] is True
+        assert event.data["message"] == ""

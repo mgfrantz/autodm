@@ -16,6 +16,9 @@ import {
   spellSchoolColor,
   spellLevelLabel,
   spellCastSummary,
+  itemRarityColor,
+  lootSummary,
+  lootIcon,
 } from '../gameEvents'
 import type { GameEvent, InitiativeCombatant } from '../../types'
 
@@ -507,5 +510,141 @@ describe('summarizeEvent for spell_cast', () => {
     const s = summarizeEvent(event)
     expect(s).toContain('FAILED')
     expect(s).toContain('No spell slots')
+  })
+})
+
+// ==========================================================================
+// Phase 4: Loot helpers
+// ==========================================================================
+
+describe('itemRarityColor', () => {
+  it('maps each rarity tier to a distinct colour set', () => {
+    const common = itemRarityColor('common')
+    const uncommon = itemRarityColor('uncommon')
+    const rare = itemRarityColor('rare')
+    const veryRare = itemRarityColor('very_rare')
+    const legendary = itemRarityColor('legendary')
+    // Each tier has its own text colour.
+    expect(common.text).not.toBe(uncommon.text)
+    expect(uncommon.text).not.toBe(rare.text)
+    expect(rare.text).not.toBe(veryRare.text)
+    expect(veryRare.text).not.toBe(legendary.text)
+  })
+
+  it('falls back to common for unknown rarity', () => {
+    const fallback = itemRarityColor('not-a-rarity')
+    expect(fallback).toEqual(itemRarityColor('common'))
+  })
+
+  it('handles undefined input', () => {
+    expect(itemRarityColor(undefined)).toEqual(itemRarityColor('common'))
+  })
+
+  it('is case-insensitive', () => {
+    expect(itemRarityColor('LEGENDARY')).toEqual(itemRarityColor('legendary'))
+  })
+})
+
+describe('lootIcon', () => {
+  it('returns the right emoji for each item type', () => {
+    expect(lootIcon('weapon')).toBe('⚔️')
+    expect(lootIcon('armor')).toBe('🛡️')
+    expect(lootIcon('potion')).toBe('🧪')
+    expect(lootIcon('scroll')).toBe('📜')
+    expect(lootIcon('quest')).toBe('🗝️')
+    expect(lootIcon('misc')).toBe('📦')
+  })
+
+  it('falls back to the backpack for unknown types', () => {
+    expect(lootIcon('whatever')).toBe('🎒')
+    expect(lootIcon(undefined)).toBe('🎒')
+  })
+})
+
+describe('lootSummary', () => {
+  it('summarizes a gained item with quantity', () => {
+    const s = lootSummary('gained', 'Health Potion', 'potion', 2, true,
+      null, null, null, '', '')
+    expect(s).toContain('Health Potion')
+    expect(s).toContain('acquired')
+    expect(s).toContain('2')
+    expect(s).toContain('🧪')
+  })
+
+  it('summarizes a removed item', () => {
+    const s = lootSummary('removed', 'Gold Pouch', 'misc', 1, true,
+      null, null, null, '', '')
+    expect(s).toContain('removed')
+    expect(s).toContain('Gold Pouch')
+  })
+
+  it('summarizes an equipped item with AC', () => {
+    const s = lootSummary('equipped', 'Chain Mail', 'armor', 1, true,
+      null, 16, null, '', '')
+    expect(s).toContain('Equipped')
+    expect(s).toContain('AC 16')
+  })
+
+  it('summarizes a used item with healing', () => {
+    const s = lootSummary('used', 'Health Potion', 'potion', 1, true,
+      7, null, null, '', '')
+    expect(s).toContain('Used')
+    expect(s).toContain('+7 HP')
+  })
+
+  it('summarizes a used item with uses remaining', () => {
+    const s = lootSummary('used', 'Elixir', 'potion', 1, true,
+      null, null, 2, '', '')
+    expect(s).toContain('2 uses left')
+  })
+
+  it('summarizes a failed operation with the reason', () => {
+    const s = lootSummary('gained', 'Garbage', 'misc', 1, false,
+      null, null, null, 'Unknown item type', '')
+    expect(s).toContain('Failed')
+    expect(s).toContain('Unknown item type')
+  })
+
+  it('includes the source provenance when present', () => {
+    const s = lootSummary('gained', 'Health Potion', 'potion', 1, true,
+      null, null, null, '', 'Goblin loot')
+    expect(s).toContain('Goblin loot')
+  })
+
+  it('handles undefined inputs gracefully', () => {
+    const s = lootSummary(undefined, undefined, undefined, undefined,
+      true, null, null, null, undefined, undefined)
+    expect(s).toContain('Unknown item')
+  })
+})
+
+describe('summarizeEvent for loot', () => {
+  it('summarizes a gained item', () => {
+    const event: GameEvent = {
+      type: 'loot',
+      label: '🎁 Health Potion acquired',
+      data: {
+        operation: 'gained', item_name: 'Health Potion', item_type: 'potion',
+        quantity: 2, rarity: 'common', success: true,
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Health Potion')
+    expect(s).toContain('acquired')
+  })
+
+  it('summarizes a failed loot event', () => {
+    const event: GameEvent = {
+      type: 'loot',
+      label: '🎒 Garbage (failed)',
+      data: {
+        operation: 'gained', item_name: 'Garbage', item_type: 'misc',
+        success: false, message: 'Unknown item type',
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Failed')
   })
 })

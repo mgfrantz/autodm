@@ -29,8 +29,9 @@ class GameEventType(str, Enum):
     INITIATIVE = "initiative"
     # Phase 3: Spells
     SPELL_CAST = "spell_cast"
+    # Phase 4: Inventory
+    LOOT = "loot"
     # Future phases:
-    # LOOT = "loot"
     # CONDITION_APPLIED = "condition_applied"
 
 
@@ -233,5 +234,57 @@ class GameEvent:
                 "target_max_hp": target_max_hp,
                 "message": message,
                 "slots_remaining": slots_remaining,
+            },
+        )
+
+    @classmethod
+    def loot(
+        cls,
+        label: str,
+        operation: str,
+        item_name: str,
+        item_type: str,
+        item_id: str = "",
+        quantity: int = 1,
+        rarity: str = "common",
+        value: int = 0,
+        source: str = "",
+        healing: int | None = None,
+        ac_after: int | None = None,
+        uses_remaining: int | None = None,
+        success: bool = True,
+        message: str = "",
+    ) -> "GameEvent":
+        """Create a ``loot`` event (DM function calling Phase 4: inventory).
+
+        Captures the outcome of a DM-emitted ``give_item`` / ``remove_item`` /
+        ``equip_item`` / ``use_item`` game_action resolved via the real
+        ``Inventory`` engine. ``operation`` is one of ``"gained"``,
+        ``"removed"``, ``"equipped"``, ``"used"``. Operation-specific fields:
+
+        * ``healing`` — set when a ``use_item`` healing potion restored HP.
+        * ``ac_after`` — set after an ``equip_item`` AC recalculation.
+        * ``uses_remaining`` — charges left on a consumable after ``use_item``.
+
+        Failed operations (item not found, not equippable, depleted, etc.)
+        carry ``success=False`` and a human-readable ``message``.
+        """
+        return cls(
+            type=GameEventType.LOOT,
+            label=label,
+            data={
+                "operation": operation,
+                "item_name": item_name,
+                "item_type": item_type,
+                "item_id": item_id,
+                "quantity": quantity,
+                "rarity": rarity,
+                "value": value,
+                "source": source,
+                "healing": healing,
+                "ac_after": ac_after,
+                "uses_remaining": uses_remaining,
+                "success": success,
+                "message": message,
             },
         )

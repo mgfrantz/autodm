@@ -14,6 +14,13 @@ from app.engine.dice import (
     roll_d20,
 )
 from app.engine.game_events import GameEvent
+from app.engine.inventory import (
+    ArmorType,
+    Inventory,
+    Item,
+    ItemType,
+    Rarity,
+)
 from app.engine.spells import Spellbook
 
 
@@ -384,3 +391,361 @@ def dm_cast_spell(
         message=outcome.message,
         slots_remaining=spellbook.slots_overview() if outcome.success else None,
     )
+
+
+# --- Phase 4: Inventory functions ------------------------------------------
+
+
+def _norm_item_type(item_type: str) -> ItemType | None:
+    """Normalise a DM-supplied item-type string to an ``ItemType``.
+
+    Accepts value (``"weapon"``) and name (``"WEAPON"``) forms, plurals, and
+    ``-``/``_``/space separators. Returns ``None`` if the type is unrecognised.
+    """
+    raw = (item_type or "").strip().lower().replace(" ", "_").replace("-", "_")
+    if not raw:
+        return ItemType.MISC
+    # Singularise a trailing 's' (weapons → weapon) for a closer match.
+    candidates = {raw, raw.rstrip("s")}
+    for it in ItemType:
+        if raw == it.value or raw == it.name.lower():
+            return it
+    for cand in candidates:
+        for it in ItemType:
+            if cand == it.value or cand == it.name.lower():
+                return it
+    return None
+
+
+def _norm_rarity(rarity: str) -> Rarity:
+    """Normalise a rarity string to a ``Rarity`` (defaults to COMMON)."""
+    raw = (rarity or "common").strip().lower().replace(" ", "_").replace("-", "_")
+    try:
+        return Rarity(raw)
+    except ValueError:
+        return Rarity.COMMON
+
+
+def _norm_armor_type(armor_type: str) -> ArmorType | None:
+    """Normalise an armor-type string to an ``ArmorType`` (``None`` if unset)."""
+    raw = (armor_type or "").strip().lower()
+    if not raw:
+        return None
+    try:
+        return ArmorType(raw)
+    except ValueError:
+        return None
+
+
+def _parse_damage_dice(damage_dice: str) -> tuple[int, int]:
+    """Parse a dice notation like ``"1d8"`` → (count, sides).
+
+    Tolerates a trailing modifier (``"2d6+3"``) and bare ``"d8"`` forms.
+    """
+    if not damage_dice:
+        return 0, 0
+    text = damage_dice.lower().split("+", 1)[0].strip()
+    parts = text.split("d")
+    count = int(parts[0]) if len(parts) > 0 and parts[0].isdigit() else 1
+    sides = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 6
+    return count, sides
+
+
+_DEFAULT_WEIGHTS: dict[ItemType, float] = {
+    ItemType.WEAPON: 3.0,
+    ItemType.ARMOR: 10.0,
+    ItemType.POTION: 0.5,
+    ItemType.SCROLL: 0.1,
+    ItemType.MISC: 1.0,
+    ItemType.QUEST: 0.5,
+}
+
+
+def dm_give_item(
+    inventory: Inventory,
+    item_name: str,
+    item_type: str = "misc",
+    quantity: int = 1,
+    rarity: str = "common",
+    value: int = 0,
+    description: str = "",
+    damage_dice: str = "",
+    damage_type: str = "",
+    attack_bonus: int = 0,
+    armor_type: str = "",
+    armor_bonus: int = 0,
+    dex_limit: int | None = None,
+    uses: int = 1,
+    weight: float | None = None,
+    source: str = "",
+) -> GameEvent:
+    """Create an ``Item`` from DM-supplied details and add it to the inventory.
+
+    Constructs a real :class:`Item` (normalising type/rarity/armor/dice) and
+    calls ``inventory.add_item()`` (which stacks stackable items). Returns a
+    ``loot`` :class:`GameEvent` with ``operation="gained"``.
+
+    Args:
+        inventory: The character's live Inventory (loaded by the caller).
+        item_name: Display name of the item to create.
+        item_type: One of weapon/armor/potion/scroll/misc/quest (case-insensitive).
+        quantity: How many to add (stacked for stackable types).
+        rarity: common/uncommon/rare/very_rare/legendary.
+        value: Value in gold pieces.
+        description: Flavour text (doubles as effect text for potions).
+        damage_dice: Weapon dice (e.g. ``"1d8"``).
+        damage_type: Weapon damage type (e.g. ``"slashing"``).
+        attack_bonus: Magic/quality attack bonus.
+        armor_type: light/medium/heavy/shield.
+        armor_bonus: AC bonus (esp. for shields / magic armor).
+        dex_limit: Max Dex bonus for medium/heavy armor.
+        uses: Charges for consumables (potions/scrolls).
+        weight: Item weight (defaults to a sensible per-type value).
+        source: Provenance label (e.g. ``"Goblin loot"``).
+
+    Returns:
+        A ``loot`` GameEvent. Failed construction (bad item_type, engine error)
+        returns ``success=False`` + a human-readable ``message``.
+    """
+    name = str(item_name or "Unknown Item")
+    try:
+        itype = _norm_item_type(item_type)
+        if itype is None:
+            return GameEvent.loot(
+                label=f"🎒 {name} (invalid item)",
+                operation="gained",
+                item_name=name,
+                item_type=str(item_type or ""),
+                success=False,
+                message=f"Unknown item type: {item_type!r}",
+                source=source,
+            )
+        qty = max(1, int(quantity or 1))
+        dice_count, dice_sides = _parse_damage_dice(damage_dice)
+        atype = _norm_armor_type(armor_type)
+        item_weight = float(weight) if weight is not None else _DEFAULT_WEIGHTS.get(itype, 1.0)
+        consumable_uses = max(1, int(uses or 1)) if itype in (ItemType.POTION, ItemType.SCROLL) else 1
+
+        item = Item(
+            id="",  # auto-generated
+            name=name,
+            item_type=itype,
+            description=str(description or ""),
+            rarity=_norm_rarity(rarity),
+            value=int(value or 0),
+            weight=item_weight,
+            damage_dice_count=dice_count,
+            damage_dice_sides=dice_sides,
+            damage_bonus=0,
+            damage_type=str(damage_type or ""),
+            attack_bonus=int(attack_bonus or 0),
+            armor_type=atype,
+            armor_bonus=int(armor_bonus or 0),
+            dex_limit=dex_limit,
+            uses=consumable_uses,
+            max_uses=consumable_uses,
+            quantity=qty,
+        )
+        slot = inventory.add_item(item)
+        stored = slot.item  # the actual persisted item (may be a stacked original)
+        return GameEvent.loot(
+            label=f"🎁 {name} acquired",
+            operation="gained",
+            item_name=stored.name,
+            item_type=stored.item_type.value,
+            item_id=stored.id,
+            quantity=qty,
+            rarity=stored.rarity.value,
+            value=stored.value,
+            source=source,
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.loot(
+            label=f"🎒 {name} (give failed)",
+            operation="gained",
+            item_name=name,
+            item_type=str(item_type or ""),
+            success=False,
+            message=f"Could not give item: {exc}",
+            source=source,
+        )
+
+
+def dm_remove_item(
+    inventory: Inventory,
+    item_id: str,
+    quantity: int = 1,
+) -> GameEvent:
+    """Remove an existing item from the inventory.
+
+    Calls ``inventory.remove_item()``. Returns a ``loot`` GameEvent with
+    ``operation="removed"``. Failed removal (item not found / insufficient
+    quantity) returns ``success=False`` with a human-readable ``message``.
+    """
+    try:
+        item = inventory.get_item(item_id)
+        if item is None:
+            return GameEvent.loot(
+                label="🎒 Item not found",
+                operation="removed",
+                item_name=str(item_id),
+                item_type="",
+                item_id=str(item_id),
+                success=False,
+                message=f"Item not found: {item_id}",
+            )
+        name = item.name
+        itype = item.item_type.value
+        qty = max(1, int(quantity or 1))
+        ok = inventory.remove_item(item_id, qty)
+        if not ok:
+            return GameEvent.loot(
+                label=f"📤 {name} (remove failed)",
+                operation="removed",
+                item_name=name,
+                item_type=itype,
+                item_id=str(item_id),
+                success=False,
+                message=f"Could not remove {name} (insufficient quantity).",
+            )
+        return GameEvent.loot(
+            label=f"📤 {qty}× {name} removed",
+            operation="removed",
+            item_name=name,
+            item_type=itype,
+            item_id=str(item_id),
+            quantity=qty,
+            rarity=item.rarity.value,
+            value=item.value,
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.loot(
+            label="🎒 Remove failed",
+            operation="removed",
+            item_name=str(item_id),
+            item_type="",
+            item_id=str(item_id),
+            success=False,
+            message=f"Could not remove item: {exc}",
+        )
+
+
+def dm_equip_item(
+    inventory: Inventory,
+    item_id: str,
+) -> GameEvent:
+    """Equip an existing item (weapon or armor) in the inventory.
+
+    Calls ``inventory.equip_item()`` (which unequips conflicting gear). Returns
+    a ``loot`` GameEvent with ``operation="equipped"``. The ``ac_after`` field
+    is left as ``None`` — the caller fills it in after recomputing Armor Class.
+    Failed equip (not equippable / not found) returns ``success=False``.
+    """
+    try:
+        item = inventory.get_item(item_id)
+        if item is None:
+            return GameEvent.loot(
+                label="🎒 Item not found",
+                operation="equipped",
+                item_name=str(item_id),
+                item_type="",
+                item_id=str(item_id),
+                success=False,
+                message=f"Item not found: {item_id}",
+            )
+        equipped = inventory.equip_item(item_id)
+        if equipped is None:
+            return GameEvent.loot(
+                label=f"⚔️ {item.name} (not equippable)",
+                operation="equipped",
+                item_name=item.name,
+                item_type=item.item_type.value,
+                item_id=str(item_id),
+                rarity=item.rarity.value,
+                success=False,
+                message=f"{item.name} cannot be equipped.",
+            )
+        return GameEvent.loot(
+            label=f"⚔️ Equipped {equipped.name}",
+            operation="equipped",
+            item_name=equipped.name,
+            item_type=equipped.item_type.value,
+            item_id=equipped.id,
+            rarity=equipped.rarity.value,
+            value=equipped.value,
+            # ac_after left None — caller fills after _recalc_armor_class().
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.loot(
+            label=" Equip failed",
+            operation="equipped",
+            item_name=str(item_id),
+            item_type="",
+            item_id=str(item_id),
+            success=False,
+            message=f"Could not equip item: {exc}",
+        )
+
+
+def dm_use_item(
+    inventory: Inventory,
+    item_id: str,
+) -> GameEvent:
+    """Use a consumable item (potion, scroll) from the inventory.
+
+    Calls ``inventory.use_item()`` (consumes one charge; removes the item when
+    depleted). Returns a ``loot`` GameEvent with ``operation="used"``. The
+    ``uses_remaining`` field reflects charges left (``None`` if the item was
+    fully consumed and removed). The ``healing`` field is left as ``None`` —
+    the caller fills it in after applying the healing effect.
+    Failed use (depleted / not consumable / not found) returns
+    ``success=False`` with the engine's message.
+    """
+    try:
+        item = inventory.get_item(item_id)
+        if item is None:
+            return GameEvent.loot(
+                label="🎒 Item not found",
+                operation="used",
+                item_name=str(item_id),
+                item_type="",
+                item_id=str(item_id),
+                success=False,
+                message=f"Item not found: {item_id}",
+            )
+        name = item.name
+        itype = item.item_type.value
+        ok, msg = inventory.use_item(item_id)
+        if not ok:
+            return GameEvent.loot(
+                label=f"🧪 {name} (use failed)",
+                operation="used",
+                item_name=name,
+                item_type=itype,
+                item_id=str(item_id),
+                success=False,
+                message=msg or f"Could not use {name}.",
+            )
+        # After use the item may have been consumed (removed from inventory).
+        remaining = inventory.get_item(item_id)
+        uses_left = remaining.uses if remaining is not None else None
+        return GameEvent.loot(
+            label=f"🧪 Used {name}",
+            operation="used",
+            item_name=name,
+            item_type=itype,
+            item_id=str(item_id),
+            rarity=item.rarity.value,
+            uses_remaining=uses_left,
+            # healing left None — caller fills after applying the effect.
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.loot(
+            label="🧪 Use failed",
+            operation="used",
+            item_name=str(item_id),
+            item_type="",
+            item_id=str(item_id),
+            success=False,
+            message=f"Could not use item: {exc}",
+        )

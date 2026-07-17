@@ -255,6 +255,30 @@ class DMActionableNarration(dspy.Signature):
       - Available spell ids are provided under AVAILABLE_SPELLS (id, name,
         school, level) with REMAINING_SLOTS. Only emit cast_spell for spells
         in that roster.
+    - For INVENTORY operations:
+      - Use give_item when the player ACQUIRES an item (loot, reward,
+        purchase, gift, found treasure). Provide construction details:
+        Args: {"item_name": "Health Potion", "item_type": "potion",
+               "quantity": 2, "rarity": "common", "value": 50,
+               "description": "Restores 2d4+2 HP"}
+        Optional details: rarity, value, damage_dice + damage_type (weapons),
+        armor_type (light/medium/heavy/shield) + armor_bonus (armor),
+        description (potions = effect text), uses (consumable charges).
+        item_type is one of: weapon, armor, potion, scroll, misc, quest.
+      - Use remove_item when the player LOSES an item (consumed, stolen,
+        given away, sacrificed, dropped). Reference the item_id from
+        INVENTORY_ROSTER. Args: {"item_id": "...", "quantity": 1}
+      - Use equip_item when the player dons gear (equip found armor, wield a
+        found weapon). Reference item_id from INVENTORY_ROSTER.
+        Args: {"item_id": "..."}
+      - Use use_item when a consumable is used (drink a potion, read a
+        scroll). Reference item_id from INVENTORY_ROSTER.
+        Args: {"item_id": "..."}
+      - The DM should ONLY give items that make narrative sense. Don't spawn
+        legendary items from thin air. Follow the scene's logic.
+      - Current inventory items are listed under INVENTORY_ROSTER (id, name,
+        type, qty, equipped, rarity). Use those exact ids for remove_item,
+        equip_item, and use_item.
     - Do NOT fabricate dice results in the narration text — describe
       the ATTEMPT and let the backend resolve the outcome
     - Do NOT state HP numbers, damage amounts, or initiative order in narration;
@@ -265,9 +289,11 @@ class DMActionableNarration(dspy.Signature):
 
     Each game_action is a dict with:
     - "function": "roll_dice" | "request_check" | "attack" | "damage" |
-                  "roll_initiative" | "cast_spell"
+                  "roll_initiative" | "cast_spell" |
+                  "give_item" | "remove_item" | "equip_item" | "use_item"
     - "label": short description (e.g., "Perception Check", "Goblin strikes",
-                  "Fireball engulfs enemies", "Wizard casts Fire Bolt")
+                  "Fireball engulfs enemies", "Wizard casts Fire Bolt",
+                  "Found a Health Potion")
     - "args": function-specific arguments
       - roll_dice: {"sides": 20, "modifier": 3, "advantage": false,
                      "dc": 15, "disadvantage": false}
@@ -277,6 +303,11 @@ class DMActionableNarration(dspy.Signature):
       - roll_initiative: {} (no args)
       - cast_spell: {"spell_id": "fire_bolt", "target_id": "goblin_1",
                      "slot_level": null}
+      - give_item: {"item_name": "Health Potion", "item_type": "potion",
+                    "quantity": 2, "rarity": "common", "value": 50}
+      - remove_item: {"item_id": "...", "quantity": 1}
+      - equip_item: {"item_id": "..."}
+      - use_item: {"item_id": "..."}
     """
 
     situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action. Includes COMBATANT_ROSTER with id/name/side/HP/AC for active encounters.")

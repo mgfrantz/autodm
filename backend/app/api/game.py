@@ -26,7 +26,7 @@ from app.llm.dspy_modules import (
     get_skill_check_resolver_module,
 )
 from app.prompts.dm_prompts import ENCOUNTER_PROMPT
-from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus
+from app.engine.dice import roll_d20, ability_modifier, proficiency_bonus, roll_dice
 from app.engine.game_events import GameEvent
 from app.engine.dm_functions import (
     dm_roll_d20,
@@ -36,6 +36,10 @@ from app.engine.dm_functions import (
     dm_apply_damage,
     dm_roll_initiative,
     dm_cast_spell,
+    dm_give_item,
+    dm_remove_item,
+    dm_equip_item,
+    dm_use_item,
 )
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 from app.engine.quests import (
@@ -194,6 +198,45 @@ def _available_spells_for_dm(character: "Character") -> str:
     return "\n".join(lines)
 
 
+# Inventory game-action functions (Phase 4).
+_INVENTORY_ACTIONS = ("give_item", "remove_item", "equip_item", "use_item")
+
+
+def _inventory_for_dm(character: "Character") -> str:
+    """Build an inventory roster string for the DM context.
+
+    Mirrors :func:`_combatant_roster_for_dm` / :func:`_available_spells_for_dm`:
+    lists the character's inventory items (id, name, type, qty, equipped,
+    rarity) so the DM can emit real ``remove_item`` / ``equip_item`` /
+    ``use_item`` game_actions referencing exact item_ids. Returns an empty
+    string when the inventory is empty or fails to load.
+    """
+    try:
+        from app.api.inventory import _load_inventory
+        inventory = _load_inventory(character)
+    except Exception as e:
+        logger.error(f"Failed to load inventory for DM roster: {e}")
+        return ""
+
+    if not inventory.slots:
+        return ""
+
+    lines = ["INVENTORY_ROSTER:"]
+    for slot in inventory.slots:
+        item = slot.item
+        eq = " [equipped]" if slot.equipped else ""
+        qty = f" x{item.quantity}" if item.quantity > 1 else ""
+        rarity = item.rarity.value if hasattr(item.rarity, "value") else str(item.rarity)
+        lines.append(
+            f"  - ID: {item.id} | {item.name}{qty} ({item.item_type.value}, "
+            f"{rarity}){eq}"
+        )
+    lines.append(
+        "Use these item_ids for remove_item, equip_item, and use_item."
+    )
+    return "\n".join(lines)
+
+
 def _resolve_game_actions(
     game_actions: list[dict],
     game_state: dict[str, Any],
@@ -238,6 +281,13 @@ def _resolve_game_actions(
         if isinstance(a, dict)
     )
 
+    # Check if any inventory actions are present (Phase 4)
+    has_inventory = any(
+        a.get("function") in _INVENTORY_ACTIONS
+        for a in game_actions or []
+        if isinstance(a, dict)
+    )
+
     # Load encounter if combat actions (or spell damage coupling) need it
     encounter: Encounter | None = None
     if has_combat and game_state.get("combat"):
@@ -264,6 +314,18 @@ def _resolve_game_actions(
             spellbook_loaded = True
         except Exception as e:
             logger.error(f"Failed to load spellbook for DM spell casting: {e}")
+
+    # Load inventory if inventory actions exist and a character is available
+    # (Phase 4). Same load/mutate/persist pattern as the Spellbook.
+    inventory = None
+    inventory_loaded = False
+    if has_inventory and character is not None:
+        try:
+            from app.api.inventory import _load_inventory
+            inventory = _load_inventory(character)
+            inventory_loaded = True
+        except Exception as e:
+            logger.error(f"Failed to load inventory for DM item actions: {e}")
 
     for action in game_actions or []:
         if not isinstance(action, dict):
@@ -466,6 +528,80 @@ def _resolve_game_actions(
                         target_remaining_hp=target_combatant.current_hp,
                         target_max_hp=target_combatant.max_hp,
                     ))
+            elif func in _INVENTORY_ACTIONS:
+                # Phase 4: inventory operations resolved via the real engine.
+                if character is None:
+                    logger.warning(f"Skipping {func} action: no character available")
+                    continue
+                if inventory is None or not inventory_loaded:
+                    logger.warning(f"Skipping {func} action: no inventory loaded")
+                    continue
+                if func == "give_item":
+                    item_name = args.get("item_name") or args.get("name") or "Unknown Item"
+                    event = dm_give_item(
+                        inventory=inventory,
+                        item_name=item_name,
+                        item_type=args.get("item_type", "misc"),
+                        quantity=args.get("quantity", 1),
+                        rarity=args.get("rarity", "common"),
+                        value=args.get("value", 0),
+                        description=args.get("description", ""),
+                        damage_dice=args.get("damage_dice", ""),
+                        damage_type=args.get("damage_type", ""),
+                        attack_bonus=args.get("attack_bonus", 0),
+                        armor_type=args.get("armor_type", ""),
+                        armor_bonus=args.get("armor_bonus", 0),
+                        dex_limit=args.get("dex_limit"),
+                        uses=args.get("uses", 1),
+                        source=args.get("source", ""),
+                    )
+                    events.append(event)
+                elif func == "remove_item":
+                    item_id = args.get("item_id")
+                    if not item_id:
+                        logger.warning("Skipping remove_item action: missing item_id")
+                        continue
+                    events.append(dm_remove_item(
+                        inventory=inventory,
+                        item_id=str(item_id),
+                        quantity=args.get("quantity", 1),
+                    ))
+                elif func == "equip_item":
+                    item_id = args.get("item_id")
+                    if not item_id:
+                        logger.warning("Skipping equip_item action: missing item_id")
+                        continue
+                    event = dm_equip_item(inventory=inventory, item_id=str(item_id))
+                    # AC coupling: recompute Armor Class after a successful equip
+                    # (same _recalc_armor_class the Inventory API uses).
+                    if event.data.get("success"):
+                        try:
+                            from app.api.inventory import _recalc_armor_class
+                            _recalc_armor_class(character, inventory)
+                            event.data["ac_after"] = character.armor_class
+                        except Exception as e:
+                            logger.error(f"AC recalc after equip failed: {e}")
+                    events.append(event)
+                elif func == "use_item":
+                    item_id = args.get("item_id")
+                    if not item_id:
+                        logger.warning("Skipping use_item action: missing item_id")
+                        continue
+                    event = dm_use_item(inventory=inventory, item_id=str(item_id))
+                    # HP coupling: a healing potion restores HP (2d4+2), mirroring
+                    # the Inventory API's use_item endpoint.
+                    if event.data.get("success"):
+                        iname = (event.data.get("item_name") or "").lower()
+                        if "healing" in iname or "potion" in iname:
+                            try:
+                                heal = roll_dice(2, 4, 2).total
+                                before = int(character.current_hp or 0)
+                                max_hp = int(character.max_hp or before)
+                                character.current_hp = min(max_hp, before + heal)
+                                event.data["healing"] = heal
+                            except Exception as e:
+                                logger.error(f"Healing on use_item failed: {e}")
+                    events.append(event)
             else:
                 logger.warning(f"Unknown game_action function: {func}")
         except Exception as e:
@@ -478,6 +614,15 @@ def _resolve_game_actions(
             _save_spellbook(character, spellbook)
         except Exception as e:
             logger.error(f"Failed to persist spellbook after DM spell casting: {e}")
+
+    # Persist inventory back to character.inventory if it was loaded/mutated
+    # (Phase 4). The caller's db.commit() persists the column change.
+    if inventory_loaded and inventory is not None:
+        try:
+            from app.api.inventory import _save_inventory
+            _save_inventory(character, inventory)
+        except Exception as e:
+            logger.error(f"Failed to persist inventory after DM item actions: {e}")
 
     # Persist encounter back if it was loaded and mutated
     if encounter is not None:
@@ -1102,6 +1247,7 @@ Subclass: {_subclass_for_dm(character)}
 Boss: {_boss_for_dm(game_state)}
 {_combatant_roster_for_dm(game_state)}
 {_available_spells_for_dm(character)}
+{_inventory_for_dm(character)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -1218,6 +1364,7 @@ Subclass: {_subclass_for_dm(character)}
 Boss: {_boss_for_dm(game_state)}
 {_combatant_roster_for_dm(game_state)}
 {_available_spells_for_dm(character)}
+{_inventory_for_dm(character)}
         """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -1341,8 +1488,14 @@ Boss: {_boss_for_dm(game_state)}
                 save.game_state = json.dumps(stored_game_state)
                 # Spell casting mutates stored_character.spells; copy it onto
                 # the session-attached character so the commit persists it.
+                # Inventory actions (Phase 4) mutate stored_character.inventory
+                # and may change current_hp (healing potion) / armor_class
+                # (equip) — copy those too.
                 if stored_character is not None:
                     save.character.spells = stored_character.spells
+                    save.character.inventory = stored_character.inventory
+                    save.character.current_hp = stored_character.current_hp
+                    save.character.armor_class = stored_character.armor_class
                 db.commit()
         finally:
             db.close()
