@@ -250,6 +250,64 @@ class TestSpellCastFactory:
         assert parsed["data"]["slot_level"] == 1
         assert parsed["data"]["target_remaining_hp"] == 18
 
+    def test_spell_cast_aoe_fields_round_trip(self):
+        """Phase 3.5b: AoE summary fields (is_aoe, target_count, total_damage)."""
+        original = GameEvent.spell_cast(
+            label="🔮 Fireball (AoE × 3)",
+            spell_name="Fireball",
+            spell_id="fireball",
+            level=3,
+            school="evocation",
+            slot_level=3,
+            success=True,
+            save_dc=15,
+            save_ability="dex",
+            damage=28,
+            damage_type="fire",
+            is_aoe=True,
+            target_count=3,
+            total_damage=61,
+            message="Fireball hits 3 target(s) for 61 total fire damage.",
+            slots_remaining=[{"level": 3, "available": 1}],
+        )
+        parsed = json.loads(json.dumps(original.to_dict()))
+        assert parsed["type"] == "spell_cast"
+        assert parsed["data"]["is_aoe"] is True
+        assert parsed["data"]["target_count"] == 3
+        assert parsed["data"]["total_damage"] == 61
+        assert parsed["data"]["save_dc"] == 15
+        assert parsed["data"]["save_ability"] == "dex"
+        # No single-target HP bar on an AoE summary.
+        assert "target_remaining_hp" not in parsed["data"] or parsed["data"]["target_remaining_hp"] is None
+
+    def test_spell_cast_aoe_defaults_off(self):
+        """Single-target spell_cast events keep is_aoe=False (backward compat)."""
+        event = GameEvent.spell_cast(
+            label="🔮 Fire Bolt", spell_name="Fire Bolt", spell_id="fire_bolt",
+            level=0, school="evocation", slot_level=None, success=True,
+        )
+        assert event.data["is_aoe"] is False
+        assert event.data["target_count"] is None
+        assert event.data["total_damage"] is None
+
+    def test_damage_factory_save_fields_optional(self):
+        """Phase 3.5b: damage events carry made_save/half_damage only when set."""
+        # Non-spell damage (trap) — no save fields.
+        plain = GameEvent.damage(
+            label="💥 trap", target="Hero", amount=10, damage_type="piercing",
+            target_remaining_hp=5, target_max_hp=20,
+        )
+        assert "made_save" not in plain.data
+        assert "half_damage" not in plain.data
+
+        # AoE spell damage — save fields present.
+        saved = GameEvent.damage(
+            label="💥 saved", target="Goblin", amount=14, damage_type="fire",
+            target_remaining_hp=8, target_max_hp=22, made_save=True, half_damage=True,
+        )
+        assert saved.data["made_save"] is True
+        assert saved.data["half_damage"] is True
+
 
 class TestLootFactory:
     """Phase 4: the loot() factory classmethod + serialization."""

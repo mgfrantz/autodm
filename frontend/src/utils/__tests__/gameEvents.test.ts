@@ -16,6 +16,7 @@ import {
   spellSchoolColor,
   spellLevelLabel,
   spellCastSummary,
+  spellAoeSummary,
   itemRarityColor,
   lootSummary,
   lootIcon,
@@ -325,6 +326,21 @@ describe('damageSummary', () => {
     const s = damageSummary('Goblin', 12, 'fire', 0, 12)
     expect(s).toContain('DEFEATED!')
   })
+
+  it('appends saved note when madeSave is true', () => {
+    const s = damageSummary('Goblin', 6, 'fire', 7, 12, true)
+    expect(s).toContain('(saved — half)')
+  })
+
+  it('does not append saved note when madeSave is false', () => {
+    const s = damageSummary('Goblin', 12, 'fire', 7, 12, false)
+    expect(s).not.toContain('saved')
+  })
+
+  it('does not append saved note when madeSave is undefined', () => {
+    const s = damageSummary('Goblin', 5, 'fire', 7, 12)
+    expect(s).not.toContain('saved')
+  })
 })
 
 describe('initiativeSummary', () => {
@@ -519,6 +535,58 @@ describe('summarizeEvent for spell_cast', () => {
     const s = summarizeEvent(event)
     expect(s).toContain('FAILED')
     expect(s).toContain('No spell slots')
+  })
+
+  it('summarizes an AoE spell cast (is_aoe branch)', () => {
+    const event: GameEvent = {
+      type: 'spell_cast',
+      label: '🎯 Fireball',
+      data: {
+        spell_name: 'Fireball', spell_id: 'fireball', level: 3,
+        school: 'evocation', slot_level: 3, success: true,
+        is_aoe: true, target_count: 3, total_damage: 42,
+        damage_type: 'fire', save_dc: 15, save_ability: 'dex',
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Fireball')
+    expect(s).toContain('hits 3 targets')
+    expect(s).toContain('42 fire total damage')
+    expect(s).toContain('DC 15 dex')
+  })
+})
+
+// ==========================================================================
+// Phase 3.5b: AoE spell helpers
+// ==========================================================================
+
+describe('spellAoeSummary', () => {
+  it('summarizes a multi-target AoE cast', () => {
+    const s = spellAoeSummary('Fireball', 3, 'evocation', 3, 42, 'fire', 'dex', 15)
+    expect(s).toContain('Fireball')
+    expect(s).toContain('level 3')
+    expect(s).toContain('hits 3 targets')
+    expect(s).toContain('42 fire total damage')
+    expect(s).toContain('DC 15 dex')
+  })
+
+  it('uses singular target for count of 1', () => {
+    const s = spellAoeSummary('Shatter', 2, 'evocation', 1, 8, 'thunder', 'con', 13)
+    expect(s).toContain('hits 1 target')
+    expect(s).not.toContain('targets')
+  })
+
+  it('omits damage and count when zero/missing', () => {
+    const s = spellAoeSummary('Stinking Cloud', 3, 'conjuration', 0, 0, '', 'con', 14)
+    expect(s).not.toContain('hits')
+    expect(s).not.toContain('total damage')
+    expect(s).toContain('DC 14')
+  })
+
+  it('handles undefined inputs gracefully', () => {
+    const s = spellAoeSummary(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined)
+    expect(s).toContain('Unknown spell')
   })
 })
 

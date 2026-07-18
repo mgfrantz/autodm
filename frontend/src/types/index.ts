@@ -552,6 +552,11 @@ export interface GameEventData {
   half_damage?: boolean;
   message?: string;
   slots_remaining?: Array<{ level: number; max?: number; used?: number; available?: number }> | null;
+  // AoE spell summary (Phase 3.5b) — set on the cast_spell summary event;
+  // per-target HP lives in the follow-up damage events.
+  is_aoe?: boolean;
+  target_count?: number | null;  // number of combatants hit
+  total_damage?: number | null;  // sum of per-target damage
   // loot (Phase 4)
   operation?: 'gained' | 'removed' | 'equipped' | 'used' | string;
   item_name?: string;

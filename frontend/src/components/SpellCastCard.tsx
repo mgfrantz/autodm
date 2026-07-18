@@ -81,6 +81,66 @@ export default function SpellCastCard({ event, onDismiss }: SpellCastCardProps) 
     )
   }
 
+  // AoE summary (Phase 3.5b) — one cast hits multiple targets. No single HP
+  // bar (per-target HP lives in the follow-up DamageCards).
+  if (d.is_aoe) {
+    const targetCount = d.target_count ?? 0
+    const totalDmg = d.total_damage ?? 0
+    return (
+      <div
+        className={`rounded-lg border ${schoolColors.border} ${schoolColors.bg} p-3 mt-2 animate-scale-in`}
+        role="status"
+        aria-label={summary}
+      >
+        {/* Header: spell name + school + level */}
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <span className={`text-sm font-bold ${schoolColors.text} flex items-center gap-1.5`}>
+            <span aria-hidden>🎯</span>
+            {spellName}
+            <span className="text-parchment-400 font-normal text-xs">
+              ({school} {spellLevelLabel(d.level)})
+            </span>
+          </span>
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="text-parchment-500 hover:text-parchment-200 text-xs px-1.5 py-0.5 rounded transition-colors"
+              aria-label="Dismiss spell cast result"
+              title="Dismiss"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* AoE badges: target count + total damage + save DC + slot */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {targetCount > 0 && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-sky-900/40 text-sky-200 border border-sky-700/40">
+              💥 Hits {targetCount} target{targetCount === 1 ? '' : 's'}
+            </span>
+          )}
+          {totalDmg > 0 && (
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded ${dmgColors.bg} ${dmgColors.text} border ${dmgColors.border}`}>
+              {totalDmg} {damageType} total damage
+            </span>
+          )}
+          {d.save_dc !== undefined && d.save_dc !== null && (
+            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-parchment-800/60 text-parchment-200">
+              DC {d.save_dc} {d.save_ability ?? ''}
+            </span>
+          )}
+          {d.slot_level !== undefined && d.slot_level !== null && (
+            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-parchment-800/60 text-parchment-300">
+              L{d.slot_level} slot
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={`rounded-lg border ${schoolColors.border} ${schoolColors.bg} p-3 mt-2 animate-scale-in`}

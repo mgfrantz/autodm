@@ -43,6 +43,26 @@ describe('DamageCard', () => {
     expect(screen.queryByText(/Defeated/)).toBeNull()
   })
 
+  it('shows Saved badge when made_save is true (AoE spell damage)', () => {
+    render(<DamageCard event={damageEvent({
+      made_save: true, half_damage: true, amount: 6,
+    })} />)
+    expect(screen.getByText(/Saved \(half damage\)/)).toBeTruthy()
+  })
+
+  it('shows Failed save badge when made_save is false', () => {
+    render(<DamageCard event={damageEvent({
+      made_save: false, amount: 12,
+    })} />)
+    expect(screen.getByText(/Failed save/)).toBeTruthy()
+  })
+
+  it('does not show a save badge when made_save is absent (non-spell damage)', () => {
+    render(<DamageCard event={damageEvent()} />)
+    expect(screen.queryByText(/Saved/)).toBeNull()
+    expect(screen.queryByText(/Failed save/)).toBeNull()
+  })
+
   it('fires onDismiss when ✕ is clicked', () => {
     const onDismiss = vi.fn()
     render(<DamageCard event={damageEvent()} onDismiss={onDismiss} />)

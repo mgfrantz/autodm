@@ -151,18 +151,31 @@ class GameEvent:
         damage_type: str,
         target_remaining_hp: int,
         target_max_hp: int,
+        made_save: bool | None = None,
+        half_damage: bool | None = None,
     ) -> "GameEvent":
-        """Create a ``damage`` event (standalone damage application)."""
+        """Create a ``damage`` event (standalone damage application).
+
+        ``made_save`` / ``half_damage`` are optional and used by AoE spell
+        damage (Phase 3.5b) to surface each target's saving-throw outcome on
+        the DamageCard. They are ``None`` for non-spell damage (traps, falls,
+        weapon follow-ups), which renders unchanged.
+        """
+        data: dict = {
+            "target": target,
+            "amount": amount,
+            "damage_type": damage_type,
+            "target_remaining_hp": target_remaining_hp,
+            "target_max_hp": target_max_hp,
+        }
+        if made_save is not None:
+            data["made_save"] = made_save
+        if half_damage is not None:
+            data["half_damage"] = half_damage
         return cls(
             type=GameEventType.DAMAGE,
             label=label,
-            data={
-                "target": target,
-                "amount": amount,
-                "damage_type": damage_type,
-                "target_remaining_hp": target_remaining_hp,
-                "target_max_hp": target_max_hp,
-            },
+            data=data,
         )
 
     @classmethod
@@ -202,6 +215,9 @@ class GameEvent:
         target_max_hp: int | None = None,
         message: str = "",
         slots_remaining: list[dict] | None = None,
+        is_aoe: bool = False,
+        target_count: int | None = None,
+        total_damage: int | None = None,
     ) -> "GameEvent":
         """Create a ``spell_cast`` event with full spell resolution + HP tracking.
 
@@ -211,6 +227,10 @@ class GameEvent:
         the target is an encounter combatant — its remaining/max HP. Failed
         casts (no slots / unknown / component-blocked) carry ``success=False``
         and a human-readable ``message``.
+
+        AoE casts (Phase 3.5b) set ``is_aoe=True`` and carry ``target_count`` +
+        ``total_damage`` (sum across targets); per-target HP then lives in the
+        follow-up ``damage`` events, so the AoE summary carries no single HP bar.
         """
         return cls(
             type=GameEventType.SPELL_CAST,
@@ -236,6 +256,9 @@ class GameEvent:
                 "target_max_hp": target_max_hp,
                 "message": message,
                 "slots_remaining": slots_remaining,
+                "is_aoe": is_aoe,
+                "target_count": target_count,
+                "total_damage": total_damage,
             },
         )
 

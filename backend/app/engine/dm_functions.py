@@ -21,7 +21,7 @@ from app.engine.inventory import (
     ItemType,
     Rarity,
 )
-from app.engine.spells import Spellbook
+from app.engine.spells import Spellbook, get_spell, resolve_spell_aoe_target
 
 
 def dm_roll_d20(
@@ -391,6 +391,171 @@ def dm_cast_spell(
         message=outcome.message,
         slots_remaining=spellbook.slots_overview() if outcome.success else None,
     )
+
+
+# --- Phase 3.5b: AoE spell functions ---------------------------------------
+
+
+def dm_cast_spell_aoe(
+    spellbook: Spellbook,
+    spell_id: str,
+    target_specs: list[dict],
+    slot_level: int | None = None,
+    caster_mod: int = 0,
+    active_conditions: list[str] | None = None,
+) -> tuple[GameEvent, list[dict]]:
+    """Resolve an AoE spell: ONE slot consumed, ONE damage roll, per-target saves.
+
+    This is the multi-target companion to :func:`dm_cast_spell`. Per PHB p.204
+    an AoE spell's damage is rolled once and each target makes its own saving
+    throw against that shared damage. The spell slot is consumed exactly once
+    (via :meth:`Spellbook.prepare_cast`), then each target is resolved
+    independently against the single damage roll.
+
+    Args:
+        spellbook: The character's live Spellbook (consumes a slot on success).
+        spell_id: Spell id or name (e.g. ``"fireball"``).
+        target_specs: Per-target descriptors, each a dict with at least
+            ``{"name": str}`` and optionally ``{"target_save_total": int}``
+            and/or ``{"target_ac": int}``. The caller (which owns the
+            Encounter) computes these from each combatant.
+        slot_level: Desired slot level for upcasting (``None`` = auto/lowest).
+        caster_mod: Casting-ability modifier (INT/WIS/CHA).
+        active_conditions: Caster's conditions (may block V/S components).
+
+    Returns:
+        ``(summary_event, per_target_results)`` where ``summary_event`` is a
+        ``spell_cast`` GameEvent (``is_aoe=True``, no single HP bar) and
+        ``per_target_results`` is a list of dicts::
+
+            {"name": str, "damage": int, "made_save": bool | None,
+             "half_damage": bool, "damage_type": str}
+
+        The caller applies each target's damage to the matching encounter
+        combatant and emits the follow-up DAMAGE events (it owns the
+        Encounter; this function does not). On a failed cast (no slots /
+        unknown / component-blocked) the summary event carries
+        ``success=False`` and ``per_target_results`` is empty.
+    """
+    sid = _norm_spell_id(spell_id)
+
+    # 1) Consume ONE slot without resolving the effect (AoE splits the two).
+    try:
+        outcome = spellbook.prepare_cast(
+            spell_id=spell_id,
+            slot_level=slot_level,
+            active_conditions=active_conditions,
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the pipeline
+        return (
+            GameEvent.spell_cast(
+                label=f"🔮 {spell_id} (cast failed)",
+                spell_name=spell_id,
+                spell_id=sid,
+                level=0,
+                school="",
+                slot_level=None,
+                success=False,
+                message=f"AoE spell cast could not be resolved: {exc}",
+            ),
+            [],
+        )
+
+    if not outcome.success or outcome.spell is None:
+        spell_name = spell_id
+        looked = get_spell(sid)
+        if looked is not None:
+            spell_name = looked.name
+        return (
+            GameEvent.spell_cast(
+                label=f"🔮 {spell_name} (cast failed)",
+                spell_name=spell_name,
+                spell_id=sid,
+                level=looked.level if looked is not None else 0,
+                school=(
+                    looked.school.value
+                    if looked is not None and hasattr(looked.school, "value")
+                    else (str(looked.school) if looked is not None else "")
+                ),
+                slot_level=None,
+                success=False,
+                message=outcome.message,
+            ),
+            [],
+        )
+
+    spell = outcome.spell
+    used_slot = outcome.slot_level or 0  # 0 for cantrips; always int after success
+
+    spell_name = spell.name
+    school = spell.school.value if hasattr(spell.school, "value") else str(spell.school)
+    save_ability = spell.save_ability
+    damage_type = spell.damage_type
+
+    # Save DC, computed the same way as dm_cast_spell (8 + prof + caster_mod).
+    save_dc: int | None = None
+    if save_ability:
+        save_dc = 8 + proficiency_bonus(spellbook.level) + caster_mod
+
+    # 2) Roll the spell damage ONCE for the whole AoE (PHB p.204).
+    full_damage = (
+        spell.roll_damage(spellbook.level, used_slot if used_slot > 0 else None)
+        if spell.deals_damage
+        else 0
+    )
+
+    # 3) Resolve each target independently against the shared damage roll.
+    per_target: list[dict] = []
+    for spec in target_specs or []:
+        name = spec.get("name") or "target"
+        target_save_total = spec.get("target_save_total")
+        try:
+            effect = resolve_spell_aoe_target(
+                spell=spell,
+                slot_level=used_slot if used_slot > 0 else None,
+                full_damage=full_damage,
+                target_save_total=target_save_total,
+                spell_save_dc=save_dc,
+            )
+        except Exception:  # noqa: BLE001 — defensive, never crash
+            continue
+        per_target.append(
+            {
+                "name": name,
+                "damage": effect.damage,
+                "made_save": effect.made_save,
+                "half_damage": effect.half_damage,
+                "damage_type": damage_type,
+            }
+        )
+
+    total_damage = sum(t["damage"] for t in per_target)
+    target_count = len(per_target)
+
+    # Normalise the expended slot for the event (None for cantrips / failed).
+    expended_slot = used_slot if (used_slot and used_slot > 0) else None
+
+    label = f"🔮 {spell_name} (AoE × {target_count})" if target_count else f"🔮 {spell_name}"
+
+    summary = GameEvent.spell_cast(
+        label=label,
+        spell_name=spell_name,
+        spell_id=spell.id,
+        level=spell.level,
+        school=school,
+        slot_level=expended_slot,
+        success=True,
+        save_dc=save_dc,
+        save_ability=save_ability,
+        damage=full_damage,
+        damage_type=damage_type,
+        is_aoe=True,
+        target_count=target_count,
+        total_damage=total_damage,
+        message=f"{spell_name} hits {target_count} target(s) for {total_damage} total {damage_type} damage.",
+        slots_remaining=spellbook.slots_overview(),
+    )
+    return summary, per_target
 
 
 # --- Phase 4: Inventory functions ------------------------------------------

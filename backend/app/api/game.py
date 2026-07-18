@@ -4,13 +4,16 @@ Game API — manages the active game session, DM narration, and player actions.
 import json
 import logging
 from app.utils.time_utils import utcnow
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
+
+if TYPE_CHECKING:
+    from app.engine.combat import Combatant
 
 from app.models.database import get_db, get_session_factory
 from app.models.models import GameSave, Character, World
@@ -36,6 +39,7 @@ from app.engine.dm_functions import (
     dm_apply_damage,
     dm_roll_initiative,
     dm_cast_spell,
+    dm_cast_spell_aoe,
     dm_give_item,
     dm_remove_item,
     dm_equip_item,
@@ -212,6 +216,14 @@ _CONDITION_ACTIONS = ("apply_condition", "remove_condition")
 
 # Concentration game-action function (Phase 3.5).
 _CONCENTRATION_ACTION = "end_concentration"
+
+# AoE spell game-action function (Phase 3.5b).
+_AOE_SPELL_ACTION = "cast_spell_aoe"
+
+
+def _norm_spell_id(spell_id: str) -> str:
+    """Normalise a spell id/name to the registry key form (lowercase, underscores)."""
+    return (spell_id or "").lower().replace(" ", "_")
 
 # Incapacitating conditions that break concentration (PHB p.203).
 _CONCENTRATION_BREAKING_CONDITIONS = frozenset(
@@ -424,7 +436,7 @@ def _resolve_game_actions(
 
     # Check if any spell actions are present
     has_spell = any(
-        a.get("function") == "cast_spell"
+        a.get("function") in ("cast_spell", _AOE_SPELL_ACTION)
         for a in game_actions or []
         if isinstance(a, dict)
     )
@@ -746,6 +758,159 @@ def _resolve_game_actions(
                         spell_id=looked_up.id,
                         is_concentrating=True,
                     ).to_dict()
+            elif func == _AOE_SPELL_ACTION:
+                # Phase 3.5b: AoE multi-target spell resolution. One slot
+                # consumed, one damage roll, per-target saving throws. Reuses
+                # the real Spellbook (slot consumption via prepare_cast) and
+                # resolve_spell_aoe_target for each combatant.
+                if character is None:
+                    logger.warning(
+                        "Skipping cast_spell_aoe action: no character available"
+                    )
+                    continue
+                if spellbook is None or not spellbook.is_caster:
+                    logger.warning(
+                        "Skipping cast_spell_aoe action: character is not a caster"
+                    )
+                    continue
+                aoe_spell_id = args.get("spell_id")
+                if not aoe_spell_id:
+                    logger.warning("Skipping cast_spell_aoe action: missing spell_id")
+                    continue
+                target_ids = args.get("target_ids") or []
+                if not target_ids or encounter is None:
+                    # AoE needs both a target list and a live encounter.
+                    from app.engine.spells import get_spell as _get_spell_aoe
+                    _looked = _get_spell_aoe(_norm_spell_id(aoe_spell_id))
+                    events.append(GameEvent.spell_cast(
+                        label=(
+                            f"🔮 {_looked.name if _looked else aoe_spell_id} "
+                            f"(cast failed)"
+                        ),
+                        spell_name=_looked.name if _looked else aoe_spell_id,
+                        spell_id=_looked.id if _looked else _norm_spell_id(aoe_spell_id),
+                        level=_looked.level if _looked else 0,
+                        school=(
+                            _looked.school.value
+                            if _looked and hasattr(_looked.school, "value")
+                            else (str(_looked.school) if _looked else "")
+                        ),
+                        slot_level=None,
+                        success=False,
+                        message=(
+                            "AoE spell requires target_ids and an active encounter."
+                        ),
+                    ))
+                    continue
+
+                # Build per-target specs from the encounter combatants.
+                target_specs: list[dict] = []
+                id_to_combatant: dict[str, "Combatant"] = {}
+                for c in encounter.combatants:
+                    id_to_combatant[c.id] = c
+                for tid in target_ids:
+                    comb = id_to_combatant.get(tid)
+                    if comb is None:
+                        logger.warning(
+                            f"cast_spell_aoe: target_id '{tid}' not in roster; skipping"
+                        )
+                        continue
+                    from app.engine.spells import get_spell as _get_spell_aoe2
+                    _looked_aoe = _get_spell_aoe2(_norm_spell_id(aoe_spell_id))
+                    _save_ab = _looked_aoe.save_ability if _looked_aoe else None
+                    target_specs.append({
+                        "name": comb.name,
+                        "target_save_total": _combatant_save_total(comb, _save_ab),
+                    })
+
+                if not target_specs:
+                    # No valid targets resolved — emit a failed summary.
+                    events.append(GameEvent.spell_cast(
+                        label=f"🔮 {aoe_spell_id} (cast failed)",
+                        spell_name=aoe_spell_id,
+                        spell_id=_norm_spell_id(aoe_spell_id),
+                        level=0,
+                        school="",
+                        slot_level=None,
+                        success=False,
+                        message="AoE spell had no valid targets in the encounter.",
+                    ))
+                    continue
+
+                requested_slot_aoe = args.get("slot_level")
+                caster_mod_aoe = _caster_modifier_for_character(character, spellbook)
+                active_conditions_aoe = game_state.get("conditions", []) or []
+
+                summary_event, per_target = dm_cast_spell_aoe(
+                    spellbook=spellbook,
+                    spell_id=aoe_spell_id,
+                    target_specs=target_specs,
+                    slot_level=requested_slot_aoe,
+                    caster_mod=caster_mod_aoe,
+                    active_conditions=active_conditions_aoe,
+                )
+
+                # Attach the spell school/level for the frontend if the cast
+                # failed before resolution (dm_cast_spell_aoe already fills
+                # these on success).
+                events.append(summary_event)
+
+                # Apply per-target damage to the matching combatant and emit a
+                # DAMAGE event (with save outcome) for each. Reuse the Phase 2
+                # DamageCard; the optional made_save/half_damage fields surface
+                # the per-target save result.
+                if summary_event.data.get("success"):
+                    # Map target name → combatant for HP application. Names are
+                    # unique enough within an encounter for this coupling.
+                    name_to_combatant = {c.name: c for c in encounter.combatants}
+                    for res in per_target:
+                        dmg = res.get("damage", 0) or 0
+                        if dmg <= 0:
+                            continue
+                        comb = name_to_combatant.get(res.get("name"))
+                        if comb is None:
+                            continue
+                        comb.take_damage(dmg)
+                        events.append(GameEvent.damage(
+                            label=(
+                                f"💥 {comb.name} takes {dmg} "
+                                f"{res.get('damage_type', '')} damage"
+                            ),
+                            target=comb.name,
+                            amount=dmg,
+                            damage_type=res.get("damage_type", ""),
+                            target_remaining_hp=comb.current_hp,
+                            target_max_hp=comb.max_hp,
+                            made_save=res.get("made_save"),
+                            half_damage=res.get("half_damage"),
+                        ))
+
+                    # Concentration coupling: a successful AoE cast of a
+                    # concentration spell starts concentration (auto-ending any
+                    # previous), mirroring the single-target cast_spell hook.
+                    from app.engine.spells import get_spell as _get_spell_conc
+                    _conc_spell = _get_spell_conc(_norm_spell_id(aoe_spell_id))
+                    if (
+                        _conc_spell is not None
+                        and getattr(_conc_spell, "concentration", False)
+                    ):
+                        from app.engine.concentration import ConcentrationState
+                        prev = _get_concentration_state(game_state)
+                        if prev is not None:
+                            events.append(dm_end_concentration(
+                                spell_name=prev.spell_name,
+                                reason=f"Replaced by {_conc_spell.name}",
+                            ))
+                        summary_event.data["concentration_started"] = True
+                        events.append(dm_start_concentration(
+                            spell_name=_conc_spell.name,
+                            spell_id=_conc_spell.id,
+                        ))
+                        game_state["concentration"] = ConcentrationState(
+                            spell_name=_conc_spell.name,
+                            spell_id=_conc_spell.id,
+                            is_concentrating=True,
+                        ).to_dict()
             elif func in _INVENTORY_ACTIONS:
                 # Phase 4: inventory operations resolved via the real engine.
                 if character is None:

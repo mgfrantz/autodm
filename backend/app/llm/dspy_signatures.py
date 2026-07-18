@@ -255,6 +255,19 @@ class DMActionableNarration(dspy.Signature):
       - Available spell ids are provided under AVAILABLE_SPELLS (id, name,
         school, level) with REMAINING_SLOTS. Only emit cast_spell for spells
         in that roster.
+      - For AoE SPELLS (Fireball, Lightning Bolt, Shatter, Burning Hands, Ice
+        Storm, etc. — any spell that affects multiple creatures in an area):
+        use cast_spell_aoe to hit MULTIPLE combatants with ONE cast. This
+        consumes ONE spell slot and rolls damage ONCE; each target rolls its
+        own save against that shared damage. NEVER emit multiple cast_spell
+        actions for one AoE spell (that would burn multiple slots).
+        Args: {"spell_id": "fireball",
+               "target_ids": ["goblin_1", "goblin_2", "goblin_3"],
+               "slot_level": null}
+        target_ids is a LIST of combatant IDs from COMBATANT_ROSTER. Use
+        cast_spell_aoe for any spell whose description mentions an area
+        (sphere, cone, line, radius, cylinder) or "each creature in". Use
+        single-target cast_spell when only ONE creature is affected.
     - For INVENTORY operations:
       - Use give_item when the player ACQUIRES an item (loot, reward,
         purchase, gift, found treasure). Provide construction details:
@@ -321,7 +334,7 @@ class DMActionableNarration(dspy.Signature):
 
     Each game_action is a dict with:
     - "function": "roll_dice" | "request_check" | "attack" | "damage" |
-                  "roll_initiative" | "cast_spell" |
+                  "roll_initiative" | "cast_spell" | "cast_spell_aoe" |
                   "give_item" | "remove_item" | "equip_item" | "use_item" |
                   "apply_condition" | "remove_condition" | "end_concentration"
     - "label": short description (e.g., "Perception Check", "Goblin strikes",
@@ -336,6 +349,9 @@ class DMActionableNarration(dspy.Signature):
       - roll_initiative: {} (no args)
       - cast_spell: {"spell_id": "fire_bolt", "target_id": "goblin_1",
                      "slot_level": null}
+      - cast_spell_aoe: {"spell_id": "fireball",
+                         "target_ids": ["goblin_1", "goblin_2"],
+                         "slot_level": null}
       - give_item: {"item_name": "Health Potion", "item_type": "potion",
                     "quantity": 2, "rarity": "common", "value": 50}
       - remove_item: {"item_id": "...", "quantity": 1}

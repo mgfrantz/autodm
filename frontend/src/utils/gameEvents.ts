@@ -166,13 +166,19 @@ export function summarizeEvent(event: GameEvent): string {
   if (event.type === 'damage') {
     const d = event.data;
     return damageSummary(d.target, d.amount, d.damage_type,
-      d.target_remaining_hp, d.target_max_hp);
+      d.target_remaining_hp, d.target_max_hp, d.made_save);
   }
   if (event.type === 'initiative') {
     return initiativeSummary(event.data.combatants);
   }
   if (event.type === 'spell_cast') {
     const d = event.data
+    if (d.is_aoe) {
+      return spellAoeSummary(
+        d.spell_name, d.level, d.school, d.target_count, d.total_damage,
+        d.damage_type, d.save_ability, d.save_dc,
+      )
+    }
     return spellCastSummary(
       d.spell_name, d.level, d.school, d.success, d.hit, d.made_save,
       d.damage, d.healing, d.damage_type, d.half_damage, d.target, d.message,
@@ -300,6 +306,8 @@ export function attackSummary(
 
 /**
  * Generate a one-line summary for a damage event.
+ * When ``madeSave`` is true (AoE spell damage, Phase 3.5b), append a
+ * "(saved — half)" note so the collapsed summary surfaces the save outcome.
  */
 export function damageSummary(
   target: string | undefined,
@@ -307,14 +315,16 @@ export function damageSummary(
   damageType: string | undefined,
   remainingHp: number | undefined,
   maxHp: number | undefined,
+  madeSave: boolean | null | undefined = undefined,
 ): string {
   const tgt = target ?? 'Unknown';
   const dmg = amount ?? 0;
   const type = damageType ?? '';
+  const saveNote = madeSave === true ? ' (saved — half)' : '';
   if ((remainingHp ?? 0) <= 0) {
-    return `${tgt} takes ${dmg} ${type} damage — DEFEATED!`;
+    return `${tgt} takes ${dmg} ${type} damage${saveNote} — DEFEATED!`;
   }
-  return `${tgt} takes ${dmg} ${type} damage (${remainingHp}/${maxHp} HP)`;
+  return `${tgt} takes ${dmg} ${type} damage${saveNote} (${remainingHp}/${maxHp} HP)`;
 }
 
 /**
@@ -390,6 +400,31 @@ export function spellCastSummary(
   else if (hit === false) parts.push('miss');
   if (madeSave === true) parts.push('target saved');
   else if (madeSave === false) parts.push('target failed save');
+  return parts.join(' — ');
+}
+
+/**
+ * Generate a one-line summary for an AoE spell_cast event (Phase 3.5b).
+ * One cast hits multiple targets; the summary shows the count + total damage.
+ */
+export function spellAoeSummary(
+  spellName: string | undefined,
+  level: number | undefined,
+  school: string | undefined,
+  targetCount: number | null | undefined,
+  totalDamage: number | null | undefined,
+  damageType: string | undefined,
+  saveAbility: string | null | undefined,
+  saveDc: number | null | undefined,
+): string {
+  const name = spellName ?? 'Unknown spell';
+  const header = `${name} (${spellLevelLabel(level)} ${school ?? ''})`.trim();
+  const parts: string[] = [header];
+  const count = targetCount ?? 0;
+  if (count > 0) parts.push(`hits ${count} target${count === 1 ? '' : 's'}`);
+  const dmg = totalDamage ?? 0;
+  if (dmg > 0) parts.push(`${dmg} ${damageType ?? ''} total damage`.trim());
+  if (saveDc) parts.push(`DC ${saveDc}${saveAbility ? ` ${saveAbility}` : ''}`);
   return parts.join(' — ');
 }
 

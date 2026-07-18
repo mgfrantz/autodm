@@ -6,7 +6,7 @@
 > Phase 4 IMPLEMENTED ✅ — inventory operations (give_item/remove_item/equip_item/use_item) are live
 > Phase 5 IMPLEMENTED ✅ — condition application (apply_condition/remove_condition) is live
 > Phase 3.5 IMPLEMENTED ✅ — concentration tracking (reactive hooks + Con-save checks) is live
-> Phase 3.5b GREEN-LIT — AoE multi-target spell resolution (cast_spell_aoe) — executing
+> Phase 3.5b IMPLEMENTED ✅ — AoE multi-target spell resolution (cast_spell_aoe) is live
 > UI polish IMPLEMENTED ✅ — dice tumble (~480ms), HP-bar shake, collapsed-by-default old event cards are live (roadmap item #7)
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
@@ -2574,10 +2574,10 @@ Backward compatible: existing damage events (no `made_save`) render unchanged.
 
 ### Verification Checklist
 
-- [ ] `uv run pytest` — all tests pass (+~22 new)
-- [ ] `npx tsc --noEmit` — no type errors
-- [ ] `npm run build` — clean build
-- [ ] `npm test` — all frontend tests pass (+~12 new)
-- [ ] PROGRESS.md updated
-- [ ] Commit `feat: DM function calling Phase 3.5b — AoE multi-target spell resolution`
-- [ ] `git push origin develop`
+- [x] `uv run pytest` — all tests pass (2891, +~38 AoE)
+- [x] `npx tsc --noEmit` — no type errors
+- [x] `npm run build` — clean build
+- [x] `npm test` — all frontend tests pass (393, +19 AoE)
+- [x] PROGRESS.md updated
+- [x] Commit `feat: DM function calling Phase 3.5b — AoE multi-target spell resolution`
+- [x] `git push origin develop`

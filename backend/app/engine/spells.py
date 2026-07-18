@@ -1116,6 +1116,96 @@ def resolve_spell_effect(
     )
 
 
+def resolve_spell_aoe_target(
+    spell: Spell,
+    slot_level: Optional[int],
+    full_damage: int,
+    target_save_total: Optional[int],
+    spell_save_dc: Optional[int] = None,
+) -> SpellEffectResult:
+    """Resolve ONE AoE target's outcome against a shared damage roll.
+
+    Per PHB p.204, an AoE spell's damage is rolled **once** and every target
+    saves against that same damage. This helper takes the already-rolled
+    ``full_damage`` (rolled once by the caller) and a single target's save
+    total, and returns that target's outcome:
+
+    - **Save spell** (``spell.save_ability`` set): if ``target_save_total`` is
+      provided, ``made_save = total >= DC``; on a save the target takes half
+      (``full_damage // 2``), otherwise full. If no save total is provided,
+      full damage is applied (no save rolled).
+    - **Auto-damage spell** (no save, e.g. an AoE that deals damage with no
+      roll): full damage to every target.
+    - **Non-damage AoE** (e.g. an area debuff): zero damage; ``made_save`` set
+      when a save total is provided.
+
+    Attack-roll AoE is not supported here (rare; callers should use
+    :func:`resolve_spell_effect` per target instead). ``slot_level`` is the
+    level the spell was actually cast at (used only for the result record).
+
+    Args:
+        spell: The spell being cast.
+        slot_level: The slot level used for the cast (record-keeping only).
+        full_damage: The damage rolled once for the whole AoE.
+        target_save_total: This target's d20 + save mod (+ proficiency).
+        spell_save_dc: The save DC. If omitted, the caller must supply a real
+            DC (this helper does not know the caster's proficiency/mod).
+    """
+    slot_level = slot_level if slot_level is not None else spell.level
+    damage_type = spell.damage_type
+
+    # ----- Saving-throw AoE (the common case: Fireball, Shatter, etc.) -----
+    if spell.save_ability is not None:
+        made_save: Optional[bool] = None
+        if target_save_total is not None and spell_save_dc is not None:
+            made_save = target_save_total >= spell_save_dc
+        if spell.deals_damage:
+            if made_save is None:
+                damage = full_damage
+                half = False
+                note = "(no save provided — full damage)"
+            elif made_save:
+                damage = full_damage // 2
+                half = True
+                note = f"saved (DC {spell_save_dc}) — half damage"
+            else:
+                damage = full_damage
+                half = False
+                note = f"failed save (DC {spell_save_dc})"
+            return SpellEffectResult(
+                spell_name=spell.name, slot_level=slot_level,
+                rolled_attack=None, hit=None, made_save=made_save,
+                damage=damage, healing=0, damage_type=damage_type,
+                half_damage=half,
+                description=f"{spell.name} deals {damage} {damage_type} damage {note}.",
+            )
+        # Save AoE with no damage (e.g. Stinking Cloud) — success/failure only.
+        return SpellEffectResult(
+            spell_name=spell.name, slot_level=slot_level,
+            rolled_attack=None, hit=None, made_save=made_save,
+            damage=0, healing=0, damage_type="", half_damage=False,
+            description=f"{spell.name} resolved (save vs DC {spell_save_dc}).",
+        )
+
+    # ----- Auto-damage AoE (no save, no attack roll) -----------------------
+    if spell.deals_damage:
+        return SpellEffectResult(
+            spell_name=spell.name, slot_level=slot_level,
+            rolled_attack=None, hit=None, made_save=None,
+            damage=full_damage, healing=0, damage_type=damage_type,
+            half_damage=False,
+            description=f"{spell.name} deals {full_damage} {damage_type} damage automatically.",
+        )
+
+    # ----- Non-damage AoE (utility / debuff area) --------------------------
+    return SpellEffectResult(
+        spell_name=spell.name, slot_level=slot_level,
+        rolled_attack=None, hit=None, made_save=None,
+        damage=0, healing=0, damage_type="", half_damage=False,
+        description=f"{spell.name} takes effect.",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Spellbook — owned by a character
 # ---------------------------------------------------------------------------
@@ -1362,6 +1452,80 @@ class Spellbook:
             success=True,
             message=effect.description,
             effect=effect,
+            slot_level=used_level,
+            spell=spell,
+        )
+
+    def prepare_cast(
+        self,
+        spell_id: str,
+        slot_level: Optional[int] = None,
+        active_conditions: Optional[list[str]] = None,
+    ) -> CastOutcome:
+        """Validate + consume a spell slot WITHOUT resolving the effect.
+
+        This is the AoE companion to :meth:`cast`: it performs the exact same
+        validation and slot-consumption as the front half of ``cast``, but
+        does NOT call :func:`resolve_spell_effect`. The returned
+        :class:`CastOutcome` carries ``spell`` + ``slot_level`` (and
+        ``effect=None``); the caller then resolves the effect once per target
+        (e.g. via :func:`resolve_spell_aoe_target`), so that one slot feeds N
+        independent per-target saving throws.
+
+        Failure modes are identical to ``cast``: unknown spell, non-caster,
+        not known/prepared, component-blocked by an active condition, or no
+        spell slots available → ``CastOutcome(success=False, message=...)``
+        and NO slot is consumed.
+
+        Args:
+            spell_id: Spell id or name (e.g. ``"fireball"``).
+            slot_level: Desired slot level for upcasting (``None`` = auto).
+            active_conditions: Caster's conditions (may block V/S components).
+
+        Returns:
+            A CastOutcome. On success ``effect`` is None and ``slot_level`` is
+            the level actually expended (0 for cantrips).
+        """
+        sid = _norm(spell_id)
+        spell = get_spell(sid)
+        if spell is None:
+            return CastOutcome(False, f"Unknown spell: {spell_id}")
+        if not self.is_caster:
+            return CastOutcome(False, f"{self.char_class} cannot cast spells")
+        if spell not in self.castable_spells():
+            return CastOutcome(
+                False,
+                f"{spell.name} is not available to cast (not known/prepared)",
+            )
+
+        # Check component restrictions (same as cast()).
+        conditions = active_conditions or []
+        can_cast, reason = can_cast_with_conditions(spell.parsed_components, conditions)
+        if not can_cast:
+            return CastOutcome(False, reason)
+
+        if spell.is_cantrip:
+            used_level = 0
+        else:
+            # Determine the slot to expend: caller's choice, else the lowest
+            # available slot at or above the spell's level.
+            target = slot_level or spell.level
+            chosen = next(
+                (lvl for lvl in range(max(spell.level, target), 10)
+                 if self.available_slots(lvl) > 0),
+                None,
+            )
+            if chosen is None:
+                return CastOutcome(False, f"No spell slots available for {spell.name}")
+            if slot_level is not None and self.available_slots(slot_level) <= 0:
+                return CastOutcome(False, f"No level-{slot_level} slots available")
+            used_level = slot_level or chosen
+            self._slots_used[used_level - 1] += 1
+
+        return CastOutcome(
+            success=True,
+            message=f"{spell.name} prepared.",
+            effect=None,
             slot_level=used_level,
             spell=spell,
         )

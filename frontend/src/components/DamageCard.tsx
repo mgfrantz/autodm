@@ -23,11 +23,12 @@ export default function DamageCard({ event, onDismiss }: DamageCardProps) {
   const d = event.data
   const dmgType = d.damage_type ?? 'slashing'
   const amount = d.amount ?? 0
+  const madeSave = d.made_save
 
   const summary = useMemo(
     () => damageSummary(d.target, amount, d.damage_type,
-      d.target_remaining_hp, d.target_max_hp),
-    [d.target, amount, d.damage_type, d.target_remaining_hp, d.target_max_hp],
+      d.target_remaining_hp, d.target_max_hp, madeSave),
+    [d.target, amount, d.damage_type, d.target_remaining_hp, d.target_max_hp, madeSave],
   )
   const dmgColors = useMemo(() => damageTypeColor(dmgType), [dmgType])
   const hp = useMemo(
@@ -59,6 +60,13 @@ export default function DamageCard({ event, onDismiss }: DamageCardProps) {
           </button>
         )}
       </div>
+
+      {/* AoE save-outcome badge (Phase 3.5b) — surfaces this target's save result */}
+      {madeSave !== undefined && madeSave !== null && (
+        <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded mb-1.5 ${madeSave ? 'bg-amber-900/40 text-amber-200 border border-amber-700/40' : 'bg-emerald-900/40 text-emerald-200 border border-emerald-700/40'}`}>
+          {madeSave ? '🛡️ Saved (half damage)' : '💫 Failed save'}
+        </span>
+      )}
 
       {/* HP bar */}
       <div className="flex items-center gap-2">

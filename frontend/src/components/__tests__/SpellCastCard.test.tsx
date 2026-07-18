@@ -129,3 +129,76 @@ describe('SpellCastCard', () => {
     expect(screen.queryByLabelText('Dismiss spell cast result')).toBeNull()
   })
 })
+
+describe('SpellCastCard — AoE mode (Phase 3.5b)', () => {
+  function aoeEvent(overrides: Partial<GameEvent['data']> = {}, label = '🎯 Fireball'): GameEvent {
+    return {
+      type: 'spell_cast',
+      label,
+      data: {
+        spell_name: 'Fireball',
+        spell_id: 'fireball',
+        level: 3,
+        school: 'evocation',
+        slot_level: 3,
+        success: true,
+        is_aoe: true,
+        target_count: 3,
+        total_damage: 42,
+        damage_type: 'fire',
+        save_dc: 15,
+        save_ability: 'dex',
+        message: '',
+        ...overrides,
+      },
+      timestamp: '',
+    }
+  }
+
+  it('renders the AoE spell header with school + level', () => {
+    render(<SpellCastCard event={aoeEvent()} />)
+    expect(screen.getByText(/Fireball/)).toBeTruthy()
+    expect(screen.getByText(/evocation level 3/i)).toBeTruthy()
+  })
+
+  it('shows the target-count badge', () => {
+    render(<SpellCastCard event={aoeEvent()} />)
+    expect(screen.getByText(/Hits 3 targets/)).toBeTruthy()
+  })
+
+  it('shows the total-damage badge', () => {
+    render(<SpellCastCard event={aoeEvent()} />)
+    expect(screen.getByText(/42 fire total damage/)).toBeTruthy()
+  })
+
+  it('shows the save DC badge', () => {
+    render(<SpellCastCard event={aoeEvent()} />)
+    expect(screen.getByText(/DC 15 dex/)).toBeTruthy()
+  })
+
+  it('shows the slot-level badge', () => {
+    render(<SpellCastCard event={aoeEvent()} />)
+    expect(screen.getByText(/L3 slot/)).toBeTruthy()
+  })
+
+  it('does NOT render an HP bar in AoE mode', () => {
+    render(<SpellCastCard event={aoeEvent({ target_remaining_hp: 5, target_max_hp: 12 })} />)
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  it('renders a muted failed card for a failed AoE cast', () => {
+    render(<SpellCastCard event={aoeEvent({
+      success: false, is_aoe: true, message: 'No spell slots available',
+      total_damage: 0, target_count: 0,
+    }, '🔮 Fireball (failed)')} />)
+    expect(screen.getByText(/cast failed/)).toBeTruthy()
+    expect(screen.getByText(/No spell slots available/)).toBeTruthy()
+  })
+
+  it('fires onDismiss in AoE mode', () => {
+    const onDismiss = vi.fn()
+    render(<SpellCastCard event={aoeEvent()} onDismiss={onDismiss} />)
+    fireEvent.click(screen.getByLabelText('Dismiss spell cast result'))
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+  })
+})
