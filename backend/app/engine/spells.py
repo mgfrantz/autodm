@@ -1038,6 +1038,32 @@ register_spell(Spell("Prismatic Wall", 9, SpellSchool.EVOCATION,
     casting_time="1 action", range="60 feet", components="V, S",
     save_ability="dex", damage_dice_count=20, damage_dice_sides=6,
     damage_type="fire", duration="10 minutes"))
+register_spell(Spell("Astral Projection", 9, SpellSchool.NECROMANCY,
+    description="You and up to eight willing creatures project your astral bodies onto the Astral Plane, leaving your physical bodies behind in suspended animation. Astral forms can travel to other planes; if an astral form drops to 0 HP it (and the caster's body) returns to the physical form. Costs material components for each creature.",
+    casting_time="1 hour", range="10 feet", components="V, S, M",
+    duration="until dispelled"))
+register_spell(Spell("Gate", 9, SpellSchool.CONJURATION,
+    description="A 5-to-20-foot circular portal opens to another plane of existence, allowing two-way travel for the duration. If you know a specific creature's true name, you can direct the gate to create a portal in front of it and pull it through (the target may resist with a Cha save).",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Imprisonment", 9, SpellSchool.ABJURATION,
+    description="You bind a creature with one of six prisons until dispelled: burial (Str save, entombed in earth), chaining (Dex save, bound in chains), hedged prison (Wis save, walled in a tiny sphere), minimus containment (Dex save, shrunk into a gem), slumber (Wis save, eternal sleep), or appearing (no save, banished to a demiplane). The save shown is the default burial version. A special component releases the target.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    save_ability="str", duration="until dispelled"))
+register_spell(Spell("Shapechange", 9, SpellSchool.TRANSMUTATION,
+    description="You assume the form of a different creature (Challenge Rating no greater than your level) for the duration, gaining its game statistics while keeping your alignment, personality, and class features. You can use an action to adopt a new eligible form. If you drop to 0 HP, the spell ends. Concentration.",
+    casting_time="1 action", range="self", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Storm of Vengeance", 9, SpellSchool.CONJURATION,
+    description="A churning storm cloud forms and escalates over the duration: round 1 deals thunder damage and deafens; round 2 rains acid; round 3 pelts cold hail; round 4 brings bludgeoning debris that restrains; rounds 5-10 unleash 10d6 lightning each round (modeled here as the signature 10d6 lightning strike, Con save for half). Concentration.",
+    casting_time="1 action", range="self (360-foot radius)", components="V, S",
+    save_ability="con", damage_dice_count=10, damage_dice_sides=6,
+    damage_type="lightning", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Weird", 9, SpellSchool.ILLUSION,
+    description="Tentacles of doomy illusion fill a 30-foot sphere; each creature makes a Wisdom save or takes 4d8 psychic damage and is frightened, and must use its action to Dash away from the illusion. A creature repeats the save at the end of each of its turns, taking 4d8 psychic on a failure. Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="wis", damage_dice_count=4, damage_dice_sides=8,
+    damage_type="psychic", concentration=True, duration="up to 1 minute"))
 
 
 # ---------------------------------------------------------------------------
