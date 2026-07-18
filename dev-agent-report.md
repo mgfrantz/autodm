@@ -1,146 +1,107 @@
-# Dev Agent Report — Phase 3.5b (AoE Multi-Target Spell Resolution)
+# Dev Agent Report — Verification & Health Check
 
-**Date:** 2026-07-17
-**Commit:** `178b6ac`
-**Status:** ✅ COMPLETE — full DM Function Calling roadmap now done
+**Date:** 2026-07-18
+**Run type:** Maintenance / verification (DM Function Calling roadmap COMPLETE)
+**Branch:** `develop`
 
-## What shipped
+## Summary
 
-Phase 3.5b closes the spell system's last mechanical gap: the DM can now cast
-**one spell at multiple combatants** in a single action. Fireball hitting three
-goblins consumes **one 3rd-level slot**, rolls damage **once**, and resolves a
-**separate saving throw per target** — exactly PHB p.204 ("If a spell deals
-damage to more than one target at the same time, roll the damage once for all of
-them").
+The full DM Function Calling roadmap is **complete and healthy**. This was a
+scheduled maintenance run per the standing directive in `PROGRESS.md` →
+*"NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅"*, which
+instructs the dev agent to: keep the suite green, watch for README/PROGRESS
+drift, and pick up quick fixes if surfaced.
 
-### The problem this solves
+No phase work was scheduled — every phase (1–5, 3.5, 3.5b, UI polish) shipped
+on prior runs. This run confirms the project is green and surfaces the
+decision points for Mike's next green-light.
 
-Before Phase 3.5b, the DM could only emit single-target `cast_spell` actions.
-For an AoE spell like Fireball, the DM was forced to either:
-1. Hit one goblin (the others take nothing — mechanically wrong), or
-2. Emit N `cast_spell` actions (one per goblin) — which burned N slots and rolled
-   N independent damage pools (also wrong).
+## Verification Results (all green)
 
-### The architectural insight
+| Check | Result |
+|-------|--------|
+| `uv run pytest` (backend) | ✅ **2891 passing**, 0 failures (12 warnings — all third-party DSPy `InputField`/`OutputField` `prefix=` deprecations, outside our control) |
+| `npx tsc --noEmit` (frontend) | ✅ No type errors |
+| `npm run build` (frontend) | ✅ Clean production build — main bundle **339.67 KB** (99.70 KB gzip) |
+| `npm test` (frontend, Vitest) | ✅ **393 passing** across 28 test files |
 
-Phase 3's `Spellbook.cast()` **fuses** slot-consumption and effect-resolution.
-That coupling breaks for AoE. The fix: **split** the two concerns without
-touching `cast()` (zero risk to Phase 3):
+## README / PROGRESS Drift Check — NO DRIFT
 
-| Concern | Phase 3 (single-target) | Phase 3.5b (AoE) |
-|---------|-------------------------|------------------|
-| Slot consumed by | `Spellbook.cast()` (fused) | new `Spellbook.prepare_cast()` (slot only) |
-| Effect resolved by | `cast()` → `resolve_spell_effect()` (once) | `resolve_spell_aoe_target()` per target |
-| Damage roll | once (inside `cast()`) | once (handler rolls `spell.roll_damage()`, passes to every per-target resolver) |
-| Save roll | one target's save | **N independent saves** |
+Verified the public-facing `README.md` against `PROGRESS.md` and the live
+engine. All counts match exactly:
 
-The handler emits **one summary `spell_cast` event** (`is_aoe=True`,
-`target_count`, `total_damage`, no HP bar) followed by **N `damage` events**
-(one per target, each with that target's HP bar + save outcome).
+| Content | README claims | Engine actual | Match |
+|---------|---------------|---------------|-------|
+| Spells | 108 | **108** (L0:14, L1:20, L2:16, L3:14, L4:8, L5:8, L6:7, L7:7, L8:7, L9:7) | ✅ |
+| Enemies | 116 | **116** | ✅ |
+| Feats | 53 | — (unchanged) | ✅ |
+| Test total | 2891 backend + 393 frontend = 3284 | 2891 + 393 = 3284 | ✅ |
 
-## Files changed
+Spell level distribution is already **balanced** across all tiers (7–8 spells
+per level for L4–L9), so the older *"still room for higher-level spells (4+)"*
+note in PROGRESS is effectively addressed — no pressing content gap.
 
-### Backend (Steps 1-6)
-1. **`backend/app/engine/spells.py`** (+164 lines)
-   - `Spellbook.prepare_cast()` — validate + consume slot WITHOUT resolving the
-     effect (near-exact copy of `cast()`'s front half, returns `effect=None`).
-   - `resolve_spell_aoe_target()` — per-target resolver against pre-rolled full
-     damage; save → half, fail → full.
-2. **`backend/app/engine/dm_functions.py`** (+167 lines)
-   - `dm_cast_spell_aoe()` — one slot via `prepare_cast`, one damage roll,
-     per-target `resolve_spell_aoe_target`, returns
-     `(summary_spell_cast_event, per_target_results)`. Defensive try/except.
-3. **`backend/app/engine/game_events.py`** (+39 lines)
-   - `spell_cast()` factory extended with optional `is_aoe`, `target_count`,
-     `total_damage` params.
-   - `damage()` factory extended with optional `made_save`, `half_damage`
-     (None for non-spell damage → unchanged render).
-4. **`backend/app/api/game.py`** (+169 lines)
-   - `_AOE_SPELL_ACTION` constant, `_norm_spell_id()` helper.
-   - `cast_spell_aoe` handler in `_resolve_game_actions()`: build target_specs
-     from encounter, call `dm_cast_spell_aoe`, apply per-target `take_damage`,
-     emit per-target DAMAGE events with save outcome, concentration coupling
-     for AoE concentration spells. `has_spell` detection extended.
-5. **`backend/app/llm/dspy_signatures.py`** (+18 lines)
-   - `DMActionableNarration` docstring + function enum + args schema expanded
-     with AoE guidance (`cast_spell_aoe` with `target_ids: [...]`).
+## Investigation: Cross-Phase Polish Candidates
 
-### Frontend (Steps 7-10)
-6. **`frontend/src/types/index.ts`** — `is_aoe?`, `target_count?`,
-   `total_damage?` added to `GameEventData` (all optional — backward compatible).
-7. **`frontend/src/utils/gameEvents.ts`**
-   - New `spellAoeSummary()` helper.
-   - `summarizeEvent` spell_cast branch dispatches to AoE variant when
-     `d.is_aoe`.
-   - `damageSummary()` gains optional `madeSave` param → appends "(saved — half)".
-8. **`frontend/src/components/SpellCastCard.tsx`** — New AoE summary mode:
-   🎯 icon, "Hits N targets" badge, total-damage badge, save DC badge, slot
-   badge, **no HP bar** (per-target HP lives in follow-up DamageCards). Failed
-   AoE casts still render the muted failed card.
-9. **`frontend/src/components/DamageCard.tsx`** — Optional save-outcome badge:
-   "🛡️ Saved (half damage)" (amber) or "💫 Failed save" (emerald). Absent for
-   non-spell damage.
+The design doc (`docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Future directions")
+lists two cross-phase polish items as candidates. I inspected the code to
+determine whether they are **bug fixes** (in-scope for a maintenance run) or
+**new features** (gated behind Mike's green-light). Conclusion: **both are
+new features**, not fixes.
 
-### Docs
-- `docs/DM_FUNCTION_CALLING_RESEARCH.md` — Phase 3.5b status → IMPLEMENTED ✅;
-  verification checklist all checked.
-- `PROGRESS.md` — COMPLETED section added, status tags, test counts,
-  NEXT SESSION DIRECTIVE → roadmap complete.
-- `README.md` — Phase 3.5b feature bullet, test counts (3284 total), removed
-  from "Planned".
+### 1. Concentration checks from AoE spell damage to the *player*
+- **Current state:** The `cast_spell_aoe` handler in `backend/app/api/game.py`
+  only resolves targets that are **encounter combatants**
+  (`for c in encounter.combatants`). The player is never an AoE target, so no
+  concentration check fires from AoE spell damage.
+- **Why it's a feature, not a fix:** Modeling an enemy caster's AoE hitting
+  the player requires an **enemy-spellcasting** model — currently the AoE
+  pipeline always uses the *player's* spellbook (`character.spellbook`). The
+  DM works around this today by emitting a plain `damage` action targeting
+  `"player"` (which *does* already trigger a concentration check via the
+  Phase 3.5 player-damage hook). So the gap is "no first-class enemy AoE
+  spell event," which is a design decision, not a regression.
 
-## Tests
+### 2. Advantage/disadvantage on AoE saves
+- **Current state:** `resolve_spell_effect()` and
+  `resolve_spell_aoe_target()` both take a precomputed `target_save_total`
+  and compare it to the save DC. There is **no `advantage`/`disadvantage`
+  parameter anywhere** in either spell-resolution path.
+- **Why it's a feature, not a fix:** Save advantage/disadvantage is **not
+  supported in either single-target or AoE spells** — so this is not an
+  inconsistency between the two paths. Adding it touches the save-total
+  computation, both resolution functions, the DM signature, and the card
+  components. Genuinely new scope.
 
-### Backend — +38 (2891 total)
-- **`test_spell_aoe.py`** (NEW, 14) — `prepare_cast` (success, cantrip, no
-  slots, unknown, non-caster, component-blocked, slot actually consumed, does
-  NOT resolve effect); `resolve_spell_aoe_target` (save pass = half, fail =
-  full, no-save = full).
-- **`test_dm_spell_aoe_functions.py`** (NEW, 10) — `dm_cast_spell_aoe`: one
-  slot consumed, per-target saves, total_damage summation, failed cast, empty
-  targets, serialization.
-- **`test_spell_aoe_events_api.py`** (NEW, 14) — `/action` Fireball at 3
-  goblins: one slot + persisted, one summary `spell_cast` (`is_aoe=True`),
-  three `damage` events with per-target `made_save`, combatant HP reduced,
-  concentration not started (Fireball), streaming emits + parses SSE, AoE
-  concentration spell starts concentration, graceful degradation (no encounter /
-  empty target_ids).
-- **`test_game_events.py`** (+2) — `spell_cast` AoE fields round-trip.
+Both items remain correctly classified as **"draft a design doc if Mike
+green-lights any."** No action taken this run.
 
-### Frontend — +19 (393 total)
-- **`gameEvents.test.ts`** (+8) — `spellAoeSummary` (4), `summarizeEvent` AoE
-  branch (1), `damageSummary` save badge (3).
-- **`SpellCastCard.test.tsx`** (+8) — AoE mode: header, target-count badge,
-  total-damage badge, save DC badge, slot badge, no HP bar, failed AoE, dismiss.
-- **`DamageCard.test.tsx`** (+3) — saved badge, failed-save badge, absent badge.
+## Decision Points for Mike (next green-light candidates)
 
-## Verification
+In priority order, from the standing directive:
 
-- ✅ `uv run pytest` — **2891 backend tests passing** (was 2853, +38)
-- ✅ `npx tsc --noEmit` — no type errors
-- ✅ `npm run build` — clean production build (main bundle 340 KB)
-- ✅ `npm test` — **393 frontend tests passing** (was 374, +19)
-- ✅ `git push origin develop` — pushed (`ab74e3d..178b6ac`)
+1. **Phase 6 — Story State** — Promote the existing heuristic quest/flag
+   detection into engine-resolved `game_actions` (`set_story_flag`,
+   `offer_quest`). We already have quest detection + game flags via DSPy;
+   this would make them deterministic/engine-driven. Medium scope.
+2. **Cross-phase polish** — (a) first-class enemy AoE spellcasting with
+   player concentration coupling, (b) save advantage/disadvantage across
+   both spell paths. Small-to-medium scope each.
+3. **Multiplayer foundation (#13)** — party/session model + WebSocket
+   fan-out. Largest scope; spans multiple runs.
+4. **Content expansion** — arbitrary (more spells/enemies/magic items/
+   adventures). Distribution already balanced; low urgency.
 
-## Roadmap status — ALL PHASES COMPLETE ✅
+## Files Changed This Run
 
-- ✅ Phase 1 — Dice + Check Prompts
-- ✅ Phase 2 — Combat Resolution
-- ✅ Phase 3 — Spell Casting
-- ✅ Phase 4 — Inventory Operations
-- ✅ Phase 5 — Condition Application
-- ✅ Phase 3.5a — Concentration Tracking
-- ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
-- ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
+- `dev-agent-report.md` — this report (regenerated per convention; committed
+  so the working tree is clean for the next run/agent).
 
-The DM is now a full tool-calling agent. No further DM Function Calling phases
-are scheduled.
+No source code, tests, or docs changed — the project is healthy and in sync.
 
-## Next run
+## Next Run
 
-No outstanding DM Function Calling work. The dev agent should:
-- Keep the full suite green (`uv run pytest`, `npm test`)
-- Watch for README/PROGRESS drift and sync them
-- Pick up any quick fixes / content registry expansions if surfaced
-- Consider drafting a Phase 6 design doc (Story State — `set_story_flag` /
-  `offer_quest` as explicit game_actions) only if Mike green-lights it
+Unless Mike green-lights one of the candidates above, the next run should
+repeat this health check: `uv run pytest` + `npm test` + drift scan. If a
+green-light lands, the cron directive will be updated and the dev agent will
+pick up the new phase automatically.
