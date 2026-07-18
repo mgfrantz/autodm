@@ -6,6 +6,7 @@
 > Phase 4 IMPLEMENTED ✅ — inventory operations (give_item/remove_item/equip_item/use_item) are live
 > Phase 5 IMPLEMENTED ✅ — condition application (apply_condition/remove_condition) is live
 > Phase 3.5 IMPLEMENTED ✅ — concentration tracking (reactive hooks + Con-save checks) is live
+> Phase 3.5b GREEN-LIT — AoE multi-target spell resolution (cast_spell_aoe) — executing
 > UI polish IMPLEMENTED ✅ — dice tumble (~480ms), HP-bar shake, collapsed-by-default old event cards are live (roadmap item #7)
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
@@ -2268,8 +2269,315 @@ Inline concentration card:
 
 ### What Phase 3.5 Does NOT Include (deferred)
 
-- AoE multi-target spell resolution (Phase 3.5b — future)
+- AoE multi-target spell resolution (Phase 3.5b — implemented below)
 - Monster/NPC concentration tracking (the Encounter doesn't persist monster
   concentration; would need a Combatant-level concentration field)
 - Concentration spell duration timers (round-by-round tick-down; currently
   concentration persists until explicitly broken/ended)
+
+---
+
+## Phase 3.5b Implementation Plan: AoE Multi-Target Spell Resolution
+
+> **Status:** GREEN-LIT by standing Mike green-light (2026-07-17) — executing.
+> **Scope:** Let the DM cast one spell at multiple combatants in a single
+> action — one slot consumed, one damage roll base, but **per-target saving
+> throws** and per-target HP application. The classic case is Fireball hitting
+> a cluster of goblins: each goblin rolls its own Dex save (some take full
+> damage, some half), but only one 3rd-level slot is spent.
+> **Approach:** Same Option C (Hybrid) as Phases 1-5/3.5a.
+
+### Why Phase 3.5b Now (the problem it solves)
+
+Today the DM can only emit **single-target** `cast_spell` actions. For an AoE
+spell like Fireball the DM is forced to either:
+
+1. Emit one `cast_spell` against one goblin (the others take nothing —
+   mechanically wrong), or
+2. Emit N `cast_spell` actions (one per goblin) — which **consumes N spell
+   slots** and rolls N independent damage pools (also wrong; an AoE spell
+   rolls its damage **once** and each target saves against that same damage).
+
+Neither is correct 5e. Phase 3.5b adds a dedicated `cast_spell_aoe` action
+that consumes **one slot**, rolls the spell damage **once**, then resolves a
+**separate save per target** against that shared damage — exactly PHB p.204
+("Each target makes a saving throw… If a spell deals damage to more than one
+target at the same time, roll the damage once for all of them.").
+
+### The architectural insight (vs Phase 3 single-target)
+
+Phase 3's `dm_cast_spell` calls `Spellbook.cast()`, which **fuses two
+concerns**: (a) consume a slot, and (b) resolve the effect once against one
+target. That coupling is fine for single-target spells but **breaks for AoE**,
+where one slot must feed N independent per-target resolutions.
+
+The fix is to **split** slot-consumption from effect-resolution:
+
+| Concern | Phase 3 (single-target) | Phase 3.5b (AoE) |
+|---------|-------------------------|------------------|
+| Slot consumed by | `Spellbook.cast()` (fused) | new `Spellbook.prepare_cast()` (slot only) |
+| Effect resolved by | `Spellbook.cast()` → `resolve_spell_effect()` (once) | `resolve_spell_effect()` called **once per target** |
+| Damage roll | once (inside `cast()`) | once (the spell's damage is rolled fresh per target by `resolve_spell_effect`; see note) |
+| Save roll | one target's save | **N independent saves** (one per target) |
+
+> **Note on "damage rolled once":** `resolve_spell_effect()` rolls
+> `spell.roll_damage()` internally. For a faithful "roll once, apply to all"
+> model we roll the **full** damage once and re-use it for every target,
+> halving it per-target only when that target makes its save. This is
+> implemented by rolling the base damage once in the handler and passing it
+> through, rather than letting each per-target `resolve_spell_effect` call
+> re-roll. (See Backend step 4 for the exact mechanism — a small
+> `resolve_spell_aoe_target()` helper that takes the pre-rolled full damage.)
+
+### Game action the DM can emit
+
+| Action | Args | Effect |
+|--------|------|--------|
+| `cast_spell_aoe` | `{"spell_id": "fireball", "target_ids": ["goblin_1", "goblin_2", "goblin_3"], "slot_level": null}` | Cast one spell at multiple combatants — one slot, one damage roll, per-target saves |
+
+`target_ids` is a list of combatant IDs from the `COMBATANT_ROSTER`. The
+single-target `cast_spell` path is **untouched** (backward compatible).
+
+### Backend Implementation
+
+#### 1. `backend/app/engine/spells.py` — Add `Spellbook.prepare_cast()`
+
+Extract the validation + slot-consumption half of `cast()` into a reusable
+method that does NOT resolve the effect:
+
+```python
+def prepare_cast(
+    self,
+    spell_id: str,
+    slot_level: Optional[int] = None,
+    active_conditions: Optional[list[str]] = None,
+) -> CastOutcome:
+    """Validate + consume a spell slot WITHOUT resolving the effect.
+
+    Returns a CastOutcome with ``spell`` + ``slot_level`` set and
+    ``effect=None``. Use for AoE where the effect is resolved per-target via
+    :func:`resolve_spell_effect` (or :func:`resolve_spell_aoe_target`).
+
+    Mirrors the front half of :meth:`cast` exactly, so failure modes (unknown
+    spell, non-caster, not known/prepared, component-blocked, no slots) are
+    identical.
+    """
+```
+
+`cast()` is left as-is (no refactor — avoid risk to Phase 3). `prepare_cast`
+is a near-exact copy of the validation/slot block, returning
+`CastOutcome(success=True, message="Prepared.", effect=None, slot_level=used_level, spell=spell)`.
+
+#### 2. `backend/app/engine/spells.py` — Add `resolve_spell_aoe_target()` helper
+
+A thin per-target resolver that takes the **pre-rolled full damage** (so all
+targets share one damage pool, per PHB p.204) and a single target's save total:
+
+```python
+def resolve_spell_aoe_target(
+    spell: Spell,
+    slot_level: Optional[int],
+    full_damage: int,
+    target_save_total: Optional[int],
+    spell_save_dc: Optional[int] = None,
+) -> SpellEffectResult:
+    """Resolve one AoE target's outcome against a shared damage roll.
+
+    For save spells: made_save = target_save_total >= DC; damage = full//2 on
+    a save, else full. For auto-damage AoE (Magic Missile multi-dart is
+    single-target; not used here) damage = full. Attack-roll AoE is rare and
+    not supported by this helper (fall back to resolve_spell_effect).
+    """
+```
+
+This guarantees **one damage roll** feeds all targets (the handler rolls
+`spell.roll_damage()` once and passes `full_damage` to every per-target call).
+
+#### 3. `backend/app/engine/dm_functions.py` — Add `dm_cast_spell_aoe()`
+
+```python
+def dm_cast_spell_aoe(
+    spellbook: Spellbook,
+    spell_id: str,
+    target_specs: list[dict],   # [{name, target_ac?, target_save_total?}, ...]
+    slot_level: int | None = None,
+    caster_mod: int = 0,
+    active_conditions: list[str] | None = None,
+) -> tuple[GameEvent, list[dict]]:
+    """Resolve an AoE spell: one slot, one damage roll, per-target saves.
+
+    Returns (summary_spell_cast_event, per_target_results) where
+    per_target_results is a list of dicts:
+      {name, damage, made_save, half_damage, damage_type}
+    The caller applies damage to each encounter combatant's HP and emits the
+    follow-up DAMAGE events (it owns the Encounter; dm_functions does not).
+    """
+```
+
+Internally:
+1. `spellbook.prepare_cast(spell_id, slot_level, active_conditions)` → on
+   failure, return a failed `spell_cast` summary event + empty results.
+2. Roll `full_damage = spell.roll_damage(spellbook.level, slot)` **once**.
+3. For each target spec, call `resolve_spell_aoe_target(...)` → collect
+   per-target `{name, damage, made_save, half_damage, damage_type}`.
+4. Build the summary `spell_cast` event with `is_aoe=True`, `target_count`,
+   `total_damage` (sum of per-target damage), `save_dc`, `save_ability`,
+   `damage_type`, and `slots_remaining`. `target` = "" (no single HP bar).
+
+Defensive try/except throughout (never crash the pipeline).
+
+#### 4. `backend/app/api/game.py` — `cast_spell_aoe` handler in `_resolve_game_actions()`
+
+Add `_AOE_SPELL_ACTION = "cast_spell_aoe"`. New `elif func == "cast_spell_aoe":`
+branch (parallel to `cast_spell`):
+
+- Same guards as `cast_spell` (character, spellbook, caster, spell_id).
+- Read `target_ids = args.get("target_ids") or []`. If empty / no encounter →
+  emit a failed `spell_cast` summary ("AoE spell requires target_ids and an
+  active encounter.") and continue.
+- Build `target_specs` by looking up each `target_id` in the encounter:
+  `{name, target_save_total}` (via `_combatant_save_total`).
+- Call `dm_cast_spell_aoe(...)`.
+- Append the summary `spell_cast` event.
+- For each per-target result with `damage > 0`: apply to the matching
+  combatant (`take_damage`), then append a `DAMAGE` event carrying
+  `made_save` + `half_damage` (so DamageCard can show save outcome) + the
+  combatant's HP.
+- **Concentration coupling:** if the AoE spell is a concentration spell and
+  the cast succeeded, run the same concentration-start logic as `cast_spell`
+  (auto-end previous + start new + persist `game_state["concentration"]`).
+  Most AoE damage spells (Fireball, Lightning Bolt, Shatter, Burning Hands)
+  are non-concentration, but Stinking Cloud / Cloudkill / Wall of Fire are —
+  handle it correctly.
+- `has_spell` detection extended to include `cast_spell_aoe` so the encounter
+  loads for coupling.
+
+#### 5. `backend/app/llm/dspy_signatures.py` — Expand `DMActionableNarration`
+
+Add AoE guidance + `cast_spell_aoe` to the function list + args schema:
+
+```
+- For AoE SPELLS (Fireball, Lightning Bolt, Shatter, Burning Hands, etc. —
+  any spell that affects multiple creatures in an area):
+  - Use cast_spell_aoe to hit MULTIPLE combatants with ONE cast. This
+    consumes ONE spell slot and rolls damage ONCE; each target rolls its own
+    save. NEVER emit multiple cast_spell actions for one AoE spell (that
+    would burn multiple slots).
+  - Args: {"spell_id": "fireball",
+           "target_ids": ["goblin_1", "goblin_2", "goblin_3"],
+           "slot_level": null}
+  - target_ids is a LIST of combatant IDs from COMBATANT_ROSTER. Use it for
+    any spell whose description mentions an area (sphere, cone, line, radius,
+    cylinder) or "each creature in".
+```
+
+Add `cast_spell_aoe` to the `function` enum and the args schema list.
+
+#### 6. `backend/app/engine/game_events.py` — Extend `spell_cast` factory
+
+Add optional AoE fields to `GameEvent.spell_cast()` (all optional, default
+off, so existing single-target events are unchanged):
+
+```python
+is_aoe: bool = False,
+target_count: int | None = None,
+total_damage: int | None = None,
+```
+
+Stored in `data`. The factory already supports arbitrary fields via the
+data dict, so this is additive.
+
+### Frontend (Steps 7-10)
+
+#### 7. `types/index.ts` — Add AoE fields to `GameEventData`
+
+Add `is_aoe?: boolean`, `target_count?: number`, `total_damage?: number` to
+the `spell_cast` section. Add `made_save?: boolean | null` and `half_damage?`
+(already present) to the `damage` section so DamageCard can show save outcome.
+
+#### 8. `utils/gameEvents.ts` — AoE summary helper
+
+Add `spellAoeSummary(spellName, level, school, targetCount, totalDamage,
+damageType, saveAbility, saveDc)` → e.g.
+`"Fireball (3rd-level evocation) — hits 3 targets for 42 fire damage"`.
+Update `summarizeEvent` to use it when `d.is_aoe`. Update `damageSummary` to
+append "(saved — half)" when `made_save` is true.
+
+#### 9. `components/SpellCastCard.tsx` — AoE summary mode
+
+When `d.is_aoe` is true, render an AoE summary variant:
+- Spell name + school + level + 🎯 icon
+- "Hits **N** targets" badge + `💥 X <type> total damage`
+- Save DC + ability badge (e.g., "DC 15 dex")
+- Slot expended badge
+- **No single HP bar** (multiple targets). Per-target HP lives in the
+  follow-up DamageCards.
+- Dismissible.
+
+#### 10. `components/DamageCard.tsx` — Optional save-outcome badge
+
+When `d.made_save !== undefined`, show a small badge:
+- `made_save === true` → "🛡️ Saved (half damage)" (amber)
+- `made_save === false` → "💫 Failed save" (the damage is full)
+
+Backward compatible: existing damage events (no `made_save`) render unchanged.
+
+### Test Plan (Step 11) — ~22 backend, ~12 frontend
+
+- **`test_spell_aoe.py`** (NEW, engine) — `Spellbook.prepare_cast` (success,
+  cantrip, no slots, unknown, non-caster, component-blocked; slot actually
+  consumed; does NOT resolve effect). `resolve_spell_aoe_target` (save pass =
+  half, save fail = full, no-save = full, auto-damage).
+- **`test_dm_spell_aoe_functions.py`** (NEW) — `dm_cast_spell_aoe`: one slot
+  consumed, per-target saves, total_damage summation, failed cast (no slots),
+  empty target list, serialization of summary event.
+- **`test_spell_aoe_events_api.py`** (NEW) — `/action` with `cast_spell_aoe`
+  Fireball at 3 goblins: one slot consumed + persisted, one `spell_cast`
+  summary (`is_aoe=True`, `target_count=3`), three `damage` events with
+  per-target `made_save`, combatant HP reduced, concentration not started
+  (Fireball non-concentration), streaming emits + parses SSE, AoE
+  concentration spell starts concentration, graceful degradation (no
+  encounter / empty target_ids → failed summary event).
+- **`test_game_events.py`** (extended) — `spell_cast` AoE fields round-trip.
+- **`gameEvents.test.ts`** (extended) — `spellAoeSummary`, `summarizeEvent`
+  AoE branch, `damageSummary` save badge.
+- **`SpellCastCard.test.tsx`** (extended) — AoE mode renders target count +
+  total damage + no HP bar.
+- **`DamageCard.test.tsx`** (extended) — save badge (saved/failed/absent).
+
+### Key Design Decisions
+
+1. **New `cast_spell_aoe` action (not extending `cast_spell`)** — keeps the
+   single-target path untouched (zero risk to Phase 3) and makes the DM's
+   intent explicit. Matches the design doc's earlier "future `cast_spell_aoe`
+   function" hint.
+2. **Split slot-consumption from resolution** — new `Spellbook.prepare_cast()`
+   consumes the slot; per-target `resolve_spell_aoe_target()` resolves. This
+   is the key enabler. `cast()` is NOT refactored (avoid Phase 3 risk).
+3. **One damage roll, N saves** — per PHB p.204, AoE damage is rolled once
+   and each target saves against it. The handler rolls `full_damage` once and
+   passes it to every per-target resolver.
+4. **One summary event + N damage events** — the `spell_cast` summary shows
+   the cast (slot, DC, total damage, target count, no HP bar); each
+   per-target `damage` event shows that target's HP bar + save outcome. This
+   reuses the Phase 2 DamageCard and the Phase 3 SpellCastCard (extended).
+5. **Concentration coupling preserved** — AoE concentration spells start
+   concentration once (same logic as single-target). Most AoE damage spells
+   are non-concentration, but the path is correct.
+6. **Player excluded from enemy AoE** — the DM targets enemy clusters; the
+   player is a valid `target_id` too (a monster's AoE could hit the player),
+  handled by the same per-target path (player HP via `character.current_hp`).
+7. **Graceful degradation** — missing character/spellbook/encounter, empty
+   `target_ids`, unknown target IDs → failed summary event, no crash.
+8. **Backward compatible** — all new fields optional; existing single-target
+   `cast_spell` events and cards render unchanged.
+
+### Verification Checklist
+
+- [ ] `uv run pytest` — all tests pass (+~22 new)
+- [ ] `npx tsc --noEmit` — no type errors
+- [ ] `npm run build` — clean build
+- [ ] `npm test` — all frontend tests pass (+~12 new)
+- [ ] PROGRESS.md updated
+- [ ] Commit `feat: DM function calling Phase 3.5b — AoE multi-target spell resolution`
+- [ ] `git push origin develop`
