@@ -960,6 +960,39 @@ register_spell(Spell("Reverse Gravity", 7, SpellSchool.TRANSMUTATION,
     casting_time="1 action", range="100 feet", components="V, S, M",
     save_ability="dex", concentration=True, duration="up to 1 minute"))
 
+# Level 7 PHB completion — 7 iconic spells rounding the tier to 18/18.
+# (Divine Word, Etherealness, Mordenkainen's Magnificent Mansion,
+#  Mordenkainen's Sword, Project Image, Sequester, Symbol.)
+register_spell(Spell("Divine Word", 7, SpellSchool.ABJURATION,
+    description="You utter a divine word; each hostile creature of your choice you can hear within range suffers an effect by current HP — 20 or fewer dies, 21-30 stunned 1 minute, 31-40 blinded and deafened 1 minute, 41-50 deafened 1 minute (no save; no effect on creatures above 50 HP). Celestials, elementals, fey, and fiends within range are banished to their home plane if they fail a Charisma save. No save applies to the HP-tiered effects.",
+    casting_time="1 action", range="60 feet", components="V",
+    save_ability="cha", duration="instantaneous"))
+register_spell(Spell("Etherealness", 7, SpellSchool.TRANSMUTATION,
+    description="You step into the Border Ethereal for the duration, able to move through the material plane and unseen by those on it. You can end the spell early, and it ends if you cast a spell or make an attack.",
+    casting_time="1 action", range="self", components="V, S",
+    duration="up to 8 hours"))
+register_spell(Spell("Mordenkainen's Magnificent Mansion", 7, SpellSchool.CONJURATION,
+    description="A shimmering portal opens to a sprawling extradimensional mansion furnished and staffed to your taste; up to a chosen number of creatures may enter and take a short or long rest in safety. The mansion vanishes and its guests are expelled when the spell ends.",
+    casting_time="1 action", range="300 feet", components="V, S, M",
+    duration="24 hours"))
+register_spell(Spell("Mordenkainen's Sword", 7, SpellSchool.EVOCATION,
+    description="A luminous blade of force springs into being and hovers near you. On each of your turns for the duration you can use a bonus action to move it and make one melee spell attack against a creature within 5 feet of it, dealing 3d10 force damage on a hit. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    requires_attack_roll=True, damage_dice_count=3, damage_dice_sides=10,
+    damage_type="force", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Project Image", 7, SpellSchool.ILLUSION,
+    description="You create an illusory copy of yourself that can appear anywhere within range. Through its senses you can see, hear, and speak as though you stood in its space, and you can cast spells as if you were there; the image is intangible and vanishes if a creature uses an action to determine it is an illusion. Concentration.",
+    casting_time="1 action", range="500 miles", components="V, S, M",
+    concentration=True, duration="up to 1 day"))
+register_spell(Spell("Sequester", 7, SpellSchool.TRANSMUTATION,
+    description="You hide a willing creature or an object in a pocket dimension, suspended in time and unreachable by any means, until you use an action to release it or the spell is dispelled. The target does not age and is unaware of passing time.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="until dispelled"))
+register_spell(Spell("Symbol", 7, SpellSchool.ABJURATION,
+    description="Over an hour you inscribe a potent rune onto a surface and set a trigger; when activated, creatures in the area make a saving throw. Default glyph is a Con save (Death: 10d10 necrotic on a failed save, half on success). Variants and their saves: Discord (Con), Fear (Wis), Hopelessness (Cha), Insanity (Int), Pain (Con), Sleep (Wis), Stunning (Wis). No concentration; lasts until triggered or dispelled.",
+    casting_time="1 hour", range="touch", components="V, S, M",
+    save_ability="con", duration="until dispelled or triggered"))
+
 # --- Level 8 ---------------------------------------------------------------
 register_spell(Spell("Power Word Stun", 8, SpellSchool.ENCHANTMENT,
     description="Creature with 150 HP or less is stunned. No save.",
@@ -1000,6 +1033,42 @@ register_spell(Spell("Incendiary Cloud", 8, SpellSchool.CONJURATION,
 register_spell(Spell("Mind Blank", 8, SpellSchool.ABJURATION,
     description="The target is immune to psychic damage and its mind cannot be read by any means for 24 hours.",
     casting_time="1 action", range="touch", components="V, S",
+    duration="24 hours"))
+
+# Level 8 PHB completion — 8 iconic spells rounding the tier to 18/18.
+# (Animal Shapes, Antipathy/Sympathy, Clone, Control Weather, Demiplane,
+#  Glibness, Holy Aura, Telepathy.)
+register_spell(Spell("Animal Shapes", 8, SpellSchool.TRANSMUTATION,
+    description="Choose any number of willing creatures within range; each transforms into a beast of challenge rating 4 or lower of your choice, gaining its game statistics while retaining alignment and personality. You can use an action on later turns to transform them again. Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    concentration=True, duration="up to 24 hours"))
+register_spell(Spell("Antipathy/Sympathy", 8, SpellSchool.ENCHANTMENT,
+    description="Over an hour you cause a target to attract or repel a chosen kind of intelligent creature. Creatures of the chosen kind that come within 60 feet of the target must make a Wisdom save: on a failure they are charmed (sympathy) or frightened (antipathy) by it while they remain in range and cannot approach. The effect lasts until the spell ends or is dispelled; no concentration.",
+    casting_time="1 hour", range="60 feet", components="V, S, M",
+    save_ability="wis", duration="10 days"))
+register_spell(Spell("Clone", 8, SpellSchool.NECROMANCY,
+    description="Over an hour you grow a duplicate of a living creature in a sealed vessel. When that creature dies, its soul transfers to the clone, which awakens as a full copy of the original at the time the flesh was taken. The original body crumbles to dust.",
+    casting_time="1 hour", range="touch", components="V, S, M",
+    duration="indefinite"))
+register_spell(Spell("Control Weather", 8, SpellSchool.TRANSMUTATION,
+    description="You alter the weather in a 5-mile radius centered on you for the duration, raising or lowering temperature, clearing or bringing precipitation, and changing wind one stage per round. Concentration.",
+    casting_time="10 minutes", range="self (5 miles)", components="V, S, M",
+    concentration=True, duration="up to 8 hours"))
+register_spell(Spell("Demiplane", 8, SpellSchool.CONJURATION,
+    description="A shadowy door appears on a flat surface, opening onto an empty 30-foot-cubic demiplane that lasts for the duration; objects and willing creatures can pass through. Each casting of demiplane links to a different demiplane unless you consciously recall one you have created before.",
+    casting_time="1 action", range="60 feet", components="S",
+    duration="1 hour"))
+register_spell(Spell("Glibness", 8, SpellSchool.TRANSMUTATION,
+    description="For the duration you can replace any Charisma check or attack roll result lower than 15 with a 15, and magic that would discern whether you are telling the truth reveals that you believe your lies. Self-buff; no save.",
+    casting_time="1 action", range="self", components="V",
+    duration="1 hour"))
+register_spell(Spell("Holy Aura", 8, SpellSchool.ABJURATION,
+    description="Divine light surrounds you in a 30-foot aura for the duration: you and allied creatures have advantage on all saving throws, and other creatures have disadvantage on attack rolls against you. Fiends and undead that hit an ally in the aura with a melee attack must make a Constitution save or be blinded. Concentration.",
+    casting_time="1 action", range="self (30-foot radius)", components="V, S, M",
+    save_ability="con", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Telepathy", 8, SpellSchool.EVOCATION,
+    description="For 24 hours, you and a willing creature you touch can communicate telepathically through a private link, sharing words, images, and sounds across any distance on the same plane.",
+    casting_time="1 action", range="unlimited", components="V, S, M",
     duration="24 hours"))
 
 # --- Level 9 ---------------------------------------------------------------
