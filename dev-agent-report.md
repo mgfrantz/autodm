@@ -1,107 +1,101 @@
-# Dev Agent Report — Verification & Health Check
+# Dev Agent Report — Orphaned GameSave Crash Fix
 
 **Date:** 2026-07-18
-**Run type:** Maintenance / verification (DM Function Calling roadmap COMPLETE)
+**Run type:** Maintenance / hardening (DM Function Calling roadmap COMPLETE)
 **Branch:** `develop`
+**Commit:** `450395a`
 
 ## Summary
 
-The full DM Function Calling roadmap is **complete and healthy**. This was a
-scheduled maintenance run per the standing directive in `PROGRESS.md` →
-*"NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅"*, which
-instructs the dev agent to: keep the suite green, watch for README/PROGRESS
-drift, and pick up quick fixes if surfaced.
+The DM Function Calling roadmap is complete and the suite was green, so this
+scheduled run executed the standing directive's "quick fixes / hardening"
+track. The prior health-check report (commit `afc7a4d`) explicitly flagged a
+concrete bug to "investigate the starter-adventure save flow separately": **2
+orphaned `game_saves` in the production dev DB** whose `character_id` /
+`world_id` pointed to rows that no longer existed, which "may error" on load.
 
-No phase work was scheduled — every phase (1–5, 3.5, 3.5b, UI polish) shipped
-on prior runs. This run confirms the project is green and surfaces the
-decision points for Mike's next green-light.
+I investigated, found the **root cause + a wider blast radius**, and shipped a
+complete fix: root-cause cascade, a defensive layer, a new cleanup endpoint,
+and a data cleanup. This was not a new feature — it is hardening of an
+edge-case surfaced by real play data.
 
-## Verification Results (all green)
+## The Bug (and why it was worse than "may error")
 
+A `GameSave` requires both a Character and a World (both FKs are NOT NULL).
+But if either parent row was deleted **without cascading** — via raw SQL, a
+partial DB reset, or the legacy `db.delete(character)` (the `Character.saves`
+relationship had no cascade) — the FK became dangling and `save.character`
+resolved to `None`. Any endpoint that dereferenced it (`save.character.name`)
+then raised `AttributeError: 'NoneType' …` → **500 Internal Server Error**.
+
+Blast radius: **`GET /api/game/`** (`list_games`) dereferences `s.character.name`
+/ `s.world.name` for *every* save in a list comprehension. A single orphaned
+save took down the **entire "continue game" menu** — not just the broken game.
+Likewise `GET /api/game/{id}/state`. This is the worst kind of failure: one
+corrupted save bricks the whole load screen.
+
+Root cause confirmed in the data: the dev DB held `game_saves` 1 & 2
+("The Cursed Mines of Emberdeep") referencing characters 1,2 and worlds 9,1 —
+none of which existed (0 characters, 0 worlds).
+
+## What Shipped
+
+### 1. Root cause — relationship cascade (`backend/app/models/models.py`)
+Added `cascade="all, delete-orphan"` to:
+- `Character.saves`
+- `World.world_saves`
+
+Now `DELETE /characters/{id}` (and any ORM-driven world/character delete)
+auto-removes dependent `GameSave` rows, and those cascade to their `SaveSlot`s
+via the existing cascade. **No future orphans from character/world deletion.**
+
+### 2. Defensive layer — orphan-resilient list/load (`backend/app/api/game.py`)
+- New `_save_is_orphaned(save)` helper (`save.character is None or save.world is None`).
+- `list_games` **skips** orphaned saves with a `logger.warning` — the menu
+  never crashes and never lists unplayable games.
+- `get_game_state` returns a clear **410 Gone**
+  ("This game is corrupted … Delete it via DELETE /game/{id}") instead of a 500.
+
+### 3. New `DELETE /api/game/{game_id}` endpoint (`backend/app/api/game.py`)
+There was previously **no way to delete a whole game**. The new endpoint deletes
+the `GameSave` (SaveSlots cascade) and is the **recovery path** for corrupted
+saves — it works on orphans too (deletes by the save's own identity, so the
+dangling FKs are irrelevant). Frontend `deleteGame(gameId)` client added
+(`frontend/src/stores/api.ts`).
+
+### 4. Data cleanup — production dev DB
+Removed the 2 orphaned `game_saves` + their 2 `save_slots` (0 characters /
+0 worlds existed, so they were unrecoverable). `game_saves`: 2→0,
+`save_slots`: 2→0. The flagged issue is fully closed.
+
+## Files Changed
+- `backend/app/models/models.py` — cascade on `Character.saves` + `World.world_saves`.
+- `backend/app/api/game.py` — `_save_is_orphaned()`, hardened `list_games` +
+  `get_game_state`, new `DELETE /{game_id}`.
+- `frontend/src/stores/api.ts` — `deleteGame()` client.
+- `backend/tests/test_game_lifecycle.py` — NEW, 11 tests.
+- `PROGRESS.md` — new COMPLETED section + banner test count (2891→2902).
+- `README.md` — test count sync (2891+393=3284 → 2902+393=3295).
+
+## Tests — +11 backend (`test_game_lifecycle.py`, NEW)
+- `list_games` excludes orphaned saves / keeps playable saves alongside orphans.
+- `get_game_state` → 410 for orphaned save; → 200 for valid save.
+- `DELETE /game/{id}` removes save / cascades save_slots / works on orphan /
+  404 for missing game.
+- Relationship cascade: delete character → GameSaves gone; delete world →
+  GameSaves gone; delete character → GameSaves + SaveSlots gone.
+
+## Verification (all green)
 | Check | Result |
 |-------|--------|
-| `uv run pytest` (backend) | ✅ **2891 passing**, 0 failures (12 warnings — all third-party DSPy `InputField`/`OutputField` `prefix=` deprecations, outside our control) |
+| `uv run pytest` (backend) | ✅ **2902 passing** (+11), 0 failures (12 third-party DSPy warnings) |
 | `npx tsc --noEmit` (frontend) | ✅ No type errors |
-| `npm run build` (frontend) | ✅ Clean production build — main bundle **339.67 KB** (99.70 KB gzip) |
-| `npm test` (frontend, Vitest) | ✅ **393 passing** across 28 test files |
-
-## README / PROGRESS Drift Check — NO DRIFT
-
-Verified the public-facing `README.md` against `PROGRESS.md` and the live
-engine. All counts match exactly:
-
-| Content | README claims | Engine actual | Match |
-|---------|---------------|---------------|-------|
-| Spells | 108 | **108** (L0:14, L1:20, L2:16, L3:14, L4:8, L5:8, L6:7, L7:7, L8:7, L9:7) | ✅ |
-| Enemies | 116 | **116** | ✅ |
-| Feats | 53 | — (unchanged) | ✅ |
-| Test total | 2891 backend + 393 frontend = 3284 | 2891 + 393 = 3284 | ✅ |
-
-Spell level distribution is already **balanced** across all tiers (7–8 spells
-per level for L4–L9), so the older *"still room for higher-level spells (4+)"*
-note in PROGRESS is effectively addressed — no pressing content gap.
-
-## Investigation: Cross-Phase Polish Candidates
-
-The design doc (`docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Future directions")
-lists two cross-phase polish items as candidates. I inspected the code to
-determine whether they are **bug fixes** (in-scope for a maintenance run) or
-**new features** (gated behind Mike's green-light). Conclusion: **both are
-new features**, not fixes.
-
-### 1. Concentration checks from AoE spell damage to the *player*
-- **Current state:** The `cast_spell_aoe` handler in `backend/app/api/game.py`
-  only resolves targets that are **encounter combatants**
-  (`for c in encounter.combatants`). The player is never an AoE target, so no
-  concentration check fires from AoE spell damage.
-- **Why it's a feature, not a fix:** Modeling an enemy caster's AoE hitting
-  the player requires an **enemy-spellcasting** model — currently the AoE
-  pipeline always uses the *player's* spellbook (`character.spellbook`). The
-  DM works around this today by emitting a plain `damage` action targeting
-  `"player"` (which *does* already trigger a concentration check via the
-  Phase 3.5 player-damage hook). So the gap is "no first-class enemy AoE
-  spell event," which is a design decision, not a regression.
-
-### 2. Advantage/disadvantage on AoE saves
-- **Current state:** `resolve_spell_effect()` and
-  `resolve_spell_aoe_target()` both take a precomputed `target_save_total`
-  and compare it to the save DC. There is **no `advantage`/`disadvantage`
-  parameter anywhere** in either spell-resolution path.
-- **Why it's a feature, not a fix:** Save advantage/disadvantage is **not
-  supported in either single-target or AoE spells** — so this is not an
-  inconsistency between the two paths. Adding it touches the save-total
-  computation, both resolution functions, the DM signature, and the card
-  components. Genuinely new scope.
-
-Both items remain correctly classified as **"draft a design doc if Mike
-green-lights any."** No action taken this run.
-
-## Decision Points for Mike (next green-light candidates)
-
-In priority order, from the standing directive:
-
-1. **Phase 6 — Story State** — Promote the existing heuristic quest/flag
-   detection into engine-resolved `game_actions` (`set_story_flag`,
-   `offer_quest`). We already have quest detection + game flags via DSPy;
-   this would make them deterministic/engine-driven. Medium scope.
-2. **Cross-phase polish** — (a) first-class enemy AoE spellcasting with
-   player concentration coupling, (b) save advantage/disadvantage across
-   both spell paths. Small-to-medium scope each.
-3. **Multiplayer foundation (#13)** — party/session model + WebSocket
-   fan-out. Largest scope; spans multiple runs.
-4. **Content expansion** — arbitrary (more spells/enemies/magic items/
-   adventures). Distribution already balanced; low urgency.
-
-## Files Changed This Run
-
-- `dev-agent-report.md` — this report (regenerated per convention; committed
-  so the working tree is clean for the next run/agent).
-
-No source code, tests, or docs changed — the project is healthy and in sync.
+| `npm run build` (frontend) | ✅ Clean build — main bundle 339.67 KB (99.70 KB gzip) |
+| `npm test` (frontend) | ✅ **393 passing** (28 files) |
 
 ## Next Run
 
-Unless Mike green-lights one of the candidates above, the next run should
-repeat this health check: `uv run pytest` + `npm test` + drift scan. If a
-green-light lands, the cron directive will be updated and the dev agent will
-pick up the new phase automatically.
+Roadmap remains complete; no new phase is scheduled. The standing directive
+applies: keep the suite green, watch for drift, pick up quick fixes. Remaining
+Mike green-light candidates (unchanged from prior report): Phase 6 Story State,
+cross-phase spell polish, multiplayer foundation, content expansion.
