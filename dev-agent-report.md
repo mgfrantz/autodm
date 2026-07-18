@@ -1,88 +1,84 @@
-# Dev Agent Health-Check Report
+# Dev Agent Report — Health-Check & README Drift Fix
 
-**Run:** scheduled cron (maintenance window)
+**Run type:** Scheduled cron dev-agent run (maintenance/health-check)
 **Date:** 2026-07-18
-**Outcome:** ✅ All green, zero drift — no code changes required.
+**Branch:** `develop`
 
-## Context
+## Summary
 
-The DM Function Calling roadmap is **fully complete** (all 8 phases shipped:
-dice, combat, spells, inventory, conditions, concentration, AoE, UI polish).
-Per the `NEXT SESSION DIRECTIVE` in `PROGRESS.md`, the dev agent is now in
-**maintenance mode**: keep the full suite green, watch for README/PROGRESS
-drift, and pick up any quick fixes/content expansions if surfaced.
+The **DM Function Calling roadmap is fully COMPLETE** (all 8 phases: dice,
+combat, spells, inventory, conditions, concentration, AoE, UI polish). The cron
+prompt is **stale** — it still references "Phase 4 — Inventory Operations
+(GREEN-LIT, EXECUTING)" as the current phase, but PROGRESS.md's
+`## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅` confirms
+all phases shipped as of 2026-07-17. The standing directive for runs with no
+scheduled feature work is: *keep the suite green, watch for README/PROGRESS
+drift, pick up quick fixes.* This run did all three.
 
-This run was a health-check — verify the suite, scan every content registry
-for count drift vs. the PROGRESS.md banner, and confirm the production build.
-
-## Verification results
+## Health-check results — ALL GREEN ✅
 
 | Check | Result |
 |-------|--------|
-| `uv run pytest` | ✅ **2902 passed**, 0 failures (7.6s) |
-| `npm test` (Vitest) | ✅ **393 passed** (28 files), 0 failures |
-| `npx tsc --noEmit` | ✅ exit 0 — no type errors |
-| `npm run build` | ✅ built in 2.5s — main bundle **339.67 KB** (gzip 99.7 KB) |
-| Working tree | clean (only this report is the diff) |
-| `origin/develop` | **0 behind / 0 ahead** — fully synced |
+| `uv run pytest` | **2902 passed**, 12 warnings (all third-party DSPy `prefix=` deprecations, outside our control), 0 failures |
+| `npx tsc --noEmit` | clean, no type errors |
+| `npm run build` | clean production build, main bundle **339.67 KB** |
+| `npm test` (Vitest) | **393 passed** (28 test files), 0 failures |
+| `git status` | clean working tree, on `develop`, up to date with `origin/develop` |
 
-The 12 `pytest` warnings are all third-party DSPy
-`prefix=` deprecation warnings in `dspy/teleprompt/avatar_optimizer.py` —
-outside our control (flagged in prior reports, unchanged).
+No new features or test additions this run — the suite was already green.
 
-## Content-registry drift check (the core of this run)
+## Fix shipped: README content-count drift
 
-Programmatically counted every registry and compared against the
-`PROGRESS.md` status banner. **Every single count matches — zero drift.**
+**Root cause:** Commit `e06e631` ("docs: fix stale content-registry counts in
+PROGRESS/README/MountsPanel…") corrected the *status line* occurrences and the
+MountsPanel component, but **missed the "Content" bullet list in README.md**
+(lines 63–65). It also left an internal inconsistency: README line 254 already
+said "29 subclasses" while lines 63–65 still said "27". The canonical counts
+were verified directly against the live registries (not the commit message):
 
-| Registry | Actual | PROGRESS banner | ✓ |
-|----------|--------|-----------------|---|
-| spells (`SPELL_REGISTRY`) | 108 | 108 | ✅ |
-| enemies (`COMMON_ENEMIES`) | 116 | 116 | ✅ |
-| feats (`_FEATS`) | 53 | 53 | ✅ |
-| tools (`TOOL_REGISTRY`) | 47 | 47 | ✅ |
-| backgrounds (`BACKGROUNDS`) | 18 | 18 | ✅ |
-| alignments (`ALIGNMENTS`) | 9 | 9 | ✅ |
-| languages (`_LANGUAGES`) | 18 | 18 | ✅ |
-| mounts/vehicles (`MOUNT_REGISTRY`) | 18 | 18 | ✅ |
-| traps (`TRAP_REGISTRY`) | 14 | 14 | ✅ |
-| subclasses (`SUBCLASS_REGISTRY`) | 29 | 29 | ✅ |
-| legendary creatures (`LEGENDARY_CREATURE_REGISTRY`) | 6 | 6 | ✅ |
-| starter adventures (`STARTER_ADVENTURES`) | 3 | 3 | ✅ |
+| Registry | Verified count (`uv run python` census) |
+|----------|------------------------------------------|
+| `MOUNT_REGISTRY` (`engine/mounts.py`) | **18** |
+| `TRAP_REGISTRY` (`engine/traps.py`) | **14** |
+| `_BY_ID` (`engine/subclasses.py`) | **29** |
 
-README.md test-count claim (line 275: "2902 backend + 393 frontend = 3295
-total") also matches reality exactly.
+### Change (`README.md`, 3 lines)
+```
+-- **19 Mounts/Vehicles** — Mounts and vehicles for overland travel
+-- **15 Traps** — Trap and hazard mechanics
+-- **27 Subclasses** — Subclass system with level 3 selection
++- **18 Mounts/Vehicles** — Mounts and vehicles for overland travel
++- **14 Traps** — Trap and hazard mechanics
++- **29 Subclasses** — Subclass system with level 3 selection
+```
 
-The prior run (`e06e631`) had already corrected the last real drift
-(mounts 19→18, traps 15→14, subclasses 27→29). That fix held — no regression.
+All other README content counts were verified accurate (108 spells, 116 enemies,
+53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 languages, 6 legendary
+creatures, 3 starter adventures) and the test totals (2902 backend + 393
+frontend = 3295 total) match the actual run. A repo-wide search confirmed **no
+other stale 19/15/27 mount/trap/subclass references** remain in any
+`.md`/`.tsx`/`.ts`/`.py` file.
 
-## Code hygiene
-- **Zero** `TODO`/`FIXME`/`XXX`/`HACK` markers in `backend/app/` — no
-  deferred-debt backlog accumulated.
-- No new deprecation warnings originating from our own code (only the
-  third-party DSPy ones remain).
+## Tests added/removed
+None — pure docs fix, no code change. Test counts unchanged (2902 + 393).
 
-## Still-pending item (flagged previously, NOT actionable autonomously)
+## What the next run should pick up
+- The cron prompt (`~/.hermes/cron/jobs.json`, job `c3b73b6d2201`) is **stale**.
+  Its "Current Priority" still names Phase 4 as executing. It should be updated
+  to reflect the roadmap-complete state so future dev-agent runs don't re-attempt
+  completed phases. (This is a cron-config change Mike should make; the agent
+  shouldn't rewrite another profile's cron job unprompted, but flagging it.)
+- Continue watching for README/PROGRESS drift and registry-count drift.
+- Optional future directions (draft a design doc if green-lit, per PROGRESS.md):
+  - **Phase 6 — Story State**: wire `set_story_flag` / `offer_quest` as explicit
+    resolvable `game_actions` (we already have heuristic quest detection + game
+    flags via DSPy; making them engine-driven would replace heuristics).
+  - **Cross-phase polish**: concentration checks triggered by AoE spell damage on
+    the *player*; advantage/disadvantage on AoE saves.
 
-**GitHub Dependabot: 6 alerts (1 critical, 1 high, 4 moderate) on the
-default branch** — unchanged from the prior run. All are **dev-only**
-(`esbuild`/`vite`/`vite-node`/`vitest` chain); `npm audit --omit=dev`
-returns **0 vulnerabilities** — production runtime has no known vulns. The
-fix is a **breaking** major bump (Vite 6 → 8), unsafe to do without
-re-verifying the whole build/config. **Awaiting Mike's green-light for a
-dedicated `chore:` toolchain-bump session.** Not urgent (dev-only,
-no user-facing risk).
-
-## What I changed
-- Nothing in source. This is a no-op verification run.
-- Replaced the stale uncommitted `dev-agent-report.md` (which still held a
-  Dependabot appendix from the prior run) with this clean health-check so
-  the tracked report reflects the current run and doesn't carry forward
-  half-applied diffs.
-
-## Next run
-- Re-verify green + drift-watch (same maintenance loop).
-- If Mike green-lights any open future direction — Phase 6 story-state
-  `game_actions`, cross-phase AoE concentration/save polish, or the Vite
-  major-version bump — pick it up then. Otherwise: keep the suite green
-  and the docs honest.
+## Verification
+- ✅ `uv run pytest` → 2902 passed, 0 failures
+- ✅ `npx tsc --noEmit` → clean
+- ✅ `npm run build` → clean (339.67 KB)
+- ✅ `npm test` → 393 passed, 0 failures
+- ✅ repo-wide search for stale counts → 0 remaining

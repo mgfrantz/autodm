@@ -60,9 +60,9 @@ The DM doesn't just narrate — it calls real game engine functions. Results flo
 - **18 Backgrounds** — Character backgrounds with skill proficiencies and features
 - **9 Alignments** — DnD 5e alignments
 - **18 Language Systems** — Language families for communication mechanics
-- **19 Mounts/Vehicles** — Mounts and vehicles for overland travel
-- **15 Traps** — Trap and hazard mechanics
-- **27 Subclasses** — Subclass system with level 3 selection
+- **18 Mounts/Vehicles** — Mounts and vehicles for overland travel
+- **14 Traps** — Trap and hazard mechanics
+- **29 Subclasses** — Subclass system with level 3 selection
 - **6 Legendary Creatures** — Legendary actions and lair actions (MM p.11)
 - **3 Starter Adventures** — Curated one-shot worlds playable without an LLM key (Cursed Mines of Emberdeep, Whispering Moor, Shattered Spires)
 
