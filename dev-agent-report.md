@@ -1,93 +1,88 @@
-# Dev Agent Report — Doc-Drift Audit & Fix (2026-07-18)
+# Dev Agent Health-Check Report
+
+**Run:** scheduled cron (maintenance window)
+**Date:** 2026-07-18
+**Outcome:** ✅ All green, zero drift — no code changes required.
 
 ## Context
 
-This was a scheduled cron run. The DM Function Calling roadmap is **complete**
-(every phase shipped: dice, combat, spells, inventory, conditions, concentration,
-AoE, UI polish). The standing directive for the post-roadmap steady-state is:
+The DM Function Calling roadmap is **fully complete** (all 8 phases shipped:
+dice, combat, spells, inventory, conditions, concentration, AoE, UI polish).
+Per the `NEXT SESSION DIRECTIVE` in `PROGRESS.md`, the dev agent is now in
+**maintenance mode**: keep the full suite green, watch for README/PROGRESS
+drift, and pick up any quick fixes/content expansions if surfaced.
 
-> keep the full suite green · watch for README/PROGRESS drift · pick up quick fixes
-> / content registry expansions if surfaced
+This run was a health-check — verify the suite, scan every content registry
+for count drift vs. the PROGRESS.md banner, and confirm the production build.
 
-The previous run already produced a health-check report ("suite green, roadmap
-complete, no drift"). Rather than emit a duplicate health check, this run
-performed a **systematic content-registry audit** to verify the counts reported
-in PROGRESS.md / README.md against the *actual* live registries — and found +
-fixed real drift.
-
-## Verification (suite still green)
+## Verification results
 
 | Check | Result |
 |-------|--------|
-| `uv run pytest` | **2902 passed**, 0 failures (12 third-party DSPy warnings, unchanged) |
-| `frontend && npx tsc --noEmit` | **0 type errors** |
-| `frontend && npm run build` | **clean** (main bundle 339.67 KB gzip 99.70 KB — unchanged) |
-| `frontend && npm test` | **393 passed** (28 files) |
-| Codebase TODO/FIXME/skip sweep | **0** markers in backend or frontend |
+| `uv run pytest` | ✅ **2902 passed**, 0 failures (7.6s) |
+| `npm test` (Vitest) | ✅ **393 passed** (28 files), 0 failures |
+| `npx tsc --noEmit` | ✅ exit 0 — no type errors |
+| `npm run build` | ✅ built in 2.5s — main bundle **339.67 KB** (gzip 99.7 KB) |
+| Working tree | clean (only this report is the diff) |
+| `origin/develop` | **0 behind / 0 ahead** — fully synced |
 
-No regressions — the only source-code touch in this run was a single JSDoc
-comment (no behaviour, no types).
+The 12 `pytest` warnings are all third-party DSPy
+`prefix=` deprecation warnings in `dspy/teleprompt/avatar_optimizer.py` —
+outside our control (flagged in prior reports, unchanged).
 
-## Content-Registry Audit — methodology
+## Content-registry drift check (the core of this run)
 
-Loaded every engine registry in-process via `uv run python` and printed
-`len(REGISTRY)` for each, then diffed against the numbers in the PROGRESS status
-banner and README. (Git history was checked to determine whether each
-discrepancy was a *regression* or a *doc error that had existed since the
-feature was first written*.)
+Programmatically counted every registry and compared against the
+`PROGRESS.md` status banner. **Every single count matches — zero drift.**
 
-### Result
+| Registry | Actual | PROGRESS banner | ✓ |
+|----------|--------|-----------------|---|
+| spells (`SPELL_REGISTRY`) | 108 | 108 | ✅ |
+| enemies (`COMMON_ENEMIES`) | 116 | 116 | ✅ |
+| feats (`_FEATS`) | 53 | 53 | ✅ |
+| tools (`TOOL_REGISTRY`) | 47 | 47 | ✅ |
+| backgrounds (`BACKGROUNDS`) | 18 | 18 | ✅ |
+| alignments (`ALIGNMENTS`) | 9 | 9 | ✅ |
+| languages (`_LANGUAGES`) | 18 | 18 | ✅ |
+| mounts/vehicles (`MOUNT_REGISTRY`) | 18 | 18 | ✅ |
+| traps (`TRAP_REGISTRY`) | 14 | 14 | ✅ |
+| subclasses (`SUBCLASS_REGISTRY`) | 29 | 29 | ✅ |
+| legendary creatures (`LEGENDARY_CREATURE_REGISTRY`) | 6 | 6 | ✅ |
+| starter adventures (`STARTER_ADVENTURES`) | 3 | 3 | ✅ |
 
-| Registry | Actual | Docs claimed | Verdict |
-|----------|--------|--------------|---------|
-| Spells | 108 | 108 | ✅ |
-| Enemies | 116 | 116 | ✅ |
-| Feats | 53 | 53 | ✅ |
-| Tools | 47 | 47 | ✅ |
-| Backgrounds | 18 | 18 | ✅ |
-| Alignments | 9 | 9 | ✅ |
-| Languages | 18 | 18 | ✅ |
-| **Mounts** | **18** | 19 | ✏️ fixed |
-| **Traps** | **14** | 15 | ✏️ fixed |
-| **Subclasses** | **29** | 27 | ✏️ fixed |
-| Legendary creatures | 6 | 6 | ✅ |
-| Starter adventures | 3 | 3 | ✅ |
+README.md test-count claim (line 275: "2902 backend + 393 frontend = 3295
+total") also matches reality exactly.
 
-**All three discrepancies were doc errors, not regressions** — verified via git
-history:
+The prior run (`e06e631`) had already corrected the last real drift
+(mounts 19→18, traps 15→14, subclasses 27→29). That fix held — no regression.
 
-- **Mounts**: `MOUNT_REGISTRY` has had exactly 18 entries since its only
-  creation commit (`82ca497`). The docs always said "19" (off-by-one).
-- **Traps**: `TRAP_REGISTRY` has had exactly 14 entries since its only creation
-  commit (`23acac3`). The docs always said "15" (off-by-one).
-- **Subclasses**: `SUBCLASS_REGISTRY` has had exactly 29 entries since its only
-  creation commit (`82ed4ac`) — even that commit's *message* wrongly claimed
-  "27-subclass registry". The docs inherited the wrong number (off-by-two).
-  The two under-counted subclasses are **Knowledge Domain** (cleric) and
-  **School of Abjuration** (wizard).
+## Code hygiene
+- **Zero** `TODO`/`FIXME`/`XXX`/`HACK` markers in `backend/app/` — no
+  deferred-debt backlog accumulated.
+- No new deprecation warnings originating from our own code (only the
+  third-party DSPy ones remain).
 
-So the game actually has *more* subclasses than advertised, and exactly the
-right number of mounts/traps. Players were being under-sold.
+## Still-pending item (flagged previously, NOT actionable autonomously)
 
-## Files changed
+**GitHub Dependabot: 6 alerts (1 critical, 1 high, 4 moderate) on the
+default branch** — unchanged from the prior run. All are **dev-only**
+(`esbuild`/`vite`/`vite-node`/`vitest` chain); `npm audit --omit=dev`
+returns **0 vulnerabilities** — production runtime has no known vulns. The
+fix is a **breaking** major bump (Vite 6 → 8), unsafe to do without
+re-verifying the whole build/config. **Awaiting Mike's green-light for a
+dedicated `chore:` toolchain-bump session.** Not urgent (dev-only,
+no user-facing risk).
 
-- **`PROGRESS.md`** — 6 stale count references corrected:
-  - status banner: `19 mounts/vehicles, 15 traps, 27 subclasses` → `18 / 14 / 29`
-  - Mounts-panel narrative (×2): `19-mount` → `18-mount`
-  - Mounts engine narrative (×1): `19-mount MOUNT_REGISTRY` → `18-mount`
-  - DESIGN future-items checklist (×1): `19-mount registry` → `18-mount`
-  - Traps narrative (×2): `15 DMG sample traps` + `15-trap registry` → `14`
-- **`README.md`** — `all 12 core classes + 27 subclasses` → `+ 29 subclasses`
-- **`frontend/src/components/MountsPanel.tsx`** — JSDoc `19-mount registry`
-  → `18-mount registry` (the one source-code touch; comment only).
-
-## Commit
-
-`docs: fix stale content-registry counts in PROGRESS/README/MountsPanel (mounts 19→18, traps 15→14, subclasses 27→29)`
+## What I changed
+- Nothing in source. This is a no-op verification run.
+- Replaced the stale uncommitted `dev-agent-report.md` (which still held a
+  Dependabot appendix from the prior run) with this clean health-check so
+  the tracked report reflects the current run and doesn't carry forward
+  half-applied diffs.
 
 ## Next run
-
-- Suite is green, counts are now accurate, no further scheduled work.
-- If Mike green-lights any of the open future directions (Phase 6 story-state
-  `game_actions`, cross-phase AoE concentration/save polish), draft a design doc
-  and pick it up. Until then: re-verify green + drift-watch on each run.
+- Re-verify green + drift-watch (same maintenance loop).
+- If Mike green-lights any open future direction — Phase 6 story-state
+  `game_actions`, cross-phase AoE concentration/save polish, or the Vite
+  major-version bump — pick it up then. Otherwise: keep the suite green
+  and the docs honest.
