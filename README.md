@@ -9,7 +9,7 @@ A browser-based single-player Dungeons & Dragons game where an LLM acts as the D
 - **AI Dungeon Master (DSPy-powered)** — LLM-powered DM that narrates, reacts, adjudicates rules, and improvises based on your actions. Uses DSPy for quest detection, NPC mood tracking, game flags, and structured skill-check resolution.
 - **Streaming Narration** — Real-time DM text with a typing-cursor effect for immersive storytelling
 - **Combat System** — Initiative tracking, turn order, attacks, damage rolls, saving throws, conditions, legendary actions, and enemy stat blocks
-- **Spell System** — 108 spells across levels 0-9 with proper slot management, cantrip scaling, concentration tracking, and effect resolution
+- **Spell System** — 133 spells across levels 0-9 with proper slot management, cantrip scaling, concentration tracking, and effect resolution
 - **Inventory Management** — Weapons, armor, potions, scrolls, equipment with AC calculation, attunement slots, and stacking
 - **XP & Leveling** — Automatic level-ups with HP growth, ability score improvements, and class feature tracking (including subclass selection at level 3)
 - **World Exploration** — Visual region map with fog-of-war, overland travel, and terrain-based encounter rates
@@ -53,7 +53,7 @@ The DM doesn't just narrate — it calls real game engine functions. Results flo
 - **Phase 3.5b (AoE Spells)** — The DM can cast **one spell at multiple combatants** in a single action (`cast_spell_aoe`). Fireball hitting a cluster of goblins now consumes **one slot**, rolls damage **once**, and resolves a **separate saving throw per target** — exactly PHB p.204. The key architectural move: `Spellbook.prepare_cast()` (new) consumes the slot without resolving the effect, then `resolve_spell_aoe_target()` resolves each target against the shared damage. One summary `spell_cast` event (`is_aoe=True`, target count, total damage, no HP bar) + N follow-up `damage` events (each with that target's HP bar + save-outcome badge). Backward compatible — single-target `cast_spell` is untouched.
 
 ### Content
-- **108 Spells** — Including 20 iconic PHB/XGE spells (Chill Touch, Poison Spray, Shield, Mage Armor, Bless, Command, Hunter's Mark, etc.)
+- **133 Spells** — Including 20 iconic PHB/XGE spells (Chill Touch, Poison Spray, Shield, Mage Armor, Bless, Command, Hunter's Mark, etc.) for levels 0-3, plus 25 iconic high-level SRD spells for levels 4-9 (Banishment, Dominate Person, Circle of Death, Delayed Blast Fireball, Antimagic Field, Mass Heal, Prismatic Wall, etc.)
 - **116 Enemies** — From CR 0 to CR 10+ (Goblins, Skeletons, Owlbears, Dragons, Giants, Devils, etc.)
 - **53 Feats** — PHB + XGE race-specific feats
 - **47 Tools** — Tool proficiencies with skill integration
@@ -255,7 +255,7 @@ The game implements comprehensive DnD 5e mechanics:
 - ✅ Ability scores (point buy system)
 - ✅ Combat (initiative, attacks, damage, advantage/disadvantage, legendary actions)
 - ✅ Saving throws (all 6 abilities with class proficiency and skill-based bonuses)
-- ✅ Spells (108 spells, cantrips + levels 1-9, proper slot management, concentration, upcasting)
+- ✅ Spells (133 spells, cantrips + levels 1-9, proper slot management, concentration, upcasting)
 - ✅ Conditions (all 14 core conditions with mechanical effects, including exhaustion levels 1-6)
 - ✅ Multiclassing (2-class limit with proper prerequisites, HP, and proficiency calculation)
 - ✅ Feats (53 feats including PHB + XGE race-specific feats)
@@ -272,7 +272,7 @@ The game implements comprehensive DnD 5e mechanics:
 
 **Version:** 0.1.0 (MVP + Advanced Features Complete)
 
-**Test Suite:** 2902 backend tests passing + 393 frontend tests passing = **3295 total**, 0 failures ✅
+**Test Suite:** 2966 backend tests passing + 393 frontend tests passing = **3359 total**, 0 failures ✅
 
 **Core Features:** ✅ All MVP features implemented ✅ Advanced features complete ✅ DSPy migration complete ✅ AI features (images, TTS with local support) operational ✅ Local TTS via mlx-audio (Kokoro) complete
 

@@ -1,7 +1,70 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (2902 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅ AOE SPELL CAST GAME EVENTS ✅ DM-CALLABLE AOE SPELL FUNCTIONS (dm_cast_spell_aoe) ✅ SPELLBOOK.PREPARE_CAST (SLOT-ONLY) ✅ RESOLVE_SPELL_AOE_TARGET (PER-TARGET SAVE) ✅ SPELLCASTCARD AOE MODE ✅ DAMAGECARD SAVE-OUTCOME BADGE ✅ ONE SLOT / ONE DAMAGE ROLL / N SAVES ✅
+## TEST SUITE FULLY GREEN (2966 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (133 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅ AOE SPELL CAST GAME EVENTS ✅ DM-CALLABLE AOE SPELL FUNCTIONS (dm_cast_spell_aoe) ✅ SPELLBOOK.PREPARE_CAST (SLOT-ONLY) ✅ RESOLVE_SPELL_AOE_TARGET (PER-TARGET SAVE) ✅ SPELLCASTCARD AOE MODE ✅ DAMAGECARD SAVE-OUTCOME BADGE ✅ ONE SLOT / ONE DAMAGE ROLL / N SAVES ✅
+
+## ✅ COMPLETED: High-Level Spell Registry Expansion (Levels 4-9) + Thunderwave Duplicate Fix
+
+Filled the thin upper tiers of the spell catalogue with **25 iconic SRD spells**
+(levels 4-9 each previously had only 7-8 entries) and fixed a long-documented
+data bug. The roadmap-complete directive called this out explicitly: *"Still
+room for more: higher-level spells (4+)."*
+
+### Registry now: 108 → 133 spells
+By level: `{0:14, 1:21, 2:16, 3:13, 4:14, 5:13, 6:12, 7:11, 8:10, 9:9}` — every
+tier 4-8 is now ≥10 (only level 9 remains at 9).
+
+### Bug fix — Thunderwave duplicate registration
+Thunderwave is a **1st-level** evocation spell, but a second registration at
+**Level 3** (noted but never fixed by the prior spell expansion — *"110
+register_spell calls, minus the duplicate Thunderwave at level 1 and 3"*) was
+silently overwriting the canonical Level-1 entry via the shared id key
+(`SPELL_REGISTRY[id]`). Removed the Level-3 duplicate; Thunderwave is now
+correctly Level 1 (regression-guarded by a new test).
+
+### 25 new iconic SRD spells (correct mechanics: dice, save, concentration, upcast)
+- **Level 4 (+6):** Banishment, Confusion, Death Ward, Dominate Beast, Evard's
+  Black Tentacles (3d6 bludgeoning, Dex), Freedom of Movement.
+- **Level 5 (+5):** Dominate Person, Greater Restoration, Insect Plague (4d10
+  piercing, Con), Mass Cure Wounds (3d8 heal, upcast +1d8), Wall of Force.
+- **Level 6 (+5):** Circle of Death (8d6 necrotic, upcast +2d6/level), Harm
+  (14d6 necrotic), Heroes' Feast, Otto's Irresistible Dance, Wall of Ice.
+- **Level 7 (+4):** Delayed Blast Fireball (12d6 fire, upcast +1d6, Dex),
+  Prismatic Spray (8d6, Dex), Resurrection, Reverse Gravity.
+- **Level 8 (+3):** Antimagic Field, Incendiary Cloud (8d6 fire, Dex), Mind Blank.
+- **Level 9 (+2):** Mass Heal (700 HP flat, mirrors Power Word Heal precedent),
+  Prismatic Wall (20d6 = 10d6 fire + 10d6 radiant combined, Dex).
+
+### Modeling decisions (consistent with existing registry conventions)
+- **Variable-type damage** (Prismatic Spray, Prismatic Wall) uses a single
+  representative `damage_type` with the full composition noted in the
+  description — same pattern as Chromatic Orb (modeled as "acid").
+- **Flat huge heals** (Mass Heal, 700 HP) store the value in `healing_bonus`
+  with no dice, mirroring Power Word Heal (9999 sentinel) — resolves as a
+  utility "takes effect" since `heals` requires dice.
+- **Barrier/buff spells** (Wall of Force, Wall of Ice, Antimagic Field, Mind
+  Blank, Freedom of Movement, Death Ward, Heroes' Feast) carry no damage/healing
+  dice; their effects live in the description, exactly like Wall of Stone /
+  Shield / Mage Armor.
+- **Revival spells** (Resurrection) modeled as utility like Revivify.
+
+### Files changed
+- `backend/app/engine/spells.py` — removed Thunderwave L3 duplicate; +25
+  `register_spell()` entries across the Level 4-9 sections (correct dice, save
+  ability, concentration, duration, at_higher_levels_dice).
+- `backend/tests/test_spell_high_level_expansion.py` (NEW) — **64 tests**:
+  registry distribution sanity, Thunderwave-is-Level-1 regression,
+  parametrized registration shape (25 spells), per-spell mechanics (dice/save/
+  concentration/heals/deals_damage), and effect resolution (Delayed Blast
+  Fireball save-for-half + upcast, Circle of Death +2d6/level upcast, Harm,
+  Mass Cure Wounds heal+upcast, Insect Plague, Banishment no-damage save,
+  Death Ward utility, Prismatic Wall, Wall of Ice).
+
+### Verification
+- ✅ `uv run pytest` — **2966 backend tests passing** (+64), 0 failures
+- ✅ No frontend changes (pure backend content expansion)
+
+---
 
 ## ✅ COMPLETED: Hardening — Orphaned GameSave Crash Fix + Delete-Game Endpoint
 
@@ -991,9 +1054,10 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**2902 backend + 393 frontend tests, 0 failures.**
-(+11 backend since the roadmap completed — the orphaned-GameSave hardening
-fix; 2891 → 2902. No new game_actions; defensive/cleanup only.)
+**2966 backend + 393 frontend tests, 0 failures.**
+(+75 backend since the roadmap completed: +64 high-level spell registry
+expansion / Thunderwave duplicate fix, +11 orphaned-GameSave hardening.
+No new game_actions; content registry expansion + defensive cleanup only.)
 
 The DM is now a full tool-calling agent: it emits structured `game_actions`
 (dice, attacks, damage, spells, AoE spells, loot, conditions, concentration)

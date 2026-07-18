@@ -725,11 +725,9 @@ register_spell(Spell("Stinking Cloud", 3, SpellSchool.CONJURATION,
     description="Poisonous gas sickens creatures. Con save for retching.",
     casting_time="1 action", range="120 feet", components="V, S, M",
     save_ability="con", concentration=True))
-register_spell(Spell("Thunderwave", 3, SpellSchool.EVOCATION,
-    description="A wave of thunderous force. Con save or pushed + damage.",
-    casting_time="1 action", range="self (15-foot cube)", components="V, S",
-    save_ability="con", damage_dice_count=2, damage_dice_sides=8,
-    damage_type="thunder", at_higher_levels_dice=1))
+# NOTE: Thunderwave is a 1st-level evocation spell (registered above in the
+# Level 1 section). A duplicate Level-3 registration was removed here; it had
+# been silently overwriting the canonical Level-1 entry via the shared id key.
 register_spell(Spell("Mass Healing Word", 3, SpellSchool.EVOCATION,
     description="Up to six creatures regain hit points as a bonus action.",
     casting_time="1 bonus action", range="60 feet", components="V",
@@ -775,6 +773,31 @@ register_spell(Spell("Phantasmal Killer", 4, SpellSchool.ILLUSION,
     casting_time="1 action", range="120 feet", components="V, S",
     save_ability="wis", damage_dice_count=4, damage_dice_sides=10,
     damage_type="psychic", concentration=True))
+register_spell(Spell("Banishment", 4, SpellSchool.ABJURATION,
+    description="Banish one creature to a harmless demiplane on a failed Wis save; extraplanar targets are sent home. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Confusion", 4, SpellSchool.ENCHANTMENT,
+    description="Beasts and humanoids in a 10-foot cube behave randomly; Wis save each turn. Concentration.",
+    casting_time="1 action", range="90 feet", components="V, S, M",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Death Ward", 4, SpellSchool.ABJURATION,
+    description="The next time the target would drop to 0 HP, it instead drops to 1 HP.",
+    casting_time="1 action", range="touch", components="V, S",
+    duration="8 hours"))
+register_spell(Spell("Dominate Beast", 4, SpellSchool.ENCHANTMENT,
+    description="Telepathically control a beast's actions; Wis save to resist. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Evard's Black Tentacles", 4, SpellSchool.CONJURATION,
+    description="Rubbery tentacles grip a 20-foot square; Dex save or 3d6 bludgeoning and restrained. Concentration.",
+    casting_time="1 action", range="90 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=3, damage_dice_sides=6,
+    damage_type="bludgeoning", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Freedom of Movement", 4, SpellSchool.ABJURATION,
+    description="Target's movement ignores difficult terrain, magical restraint, and grappling for 1 hour.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="1 hour"))
 
 # --- Level 5 ---------------------------------------------------------------
 register_spell(Spell("Cone of Cold", 5, SpellSchool.EVOCATION,
@@ -812,6 +835,27 @@ register_spell(Spell("Bigby's Hand", 5, SpellSchool.EVOCATION,
     description="A spectral hand grapples, pushes, or strikes foes.",
     casting_time="1 action", range="120 feet", components="V, S, M",
     concentration=True))
+register_spell(Spell("Dominate Person", 5, SpellSchool.ENCHANTMENT,
+    description="Telepathically control a humanoid's actions; Wis save to resist. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Greater Restoration", 5, SpellSchool.ABJURATION,
+    description="Touch a creature to end charm, petrification, or a curse, reduce exhaustion by one, or restore one reduced ability score.",
+    casting_time="1 action", range="touch", components="V, S, M"))
+register_spell(Spell("Insect Plague", 5, SpellSchool.CONJURATION,
+    description="Biting locusts fill a 20-foot radius; Con save or 4d10 piercing damage. Concentration.",
+    casting_time="1 action", range="300 feet", components="V, S, M",
+    save_ability="con", damage_dice_count=4, damage_dice_sides=10,
+    damage_type="piercing", concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Mass Cure Wounds", 5, SpellSchool.EVOCATION,
+    description="Up to six creatures regain 3d8 HP. Upcast adds 1d8 per slot level.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    healing_dice_count=3, healing_dice_sides=8,
+    at_higher_levels_dice=1))
+register_spell(Spell("Wall of Force", 5, SpellSchool.EVOCATION,
+    description="An indestructible wall of invisible force shapes the battlefield; nothing physical or magical passes through. Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    concentration=True, duration="up to 10 minutes"))
 
 # --- Level 6 ---------------------------------------------------------------
 register_spell(Spell("Disintegrate", 6, SpellSchool.TRANSMUTATION,
@@ -845,6 +889,29 @@ register_spell(Spell("True Seeing", 6, SpellSchool.DIVINATION,
     description="See through illusions, shapechangers, invisibility.",
     casting_time="1 action", range="touch", components="V, S, M",
     concentration=True))
+register_spell(Spell("Circle of Death", 6, SpellSchool.NECROMANCY,
+    description="Sphere of negative energy sweeps out; Con save or 8d6 necrotic. Upcast adds 2d6 per slot level.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    save_ability="con", damage_dice_count=8, damage_dice_sides=6,
+    damage_type="necrotic", at_higher_levels_dice=2))
+register_spell(Spell("Harm", 6, SpellSchool.NECROMANCY,
+    description="A torrent of necrotic energy; Con save or 14d6 necrotic and the target's HP maximum is reduced by the damage taken.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="con", damage_dice_count=14, damage_dice_sides=6,
+    damage_type="necrotic"))
+register_spell(Spell("Heroes' Feast", 6, SpellSchool.CONJURATION,
+    description="A feast cures all diseases and poison, and grants +2d10 max HP, immunity to poison and fright, and advantage on Wisdom saves for 24 hours.",
+    casting_time="10 minutes", range="30 feet", components="V, S, M",
+    duration="24 hours"))
+register_spell(Spell("Otto's Irresistible Dance", 6, SpellSchool.ENCHANTMENT,
+    description="The target is compelled to dance; there is no save on cast. It has disadvantage on attacks and Dexterity saves while you concentrate, and it may use its action to re-save (Wis) each turn. Concentration.",
+    casting_time="1 action", range="30 feet", components="V",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Wall of Ice", 6, SpellSchool.EVOCATION,
+    description="A wall of ice forms to block the battlefield; a shattered section bursts for 10d6 cold damage (Dex save for half). Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=10, damage_dice_sides=6,
+    damage_type="cold", concentration=True, duration="up to 10 minutes"))
 
 # --- Level 7 ---------------------------------------------------------------
 register_spell(Spell("Finger of Death", 7, SpellSchool.NECROMANCY,
@@ -874,6 +941,24 @@ register_spell(Spell("Regenerate", 7, SpellSchool.EVOCATION,
 register_spell(Spell("Teleport", 7, SpellSchool.CONJURATION,
     description="Instantly transport to a known location.",
     casting_time="1 action", range="10 feet", components="V"))
+register_spell(Spell("Delayed Blast Fireball", 7, SpellSchool.EVOCATION,
+    description="A glowing bead grows in power as it waits; on detonation, Dex save or 12d6 fire (it gains 1d6 each round it waits). Upcast adds 1d6 per slot level. Concentration.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=12, damage_dice_sides=6,
+    damage_type="fire", concentration=True, at_higher_levels_dice=1,
+    duration="up to 1 minute"))
+register_spell(Spell("Prismatic Spray", 7, SpellSchool.EVOCATION,
+    description="Eight multicolored rays spray from your hands; each target rolls a d8 for an effect (typically 8d6 damage of a random type: acid/cold/fire/lightning/poison). Dex save for half.",
+    casting_time="1 action", range="self (60-foot cone)", components="V, S",
+    save_ability="dex", damage_dice_count=8, damage_dice_sides=6,
+    damage_type="acid"))
+register_spell(Spell("Resurrection", 7, SpellSchool.NECROMANCY,
+    description="Return a dead creature to life with full hit points; the spell also cures any conditions afflicting the corpse.",
+    casting_time="1 hour", range="touch", components="V, S, M"))
+register_spell(Spell("Reverse Gravity", 7, SpellSchool.TRANSMUTATION,
+    description="Objects and creatures in a 50-foot cylinder fall upward for the duration; creatures take falling damage when the spell ends. Dex save to cling to something fixed. Concentration.",
+    casting_time="1 action", range="100 feet", components="V, S, M",
+    save_ability="dex", concentration=True, duration="up to 1 minute"))
 
 # --- Level 8 ---------------------------------------------------------------
 register_spell(Spell("Power Word Stun", 8, SpellSchool.ENCHANTMENT,
@@ -903,6 +988,19 @@ register_spell(Spell("Abi-Dalzim's Horrid Wilting", 8, SpellSchool.NECROMANCY,
     casting_time="1 action", range="150 feet", components="V, S, M",
     save_ability="con", damage_dice_count=12, damage_dice_sides=8,
     damage_type="necrotic"))
+register_spell(Spell("Antimagic Field", 8, SpellSchool.ABJURATION,
+    description="A 10-foot sphere suppresses all magic — spells, magical effects, and magical items — within it. Concentration.",
+    casting_time="1 action", range="self (10-foot radius)", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Incendiary Cloud", 8, SpellSchool.CONJURATION,
+    description="A swirling cloud of fire roils across the battlefield; Dex save or 8d6 fire each round. Concentration.",
+    casting_time="1 action", range="150 feet", components="V, S",
+    save_ability="dex", damage_dice_count=8, damage_dice_sides=6,
+    damage_type="fire", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Mind Blank", 8, SpellSchool.ABJURATION,
+    description="The target is immune to psychic damage and its mind cannot be read by any means for 24 hours.",
+    casting_time="1 action", range="touch", components="V, S",
+    duration="24 hours"))
 
 # --- Level 9 ---------------------------------------------------------------
 register_spell(Spell("Power Word Kill", 9, SpellSchool.ENCHANTMENT,
@@ -931,6 +1029,15 @@ register_spell(Spell("Foresight", 9, SpellSchool.DIVINATION,
     description="You glimpse the future and gain advantage on attacks/saves.",
     casting_time="1 minute", range="touch", components="V, S, M",
     concentration=True))
+register_spell(Spell("Mass Heal", 9, SpellSchool.EVOCATION,
+    description="Up to 700 hit points of healing spread among any creatures in range; the spell also cures blindness, deafness, and diseases.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    healing_dice_count=0, healing_dice_sides=0, healing_bonus=700))
+register_spell(Spell("Prismatic Wall", 9, SpellSchool.EVOCATION,
+    description="A shimmering multicolored wall blinds creatures within 20 feet and deals 10d6 fire plus 10d6 radiant (modeled here as 20d6 fire) to anything passing through; Dex save for half.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="dex", damage_dice_count=20, damage_dice_sides=6,
+    damage_type="fire", duration="10 minutes"))
 
 
 # ---------------------------------------------------------------------------
