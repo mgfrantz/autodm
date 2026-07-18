@@ -991,7 +991,9 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**2891 backend + 393 frontend tests, 0 failures.**
+**2902 backend + 393 frontend tests, 0 failures.**
+(+11 backend since the roadmap completed — the orphaned-GameSave hardening
+fix; 2891 → 2902. No new game_actions; defensive/cleanup only.)
 
 The DM is now a full tool-calling agent: it emits structured `game_actions`
 (dice, attacks, damage, spells, AoE spells, loot, conditions, concentration)
