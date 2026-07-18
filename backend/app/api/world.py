@@ -4,7 +4,7 @@ World API — generate and manage game worlds.
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.models.database import get_db
@@ -26,8 +26,7 @@ class WorldResponse(BaseModel):
     description: str
     tone: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 def _build_character_context(character) -> str:

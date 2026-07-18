@@ -220,7 +220,7 @@ class TestRelaxationAPI:
         assert data["exhaustion"] == 2          # eased one level
         assert set(data["details"]["cleared_conditions"]) == {"frightened", "poisoned"}
         # Persisted?
-        g2 = db_session.query(GameSave).get(g.id)
+        g2 = db_session.get(GameSave, g.id)
         gs = json.loads(g2.game_state)
         assert gs["exhaustion"] == 2
         assert "stunned" in gs["conditions"]
@@ -340,7 +340,7 @@ def db_session_refresh_char(game, db_session):
     """Re-fetch the character row fresh from the session."""
     from sqlalchemy.orm import object_session
     db_session.expire_all()
-    return db_session.query(Character).get(game.character_id)
+    return db_session.get(Character, game.character_id)
 
 
 # --------------------------------------------------------------------------- #
@@ -375,6 +375,6 @@ class TestReligionAndMisc:
         })
         assert r.status_code == 200
         story = json.loads(
-            db_session.query(GameSave).get(game.id).story_log
+            db_session.get(GameSave, game.id).story_log
         )
         assert story and "Laboured" in story[-1]["content"]
