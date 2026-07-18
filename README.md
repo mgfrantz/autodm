@@ -251,7 +251,7 @@ Once the backend is running, visit `http://localhost:8000/docs` for interactive 
 
 The game implements comprehensive DnD 5e mechanics:
 
-- ✅ Character creation (all 12 core classes + 27 subclasses)
+- ✅ Character creation (all 12 core classes + 29 subclasses)
 - ✅ Ability scores (point buy system)
 - ✅ Combat (initiative, attacks, damage, advantage/disadvantage, legendary actions)
 - ✅ Saving throws (all 6 abilities with class proficiency and skill-based bonuses)

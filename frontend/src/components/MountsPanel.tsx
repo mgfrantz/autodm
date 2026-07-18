@@ -26,7 +26,7 @@ import type {
  * panel surfaces them to the player. A character owns at most one *active*
  * mount (ridden or led), persisted in ``game_state["mount"]``. The panel
  * lets the player:
- *   - browse the 19-mount registry and acquire one (optionally paying gold)
+ *   - browse the 18-mount registry and acquire one (optionally paying gold)
  *   - mount up / dismount
  *   - set the overland travel pace (slow/normal/fast) + gallop burst
  *   - damage / heal the mount (a mount dropped to 0 HP throws the rider)
