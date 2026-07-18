@@ -635,3 +635,74 @@ export function concentrationSummary(
       return `🧠 Concentration: ${spell}`;
   }
 }
+
+// ==========================================================================
+// UI polish: collapsed-by-default event cards
+// ==========================================================================
+
+/**
+ * A representative emoji icon for a game event, keyed by type.
+ * Used for the compact one-line summary shown when a card is collapsed.
+ */
+export function eventIcon(event: GameEvent): string {
+  switch (event.type) {
+    case 'dice_roll':       return '🎲';
+    case 'check_prompt':    return '📜';
+    case 'attack':          return '⚔️';
+    case 'damage':          return '💥';
+    case 'initiative':      return '🏃';
+    case 'spell_cast':      return '🔮';
+    case 'loot':            return '🎒';
+    case 'condition_applied': return conditionIcon(event.data.condition);
+    case 'concentration':   return concentrationIcon(event.data.operation);
+    default:                return '•';
+  }
+}
+
+/**
+ * Accent colours for a game event, keyed by type. Reuses the per-type colour
+ * helpers so collapsed lines match their expanded counterparts.
+ */
+export function eventAccent(event: GameEvent): { text: string; bg: string; border: string } {
+  switch (event.type) {
+    case 'dice_roll': {
+      const rolls = event.data.rolls ?? [];
+      const sides = inferSides(event);
+      return getRollColor(
+        event.data.success,
+        isCriticalHit(rolls, sides),
+        isCriticalMiss(rolls, sides),
+      );
+    }
+    case 'check_prompt':
+      return { text: 'text-arcane-300', bg: 'bg-arcane-900/30', border: 'border-arcane-700/50' };
+    case 'attack':
+    case 'damage':
+      return damageTypeColor(event.data.damage_type ?? 'slashing');
+    case 'initiative':
+      return { text: 'text-sky-300', bg: 'bg-sky-900/30', border: 'border-sky-700/50' };
+    case 'spell_cast':
+      return spellSchoolColor(event.data.school);
+    case 'loot':
+      return itemRarityColor(event.data.rarity);
+    case 'condition_applied':
+      return conditionColor(event.data.condition);
+    case 'concentration':
+      return concentrationColor(event.data.operation);
+    default:
+      return { text: 'text-parchment-200', bg: 'bg-parchment-900/30', border: 'border-parchment-700/50' };
+  }
+}
+
+/**
+ * Decide whether a given event should be collapsed based on its position.
+ * The most recent `recentCount` events stay expanded; older ones collapse to a
+ * one-line summary. Negative/zero counts collapse everything except the last.
+ * Used by GameView to implement collapsed-by-default for old events.
+ */
+export function shouldCollapse(index: number, total: number, recentCount: number): boolean {
+  if (total <= 0) return false;
+  // Always keep at least the most recent event expanded so something is visible.
+  const keep = recentCount <= 0 ? 1 : recentCount;
+  return index < total - keep;
+}

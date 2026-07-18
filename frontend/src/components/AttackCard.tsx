@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { GameEvent } from '../types'
+import { useDiceTumble } from '../hooks/useDiceTumble'
 import {
   attackSummary,
   damageTypeColor,
@@ -13,14 +14,19 @@ import {
  * Renders the attacker→target flow, to-hit roll vs AC, hit/miss/crit
  * outcome, damage amount + type, and the target's HP bar. Colour-coded
  * by outcome (crit = gold, hit = green, miss = red). Dismissible.
+ *
+ * UI polish: when `animate` is true, the to-hit total tumbles like a
+ * rolling d20, and the HP bar shakes when damage lands.
  * ------------------------------------------------------------------ */
 
 interface AttackCardProps {
   event: GameEvent
   onDismiss?: () => void
+  /** Enable the dice-tumble flourish on the to-hit total (opt-in). */
+  animate?: boolean
 }
 
-export default function AttackCard({ event, onDismiss }: AttackCardProps) {
+export default function AttackCard({ event, onDismiss, animate = false }: AttackCardProps) {
   const d = event.data
   const hit = d.hit ?? false
   const critical = d.critical ?? false
@@ -38,6 +44,9 @@ export default function AttackCard({ event, onDismiss }: AttackCardProps) {
     [d.target_remaining_hp, d.target_max_hp],
   )
 
+  // Dice-tumble flourish on the to-hit total (settles to the real value).
+  const { value: displayTotal } = useDiceTumble(d.attack_total ?? 0, { sides: 20, animate })
+
   // Determine border/bg colour by outcome
   let borderColor = 'border-parchment-700/50'
   let bgColor = 'bg-parchment-900/30'
@@ -49,6 +58,9 @@ export default function AttackCard({ event, onDismiss }: AttackCardProps) {
   } else {
     borderColor = 'border-blood-600/50'; bgColor = 'bg-blood-900/30'; textColor = 'text-blood-200'
   }
+
+  // Shake the HP bar only when the attack actually dealt damage.
+  const hpShake = hit && (d.damage ?? 0) > 0 ? 'animate-shake' : ''
 
   return (
     <div
@@ -89,7 +101,7 @@ export default function AttackCard({ event, onDismiss }: AttackCardProps) {
           </span>
         )}
         <span className={`text-sm font-mono ${textColor}`}>
-          {d.attack_total ?? 0} vs AC {d.ac ?? '?'}
+          {displayTotal} vs AC {d.ac ?? '?'}
         </span>
       </div>
 
@@ -103,7 +115,7 @@ export default function AttackCard({ event, onDismiss }: AttackCardProps) {
       {/* HP bar */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-parchment-400 min-w-fit">{d.target ?? 'Target'} HP</span>
-        <div className="flex-1 h-2.5 rounded-full bg-parchment-800/60 overflow-hidden" role="progressbar" aria-valuenow={hp.percentage} aria-valuemin={0} aria-valuemax={100}>
+        <div className={`flex-1 h-2.5 rounded-full bg-parchment-800/60 overflow-hidden ${hpShake}`} role="progressbar" aria-valuenow={hp.percentage} aria-valuemin={0} aria-valuemax={100}>
           <div className={`h-full ${hp.color} rounded-full transition-all duration-300`} style={{ width: `${hp.percentage}%` }} />
         </div>
         <span className={`text-xs font-mono min-w-fit ${hp.isDead ? 'text-blood-300' : 'text-parchment-300'}`}>

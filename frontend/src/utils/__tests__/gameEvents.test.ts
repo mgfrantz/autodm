@@ -25,6 +25,9 @@ import {
   concentrationColor,
   concentrationIcon,
   concentrationSummary,
+  eventIcon,
+  eventAccent,
+  shouldCollapse,
 } from '../gameEvents'
 import type { GameEvent, InitiativeCombatant } from '../../types'
 
@@ -942,5 +945,90 @@ describe('summarizeEvent for concentration', () => {
     }
     const s = summarizeEvent(event)
     expect(s).toContain('lost')
+  })
+})
+
+/* ------------------------------------------------------------------ *
+ * UI polish helpers: eventIcon, eventAccent, shouldCollapse
+ * ------------------------------------------------------------------ */
+
+describe('eventIcon', () => {
+  it('returns the expected emoji per event type', () => {
+    expect(eventIcon({ type: 'dice_roll', label: '', data: {}, timestamp: '' })).toBe('🎲')
+    expect(eventIcon({ type: 'check_prompt', label: '', data: {}, timestamp: '' })).toBe('📜')
+    expect(eventIcon({ type: 'attack', label: '', data: {}, timestamp: '' })).toBe('⚔️')
+    expect(eventIcon({ type: 'damage', label: '', data: {}, timestamp: '' })).toBe('💥')
+    expect(eventIcon({ type: 'initiative', label: '', data: {}, timestamp: '' })).toBe('🏃')
+    expect(eventIcon({ type: 'spell_cast', label: '', data: {}, timestamp: '' })).toBe('🔮')
+    expect(eventIcon({ type: 'loot', label: '', data: {}, timestamp: '' })).toBe('🎒')
+  })
+
+  it('delegates to conditionIcon for condition_applied events', () => {
+    const event: GameEvent = { type: 'condition_applied', label: '', data: { condition: 'poisoned' }, timestamp: '' }
+    expect(eventIcon(event)).toBe('🤢')
+  })
+
+  it('delegates to concentrationIcon for concentration events', () => {
+    const event: GameEvent = { type: 'concentration', label: '', data: { operation: 'broken' }, timestamp: '' }
+    expect(eventIcon(event)).toBe('💥')
+  })
+
+  it('falls back to a bullet for unknown types', () => {
+    expect(eventIcon({ type: 'unknown' as GameEvent['type'], label: '', data: {}, timestamp: '' })).toBe('•')
+  })
+})
+
+describe('eventAccent', () => {
+  it('returns accent colour objects for each major type', () => {
+    const types: GameEvent['type'][] = [
+      'dice_roll', 'check_prompt', 'attack', 'damage', 'initiative',
+      'spell_cast', 'loot', 'condition_applied', 'concentration',
+    ]
+    for (const type of types) {
+      const accent = eventAccent({ type, label: '', data: {}, timestamp: '' })
+      expect(accent).toHaveProperty('text')
+      expect(accent).toHaveProperty('bg')
+      expect(accent).toHaveProperty('border')
+      expect(typeof accent.text).toBe('string')
+    }
+  })
+
+  it('colour-codes a dice roll by outcome', () => {
+    const crit: GameEvent = { type: 'dice_roll', label: '', data: { rolls: [20], success: true }, timestamp: '' }
+    expect(eventAccent(crit).text).toBe('text-amber-200')
+
+    const fail: GameEvent = { type: 'dice_roll', label: '', data: { rolls: [3], success: false }, timestamp: '' }
+    expect(eventAccent(fail).text).toBe('text-blood-200')
+  })
+
+  it('falls back to parchment for unknown types', () => {
+    const accent = eventAccent({ type: 'unknown' as GameEvent['type'], label: '', data: {}, timestamp: '' })
+    expect(accent.text).toBe('text-parchment-200')
+  })
+})
+
+describe('shouldCollapse', () => {
+  it('keeps the most recent N events expanded', () => {
+    // 5 events, keep last 2 expanded → indices 0,1,2 collapse; 3,4 expand
+    expect(shouldCollapse(0, 5, 2)).toBe(true)
+    expect(shouldCollapse(2, 5, 2)).toBe(true)
+    expect(shouldCollapse(3, 5, 2)).toBe(false)
+    expect(shouldCollapse(4, 5, 2)).toBe(false)
+  })
+
+  it('expands everything when total <= recentCount', () => {
+    expect(shouldCollapse(0, 2, 2)).toBe(false)
+    expect(shouldCollapse(1, 2, 2)).toBe(false)
+    expect(shouldCollapse(0, 1, 2)).toBe(false)
+  })
+
+  it('returns false when there are no events', () => {
+    expect(shouldCollapse(0, 0, 2)).toBe(false)
+  })
+
+  it('with recentCount <= 0, collapses everything except the last', () => {
+    expect(shouldCollapse(0, 3, 0)).toBe(true)
+    expect(shouldCollapse(1, 3, 0)).toBe(true)
+    expect(shouldCollapse(2, 3, 0)).toBe(false) // the last one stays expanded
   })
 })

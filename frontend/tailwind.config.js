@@ -78,6 +78,20 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.4' },
         },
+        // HP-bar shake — plays once when a damage card mounts (UI polish).
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '15%': { transform: 'translateX(-3px)' },
+          '30%': { transform: 'translateX(3px)' },
+          '45%': { transform: 'translateX(-2px)' },
+          '60%': { transform: 'translateX(2px)' },
+          '75%': { transform: 'translateX(-1px)' },
+        },
+        // Collapsed-card expand/collapse chevron nudge.
+        'chevron-down': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(1px)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.4s ease-out',
@@ -86,6 +100,9 @@ export default {
         'scale-in': 'scale-in 0.25s ease-out both',
         'overlay-in': 'overlay-in 0.2s ease-out',
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+        // One-shot feedback animations (respect prefers-reduced-motion via index.css).
+        shake: 'shake 0.45s ease-in-out both',
+        'chevron-down': 'chevron-down 0.4s ease-in-out',
       },
     },
   },

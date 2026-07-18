@@ -63,7 +63,7 @@ export default function DamageCard({ event, onDismiss }: DamageCardProps) {
       {/* HP bar */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-parchment-400 min-w-fit">HP</span>
-        <div className="flex-1 h-2.5 rounded-full bg-parchment-800/60 overflow-hidden" role="progressbar" aria-valuenow={hp.percentage} aria-valuemin={0} aria-valuemax={100}>
+        <div className="flex-1 h-2.5 rounded-full bg-parchment-800/60 overflow-hidden animate-shake" role="progressbar" aria-valuenow={hp.percentage} aria-valuemin={0} aria-valuemax={100}>
           <div className={`h-full ${hp.color} rounded-full transition-all duration-300`} style={{ width: `${hp.percentage}%` }} />
         </div>
         <span className={`text-xs font-mono min-w-fit ${hp.isDead ? 'text-blood-300' : 'text-parchment-300'}`}>

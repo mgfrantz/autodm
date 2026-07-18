@@ -6,6 +6,7 @@
 > Phase 4 IMPLEMENTED ✅ — inventory operations (give_item/remove_item/equip_item/use_item) are live
 > Phase 5 IMPLEMENTED ✅ — condition application (apply_condition/remove_condition) is live
 > Phase 3.5 IMPLEMENTED ✅ — concentration tracking (reactive hooks + Con-save checks) is live
+> UI polish IMPLEMENTED ✅ — dice tumble (~480ms), HP-bar shake, collapsed-by-default old event cards are live (roadmap item #7)
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
@@ -297,22 +298,32 @@ that the frontend renders as rich UI components, interleaved with narration.
 - **Inline, not modal** — events appear in the narrative log flow, not as popups
 - **Trust-building** — always show the raw die, modifiers, and DC so players
   know the roll was real
-- **Animated but fast** — dice tumble for ~500ms, don't slow down gameplay
+- **Animated but fast** — dice tumble for ~500ms, don't slow down gameplay ✅ DONE (dice tumble ~480ms via `useDiceTumble`, `prefers-reduced-motion`-aware)
 - **Stackable** — multi-die rolls (damage, advantage) show all dice at once
 - **Themable** — match the parchment/fantasy aesthetic (gold for crits, blood
   red for failures, arcane purple for spells)
 - **Collapsed by default for old events** — recent events expanded, older ones
-  collapse to a one-line summary to keep the log readable
+  collapse to a one-line summary to keep the log readable ✅ DONE (last 2 stay expanded; click to re-expand; stable per-event uid tracking)
+
+### Animation Budget (resolved)
+- **Dice tumble** — YES, implemented: the raw die value flickers through random
+  faces for ~480ms then settles (`utils/diceTumble.ts` + `useDiceTumble` hook).
+  Opt-in via an `animate` prop so tests render the settled value deterministically.
+- **HP-bar shake** — YES, implemented: the HP bar in AttackCard (on a damaging
+  hit) and DamageCard plays a one-shot `animate-shake` on mount. Both honour the
+  global `prefers-reduced-motion` rule in `index.css`.
 
 ### Open Questions (UI)
 1. **SSE protocol** — separate channel for events, or typed markers in the
    existing narration stream? (e.g. `[EVENT:dice_roll {...}]` sentinel)
-2. **Animation budget** — how much animation is too much? Dice tumble yes, but
-   should damage cards "shake" the HP bar? (Probably yes — fun feedback)
+2. **Animation budget** — ~~how much animation is too much? Dice tumble yes, but
+   should damage cards "shake" the HP bar?~~ ✅ RESOLVED — dice tumble (~480ms)
+   AND HP-bar shake both shipped; both gated by `prefers-reduced-motion`.
 3. **Player-initiated vs DM-initiated** — when a player clicks "Cast Fireball"
    in the Spells panel, should the same event UI render? (Yes — unified)
-4. **History/replay** — should old event cards be expandable for review during
-   long sessions? (Probably yes — collapsed by default)
+4. **History/replay** — ~~should old event cards be expandable for review during
+   long sessions?~~ ✅ RESOLVED — older event cards collapse to a one-line
+   summary by default and re-expand on click (collapsed-by-default polish).
 5. **Mobile layout** — cards need to work on narrow screens (stack vertically)
 
 ---

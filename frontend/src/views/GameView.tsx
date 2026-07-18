@@ -5,6 +5,13 @@ import { useGameStore } from '../stores/gameStore'
 import type { StoryEntry, Attack, WorldMapData, SaveSlotSummary, RestInfo, CombatActionResult, EquipmentCombatStats, CharacterFeatsResponse, SkillCheckResolution, GameEvent } from '../types'
 import SkillCheckResolutionCard from '../components/SkillCheckResolutionCard'
 import GameEventRenderer from '../components/GameEventRenderer'
+import { shouldCollapse } from '../utils/gameEvents'
+
+/** A GameEvent tagged with a stable client-side uid for collapse tracking. */
+interface TrackedGameEvent {
+  uid: number
+  event: GameEvent
+}
 
 // Lazy-load all overlay/panel components for code-splitting. These only load when
 // the user opens the corresponding overlay (e.g., clicking "Mounts", "Voice", etc.).
@@ -112,7 +119,16 @@ export default function GameView() {
   const [streamingText, setStreamingText] = useState('')
   const [actionSuggestions, setActionSuggestions] = useState<string[]>([])
   const [skillCheckResolution, setSkillCheckResolution] = useState<SkillCheckResolution | null>(null)
-  const [gameEvents, setGameEvents] = useState<GameEvent[]>([])
+  // Game events carry a stable client-side uid so collapse/expand overrides
+  // survive dismissals (which otherwise shift array indices). Reset each turn.
+  const [gameEvents, setGameEvents] = useState<TrackedGameEvent[]>([])
+  const eventUidRef = useRef(0)
+  const trackEvent = useCallback((e: GameEvent): TrackedGameEvent => ({ uid: eventUidRef.current++, event: e }), [])
+  // Collapse-by-default: the last EXPAND_RECENT events stay expanded; older
+  // ones collapse to a one-liner. Users can expand/collapse individually.
+  const EXPAND_RECENT = 2
+  const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set())
+  const [collapsedEvents, setCollapsedEvents] = useState<Set<number>>(new Set())
   const [showMap, setShowMap] = useState(false)
   const [worldMap, setWorldMap] = useState<WorldMapData | null>(null)
   const [mapLoading, setMapLoading] = useState(false)
@@ -297,6 +313,8 @@ export default function GameView() {
     setActionSuggestions([])
     setSkillCheckResolution(null)
     setGameEvents([])
+    setExpandedEvents(new Set())
+    setCollapsedEvents(new Set())
     addToStory({ role: 'player', content: action, timestamp: new Date().toISOString() })
     setLoading(true)
     setStreamingText('')
@@ -315,12 +333,12 @@ export default function GameView() {
           setActionSuggestions(suggestions)
           setSkillCheckResolution(resolution ?? null)
           if (events && events.length > 0) {
-            setGameEvents(events)
+            setGameEvents(events.map(trackEvent))
           }
         },
         (event) => {
           // Incremental game_event SSE events — add as they arrive
-          setGameEvents((prev) => [...prev, event])
+          setGameEvents((prev) => [...prev, trackEvent(event)])
         },
       )
       addToStory({ role: 'dm', content: final, timestamp: new Date().toISOString() })
@@ -734,15 +752,34 @@ export default function GameView() {
               onDismiss={() => setSkillCheckResolution(null)}
             />
             {/* Game event cards (DM function calling Phase 1) — dice rolls,
-                check prompts rendered inline after the latest DM narration. */}
-            {gameEvents.map((event, idx) => (
-              <GameEventRenderer
-                key={`${event.type}-${idx}`}
-                event={event}
-                gameId={gid}
-                onDismiss={() => setGameEvents((prev) => prev.filter((_, i) => i !== idx))}
-              />
-            ))}
+                check prompts rendered inline after the latest DM narration.
+                UI polish: dice tumble + collapsed-by-default for old events. */}
+            {gameEvents.map(({ uid, event }, idx) => {
+              const isCollapsed = collapsedEvents.has(uid)
+                ? true
+                : expandedEvents.has(uid)
+                  ? false
+                  : shouldCollapse(idx, gameEvents.length, EXPAND_RECENT)
+              return (
+                <GameEventRenderer
+                  key={`${event.type}-${uid}`}
+                  event={event}
+                  gameId={gid}
+                  animate
+                  collapsed={isCollapsed}
+                  onDismiss={() => setGameEvents((prev) => prev.filter((t) => t.uid !== uid))}
+                  onToggleCollapse={() => {
+                    if (isCollapsed) {
+                      setCollapsedEvents((s) => { const n = new Set(s); n.delete(uid); return n })
+                      setExpandedEvents((s) => new Set(s).add(uid))
+                    } else {
+                      setExpandedEvents((s) => { const n = new Set(s); n.delete(uid); return n })
+                      setCollapsedEvents((s) => new Set(s).add(uid))
+                    }
+                  }}
+                />
+              )
+            })}
             <div ref={storyEndRef} />
           </div>
         </div>
