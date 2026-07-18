@@ -1,7 +1,76 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3132 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (154 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅ AOE SPELL CAST GAME EVENTS ✅ DM-CALLABLE AOE SPELL FUNCTIONS (dm_cast_spell_aoe) ✅ SPELLBOOK.PREPARE_CAST (SLOT-ONLY) ✅ RESOLVE_SPELL_AOE_TARGET (PER-TARGET SAVE) ✅ SPELLCASTCARD AOE MODE ✅ DAMAGECARD SAVE-OUTCOME BADGE ✅ ONE SLOT / ONE DAMAGE ROLL / N SAVES ✅
+## TEST SUITE FULLY GREEN (3187 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (170 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅ AOE SPELL CAST GAME EVENTS ✅ DM-CALLABLE AOE SPELL FUNCTIONS (dm_cast_spell_aoe) ✅ SPELLBOOK.PREPARE_CAST (SLOT-ONLY) ✅ RESOLVE_SPELL_AOE_TARGET (PER-TARGET SAVE) ✅ SPELLCASTCARD AOE MODE ✅ DAMAGECARD SAVE-OUTCOME BADGE ✅ ONE SLOT / ONE DAMAGE ROLL / N SAVES ✅
+
+## ✅ COMPLETED: Iconic PHB Level-1 Spell Expansion (16 spells)
+
+With the top three tiers (7/8/9) now PHB-complete, this run extends the same
+treatment down to the **most-played tier — level 1** — adding **16 iconic PHB
+level-1 spells** that cover all five `resolve_spell_effect()` paths. The level-1
+tier grew from **21 → 37 spells** (approaching PHB completeness), and the full
+catalogue rose from **154 → 170 spells**.
+
+### The 16 additions (by resolution path)
+- **Attack-roll** — Inflict Wounds (3d10 necrotic, melee spell attack),
+  Ray of Sickness (2d8 poison, ranged spell attack; Con-save-vs-poisoned rider
+  in description), Witch Bolt (1d12 lightning, ranged spell attack,
+  concentration with auto-damage on subsequent turns).
+- **Save-for-half damage** — Hellish Rebuke (2d10 fire, Dex save, reaction,
+  +1d10/level upcast).
+- **Save-debuff (no damage)** — Tasha's Hideous Laughter (Wis save,
+  incapacitated + prone, concentration), Sanctuary (Wis save on attacker,
+  1 minute, *no* concentration).
+- **Healing / temp-HP** — False Life (1d4+4 temp HP on the healing path,
+  +5/level upcast).
+- **Utility / buff (no dice)** — Alarm (abjuration, ritual, 8-hour ward),
+  Comprehend Languages (divination, ritual), Disguise Self (illusion),
+  Find Familiar (conjuration, ritual), Fog Cloud (conjuration, concentration,
+  no save), Identify (divination, ritual), Longstrider (transmutation, +10 ft
+  speed), Protection from Evil and Good (abjuration, concentration ward),
+  Speak with Animals (divination, ritual, concentration).
+
+### Modeling decisions (consistent with existing registry conventions)
+- **Attack-roll spells** (Inflict Wounds, Ray of Sickness, Witch Bolt) use the
+  `requires_attack_roll` path with canonical dice + `at_higher_levels_dice=1`.
+  Ray of Sickness's secondary Con-save-vs-poisoned is a *rider* noted in the
+  description (the engine's attack path doesn't take a save_ability), mirroring
+  how Chromatic Orb / Guiding Bolt model their on-hit extras.
+- **Save-debuff spells with no damage** (Tasha's Hideous Laughter, Sanctuary)
+  resolve via the made-save path ("resolved (save vs DC)") — same as Entangle /
+  Hold Person / the level-7/8 save-debuff spells.
+- **False Life** is modeled on the **healing path** (1d4+4) since the engine
+  grants HP via `healing_dice_*`; temp-HP vs real-HP is a presentation
+  distinction that lives in the description. +5/level upcast matches PHB.
+- **Utility spells** carry no dice and resolve as "takes effect" — identical to
+  the established utility convention (Mage Armor, Shield, Sleep, the level-7/8
+  utility spells). Ritual + concentration flags are set where PHB requires them.
+- All 16 resolve cleanly through `resolve_spell_effect()` (verified by tests):
+  attack-roll spells hit via the attack path, save-debuffs via the made-save
+  path, False Life via the heal path, utility spells "take effect".
+
+### Files changed
+- `backend/app/engine/spells.py` — +16 `register_spell()` entries in the
+  Level-1 section (after Grease, before the Level-2 section); correct schools,
+  save abilities, concentration/ritual flags, dice, ranges, and durations.
+- `backend/tests/test_spell_level1_expansion.py` (NEW) — **55 tests**:
+  registry distribution (total ≥170, level 1 ≥37, iconic-subset presence,
+  whole-registry no-duplicate-name guard), parametrized registration shape
+  (16 spells), stable-id round-trip + unique-key guard, per-spell mechanics
+  (school/save/concentration/ritual/dice/flags), and effect resolution
+  (Inflict Wounds hit+miss, Witch Bolt + Ray of Sickness attack rolls,
+  Hellish Rebuke save-for-half, Tasha's + Sanctuary save-debuff, False Life
+  heal range, 9 utility spells parametrized "takes effect"). Attack-roll
+  resolution tests monkeypatch `roll_d20` for determinism (avoids the flaky
+  natural-1 / low-roll misses the prior completion tests relied on luck to
+  avoid).
+
+### Verification
+- ✅ `uv run pytest` — **3187 backend tests passing** (+55), 0 failures
+- ✅ No frontend changes (pure backend content expansion)
+- ✅ Registry audit: 170 spells (levels `{0:14, 1:37, 2:16, 3:13, 4:14, 5:13, 6:12, 7:18, 8:18, 9:15}`), 135 enemies, zero duplicate names/ids
+
+---
 
 ## ✅ COMPLETED: PHB Level 7 & 8 Spell Roster Completion (18/18 each)
 
@@ -1298,12 +1367,13 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**3132 backend + 393 frontend tests, 0 failures.**
-(+143 backend since the roadmap completed: +89 high-tier enemy registry
-expansion (CR 11-30) + Werewolf duplicate-key fix, and +54 PHB level 7 & 8
-spell roster completion (18/18 each), lifting the catalogue to 154 spells.
-No new game_actions; content registry expansion + dedup correctness fixes
-only.)
+**3187 backend + 393 frontend tests, 0 failures.**
+(+198 backend since the roadmap completed: +89 high-tier enemy registry
+expansion (CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8
+spell roster completion (18/18 each), and +55 iconic PHB level-1 spell
+expansion (16 spells, all five resolution paths), lifting the catalogue to
+170 spells. No new game_actions; content registry expansion + dedup
+correctness fixes only.)
 
 The DM is now a full tool-calling agent: it emits structured `game_actions`
 (dice, attacks, damage, spells, AoE spells, loot, conditions, concentration)

@@ -611,6 +611,96 @@ register_spell(Spell("Grease", 1, SpellSchool.CONJURATION,
     casting_time="1 action", range="60 feet", components="V, S, M",
     save_ability="dex", duration="1 minute"))
 
+# Additional iconic PHB level-1 spells (utility, buff, control, attack, save).
+register_spell(Spell("Alarm", 1, SpellSchool.ABJURATION,
+    description="Ward a 20-foot cube for 8 hours; you are alerted when a Tiny or larger "
+                "creature touches or enters it. Ritual.",
+    casting_time="1 minute", range="30 feet", components="V, S, M",
+    ritual=True, duration="8 hours"))
+register_spell(Spell("Comprehend Languages", 1, SpellSchool.DIVINATION,
+    description="For 1 hour you understand all spoken language you hear and can read text "
+                "you touch. Ritual.",
+    casting_time="1 action", range="self", components="V, S, M",
+    ritual=True, duration="1 hour"))
+register_spell(Spell("Disguise Self", 1, SpellSchool.ILLUSION,
+    description="For 1 hour your appearance — including clothing, armor, and body — changes. "
+                "A creature can investigate (Int check) to determine it is an illusion.",
+    casting_time="1 action", range="self", components="V, S",
+    duration="1 hour"))
+register_spell(Spell("False Life", 1, SpellSchool.NECROMANCY,
+    description="Bolster yourself with necromantic energy, gaining temporary hit points "
+                "for 1 hour.",
+    casting_time="1 action", range="self", components="V, S, M",
+    healing_dice_count=1, healing_dice_sides=4, healing_bonus=4,
+    duration="1 hour", at_higher_levels_dice=5))
+register_spell(Spell("Find Familiar", 1, SpellSchool.CONJURATION,
+    description="Summon a spirit that takes an animal form as your familiar. It can't attack "
+                "but can deliver your touch spells. Ritual; lasts until dismissed.",
+    casting_time="1 hour", range="10 feet", components="V, S, M",
+    ritual=True, duration="until dismissed"))
+register_spell(Spell("Fog Cloud", 1, SpellSchool.CONJURATION,
+    description="A 20-foot sphere of fog centered on a point becomes heavily obscured. "
+                "Concentration, up to 1 hour.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Hellish Rebuke", 1, SpellSchool.EVOCATION,
+    description="In reaction to being damaged by a creature within 60 feet, you point and it "
+                "is wreathed in hellish flames. Dex save for half.",
+    casting_time="1 reaction", range="60 feet", components="V, S",
+    save_ability="dex", damage_dice_count=2, damage_dice_sides=10,
+    damage_type="fire", at_higher_levels_dice=1))
+register_spell(Spell("Identify", 1, SpellSchool.DIVINATION,
+    description="Touch an object for 1 minute to learn its magical properties and how to use "
+                "them. Ritual.",
+    casting_time="1 minute", range="touch", components="V, S, M",
+    ritual=True))
+register_spell(Spell("Inflict Wounds", 1, SpellSchool.NECROMANCY,
+    description="Make a melee spell attack against a creature; on a hit it takes necrotic "
+                "damage from a chilling touch.",
+    casting_time="1 action", range="touch", components="V, S",
+    requires_attack_roll=True, damage_dice_count=3, damage_dice_sides=10,
+    damage_type="necrotic", at_higher_levels_dice=1))
+register_spell(Spell("Longstrider", 1, SpellSchool.TRANSMUTATION,
+    description="Touch a creature to increase its speed by 10 feet for 1 hour.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="1 hour"))
+register_spell(Spell("Protection from Evil and Good", 1, SpellSchool.ABJURATION,
+    description="Touch a creature to ward it for 10 minutes: aberrations, celestials, "
+                "elementals, fey, fiends, and undead have disadvantage on attacks against it, "
+                "and it can't be charmed, frightened, or possessed by them. Concentration.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Ray of Sickness", 1, SpellSchool.NECROMANCY,
+    description="A sickening ray. Ranged spell attack; on a hit the target takes poison damage "
+                "and must succeed on a Con save or be poisoned until your next turn.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    requires_attack_roll=True, damage_dice_count=2, damage_dice_sides=8,
+    damage_type="poison", at_higher_levels_dice=1))
+register_spell(Spell("Sanctuary", 1, SpellSchool.ABJURATION,
+    description="Ward a creature for 1 minute: any attacker targeting it must first succeed "
+                "on a Wis save or be forced to choose a different target.",
+    casting_time="1 bonus action", range="30 feet", components="V, S, M",
+    save_ability="wis", duration="1 minute"))
+register_spell(Spell("Speak with Animals", 1, SpellSchool.DIVINATION,
+    description="For 10 minutes you comprehend and can be understood by beasts. Concentration. "
+                "Ritual.",
+    casting_time="1 action", range="self", components="V, S",
+    concentration=True, ritual=True, duration="10 minutes"))
+register_spell(Spell("Tasha's Hideous Laughter", 1, SpellSchool.ENCHANTMENT,
+    description="A target perceives everything as funny and falls prone with laughter, "
+                "incapacitated. Wis save negates; repeats each turn and after taking damage. "
+                "Concentration, up to 1 minute.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Witch Bolt", 1, SpellSchool.EVOCATION,
+    description="A sustained arc of lightning. Ranged spell attack for lightning damage; while "
+                "concentrating you can use your action each turn to deal the damage again "
+                "automatically.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    requires_attack_roll=True, damage_dice_count=1, damage_dice_sides=12,
+    damage_type="lightning", concentration=True, duration="up to 1 minute",
+    at_higher_levels_dice=1))
+
 # --- Level 2 ---------------------------------------------------------------
 register_spell(Spell("Scorching Ray", 2, SpellSchool.EVOCATION,
     description="Rays of fire blast targets. Multiple ranged attacks.",
