@@ -1,7 +1,80 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (2989 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (139 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅ AOE SPELL CAST GAME EVENTS ✅ DM-CALLABLE AOE SPELL FUNCTIONS (dm_cast_spell_aoe) ✅ SPELLBOOK.PREPARE_CAST (SLOT-ONLY) ✅ RESOLVE_SPELL_AOE_TARGET (PER-TARGET SAVE) ✅ SPELLCASTCARD AOE MODE ✅ DAMAGECARD SAVE-OUTCOME BADGE ✅ ONE SLOT / ONE DAMAGE ROLL / N SAVES ✅
+## TEST SUITE FULLY GREEN (3078 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (139 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅ AOE SPELL CAST GAME EVENTS ✅ DM-CALLABLE AOE SPELL FUNCTIONS (dm_cast_spell_aoe) ✅ SPELLBOOK.PREPARE_CAST (SLOT-ONLY) ✅ RESOLVE_SPELL_AOE_TARGET (PER-TARGET SAVE) ✅ SPELLCASTCARD AOE MODE ✅ DAMAGECARD SAVE-OUTCOME BADGE ✅ ONE SLOT / ONE DAMAGE ROLL / N SAVES ✅
+
+## ✅ COMPLETED: High-Tier Enemy Registry Expansion (CR 11-30) + Werewolf Dedup
+
+The enemy registry's previously empty **CR 11-30 band** is now populated
+with iconic solo threats, and a long-standing **duplicate-key data bug**
+(the same class of bug as the Thunderwave spell duplicate fixed earlier)
+is resolved.
+
+### Bug fix — Werewolf registered twice (dict-key collision)
+`COMMON_ENEMIES` is a dict literal keyed by name. **"Werewolf" appeared
+twice** — at CR 2 (line ~520) and CR 5 (line ~583) — so the CR 5 entry
+silently overwrote the CR 2 entry, and the registry's effective count
+(116) was one less than the 117 written entries. The Monster Manual
+Werewolf is **CR 3**; neither registration matched. Resolved by:
+- Removing both Werewolf registrations.
+- Adding a single canonical **Werewolf (MM CR 3)** with the lycanthrope
+  nonmagical-BPS immunity (bypassed by silvered weapons) retained.
+- Filling the freed CR 2 slot with **Saber-Toothed Tiger** (MM CR 2) and
+  the freed CR 5 slot with **Troll** (MM CR 5).
+
+`test_combat.py::test_lycanthrope_immunity_bypassed_by_silver_or_magic`
+constructs its own standalone `Combatant` named "Werewolf" with hardcoded
+stats (it does **not** pull from `COMMON_ENEMIES`), so this fix is safe.
+
+### Content expansion — 17 iconic CR 11-30 monsters
+The registry previously stopped at CR 10, leaving high-level parties
+(levels 15-20) with no true solo threats. Added 17 iconic Monster Manual
+high-tier entries spanning CR 11-30:
+
+- **CR 11** (7200 XP): Dao, Gynosphinx
+- **CR 12** (8400 XP): Erinyes (resist nonmagical BPS)
+- **CR 13** (10000 XP): Beholder, Storm Giant, Rakshasa (immune
+  nonmagical BPS), Vampire (immune necrotic+poison, resist nonmagical BPS)
+- **CR 16** (15000 XP): Adult Blue Dragon (immune lightning),
+  Adult Silver Dragon (immune cold)
+- **CR 17** (18000 XP): Adult Red Dragon (immune fire),
+  Adult Gold Dragon (immune fire)
+- **CR 19** (22000 XP): Balor (immune fire+poison)
+- **CR 20** (25000 XP): Pit Fiend (immune fire+poison, resist nonmagical
+  BPS), Ancient White Dragon (immune cold)
+- **CR 22** (41000 XP): Ancient Red Dragon (immune fire)
+- **CR 24** (62000 XP): Ancient Gold Dragon (immune fire)
+- **CR 30** (155000 XP): Tarrasque (immune fire+poison) — the apex entry
+
+CRs follow the Monster Manual for the iconic entries; HP/AC/attack_bonus
+are tier-appropriate defensive/offensive baselines (DMG p.274 CR table).
+The engine already fully supported CR 0-30 (`CR_TO_XP` covers all CRs;
+`cr_to_xp(20)==25000` was already tested) — this purely fills the data gap.
+
+### Registry now: 116 → 135 enemies
+By CR band: CR 0-10 densely populated (3-11 each), CR 11-30 now spans
+11, 12, 13 (×4), 16 (×2), 17 (×2), 19, 20 (×2), 22, 24, 30. The Tarrasque
+is correctly the highest-CR entry.
+
+### Files changed
+- `backend/app/engine/encounters.py` — dedup of the two Werewolf entries;
+  +1 canonical CR-3 Werewolf, +1 Saber-Toothed Tiger (CR 2), +1 Troll
+  (CR 5), +17 CR 11-30 iconic monsters (with appropriate damage
+  immunities/resistances via `damage_types` helpers).
+- `backend/tests/test_enemy_high_cr_expansion.py` (NEW) — **89 tests**:
+  Werewolf dedup regression (registered exactly once, MM CR 3, silvered-
+  bypass immunity intact), whole-registry no-duplicate-names guard, each
+  of the 17 new monsters (registration shape, CR→XP correctness, valid
+  `to_dict()` combat block), `get_enemies_by_cr` coverage at each new CR,
+  registry total-count increase, full CR-range presence, apex-Tarrasque,
+  canonical-damage-immunity assertions (parametrized), and
+  canonical-monster preservation.
+
+### Verification
+- ✅ `uv run pytest` — **3078 backend tests passing** (+89), 0 failures
+- ✅ No frontend changes (pure backend content expansion)
+
+---
 
 ## ✅ COMPLETED: Level-9 Spell Roster Completion (PHB 15/15)
 
@@ -1147,11 +1220,10 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**2989 backend + 393 frontend tests, 0 failures.**
-(+113 backend since the roadmap completed: +64 high-level spell registry
-expansion / Thunderwave duplicate fix, +11 orphaned-GameSave hardening,
-+23 level-9 spell roster completion. No new game_actions; content registry
-expansion + defensive cleanup only.)
+**3078 backend + 393 frontend tests, 0 failures.**
+(+89 backend since the roadmap completed: +89 high-tier enemy registry
+expansion (CR 11-30) + Werewolf duplicate-key fix. No new game_actions;
+content registry expansion + dedup correctness fix only.)
 
 The DM is now a full tool-calling agent: it emits structured `game_actions`
 (dice, attacks, damage, spells, AoE spells, loot, conditions, concentration)

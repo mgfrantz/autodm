@@ -21,7 +21,7 @@ A browser-based single-player Dungeons & Dragons game where an LLM acts as the D
 - **Conditions & Status Effects** — All 14 DnD 5e conditions with proper mechanical effects (blinded, charmed, frightened, exhausted, etc.)
 - **Rest System** — Short rest (hit dice) and long rest (full HP recovery, slot recovery, condition clearing, exhaustion reduction)
 - **Saving Throws** — Per-ability saves with class proficiency, feat integration, and skill-based bonuses
-- **Encounter Difficulty** — CR-based XP budgets, party difficulty analysis, and 116 enemy templates across all CRs
+- **Encounter Difficulty** — CR-based XP budgets, party difficulty analysis, and 135 enemy templates across all CRs (0–30)
 - **Context Management** — Smart story summarization (DSPy-powered) to manage LLM context windows across long sessions
 - **World State Persistence** — NPC relationships (trust/mood tracking), faction reputation, quest tracking, game flags for branching narrative
 - **Environmental Systems** — Weather, lighting, terrain types, temperature effects, and environmental condition integration
@@ -54,7 +54,7 @@ The DM doesn't just narrate — it calls real game engine functions. Results flo
 
 ### Content
 - **139 Spells** — Including 20 iconic PHB/XGE spells (Chill Touch, Poison Spray, Shield, Mage Armor, Bless, Command, Hunter's Mark, etc.) for levels 0-3, 25 iconic high-level SRD spells for levels 4-9 (Banishment, Dominate Person, Circle of Death, Delayed Blast Fireball, Antimagic Field, Mass Heal, Prismatic Wall, etc.), plus 6 PHB level-9 spells completing the tier (Astral Projection, Gate, Imprisonment, Shapechange, Storm of Vengeance, Weird) — every tier is now ≥10 and all 15 PHB 9th-level spells are registered
-- **116 Enemies** — From CR 0 to CR 10+ (Goblins, Skeletons, Owlbears, Dragons, Giants, Devils, etc.)
+- **135 Enemies** — From CR 0 to CR 30 (Goblins, Skeletons, Owlbears, Dragons, Giants, Devils, Beholder, Tarrasque, etc.)
 - **53 Feats** — PHB + XGE race-specific feats
 - **47 Tools** — Tool proficiencies with skill integration
 - **18 Backgrounds** — Character backgrounds with skill proficiencies and features
@@ -272,7 +272,7 @@ The game implements comprehensive DnD 5e mechanics:
 
 **Version:** 0.1.0 (MVP + Advanced Features Complete)
 
-**Test Suite:** 2989 backend tests passing + 393 frontend tests passing = **3382 total**, 0 failures ✅
+**Test Suite:** 3078 backend tests passing + 393 frontend tests passing = **3471 total**, 0 failures ✅
 
 **Core Features:** ✅ All MVP features implemented ✅ Advanced features complete ✅ DSPy migration complete ✅ AI features (images, TTS with local support) operational ✅ Local TTS via mlx-audio (Kokoro) complete
 
@@ -284,6 +284,7 @@ The game implements comprehensive DnD 5e mechanics:
 See [DESIGN.md](DESIGN.md) for the full architecture, [PROGRESS.md](PROGRESS.md) for detailed progress tracking, and `docs/` for research on upcoming features:
 
 **Recently Completed:**
+- **High-Tier Enemy Registry Expansion (CR 11-30) + Werewolf Dedup** — The enemy registry previously stopped at CR 10, leaving high-level parties (15-20) with no true solo threats. Added **17 iconic Monster Manual high-tier entries spanning CR 11-30**: Beholder (CR 13), Storm Giant, Rakshasa, Vampire, Adult Blue/Silver/Red/Gold Dragons (CR 16-17), Balor (CR 19), Pit Fiend, Ancient White/Red/Gold Dragons (CR 20-24), and the **Tarrasque (CR 30)** as the new apex entry — each with its canonical damage immunities. Also fixed a duplicate-key data bug: **Werewolf was registered twice** (CR 2 and CR 5, dict-key collision — the CR 5 entry silently overwrote the CR 2 one). Consolidated to a single MM-correct Werewolf (CR 3) retaining the silvered-weapon-bypass immunity, and filled the freed CR 2/CR 5 slots with Saber-Toothed Tiger and Troll. Registry now spans the full CR 0-30 range (116 → 135 enemies). +89 backend tests. ✅ **COMPLETE**
 - **Level-9 Spell Roster Completion (PHB 15/15)** — Rounded out the spell catalogue's last thin tier. Added 6 iconic PHB level-9 spells (Astral Projection, Gate, Imprisonment, Shapechange, Storm of Vengeance, Weird) so that **every Player's Handbook 9th-level spell is now registered** (level 9: 9 → 15). Correct mechanics throughout: utility/buff spells (Astral Projection, Gate, Shapechange) modeled like Wall of Force/True Polymorph, Storm of Vengeance uses its signature 10d6 lightning strike (Con save, concentration) with the full escalating-storm text in the description, Weird is 4d8 psychic (Wis save, concentration), and Imprisonment uses the canonical burial Str save with all six prison variants documented. +23 backend tests. ✅ **COMPLETE**
 - **DM Function Calling (Phase 3.5b — AoE Multi-Target Spells)** — The DM can now cast **one spell at multiple combatants** in a single action (`cast_spell_aoe`). Fireball hitting three goblins consumes **one slot**, rolls damage **once**, and resolves a **separate saving throw per target** — exactly PHB p.204. The key architectural move: `Spellbook.prepare_cast()` (new) consumes the slot without resolving the effect, then `resolve_spell_aoe_target()` resolves each target against the shared damage roll. One summary `spell_cast` event + N follow-up `damage` events (each with HP bar + save-outcome badge). Single-target `cast_spell` is untouched (backward compatible). +38 backend + 19 frontend tests. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`
 - **DM Function Calling — Game Event UI Polish** — Inline event cards now feel like a virtual tabletop. Dice **tumble** through random faces (~480ms) before settling on the real result (opt-in `animate` prop, `prefers-reduced-motion`-aware); the **HP bar shakes** when damage lands on AttackCard/DamageCard; and **older event cards collapse** to a one-line summary by default (most-recent stay expanded, click to re-expand) so a busy turn stays readable. New pure helpers (`utils/diceTumble.ts`, `eventIcon`/`eventAccent`/`shouldCollapse`) + a `useDiceTumble`/`useDiceTumbleRolls` hook; +49 frontend tests. ✅ **COMPLETE** — see `docs/DM_FUNCTION_CALLING_RESEARCH.md`

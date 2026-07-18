@@ -517,18 +517,19 @@ COMMON_ENEMIES = {
     ),
     "Pegasus": EnemyTemplate(name="Pegasus", cr=2, armor_class=12, hp=59, attack_bonus=5),
     "Phase Spider": EnemyTemplate(name="Phase Spider", cr=2, armor_class=15, hp=32, attack_bonus=4),
+    "Saber-Toothed Tiger": EnemyTemplate(name="Saber-Toothed Tiger", cr=2, armor_class=12, hp=52, attack_bonus=6),
+
+    # CR 3 (700 XP)
     "Werewolf": EnemyTemplate(
         name="Werewolf",
-        cr=2,
-        armor_class=13,
+        cr=3,
+        armor_class=12,
         hp=58,
         attack_bonus=4,
         damage_modifiers=[
             dt_mod.immune_nonmagical_bps(silver_bypasses=True).to_dict(),
         ],
     ),
-
-    # CR 3 (700 XP)
     "Owlbear": EnemyTemplate(name="Owlbear", cr=3, armor_class=13, hp=59, attack_bonus=7),
     "Minotaur": EnemyTemplate(name="Minotaur", cr=3, armor_class=14, hp=76, attack_bonus=6),
     "Ankheg": EnemyTemplate(name="Ankheg", cr=3, armor_class=14, hp=39, attack_bonus=5),
@@ -580,16 +581,7 @@ COMMON_ENEMIES = {
 
     # CR 5 (1800 XP)
     "Hill Giant": EnemyTemplate(name="Hill Giant", cr=5, armor_class=13, hp=105, attack_bonus=8),
-    "Werewolf": EnemyTemplate(
-        name="Werewolf",
-        cr=5,
-        armor_class=14,
-        hp=58,
-        attack_bonus=7,
-        damage_modifiers=[
-            dt_mod.immune_nonmagical_bps(silver_bypasses=True).to_dict(),
-        ],
-    ),
+    "Troll": EnemyTemplate(name="Troll", cr=5, armor_class=15, hp=84, attack_bonus=7),
     "Bandit Captain": EnemyTemplate(name="Bandit Captain", cr=5, armor_class=15, hp=65, attack_bonus=4),
     "Berbalang": EnemyTemplate(name="Berbalang", cr=5, armor_class=13, hp=75, attack_bonus=5),
     "Berserker": EnemyTemplate(name="Berserker", cr=5, armor_class=13, hp=67, attack_bonus=5),
@@ -715,6 +707,152 @@ COMMON_ENEMIES = {
     "Marilith": EnemyTemplate(name="Marilith", cr=10, armor_class=18, hp=189, attack_bonus=9),
     "Mummy Lord": EnemyTemplate(name="Mummy Lord", cr=10, armor_class=17, hp=97, attack_bonus=7),
     "Nalfeshnee": EnemyTemplate(name="Nalfeshnee", cr=10, armor_class=18, hp=212, attack_bonus=10),
+
+    # CR 11-30 (7200 XP and up — high-tier solo threats for parties 15-20).
+    # Fills the registry's previously empty CR 11-30 band. CRs follow the
+    # Monster Manual for the iconic entries; HP/AC/attack_bonus are
+    # tier-appropriate defensive/offensive baselines (cf. DMG p.274 CR table).
+    # CR 11 (7200 XP)
+    "Dao": EnemyTemplate(name="Dao", cr=11, armor_class=18, hp=120, attack_bonus=9),
+    "Gynosphinx": EnemyTemplate(name="Gynosphinx", cr=11, armor_class=17, hp=136, attack_bonus=8),
+
+    # CR 12 (8400 XP)
+    "Erinyes": EnemyTemplate(
+        name="Erinyes",
+        cr=12,
+        armor_class=18,
+        hp=153,
+        attack_bonus=9,
+        damage_modifiers=[dt_mod.resist_nonmagical_bps().to_dict()],
+    ),
+
+    # CR 13 (10000 XP)
+    "Beholder": EnemyTemplate(name="Beholder", cr=13, armor_class=18, hp=180, attack_bonus=5),
+    "Storm Giant": EnemyTemplate(name="Storm Giant", cr=13, armor_class=16, hp=230, attack_bonus=12),
+    "Rakshasa": EnemyTemplate(
+        name="Rakshasa",
+        cr=13,
+        armor_class=16,
+        hp=84,
+        attack_bonus=6,
+        damage_modifiers=[dt_mod.immune_nonmagical_bps().to_dict()],
+    ),
+    "Vampire": EnemyTemplate(
+        name="Vampire",
+        cr=13,
+        armor_class=16,
+        hp=144,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.immune("necrotic").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
+
+    # CR 16 (15000 XP)
+    "Adult Blue Dragon": EnemyTemplate(
+        name="Adult Blue Dragon",
+        cr=16,
+        armor_class=19,
+        hp=243,
+        attack_bonus=12,
+        damage_modifiers=[dt_mod.immune("lightning").to_dict()],
+    ),
+    "Adult Silver Dragon": EnemyTemplate(
+        name="Adult Silver Dragon",
+        cr=16,
+        armor_class=19,
+        hp=290,
+        attack_bonus=12,
+        damage_modifiers=[dt_mod.immune("cold").to_dict()],
+    ),
+
+    # CR 17 (18000 XP)
+    "Adult Red Dragon": EnemyTemplate(
+        name="Adult Red Dragon",
+        cr=17,
+        armor_class=19,
+        hp=297,
+        attack_bonus=14,
+        damage_modifiers=[dt_mod.immune("fire").to_dict()],
+    ),
+    "Adult Gold Dragon": EnemyTemplate(
+        name="Adult Gold Dragon",
+        cr=17,
+        armor_class=19,
+        hp=297,
+        attack_bonus=14,
+        damage_modifiers=[dt_mod.immune("fire").to_dict()],
+    ),
+
+    # CR 19 (22000 XP)
+    "Balor": EnemyTemplate(
+        name="Balor",
+        cr=19,
+        armor_class=19,
+        hp=262,
+        attack_bonus=14,
+        damage_modifiers=[
+            dt_mod.immune("fire").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
+    ),
+
+    # CR 20 (25000 XP)
+    "Pit Fiend": EnemyTemplate(
+        name="Pit Fiend",
+        cr=20,
+        armor_class=19,
+        hp=300,
+        attack_bonus=14,
+        damage_modifiers=[
+            dt_mod.immune("fire").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
+    "Ancient White Dragon": EnemyTemplate(
+        name="Ancient White Dragon",
+        cr=20,
+        armor_class=20,
+        hp=333,
+        attack_bonus=14,
+        damage_modifiers=[dt_mod.immune("cold").to_dict()],
+    ),
+
+    # CR 22 (41000 XP)
+    "Ancient Red Dragon": EnemyTemplate(
+        name="Ancient Red Dragon",
+        cr=22,
+        armor_class=22,
+        hp=546,
+        attack_bonus=17,
+        damage_modifiers=[dt_mod.immune("fire").to_dict()],
+    ),
+
+    # CR 24 (62000 XP)
+    "Ancient Gold Dragon": EnemyTemplate(
+        name="Ancient Gold Dragon",
+        cr=24,
+        armor_class=22,
+        hp=546,
+        attack_bonus=17,
+        damage_modifiers=[dt_mod.immune("fire").to_dict()],
+    ),
+
+    # CR 30 (155000 XP)
+    "Tarrasque": EnemyTemplate(
+        name="Tarrasque",
+        cr=30,
+        armor_class=25,
+        hp=676,
+        attack_bonus=19,
+        damage_modifiers=[
+            dt_mod.immune("fire").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
+    ),
 }
 
 
