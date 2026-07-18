@@ -31,8 +31,8 @@ class GameEventType(str, Enum):
     SPELL_CAST = "spell_cast"
     # Phase 4: Inventory
     LOOT = "loot"
-    # Future phases:
-    # CONDITION_APPLIED = "condition_applied"
+    # Phase 5: Conditions
+    CONDITION_APPLIED = "condition_applied"
 
 
 @dataclass
@@ -284,6 +284,50 @@ class GameEvent:
                 "healing": healing,
                 "ac_after": ac_after,
                 "uses_remaining": uses_remaining,
+                "success": success,
+                "message": message,
+            },
+        )
+
+    @classmethod
+    def condition_applied(
+        cls,
+        label: str,
+        operation: str,
+        condition: str,
+        target: str,
+        target_type: str = "player",
+        duration: int | None = None,
+        description: str = "",
+        success: bool = True,
+        message: str = "",
+    ) -> "GameEvent":
+        """Create a ``condition_applied`` event (DM function calling Phase 5).
+
+        Captures the outcome of a DM-emitted ``apply_condition`` /
+        ``remove_condition`` game_action resolved via the real conditions
+        engine (``app.engine.conditions``). ``operation`` is one of
+        ``"applied"`` or ``"removed"``.
+
+        * ``target`` — display name of the affected creature ("Player",
+          "Goblin Brute", etc.).
+        * ``target_type`` — ``"player"`` or ``"combatant"``.
+        * ``duration`` — rounds remaining (``None`` = permanent until removed).
+        * ``description`` — the condition's mechanical effect text.
+
+        Failed operations (unknown condition, condition not present on
+        remove) carry ``success=False`` and a human-readable ``message``.
+        """
+        return cls(
+            type=GameEventType.CONDITION_APPLIED,
+            label=label,
+            data={
+                "operation": operation,
+                "condition": condition,
+                "target": target,
+                "target_type": target_type,
+                "duration": duration,
+                "description": description,
                 "success": success,
                 "message": message,
             },

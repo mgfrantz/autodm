@@ -279,6 +279,24 @@ class DMActionableNarration(dspy.Signature):
       - Current inventory items are listed under INVENTORY_ROSTER (id, name,
         type, qty, equipped, rarity). Use those exact ids for remove_item,
         equip_item, and use_item.
+    - For CONDITION operations:
+      - Use apply_condition when a creature gains a status condition (poisoned
+        by a bite, frightened by a dragon's presence, blinded by a flash,
+        grappled by a tentacle, restrained by a net, knocked prone, etc.).
+        Args: {"condition": "poisoned", "target": "player",
+               "duration": 3}
+        "condition" is one of the 14 core DnD 5e conditions: blinded, charmed,
+        deafened, frightened, grappled, incapacitated, invisible, paralyzed,
+        petrified, poisoned, prone, restrained, stunned, unconscious.
+        "target" is "player" (or omitted for the player) or a combatant ID from
+        COMBATANT_ROSTER (e.g. "goblin_1").
+        "duration" is optional rounds (e.g. 3 = "for 3 rounds"). Omit for a
+        permanent condition (until removed).
+      - Use remove_condition when a condition ends (player shakes off fear,
+        ally dispels paralysis, condition expires). Use the same target.
+        Args: {"condition": "frightened", "target": "player"}
+      - The player's current conditions are listed in the Conditions line of
+        the character context. Use those exact names for remove_condition.
     - Do NOT fabricate dice results in the narration text — describe
       the ATTEMPT and let the backend resolve the outcome
     - Do NOT state HP numbers, damage amounts, or initiative order in narration;
@@ -290,7 +308,8 @@ class DMActionableNarration(dspy.Signature):
     Each game_action is a dict with:
     - "function": "roll_dice" | "request_check" | "attack" | "damage" |
                   "roll_initiative" | "cast_spell" |
-                  "give_item" | "remove_item" | "equip_item" | "use_item"
+                  "give_item" | "remove_item" | "equip_item" | "use_item" |
+                  "apply_condition" | "remove_condition"
     - "label": short description (e.g., "Perception Check", "Goblin strikes",
                   "Fireball engulfs enemies", "Wizard casts Fire Bolt",
                   "Found a Health Potion")
@@ -308,6 +327,9 @@ class DMActionableNarration(dspy.Signature):
       - remove_item: {"item_id": "...", "quantity": 1}
       - equip_item: {"item_id": "..."}
       - use_item: {"item_id": "..."}
+      - apply_condition: {"condition": "poisoned", "target": "player",
+                          "duration": 3}
+      - remove_condition: {"condition": "frightened", "target": "player"}
     """
 
     situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action. Includes COMBATANT_ROSTER with id/name/side/HP/AC for active encounters.")

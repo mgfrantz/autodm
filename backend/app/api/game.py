@@ -40,6 +40,8 @@ from app.engine.dm_functions import (
     dm_remove_item,
     dm_equip_item,
     dm_use_item,
+    dm_apply_condition,
+    dm_remove_condition,
 )
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 from app.engine.quests import (
@@ -201,6 +203,26 @@ def _available_spells_for_dm(character: "Character") -> str:
 # Inventory game-action functions (Phase 4).
 _INVENTORY_ACTIONS = ("give_item", "remove_item", "equip_item", "use_item")
 
+# Condition game-action functions (Phase 5).
+_CONDITION_ACTIONS = ("apply_condition", "remove_condition")
+
+
+class _PlayerConditionState:
+    """Adapter bridging ``game_state`` conditions to the conditions engine.
+
+    The conditions engine operates on combatant-like objects exposing
+    ``.conditions`` (list[str]) and ``.condition_durations`` (dict[str, int]).
+    The player's conditions live in ``game_state["conditions"]`` (a flat name
+    list) rather than on a combatant object, so this lightweight adapter exposes
+    the attributes the engine needs. After mutation the caller syncs the
+    adapter's ``.conditions`` / ``.condition_durations`` back to game_state.
+    """
+
+    def __init__(self, name: str, conditions: list[str], condition_durations: dict[str, int]):
+        self.name = name
+        self.conditions = conditions
+        self.condition_durations = condition_durations
+
 
 def _inventory_for_dm(character: "Character") -> str:
     """Build an inventory roster string for the DM context.
@@ -234,6 +256,52 @@ def _inventory_for_dm(character: "Character") -> str:
     lines.append(
         "Use these item_ids for remove_item, equip_item, and use_item."
     )
+    return "\n".join(lines)
+
+
+def _conditions_for_dm(game_state: dict[str, Any], character: "Character | None" = None) -> str:
+    """Build an active-conditions roster string for the DM context (Phase 5).
+
+    Lists the player's active conditions (with durations) and, if combat is
+    active, each combatant's conditions. This lets the DM emit real
+    ``remove_condition`` game_actions for conditions that should end, and shows
+    what's already active so it doesn't duplicate. Returns an empty string when
+    no conditions are active anywhere.
+    """
+    lines: list[str] = []
+    # Player conditions
+    player_conds = game_state.get("conditions") or []
+    player_durations = game_state.get("condition_durations") or {}
+    if isinstance(player_conds, list) and player_conds:
+        parts = []
+        for c in player_conds:
+            dur = player_durations.get(c) if isinstance(player_durations, dict) else None
+            dur_str = f" ({dur}r)" if dur is not None else ""
+            parts.append(f"{c}{dur_str}")
+        name = character.name if character else "Player"
+        lines.append(f"PLAYER_CONDITIONS: {', '.join(parts)} ({name})")
+
+    # Combatant conditions
+    combat_data = game_state.get("combat")
+    if combat_data:
+        try:
+            from app.engine.combat import Encounter
+            encounter = Encounter.from_dict(combat_data)
+            for c in encounter.combatants:
+                conds = c.conditions or []
+                if conds:
+                    dur_parts = []
+                    for cond in conds:
+                        dur = (c.condition_durations or {}).get(cond)
+                        dur_str = f" ({dur}r)" if dur is not None else ""
+                        dur_parts.append(f"{cond}{dur_str}")
+                    lines.append(f"  {c.name} [{c.id}]: {', '.join(dur_parts)}")
+        except Exception as e:
+            logger.error(f"Failed to build combatant conditions roster: {e}")
+
+    if not lines:
+        return ""
+    lines.append("Use apply_condition / remove_condition with these condition names.")
     return "\n".join(lines)
 
 
@@ -288,6 +356,13 @@ def _resolve_game_actions(
         if isinstance(a, dict)
     )
 
+    # Check if any condition actions are present (Phase 5)
+    has_condition = any(
+        a.get("function") in _CONDITION_ACTIONS
+        for a in game_actions or []
+        if isinstance(a, dict)
+    )
+
     # Load encounter if combat actions (or spell damage coupling) need it
     encounter: Encounter | None = None
     if has_combat and game_state.get("combat"):
@@ -303,6 +378,14 @@ def _resolve_game_actions(
             encounter = Encounter.from_dict(game_state["combat"])
         except Exception as e:
             logger.error(f"Failed to load encounter for spell coupling: {e}")
+
+    # An encounter is also needed for condition actions targeting a combatant
+    # (apply_condition / remove_condition with a combatant_id target).
+    if encounter is None and has_condition and game_state.get("combat"):
+        try:
+            encounter = Encounter.from_dict(game_state["combat"])
+        except Exception as e:
+            logger.error(f"Failed to load encounter for condition coupling: {e}")
 
     # Load spellbook if spell actions exist and a character is available
     spellbook = None
@@ -602,6 +685,54 @@ def _resolve_game_actions(
                             except Exception as e:
                                 logger.error(f"Healing on use_item failed: {e}")
                     events.append(event)
+            elif func in _CONDITION_ACTIONS:
+                # Phase 5: condition operations resolved via the conditions
+                # engine. Dual-state: player conditions live in game_state,
+                # combatant conditions live on the Combatant object.
+                cond = args.get("condition")
+                if not cond:
+                    logger.warning(f"Skipping {func} action: missing condition")
+                    continue
+                target_id = args.get("target") or "player"
+                duration = args.get("duration")
+
+                # Resolve the target: player adapter or encounter combatant.
+                cond_target = None
+                target_type = "player"
+                if target_id and target_id != "player" and encounter is not None:
+                    for c in encounter.combatants:
+                        if c.id == target_id:
+                            cond_target = c
+                            target_type = "combatant"
+                            break
+                if cond_target is None:
+                    # Player target — build the adapter from game_state.
+                    player_name = str(character.name) if character else "Player"
+                    cond_target = _PlayerConditionState(
+                        name=player_name,
+                        conditions=list(game_state.get("conditions") or []),
+                        condition_durations=dict(game_state.get("condition_durations") or {}),
+                    )
+
+                if func == "apply_condition":
+                    event = dm_apply_condition(
+                        target=cond_target,
+                        condition=cond,
+                        duration=duration,
+                    )
+                else:  # remove_condition
+                    event = dm_remove_condition(
+                        target=cond_target,
+                        condition=cond,
+                    )
+                # Fill in target_type for the event.
+                event.data["target_type"] = target_type
+                events.append(event)
+
+                # Sync player conditions back to game_state.
+                if target_type == "player":
+                    game_state["conditions"] = list(cond_target.conditions)
+                    game_state["condition_durations"] = dict(cond_target.condition_durations)
             else:
                 logger.warning(f"Unknown game_action function: {func}")
         except Exception as e:
@@ -1248,6 +1379,7 @@ Boss: {_boss_for_dm(game_state)}
 {_combatant_roster_for_dm(game_state)}
 {_available_spells_for_dm(character)}
 {_inventory_for_dm(character)}
+{_conditions_for_dm(game_state, character)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -1365,6 +1497,7 @@ Boss: {_boss_for_dm(game_state)}
 {_combatant_roster_for_dm(game_state)}
 {_available_spells_for_dm(character)}
 {_inventory_for_dm(character)}
+{_conditions_for_dm(game_state, character)}
         """
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(

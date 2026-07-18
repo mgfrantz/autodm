@@ -185,6 +185,12 @@ export function summarizeEvent(event: GameEvent): string {
       d.healing, d.ac_after, d.uses_remaining, d.message, d.source,
     )
   }
+  if (event.type === 'condition_applied') {
+    const d = event.data
+    return conditionSummary(
+      d.operation, d.condition, d.target, d.duration, d.success, d.message,
+    )
+  }
   return event.label
 }
 
@@ -465,4 +471,86 @@ export function lootSummary(
     parts.unshift(`${lootIcon(itemType)}`);
   }
   return parts.join(' — ').trim();
+}
+
+// ==========================================================================
+// Phase 5: Condition event helpers
+// ==========================================================================
+
+/**
+ * Tailwind color classes for a given DnD condition (severity tier).
+ * Incapacitating/severe = red, moderate = amber, mild = parchment.
+ */
+export function conditionColor(condition: string | undefined): { text: string; bg: string; border: string } {
+  const c = (condition ?? '').toLowerCase();
+  // Severe: incapacitating or auto-crit conditions
+  const severe = ['paralyzed', 'petrified', 'stunned', 'unconscious', 'incapacitated'];
+  // Moderate: impactful but not fully disabling
+  const moderate = ['blinded', 'charmed', 'frightened', 'grappled', 'poisoned', 'restrained', 'prone'];
+  if (severe.includes(c)) {
+    return { text: 'text-rose-300', bg: 'bg-rose-900/30', border: 'border-rose-700/50' };
+  }
+  if (moderate.includes(c)) {
+    return { text: 'text-amber-300', bg: 'bg-amber-900/30', border: 'border-amber-700/50' };
+  }
+  if (c === 'invisible') {
+    return { text: 'text-indigo-300', bg: 'bg-indigo-900/30', border: 'border-indigo-700/50' };
+  }
+  if (c === 'deafened') {
+    return { text: 'text-stone-300', bg: 'bg-stone-900/30', border: 'border-stone-700/50' };
+  }
+  return { text: 'text-parchment-200', bg: 'bg-parchment-900/30', border: 'border-parchment-700/50' };
+}
+
+/**
+ * Emoji icon for a given condition.
+ */
+export function conditionIcon(condition: string | undefined): string {
+  switch ((condition ?? '').toLowerCase()) {
+    case 'blinded':       return '🙈';
+    case 'charmed':       return '💖';
+    case 'deafened':      return '🙉';
+    case 'frightened':    return '😱';
+    case 'grappled':      return '🤼';
+    case 'incapacitated': return '😵';
+    case 'invisible':     return '👻';
+    case 'paralyzed':     return '⚡';
+    case 'petrified':     return '🪨';
+    case 'poisoned':      return '🤢';
+    case 'prone':         return '🧎';
+    case 'restrained':    return '⛓️';
+    case 'stunned':       return '💫';
+    case 'unconscious':   return '💀';
+    default:              return '🌀';
+  }
+}
+
+/**
+ * Generate a one-line summary for a condition_applied event.
+ */
+export function conditionSummary(
+  operation: string | undefined,
+  condition: string | undefined,
+  target: string | undefined,
+  duration: number | null | undefined,
+  success: boolean | null | undefined,
+  message: string | undefined,
+): string {
+  const cond = condition ?? 'unknown condition';
+  const tgt = target ?? 'Target';
+  const op = (operation ?? 'applied').toLowerCase();
+
+  if (success === false) {
+    return `Failed: ${cond} — ${message ?? 'failed'}`;
+  }
+
+  const icon = conditionIcon(cond);
+  const durStr = duration !== null && duration !== undefined
+    ? ` (${duration} round${duration === 1 ? '' : 's'})`
+    : ' (permanent)';
+
+  if (op === 'removed') {
+    return `${icon} ${tgt} no longer ${cond}`;
+  }
+  return `${icon} ${tgt} is now ${cond}${durStr}`;
 }

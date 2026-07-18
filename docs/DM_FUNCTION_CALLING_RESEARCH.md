@@ -1837,3 +1837,192 @@ If Phase 4 is too large for a single run, it can be split:
   icons, quantity/value/healing/AC/uses indicators, failed-operation card,
   source provenance), and `GameEventRenderer` dispatch. +40 backend /
   +27 frontend tests.
+
+- 2026-07-17: **Phase 5 STAGED** — added concrete, file-level implementation
+  plan for condition application via DM function calls. Key insight: Phase 5 is
+  **dual-state** like Phase 3, but the duality is *player vs combatant* rather
+  than *spellbook vs encounter*. Player conditions live in
+  `game_state["conditions"]` (flat name list) — not on a combatant object — so
+  a lightweight `_PlayerConditionState` adapter bridges `game_state` to the
+  conditions engine, with a parallel `game_state["condition_durations"]` dict
+  for timed conditions. Combatant conditions live on the Combatant object.
+  Plan covers new `CONDITION_APPLIED` GameEvent type, `dm_apply_condition` /
+  `dm_remove_condition` wrapping the conditions engine, DSPy signature
+  expansion, dual-state resolution pipeline, `_conditions_for_dm` roster, and a
+  `ConditionCard` component (severity-themed colors, duration indicator, effect
+  flags). ~25 backend / ~15 frontend tests.
+
+## Phase 5 Implementation Plan: Condition Application
+
+> **Status:** GREEN-LIT by standing green-light (2026-07-17) — EXECUTING
+> **Scope:** DM emits `apply_condition` / `remove_condition` game_actions;
+> backend resolves via the real conditions engine (`conditions.py`);
+> results flow as `CONDITION_APPLIED` GameEvent objects to inline
+> `ConditionCard` components
+> **Approach:** Same Option C (Hybrid) as Phases 1-4
+
+### Why Phase 5 Now
+
+- **All prior phases shipped** — dice, combat, spells, and inventory are all
+  live with 2763 backend + 261 frontend tests passing.
+- **Conditions engine is robust** — `backend/app/engine/conditions.py` already
+  defines all 14 core DnD 5e conditions (blinded, charmed, deafened, frightened,
+  grappled, incapacitated, invisible, paralyzed, petrified, poisoned, prone,
+  restrained, stunned, unconscious) with `apply_condition()`,
+  `remove_condition()`, `tick_conditions()`, `has_condition()`,
+  `get_condition_info()`, and full combat-effect query helpers (advantage,
+  disadvantage, incapacitation, auto-crit, damage resistance, speed zero). No
+  new mechanics needed.
+- **Combatants already support conditions** — the `Combatant` class has
+  `conditions` + `condition_durations` fields, with `apply_condition()` /
+  `remove_condition()` / `has_condition()` methods that delegate to the engine.
+  The existing combat API (`POST /combat/conditions/{combatant_id}`) already
+  applies/removes conditions on encounter combatants.
+- **Player conditions are already stored** — `game_state["conditions"]` holds
+  the player's active conditions (read by the social, rest, and spell systems).
+- **Closes the status-effect loop** — the DM can narrate "the ghoul's claws
+  rend your flesh — you are paralyzed" and the condition *actually applies*,
+  with mechanical effects in subsequent combat, instead of being flavor text.
+
+### The architectural insight (vs Phase 4)
+
+Phase 4 (inventory) was **single-state** (`character.inventory`). Phase 5
+(conditions) is **dual-state** like Phase 3 — but the duality is **player vs
+combatant**, not spellbook vs encounter:
+
+| Store | Holds | Source of truth |
+|-------|-------|-----------------|
+| Player | the character's conditions | `game_state["conditions"]` (flat name list) |
+| Combatant | a monster's/NPC's conditions | Combatant object inside `game_state["combat"]` |
+
+The conditions engine operates on any "combatant-like" object exposing
+`.conditions` (list[str]) and `.condition_durations` (dict[str,int]). The
+Combatant class already satisfies this. But the player's conditions live in
+`game_state` as a bare name list — **not** on a combatant object. So a
+lightweight `_PlayerConditionState` adapter bridges `game_state` to the engine:
+
+```python
+class _PlayerConditionState:
+    def __init__(self, name, conditions, condition_durations):
+        self.name = name
+        self.conditions = conditions           # list[str] from game_state
+        self.condition_durations = condition_durations  # dict from game_state
+```
+
+After mutation, the adapter's `.conditions` and `.condition_durations` sync
+back to `game_state["conditions"]` / `game_state["condition_durations"]`. A
+new parallel `game_state["condition_durations"]` dict stores timed durations
+for the player (the historical `game_state["conditions"]` only stored names;
+backward-compatible since existing readers treat it as a flat list).
+
+### Game actions the DM can emit
+
+| Action | Args | Effect |
+|--------|------|--------|
+| `apply_condition` | `{condition, target, duration?}` | Apply a condition to player or combatant |
+| `remove_condition` | `{condition, target}` | Remove a condition from player or combatant |
+
+- **`condition`** — one of the 14 core DnD 5e conditions (case-insensitive).
+  Unknown conditions → `success=False` event with a message.
+- **`target`** — `"player"` (or omitted → defaults to player) or a combatant ID
+  from the `COMBATANT_ROSTER`. When combat is active and the target resolves to
+  a combatant, the condition is applied to the Combatant object (and persists in
+  the encounter). Otherwise it applies to the player.
+- **`duration`** — optional rounds (e.g. `3` = "for 3 rounds"). Omitted →
+  permanent until removed.
+
+### Backend Implementation (Steps 1-4)
+
+#### 1. `backend/app/engine/game_events.py` — Add CONDITION_APPLIED event type
+
+Add `CONDITION_APPLIED = "condition_applied"` to `GameEventType` + factory:
+
+```python
+CONDITION_APPLIED = "condition_applied"
+
+@classmethod
+def condition_applied(
+    cls,
+    label: str,
+    operation: str,          # "applied" | "removed"
+    condition: str,          # e.g. "poisoned"
+    target: str,             # display name ("Player", "Goblin")
+    target_type: str = "player",  # "player" | "combatant"
+    duration: int | None = None,  # rounds remaining (None = permanent)
+    description: str = "",   # mechanical effect text
+    success: bool = True,
+    message: str = "",       # failure reason
+) -> "GameEvent":
+```
+
+#### 2. `backend/app/engine/dm_functions.py` — Add condition functions
+
+Add a `# --- Phase 5: Condition functions ---` section:
+
+- **`dm_apply_condition(target, condition, duration=None)`** — wraps
+  `conditions.apply_condition(target, condition, duration)`. Returns a
+  `CONDITION_APPLIED` event with `operation="applied"`. Invalid condition →
+  `success=False`. Includes `get_condition_info()` description.
+
+- **`dm_remove_condition(target, condition)`** — wraps
+  `conditions.remove_condition(target, condition)`. Returns a
+  `CONDITION_APPLIED` event with `operation="removed"`. Not present →
+  `success=False`.
+
+Both accept any "combatant-like" object (Combatant or `_PlayerConditionState`)
+and never crash — defensive try/except. A `_norm_condition()` helper
+normalises DM-supplied condition strings (lowercase, spaces→underscores, plurals).
+
+#### 3. `backend/app/llm/dspy_signatures.py` — Expand DMActionableNarration
+
+Add condition guidance to the docstring: `apply_condition` /
+`remove_condition` with `{condition, target, duration?}`. List the 14 valid
+conditions. Target is `"player"` or a combatant ID. Add both functions to the
+function list + args schema.
+
+#### 4. `backend/app/api/game.py` — Resolution pipeline + roster helper
+
+- Add `_CONDITION_ACTIONS = ("apply_condition", "remove_condition")`.
+- Add `_PlayerConditionState` adapter class.
+- Add `_conditions_for_dm(game_state, character)` roster helper — lists the
+  player's active conditions + combatant conditions (if combat active), so the
+  DM knows what to remove. Mirrors the other roster helpers.
+- In `_resolve_game_actions`: detect condition actions; for player, build the
+  adapter from game_state, mutate, sync back; for combatant, find the combatant
+  in the encounter. The encounter persistence (existing) handles combatant
+  conditions; the game_state persistence (existing) handles player conditions.
+
+### Frontend (Steps 5-8)
+
+#### 5. `types/index.ts` — Add condition_applied type + fields
+
+Add `'condition_applied'` to `GameEventType`. Add to `GameEventData`:
+`condition`, `target`, `target_type`, `duration`, `description`.
+
+#### 6. `utils/gameEvents.ts` — Condition helpers
+
+Add `conditionColor()` (severity tier), `conditionIcon()` (per condition),
+`conditionSummary()` (one-liner). Update `summarizeEvent()`.
+
+#### 7. `components/ConditionCard.tsx` (NEW)
+
+Inline condition card: condition name + icon, target name, operation badge
+(applied/removed), duration indicator (e.g. "3 rounds" / "permanent"),
+mechanical effect description, severity color theming. Failed → muted card.
+
+#### 8. `components/GameEventRenderer.tsx` — Dispatch condition_applied.
+
+### Test Plan (Step 9) — ~25 backend, ~15 frontend
+
+- **`test_dm_condition_functions.py`** (NEW) — `dm_apply_condition` (valid,
+  invalid, duration, already-present, description), `dm_remove_condition`
+  (present, absent), event serialization.
+- **`test_condition_events_api.py`** (NEW) — `/action` with `apply_condition`
+  on player (event + game_state persistence), on combatant (event + encounter
+  persistence), `remove_condition` on both, failed (invalid condition),
+  streaming emits events + persists.
+- **`test_game_events.py`** (extended) — `condition_applied` factory round-trip.
+- **`gameEvents.test.ts`** (extended) — `conditionColor`, `conditionIcon`,
+  `conditionSummary`, `summarizeEvent` dispatch.
+- **`ConditionCard.test.tsx`** (NEW) — applied, removed, duration, failed,
+  dismiss.

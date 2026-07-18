@@ -749,3 +749,145 @@ def dm_use_item(
             success=False,
             message=f"Could not use item: {exc}",
         )
+
+
+# --- Phase 5: Condition functions ------------------------------------------ #
+
+
+def _norm_condition(condition: str) -> str:
+    """Normalise a DM-supplied condition string to the registry key form.
+
+    Lowercases, replaces spaces/hyphens with underscores, and strips a trailing
+    's' (e.g. ``"Poisoned"`` → ``"poisoned"``, ``"blinded"`` stays). Returns the
+    normalised string even if it is not a recognised condition (the caller
+    validates against the registry).
+    """
+    raw = (condition or "").strip().lower().replace(" ", "_").replace("-", "_")
+    return raw
+
+
+def dm_apply_condition(
+    target,
+    condition: str,
+    duration: int | None = None,
+) -> GameEvent:
+    """Apply a condition to a combatant-like object via the conditions engine.
+
+    Wraps ``conditions.apply_condition(target, condition, duration)``. The
+    *target* must be a combatant-like object exposing ``.conditions`` and
+    ``.condition_durations`` (a :class:`Combatant` or a player-conditions
+    adapter). Returns a ``condition_applied`` :class:`GameEvent` with
+    ``operation="applied"``.
+
+    Invalid conditions (not in the 14 core DnD 5e conditions) return a failed
+    event with ``success=False`` and a human-readable ``message`` — they never
+    raise.
+
+    Args:
+        target: A combatant-like object (Combatant or player adapter).
+        condition: A condition name (case-insensitive), e.g. ``"poisoned"``.
+        duration: Optional duration in rounds (``None`` = permanent).
+
+    Returns:
+        A ``condition_applied`` GameEvent.
+    """
+    from app.engine import conditions as conditions_mod
+
+    name = _norm_condition(condition)
+    target_name = getattr(target, "name", "Target")
+    if not conditions_mod.is_valid_condition(name):
+        return GameEvent.condition_applied(
+            label=f"🌀 {condition} (unknown condition)",
+            operation="applied",
+            condition=name,
+            target=target_name,
+            success=False,
+            message=f"Unknown condition: {condition!r}. Valid conditions: "
+                    f"{', '.join(conditions_mod.list_conditions())}",
+        )
+    try:
+        conditions_mod.apply_condition(target, name, duration=duration)
+        info = conditions_mod.get_condition_info(name)
+        desc = info.get("description", "") if info else ""
+        remaining = conditions_mod.remaining_duration(target, name)
+        label = f"🌀 {target_name} is now {name}"
+        if duration is not None:
+            label += f" ({duration} round{'s' if duration != 1 else ''})"
+        return GameEvent.condition_applied(
+            label=label,
+            operation="applied",
+            condition=name,
+            target=target_name,
+            duration=remaining,
+            description=desc,
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.condition_applied(
+            label=f"🌀 {condition} (apply failed)",
+            operation="applied",
+            condition=name,
+            target=target_name,
+            success=False,
+            message=f"Could not apply {condition}: {exc}",
+        )
+
+
+def dm_remove_condition(
+    target,
+    condition: str,
+) -> GameEvent:
+    """Remove a condition from a combatant-like object.
+
+    Wraps ``conditions.remove_condition(target, condition)``. Returns a
+    ``condition_applied`` :class:`GameEvent` with ``operation="removed"``. If
+    the condition was not present, returns ``success=False``.
+
+    Args:
+        target: A combatant-like object (Combatant or player adapter).
+        condition: A condition name (case-insensitive).
+
+    Returns:
+        A ``condition_applied`` GameEvent.
+    """
+    from app.engine import conditions as conditions_mod
+
+    name = _norm_condition(condition)
+    target_name = getattr(target, "name", "Target")
+    if not conditions_mod.is_valid_condition(name):
+        return GameEvent.condition_applied(
+            label=f"🌀 {condition} (unknown condition)",
+            operation="removed",
+            condition=name,
+            target=target_name,
+            success=False,
+            message=f"Unknown condition: {condition!r}",
+        )
+    try:
+        removed = conditions_mod.remove_condition(target, name)
+        if not removed:
+            return GameEvent.condition_applied(
+                label=f"🌀 {target_name} did not have {name}",
+                operation="removed",
+                condition=name,
+                target=target_name,
+                success=False,
+                message=f"{target_name} did not have {name}.",
+            )
+        info = conditions_mod.get_condition_info(name)
+        desc = info.get("description", "") if info else ""
+        return GameEvent.condition_applied(
+            label=f"🌀 {target_name} is no longer {name}",
+            operation="removed",
+            condition=name,
+            target=target_name,
+            description=desc,
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.condition_applied(
+            label=f"🌀 {condition} (remove failed)",
+            operation="removed",
+            condition=name,
+            target=target_name,
+            success=False,
+            message=f"Could not remove {condition}: {exc}",
+        )

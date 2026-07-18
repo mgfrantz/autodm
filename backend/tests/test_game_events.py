@@ -339,3 +339,79 @@ class TestLootFactory:
         assert event.data["value"] == 0
         assert event.data["success"] is True
         assert event.data["message"] == ""
+
+
+class TestConditionAppliedFactory:
+    """condition_applied factory classmethod (Phase 5)."""
+
+    def test_condition_applied_enum_value(self):
+        assert GameEventType.CONDITION_APPLIED.value == "condition_applied"
+
+    def test_condition_applied_factory(self):
+        event = GameEvent.condition_applied(
+            label="🌀 Player is now poisoned (3 rounds)",
+            operation="applied",
+            condition="poisoned",
+            target="Player",
+            target_type="player",
+            duration=3,
+            description="Disadvantage on attacks.",
+        )
+        assert event.type == GameEventType.CONDITION_APPLIED
+        assert event.data["operation"] == "applied"
+        assert event.data["condition"] == "poisoned"
+        assert event.data["target"] == "Player"
+        assert event.data["target_type"] == "player"
+        assert event.data["duration"] == 3
+        assert event.data["description"] == "Disadvantage on attacks."
+        assert event.data["success"] is True
+
+    def test_condition_applied_removed(self):
+        event = GameEvent.condition_applied(
+            label="🌀 Goblin is no longer stunned",
+            operation="removed",
+            condition="stunned",
+            target="Goblin",
+            target_type="combatant",
+        )
+        assert event.data["operation"] == "removed"
+        assert event.data["target_type"] == "combatant"
+
+    def test_condition_applied_failed(self):
+        event = GameEvent.condition_applied(
+            label="🌀 bogus (unknown condition)",
+            operation="applied",
+            condition="bogus",
+            target="Player",
+            success=False,
+            message="Unknown condition: 'bogus'",
+        )
+        assert event.data["success"] is False
+        assert event.data["message"] == "Unknown condition: 'bogus'"
+
+    def test_condition_applied_defaults(self):
+        event = GameEvent.condition_applied(
+            label="🌀 Player is now blinded",
+            operation="applied",
+            condition="blinded",
+            target="Player",
+        )
+        assert event.data["target_type"] == "player"
+        assert event.data["duration"] is None
+        assert event.data["description"] == ""
+        assert event.data["success"] is True
+
+    def test_condition_applied_round_trip(self):
+        original = GameEvent.condition_applied(
+            label="🌀 Player is now frightened (2 rounds)",
+            operation="applied",
+            condition="frightened",
+            target="Player",
+            duration=2,
+            description="Disadvantage while source visible.",
+        )
+        parsed = json.loads(json.dumps(original.to_dict()))
+        assert parsed["type"] == "condition_applied"
+        assert parsed["data"]["condition"] == "frightened"
+        assert parsed["data"]["duration"] == 2
+        assert parsed["data"]["operation"] == "applied"

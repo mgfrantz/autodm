@@ -502,7 +502,7 @@ export interface SkillCheckResult {
 
 // === Game Events (DM Function Calling Phase 1 + 2) ===
 
-export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative' | 'spell_cast' | 'loot';
+export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative' | 'spell_cast' | 'loot' | 'condition_applied';
 
 export interface InitiativeCombatant {
   id: string;
@@ -563,6 +563,12 @@ export interface GameEventData {
   source?: string;          // provenance, e.g. "Goblin loot"
   ac_after?: number | null; // equipped: new AC
   uses_remaining?: number | null; // used: charges left
+  // condition_applied (Phase 5)
+  condition?: string;          // e.g. "poisoned"
+  // target?: string;  -- already defined above (attack/spell/condition share it)
+  target_type?: 'player' | 'combatant' | string;
+  duration?: number | null;    // rounds remaining (null = permanent)
+  description?: string;        // mechanical effect text
 }
 
 export interface GameEvent {

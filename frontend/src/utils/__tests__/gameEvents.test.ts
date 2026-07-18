@@ -19,6 +19,9 @@ import {
   itemRarityColor,
   lootSummary,
   lootIcon,
+  conditionColor,
+  conditionIcon,
+  conditionSummary,
 } from '../gameEvents'
 import type { GameEvent, InitiativeCombatant } from '../../types'
 
@@ -641,6 +644,151 @@ describe('summarizeEvent for loot', () => {
       data: {
         operation: 'gained', item_name: 'Garbage', item_type: 'misc',
         success: false, message: 'Unknown item type',
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Failed')
+  })
+})
+
+/* ------------------------------------------------------------------ *
+ * Phase 5: Condition event helpers
+ * ------------------------------------------------------------------ */
+
+describe('conditionColor', () => {
+  it('returns red for severe conditions', () => {
+    expect(conditionColor('paralyzed').text).toContain('rose')
+    expect(conditionColor('stunned').text).toContain('rose')
+    expect(conditionColor('unconscious').text).toContain('rose')
+  })
+
+  it('returns amber for moderate conditions', () => {
+    expect(conditionColor('poisoned').text).toContain('amber')
+    expect(conditionColor('frightened').text).toContain('amber')
+    expect(conditionColor('blinded').text).toContain('amber')
+  })
+
+  it('returns indigo for invisible', () => {
+    expect(conditionColor('invisible').text).toContain('indigo')
+  })
+
+  it('returns stone for deafened', () => {
+    expect(conditionColor('deafened').text).toContain('stone')
+  })
+
+  it('returns parchment fallback for unknown conditions', () => {
+    expect(conditionColor('bogus').text).toContain('parchment')
+  })
+
+  it('is case-insensitive', () => {
+    expect(conditionColor('POISONED').text).toContain('amber')
+  })
+
+  it('handles undefined', () => {
+    expect(conditionColor(undefined).text).toContain('parchment')
+  })
+})
+
+describe('conditionIcon', () => {
+  it('returns the correct emoji for each known condition', () => {
+    expect(conditionIcon('poisoned')).toBe('🤢')
+    expect(conditionIcon('stunned')).toBe('💫')
+    expect(conditionIcon('paralyzed')).toBe('⚡')
+    expect(conditionIcon('invisible')).toBe('👻')
+    expect(conditionIcon('blinded')).toBe('🙈')
+  })
+
+  it('returns the default icon for unknown conditions', () => {
+    expect(conditionIcon('bogus')).toBe('🌀')
+  })
+
+  it('is case-insensitive', () => {
+    expect(conditionIcon('POISONED')).toBe('🤢')
+  })
+
+  it('handles undefined', () => {
+    expect(conditionIcon(undefined)).toBe('🌀')
+  })
+})
+
+describe('conditionSummary', () => {
+  it('summarizes an applied condition with duration', () => {
+    const s = conditionSummary('applied', 'poisoned', 'Player', 3, true, '')
+    expect(s).toContain('poisoned')
+    expect(s).toContain('Player')
+    expect(s).toContain('3 rounds')
+  })
+
+  it('summarizes an applied permanent condition', () => {
+    const s = conditionSummary('applied', 'blinded', 'Player', null, true, '')
+    expect(s).toContain('permanent')
+  })
+
+  it('summarizes a singular round duration', () => {
+    const s = conditionSummary('applied', 'stunned', 'Goblin', 1, true, '')
+    expect(s).toContain('1 round')
+    expect(s).not.toContain('1 rounds')
+  })
+
+  it('summarizes a removed condition', () => {
+    const s = conditionSummary('removed', 'frightened', 'Player', null, true, '')
+    expect(s).toContain('no longer')
+    expect(s).toContain('frightened')
+  })
+
+  it('summarizes a failed operation', () => {
+    const s = conditionSummary('applied', 'bogus', 'Player', null, false, 'Unknown condition')
+    expect(s).toContain('Failed')
+    expect(s).toContain('Unknown condition')
+  })
+
+  it('handles undefined inputs gracefully', () => {
+    const s = conditionSummary(undefined, undefined, undefined, undefined, true, undefined)
+    expect(s).toContain('unknown condition')
+    expect(s).toContain('Target')
+  })
+})
+
+describe('summarizeEvent for condition_applied', () => {
+  it('summarizes an applied condition event', () => {
+    const event: GameEvent = {
+      type: 'condition_applied',
+      label: '🌀 Player is now poisoned (3 rounds)',
+      data: {
+        operation: 'applied', condition: 'poisoned', target: 'Player',
+        duration: 3, success: true,
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('poisoned')
+    expect(s).toContain('Player')
+    expect(s).toContain('3 rounds')
+  })
+
+  it('summarizes a removed condition event', () => {
+    const event: GameEvent = {
+      type: 'condition_applied',
+      label: '🌀 Goblin is no longer stunned',
+      data: {
+        operation: 'removed', condition: 'stunned', target: 'Goblin',
+        success: true,
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('no longer')
+    expect(s).toContain('stunned')
+  })
+
+  it('summarizes a failed condition event', () => {
+    const event: GameEvent = {
+      type: 'condition_applied',
+      label: '🌀 bogus (failed)',
+      data: {
+        operation: 'applied', condition: 'bogus', target: 'Player',
+        success: false, message: 'Unknown condition',
       },
       timestamp: '',
     }
