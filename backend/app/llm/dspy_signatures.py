@@ -297,6 +297,20 @@ class DMActionableNarration(dspy.Signature):
         Args: {"condition": "frightened", "target": "player"}
       - The player's current conditions are listed in the Conditions line of
         the character context. Use those exact names for remove_condition.
+    - For CONCENTRATION (player caster only):
+      - Concentration STARTS automatically when the player casts a concentration
+        spell (Shield, Hold Person, Bless, Hunter's Mark, Faerie Fire, etc.) —
+        you do NOT need an action for this; the backend handles it.
+      - Concentration BREAKS automatically when the player takes damage (a Con
+        save is rolled) or gains an incapacitating condition (stunned,
+        paralyzed, petrified, unconscious) — again, no action needed.
+      - Use end_concentration ONLY when the player VOLUNTARILY drops
+        concentration (chooses to stop the spell) or a concentration spell ends
+        naturally (duration expires, target dies, etc.).
+        Args: {"reason": "Player drops Hold Person"}
+      - The player's active concentration is shown under PLAYER_CONCENTRATION
+        in the situation prompt. If a concentration spell should end for a
+        reason not covered by damage/conditions, emit end_concentration.
     - Do NOT fabricate dice results in the narration text — describe
       the ATTEMPT and let the backend resolve the outcome
     - Do NOT state HP numbers, damage amounts, or initiative order in narration;
@@ -309,7 +323,7 @@ class DMActionableNarration(dspy.Signature):
     - "function": "roll_dice" | "request_check" | "attack" | "damage" |
                   "roll_initiative" | "cast_spell" |
                   "give_item" | "remove_item" | "equip_item" | "use_item" |
-                  "apply_condition" | "remove_condition"
+                  "apply_condition" | "remove_condition" | "end_concentration"
     - "label": short description (e.g., "Perception Check", "Goblin strikes",
                   "Fireball engulfs enemies", "Wizard casts Fire Bolt",
                   "Found a Health Potion")
@@ -330,6 +344,7 @@ class DMActionableNarration(dspy.Signature):
       - apply_condition: {"condition": "poisoned", "target": "player",
                           "duration": 3}
       - remove_condition: {"condition": "frightened", "target": "player"}
+      - end_concentration: {"reason": "Player drops the spell"}
     """
 
     situation: str = dspy.InputField(desc="Full scene context: world, character state, recent events, player action. Includes COMBATANT_ROSTER with id/name/side/HP/AC for active encounters.")

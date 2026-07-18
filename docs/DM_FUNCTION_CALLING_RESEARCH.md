@@ -4,6 +4,8 @@
 > Phase 2 IMPLEMENTED ✅ — combat resolution (attack/damage/initiative) is live
 > Phase 3 IMPLEMENTED ✅ — spell casting (cast_spell, dual-state coupling) is live
 > Phase 4 IMPLEMENTED ✅ — inventory operations (give_item/remove_item/equip_item/use_item) are live
+> Phase 5 IMPLEMENTED ✅ — condition application (apply_condition/remove_condition) is live
+> Phase 3.5 IMPLEMENTED ✅ — concentration tracking (reactive hooks + Con-save checks) is live
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
 > that interacts with coded game mechanics through structured function calls.
@@ -2026,3 +2028,237 @@ mechanical effect description, severity color theming. Failed → muted card.
   `conditionSummary`, `summarizeEvent` dispatch.
 - **`ConditionCard.test.tsx`** (NEW) — applied, removed, duration, failed,
   dismiss.
+
+---
+
+## Phase 3.5 Implementation Plan: Concentration Tracking + AoE
+
+> **Status:** IMPLEMENTED ✅ (2026-07-17) — concentration tracking is live
+> **Scope:** Wire the fully-built `concentration.py` engine into the DM
+> function-calling pipeline, and lay groundwork for multi-target (AoE) spell
+> resolution.
+> **Approach:** Same Option C (Hybrid) as Phases 1-5
+
+### Why Phase 3.5 Now
+
+- **The concentration engine already exists** —
+  `backend/app/engine/concentration.py` implements the full PHB p.203-204 rules:
+  `ConcentrationState` (spell_name/spell_id/is_concentrating), `start_concentration()`,
+  `end_concentration()`, `check_concentration()` (Con save vs DC 10 or half-damage),
+  `calculate_concentration_dc()`, `should_break_concentration()` (incapacitating
+  conditions), `can_concentrate()`. **But `game.py` has ZERO concentration
+  references** — the engine is completely disconnected from the DM pipeline.
+- **`Spell.concentration` flag exists but is unused during casting** — the
+  spell registry marks ~40 concentration spells (Shield, Hold Person, Bless,
+  Hunter's Mark, Faerie Fire, Invisibility, Haste, etc.), but `Spellbook.cast()`
+  never starts/stops concentration.
+- **All prior phases shipped** — Phases 1-5 are live with 2811 backend + 293
+  frontend tests. The pattern is established.
+- **Highest-impact gap** — concentration is the spell system's most visible
+  mechanical omission: a wizard casts Hold Person, but nothing tracks that
+  they're concentrating, nothing breaks it when they take damage, and casting
+  a second concentration spell doesn't end the first.
+
+### The architectural insight (vs Phase 5)
+
+Phase 5 (conditions) was **dual-state**: player conditions in `game_state` +
+combatant conditions on the `Combatant` object. Phase 3.5 (concentration) is
+**single-state** — only the *player caster* concentrates (monsters/NPCs cast
+through the same spell engine but the DM pipeline tracks player concentration).
+The state lives in one store:
+
+| Store | Holds | Source of truth |
+|-------|-------|-----------------|
+| `game_state["concentration"]` | the player's concentration state | `ConcentrationState.to_dict()` |
+
+Concentration is **reactive** — it changes as a *side-effect* of other actions,
+not (only) as a direct action. This is the key difference from Phases 1-5,
+where each phase added direct game_actions. Phase 3.5 adds coupling hooks into
+*existing* action handlers:
+
+| Trigger | Hook location | Effect |
+|---------|---------------|--------|
+| Cast a concentration spell | `cast_spell` handler (after success) | Start concentration; auto-end previous |
+| Incapacitating condition on player | `apply_condition` handler (after success) | Break concentration (`should_break_concentration`) |
+| Player takes damage | `damage` handler (new player-target path) | Con-save concentration check |
+| DM ends concentration | new `end_concentration` action | End concentration |
+
+### Sub-phase split
+
+- **Phase 3.5a — Concentration Tracking (this implementation):** all four
+  triggers above, `CONCENTRATION` GameEvent, `ConcentrationCard`, player-damage
+  path, concentration roster in DM prompt. Self-contained and shippable.
+- **Phase 3.5b — AoE Spell Resolution (future):** multi-target `cast_spell`
+  with `target_ids: [...]`, per-target save rolls, multiple DAMAGE events,
+  single slot consumption. Deferred — concentration is the higher-value piece.
+
+### Game actions the DM can emit
+
+| Action | Args | Effect |
+|--------|------|--------|
+| `end_concentration` | `{reason?}` | Player voluntarily drops / spell ends naturally |
+
+Concentration also changes **reactively** (no direct action) via the cast /
+condition / damage hooks.
+
+### Backend Implementation
+
+#### 1. `backend/app/engine/game_events.py` — Add CONCENTRATION event
+
+Add `CONCENTRATION = "concentration"` to `GameEventType`. Add factory:
+
+```python
+@classmethod
+def concentration(
+    cls,
+    label: str,
+    operation: str,          # "started" | "broken" | "ended" | "check_passed" | "check_failed"
+    spell_name: str = "",
+    spell_id: str = "",
+    reason: str = "",        # why it changed
+    # Concentration-check fields (operation in check_passed/check_failed):
+    damage_taken: int | None = None,
+    concentration_dc: int | None = None,
+    roll_total: int | None = None,
+    success: bool = True,    # False only if the operation itself failed
+    message: str = "",
+) -> "GameEvent":
+```
+
+#### 2. `backend/app/engine/dm_functions.py` — Add concentration functions
+
+Add a `# --- Phase 3.5: Concentration functions ---` section:
+
+- **`dm_start_concentration(spell_name, spell_id)`** — wraps
+  `concentration.start_concentration()`. Returns a `CONCENTRATION` event
+  (`operation="started"`).
+- **`dm_end_concentration(reason="")`** — wraps `concentration.end_concentration()`.
+  Returns a `CONCENTRATION` event (`operation="ended"`).
+- **`dm_check_concentration(state, damage_taken, con_score, prof_bonus, con_proficient)`** —
+  wraps `concentration.check_concentration()`. Returns a `CONCENTRATION` event
+  (`operation="check_passed"` or `"check_failed"`). On failure, concentration
+  is lost — the caller clears `game_state["concentration"]`.
+
+All never crash — defensive try/except.
+
+#### 3. `backend/app/llm/dspy_signatures.py` — Expand DMActionableNarration
+
+Add concentration guidance: the DM should emit `end_concentration` when a
+player drops concentration or a spell ends naturally. Note that concentration
+starts/breaks automatically (no action needed) — the engine handles it. Add
+`end_concentration` to the function list + args schema.
+
+#### 4. `backend/app/api/game.py` — Resolution hooks + roster
+
+- Add `_CONCENTRATION_ACTION = "end_concentration"`.
+- Add `_concentration_for_dm(game_state, character)` roster helper — shows the
+  player's active concentration (spell name/id) so the DM knows what's active.
+  Mirrors `_conditions_for_dm`. Injected into both `/action` and `/action/stream`
+  situation prompts.
+- **cast_spell hook:** after a successful cast of a concentration spell
+  (`spell.concentration == True`):
+  - If `game_state["concentration"]` shows active concentration → end it (emit
+    `CONCENTRATION` event `operation="ended"`, reason "Replaced by new spell").
+  - Start new concentration → persist `game_state["concentration"]`.
+  - Augment the spell_cast event with `concentration_started: True`.
+- **apply_condition hook:** after applying an incapacitating condition
+  (stunned/paralyzed/petrified/unconscious) to the **player** target:
+  - If concentrating → `should_break_concentration()` → break it. Emit
+    `CONCENTRATION` event `operation="broken"`, reason = condition name.
+    Clear `game_state["concentration"]`.
+- **damage hook (new player-target path):** when a `damage` action targets
+  `"player"` (target_id == "player" or no encounter):
+  - Apply damage to `character.current_hp` (min 0).
+  - Emit a `DAMAGE` event with the player's HP (player as target).
+  - If concentrating → fire `dm_check_concentration()`. On failure, emit
+    `CONCENTRATION` event `operation="check_failed"` + clear concentration.
+    On success, emit `CONCENTRATION` event `operation="check_passed"`.
+- **end_concentration action:** clear `game_state["concentration"]`, emit
+  `CONCENTRATION` event `operation="ended"`.
+
+### Frontend (Steps 5-8)
+
+#### 5. `types/index.ts` — Add concentration type + fields
+
+Add `'concentration'` to `GameEventType`. Add to `GameEventData`:
+`operation`, `spell_name`, `spell_id`, `reason`, `damage_taken`,
+`concentration_dc`, `roll_total`.
+
+#### 6. `utils/gameEvents.ts` — Concentration helpers
+
+Add `concentrationColor()` (by operation: started=indigo, broken=red,
+ended=stone, check_passed=green, check_failed=amber), `concentrationIcon()`
+(🧠 for concentration, ✅/❌ for checks), `concentrationSummary()` (one-liner
+per operation). Update `summarizeEvent()`.
+
+#### 7. `components/ConcentrationCard.tsx` (NEW)
+
+Inline concentration card:
+- Operation-themed accent colours
+- Spell name + 🧠 icon
+- Operation badge (✨ Started / 💥 Broken / 🛑 Ended / ✅ Concentration Held / ⚠️ Concentration Lost)
+- For checks: damage taken, DC, roll total, Con save breakdown
+- Reason text (why concentration changed)
+- Dismissible (same pattern as all other cards)
+
+#### 8. `components/GameEventRenderer.tsx` — Dispatch concentration.
+
+### Test Plan (Step 9) — ~30 backend, ~20 frontend
+
+- **`test_dm_concentration_functions.py`** (NEW) — `dm_start_concentration`,
+  `dm_end_concentration`, `dm_check_concentration` (pass/fail/no-concentration/
+  zero-damage), event serialization.
+- **`test_concentration_events_api.py`** (NEW) — `/action` with cast_spell of a
+  concentration spell (starts concentration + persists to game_state), casting a
+  second concentration spell (auto-ends first), apply_condition of stunned to
+  player (breaks concentration), damage to player (triggers check), explicit
+  end_concentration, streaming emits events + persists, concentration roster
+  helper.
+- **`test_game_events.py`** (extended) — `concentration` factory round-trip.
+- **`gameEvents.test.ts`** (extended) — `concentrationColor`, `concentrationIcon`,
+  `concentrationSummary`, `summarizeEvent` dispatch.
+- **`ConcentrationCard.test.tsx`** (NEW) — started, broken, ended, check_passed,
+  check_failed, dismiss.
+
+### Key Design Decisions
+
+1. **Player-only concentration** — the DM pipeline tracks the *player caster's*
+   concentration in `game_state["concentration"]`. Monster/NPC concentration is
+   out of scope (they cast through the spell engine but the DM narrates their
+   spells; the Encounter doesn't track monster concentration state).
+2. **Concentration is reactive** — unlike Phases 1-5 (direct actions),
+   concentration mostly changes as a *side-effect* of cast/condition/damage
+   actions. The only direct action is `end_concentration` (voluntary drop).
+3. **`game_state["concentration"]` = single source of truth** — a
+   `ConcentrationState.to_dict()`. Backward-compatible: absent key = not
+   concentrating.
+4. **Auto-replace on new concentration cast** — per PHB p.203, casting a new
+   concentration spell ends the previous one. The cast_spell hook handles this.
+5. **Damage check uses the real Con save** — `check_concentration()` rolls a
+   real d20 + Con mod + prof (if proficient) vs DC (10 or half-damage). The DM
+   never fabricates the outcome.
+6. **New player-damage path** — a `damage` action targeting `"player"` applies
+   damage to `character.current_hp` and triggers the concentration check. This
+   also closes a gap (the DM couldn't damage the player before).
+7. **Graceful degradation** — missing character / no concentration state → skip
+   hooks, log warning, still return prior-phase events.
+8. **Consistent inline UX** — ConcentrationCard follows the dismissible-inline
+   pattern of all Phase 1-5 cards.
+
+### Verification Checklist
+
+- [ ] `uv run pytest` — all tests pass (+~30 new)
+- [ ] `npx tsc --noEmit` — no type errors
+- [ ] `npm run build` — clean build
+- [ ] `npm test` — all frontend tests pass (+~20 new)
+- [ ] PROGRESS.md updated
+- [ ] Commit `feat: DM function calling Phase 3.5 — concentration tracking`
+- [ ] `git push origin develop`
+
+### What Phase 3.5 Does NOT Include (deferred)
+
+- AoE multi-target spell resolution (Phase 3.5b — future)
+- Monster/NPC concentration tracking (the Encounter doesn't persist monster
+  concentration; would need a Combatant-level concentration field)
+- Concentration spell duration timers (round-by-round tick-down; currently
+  concentration persists until explicitly broken/ended)

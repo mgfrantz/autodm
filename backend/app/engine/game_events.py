@@ -33,6 +33,8 @@ class GameEventType(str, Enum):
     LOOT = "loot"
     # Phase 5: Conditions
     CONDITION_APPLIED = "condition_applied"
+    # Phase 3.5: Concentration
+    CONCENTRATION = "concentration"
 
 
 @dataclass
@@ -328,6 +330,54 @@ class GameEvent:
                 "target_type": target_type,
                 "duration": duration,
                 "description": description,
+                "success": success,
+                "message": message,
+            },
+        )
+
+    @classmethod
+    def concentration(
+        cls,
+        label: str,
+        operation: str,
+        spell_name: str = "",
+        spell_id: str = "",
+        reason: str = "",
+        damage_taken: int | None = None,
+        concentration_dc: int | None = None,
+        roll_total: int | None = None,
+        success: bool = True,
+        message: str = "",
+    ) -> "GameEvent":
+        """Create a ``concentration`` event (DM function calling Phase 3.5).
+
+        Captures a change to the player caster's concentration state, wired to
+        the real ``concentration.py`` engine. ``operation`` is one of:
+
+        * ``"started"`` — a concentration spell was cast; concentration began.
+        * ``"ended"`` — concentration ended (voluntary drop, replaced, or
+          natural end).
+        * ``"broken"`` — an incapacitating condition broke concentration.
+        * ``"check_passed"`` — a damage-triggered Con save was made.
+        * ``"check_failed"`` — a damage-triggered Con save was failed;
+          concentration was lost.
+
+        Concentration-check fields (``damage_taken``, ``concentration_dc``,
+        ``roll_total``) are populated for ``check_passed`` / ``check_failed``
+        operations and left ``None`` otherwise. ``reason`` is a human-readable
+        explanation of why the concentration state changed.
+        """
+        return cls(
+            type=GameEventType.CONCENTRATION,
+            label=label,
+            data={
+                "operation": operation,
+                "spell_name": spell_name,
+                "spell_id": spell_id,
+                "reason": reason,
+                "damage_taken": damage_taken,
+                "concentration_dc": concentration_dc,
+                "roll_total": roll_total,
                 "success": success,
                 "message": message,
             },

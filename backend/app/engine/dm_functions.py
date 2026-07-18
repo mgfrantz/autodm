@@ -891,3 +891,139 @@ def dm_remove_condition(
             success=False,
             message=f"Could not remove {condition}: {exc}",
         )
+
+
+# --- Phase 3.5: Concentration functions ------------------------------------ #
+
+
+def dm_start_concentration(spell_name: str, spell_id: str) -> GameEvent:
+    """Start concentrating on a spell.
+
+    Wraps ``concentration.start_concentration()``. Returns a ``concentration``
+    :class:`GameEvent` with ``operation="started"``.
+
+    Args:
+        spell_name: Display name of the spell.
+        spell_id: Normalised spell id.
+
+    Returns:
+        A ``concentration`` GameEvent.
+    """
+    from app.engine import concentration as conc_mod
+
+    try:
+        state = conc_mod.start_concentration(spell_name=spell_name, spell_id=spell_id)
+        return GameEvent.concentration(
+            label=f"🧠 Concentrating on {state.spell_name}",
+            operation="started",
+            spell_name=state.spell_name,
+            spell_id=state.spell_id,
+            reason="Concentration spell cast",
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.concentration(
+            label="🧠 Concentration (start failed)",
+            operation="started",
+            spell_name=spell_name,
+            spell_id=spell_id,
+            success=False,
+            message=f"Could not start concentration: {exc}",
+        )
+
+
+def dm_end_concentration(spell_name: str = "", reason: str = "") -> GameEvent:
+    """End concentration on a spell.
+
+    Wraps ``concentration.end_concentration()``. Returns a ``concentration``
+    :class:`GameEvent` with ``operation="ended"``.
+
+    Args:
+        spell_name: The spell that was being concentrated on (for display).
+        reason: Why concentration ended (voluntary, replaced, natural end).
+
+    Returns:
+        A ``concentration`` GameEvent.
+    """
+    try:
+        conc_end = __import__(
+            "app.engine.concentration", fromlist=["end_concentration"]
+        ).end_concentration
+        conc_end(reason=reason)
+        return GameEvent.concentration(
+            label=f"🛑 Concentration ended{' on ' + spell_name if spell_name else ''}",
+            operation="ended",
+            spell_name=spell_name,
+            reason=reason or "Concentration ended",
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.concentration(
+            label="🧠 Concentration (end failed)",
+            operation="ended",
+            spell_name=spell_name,
+            success=False,
+            message=f"Could not end concentration: {exc}",
+        )
+
+
+def dm_check_concentration(
+    spell_name: str,
+    damage_taken: int,
+    con_score: int,
+    proficiency_bonus: int,
+    con_proficient: bool = False,
+) -> GameEvent:
+    """Roll a concentration check after the concentrating player takes damage.
+
+    Wraps ``concentration.check_concentration()``. Returns a ``concentration``
+    :class:`GameEvent` — ``operation="check_passed"`` if the save succeeded
+    (concentration holds) or ``operation="check_failed"`` if it failed
+    (concentration is lost; the caller clears ``game_state``).
+
+    Args:
+        spell_name: The spell being concentrated on (for display).
+        damage_taken: Damage dealt to the caster (after resistances).
+        con_score: Constitution ability score.
+        proficiency_bonus: Character's proficiency bonus.
+        con_proficient: Whether the character is proficient in Con saves.
+
+    Returns:
+        A ``concentration`` GameEvent.
+    """
+    from app.engine import concentration as conc_mod
+    from app.engine.concentration import ConcentrationState
+
+    # check_concentration needs a ConcentrationState; build one representing an
+    # active concentration (the caller only invokes this when concentrating).
+    state = ConcentrationState(
+        spell_name=spell_name, spell_id="", is_concentrating=True
+    )
+    try:
+        result = conc_mod.check_concentration(
+            concentration_state=state,
+            damage_taken=damage_taken,
+            con_score=con_score,
+            proficiency_bonus=proficiency_bonus,
+            con_proficient=con_proficient,
+        )
+        operation = "check_passed" if result.success else "check_failed"
+        if result.success:
+            label = f"✅ Concentration held on {spell_name}"
+        else:
+            label = f"⚠️ Concentration lost on {spell_name}"
+        return GameEvent.concentration(
+            label=label,
+            operation=operation,
+            spell_name=spell_name,
+            reason=result.reason,
+            damage_taken=result.damage_taken,
+            concentration_dc=result.concentration_dc,
+            roll_total=result.roll_total,
+        )
+    except Exception as exc:  # noqa: BLE001 — never crash the narration pipeline
+        return GameEvent.concentration(
+            label=f"🧠 Concentration check failed to resolve ({spell_name})",
+            operation="check_failed",
+            spell_name=spell_name,
+            success=False,
+            message=f"Concentration check error: {exc}",
+        )

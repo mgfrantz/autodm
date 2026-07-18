@@ -7,6 +7,7 @@ import InitiativeCard from './InitiativeCard'
 import SpellCastCard from './SpellCastCard'
 import LootCard from './LootCard'
 import ConditionCard from './ConditionCard'
+import ConcentrationCard from './ConcentrationCard'
 
 /* ------------------------------------------------------------------ *
  * GameEventRenderer — dispatches a GameEvent to the correct component.
@@ -19,6 +20,7 @@ import ConditionCard from './ConditionCard'
  * - spell_cast → <SpellCastCard />
  * - loot → <LootCard />
  * - condition_applied → <ConditionCard />
+ * - concentration → <ConcentrationCard />
  * - unknown types → null (forward-compatible with future phases)
  * ------------------------------------------------------------------ */
 
@@ -46,6 +48,8 @@ export default function GameEventRenderer({ event, gameId, onDismiss }: GameEven
       return <LootCard event={event} onDismiss={onDismiss} />
     case 'condition_applied':
       return <ConditionCard event={event} onDismiss={onDismiss} />
+    case 'concentration':
+      return <ConcentrationCard event={event} onDismiss={onDismiss} />
     default:
       // Unknown event type — forward-compatible, render nothing
       return null

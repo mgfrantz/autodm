@@ -502,7 +502,7 @@ export interface SkillCheckResult {
 
 // === Game Events (DM Function Calling Phase 1 + 2) ===
 
-export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative' | 'spell_cast' | 'loot' | 'condition_applied';
+export type GameEventType = 'dice_roll' | 'check_prompt' | 'attack' | 'damage' | 'initiative' | 'spell_cast' | 'loot' | 'condition_applied' | 'concentration';
 
 export interface InitiativeCombatant {
   id: string;
@@ -569,6 +569,13 @@ export interface GameEventData {
   target_type?: 'player' | 'combatant' | string;
   duration?: number | null;    // rounds remaining (null = permanent)
   description?: string;        // mechanical effect text
+  // concentration (Phase 3.5)
+  // operation?: string;  -- already defined above (loot/condition/concentration share it)
+  // spell_name?: string; -- already defined above (spell_cast/concentration share it)
+  // spell_id?: string;   -- already defined above
+  concentration_dc?: number | null;  // Con save DC for concentration checks
+  damage_taken?: number | null;       // damage that triggered a concentration check
+  roll_total?: number | null;         // Con save roll total for concentration checks
 }
 
 export interface GameEvent {

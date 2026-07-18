@@ -22,6 +22,9 @@ import {
   conditionColor,
   conditionIcon,
   conditionSummary,
+  concentrationColor,
+  concentrationIcon,
+  concentrationSummary,
 } from '../gameEvents'
 import type { GameEvent, InitiativeCombatant } from '../../types'
 
@@ -794,5 +797,150 @@ describe('summarizeEvent for condition_applied', () => {
     }
     const s = summarizeEvent(event)
     expect(s).toContain('Failed')
+  })
+})
+
+describe('concentrationColor', () => {
+  it('returns indigo for started', () => {
+    expect(concentrationColor('started').text).toContain('indigo')
+  })
+
+  it('returns rose for broken', () => {
+    expect(concentrationColor('broken').text).toContain('rose')
+  })
+
+  it('returns emerald for check_passed', () => {
+    expect(concentrationColor('check_passed').text).toContain('emerald')
+  })
+
+  it('returns amber for check_failed', () => {
+    expect(concentrationColor('check_failed').text).toContain('amber')
+  })
+
+  it('returns stone for ended', () => {
+    expect(concentrationColor('ended').text).toContain('stone')
+  })
+
+  it('returns stone fallback for unknown operations', () => {
+    expect(concentrationColor('bogus').text).toContain('stone')
+  })
+
+  it('is case-insensitive', () => {
+    expect(concentrationColor('STARTED').text).toContain('indigo')
+  })
+
+  it('handles undefined', () => {
+    expect(concentrationColor(undefined).text).toContain('stone')
+  })
+})
+
+describe('concentrationIcon', () => {
+  it('returns the correct emoji for each operation', () => {
+    expect(concentrationIcon('started')).toBe('🧠')
+    expect(concentrationIcon('broken')).toBe('💥')
+    expect(concentrationIcon('ended')).toBe('🛑')
+    expect(concentrationIcon('check_passed')).toBe('✅')
+    expect(concentrationIcon('check_failed')).toBe('⚠️')
+  })
+
+  it('returns the default icon for unknown operations', () => {
+    expect(concentrationIcon('bogus')).toBe('🧠')
+  })
+
+  it('is case-insensitive', () => {
+    expect(concentrationIcon('BROKEN')).toBe('💥')
+  })
+
+  it('handles undefined', () => {
+    expect(concentrationIcon(undefined)).toBe('🧠')
+  })
+})
+
+describe('concentrationSummary', () => {
+  it('summarizes a started concentration', () => {
+    const s = concentrationSummary('started', 'Hold Person', '', null, null, null, true, '')
+    expect(s).toContain('Hold Person')
+    expect(s).toContain('concentrating')
+  })
+
+  it('summarizes a broken concentration with reason', () => {
+    const s = concentrationSummary('broken', 'Bless', 'Incapacitated by stunned', null, null, null, true, '')
+    expect(s).toContain('broken')
+    expect(s).toContain('Bless')
+    expect(s).toContain('Incapacitated')
+  })
+
+  it('summarizes an ended concentration with reason', () => {
+    const s = concentrationSummary('ended', 'Shield', 'Player drops the spell', null, null, null, true, '')
+    expect(s).toContain('ended')
+    expect(s).toContain('Shield')
+    expect(s).toContain('drops')
+  })
+
+  it('summarizes a passed concentration check', () => {
+    const s = concentrationSummary('check_passed', 'Hold Person', '', 10, 10, 15, true, '')
+    expect(s).toContain('held')
+    expect(s).toContain('15')
+    expect(s).toContain('10')
+  })
+
+  it('summarizes a failed concentration check', () => {
+    const s = concentrationSummary('check_failed', 'Hold Person', '', 22, 11, 8, true, '')
+    expect(s).toContain('lost')
+    expect(s).toContain('22')
+  })
+
+  it('summarizes a failed operation', () => {
+    const s = concentrationSummary('ended', 'Hold Person', '', null, null, null, false, 'Not concentrating')
+    expect(s).toContain('Hold Person')
+    expect(s).toContain('Not concentrating')
+  })
+
+  it('handles undefined inputs gracefully', () => {
+    const s = concentrationSummary(undefined, undefined, undefined, undefined, undefined, undefined, true, undefined)
+    expect(s).toContain('spell')
+  })
+})
+
+describe('summarizeEvent for concentration', () => {
+  it('summarizes a started concentration event', () => {
+    const event: GameEvent = {
+      type: 'concentration',
+      label: '🧠 Concentrating on Hold Person',
+      data: { operation: 'started', spell_name: 'Hold Person', success: true },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('Hold Person')
+    expect(s).toContain('concentrating')
+  })
+
+  it('summarizes a check_passed concentration event', () => {
+    const event: GameEvent = {
+      type: 'concentration',
+      label: '✅ Concentration held on Hold Person',
+      data: {
+        operation: 'check_passed', spell_name: 'Hold Person',
+        damage_taken: 10, concentration_dc: 10, roll_total: 15, success: true,
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('held')
+    expect(s).toContain('15')
+  })
+
+  it('summarizes a check_failed concentration event', () => {
+    const event: GameEvent = {
+      type: 'concentration',
+      label: '⚠️ Concentration lost on Hold Person',
+      data: {
+        operation: 'check_failed', spell_name: 'Hold Person',
+        damage_taken: 22, concentration_dc: 11, roll_total: 8, success: true,
+      },
+      timestamp: '',
+    }
+    const s = summarizeEvent(event)
+    expect(s).toContain('lost')
   })
 })

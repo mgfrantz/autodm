@@ -1,7 +1,88 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
-## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅
-## TEST SUITE FULLY GREEN (2811 backend + 293 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅
+## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅
+## TEST SUITE FULLY GREEN (2853 backend + 325 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (108 spells, 116 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 19 mounts/vehicles, 15 traps, 27 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅
+
+## ✅ COMPLETED: DM Function Calling — Phase 3.5 (Concentration Tracking)
+
+**Design doc:** `docs/DM_FUNCTION_CALLING_RESEARCH.md` → "Phase 3.5 Implementation Plan"
+
+Wired the fully-built `concentration.py` engine (PHB p.203-204) into the DM
+function-calling pipeline. The DM's spells now actually start/end/break
+concentration with real Con saves — the spell system's most visible mechanical
+omission is closed. Unlike Phases 1-5 (which each added *direct* game_actions),
+Phase 3.5 is **reactive**: concentration mostly changes as a *side-effect* of
+existing cast / condition / damage actions, with one direct action
+(`end_concentration`).
+
+### The architectural insight (vs Phase 5)
+
+Phase 5 (conditions) was **dual-state** (player + combatant). Phase 3.5
+(concentration) is **single-state** — only the player caster concentrates.
+State lives in one store: `game_state["concentration"]` (a
+`ConcentrationState.to_dict()`). Concentration changes via coupling hooks into
+existing action handlers:
+
+| Trigger | Hook location | Effect |
+|---------|---------------|--------|
+| Cast a concentration spell | `cast_spell` handler (after success) | Start concentration; auto-end previous |
+| Incapacitating condition on player | `apply_condition` handler (after success) | Break concentration (`should_break_concentration`) |
+| Player takes damage | `damage` handler (new player-target path) | Real Con-save concentration check |
+| DM ends concentration | new `end_concentration` action | End concentration |
+
+### Backend Changes
+
+1. **`backend/app/engine/game_events.py`** — `CONCENTRATION` enum value +
+   `concentration()` factory classmethod (operation: started/broken/ended/
+   check_passed/check_failed, spell name/id, reason, damage/DC/roll fields).
+2. **`backend/app/engine/dm_functions.py`** — `dm_start_concentration()`,
+   `dm_end_concentration()`, `dm_check_concentration()` (real Con save via
+   `check_concentration()`). All defensive try/except.
+3. **`backend/app/llm/dspy_signatures.py`** — Expanded `DMActionableNarration`
+   docstring with concentration guidance; `end_concentration` added to the
+   function list + args schema. Notes that concentration starts/breaks
+   automatically.
+4. **`backend/app/api/game.py`** — `_CONCENTRATION_ACTION`,
+   `_CONCENTRATION_BREAKING_CONDITIONS` constant, `_get_concentration_state()`,
+   `_fire_concentration_check()` helper, `_concentration_for_dm()` roster
+   (injected into `/action` + `/action/stream` prompts), and the four reactive
+   hooks above. New player-damage path applies damage to `character.current_hp`
+   and triggers the concentration check.
+
+### Frontend
+
+5. **`types/index.ts`** — `'concentration'` type + fields (operation,
+   spell_name, spell_id, reason, damage_taken, concentration_dc, roll_total).
+6. **`utils/gameEvents.ts`** — `concentrationColor()` (started=indigo,
+   broken=rose, check_passed=emerald, check_failed=amber, ended=stone),
+   `concentrationIcon()`, `concentrationSummary()`; `summarizeEvent` dispatch.
+7. **`components/ConcentrationCard.tsx`** (NEW) — operation-themed accent
+   colours, 🧠 icon, operation badges (✨ Started / 💥 Broken / 🛑 Ended /
+   ✅ Held / ⚠️ Lost), Con-save breakdown (damage/DC/roll badges), reason text,
+   failed-card muted state, dismissible.
+8. **`components/GameEventRenderer.tsx`** — dispatches `concentration`.
+
+### Tests — +42 backend, +32 frontend
+
+- **`test_dm_concentration_functions.py`** (28) — start/end/check functions,
+  not-concentrating, zero-damage, serialization.
+- **`test_concentration_events_api.py`** (14) — cast→start (event+persist),
+  auto-end on second concentration cast, incapacitating condition breaks,
+  player-damage triggers check (event+HP+damage event+clear-on-fail), explicit
+  end_concentration, streaming emits+parses SSE, `_concentration_for_dm` roster.
+- **`gameEvents.test.ts`** (extended, +20) — concentrationColor (8),
+  concentrationIcon (4), concentrationSummary (7), summarizeEvent (3).
+- **`ConcentrationCard.test.tsx`** (NEW, 12) — started, broken, ended,
+  check_passed breakdown, check_failed, failed card, dismiss, no-callback.
+
+### Verification
+
+- ✅ `uv run pytest` — **2853 backend tests passing** (+42 concentration)
+- ✅ `npx tsc --noEmit` — no type errors
+- ✅ `npm run build` — clean production build
+- ✅ `npm test` — **325 frontend tests passing** (+32 concentration)
+
+---
 
 ## ✅ COMPLETED: DM Function Calling — Phase 5 (Condition Application)
 
@@ -663,26 +744,29 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: Phase 5 (Conditions) COMPLETE ✅ — DM Function Calling Roadmap Complete
+## ⚡ NEXT SESSION DIRECTIVE: Phase 3.5a (Concentration) COMPLETE ✅ — only UI polish + AoE (3.5b) remain
 
-**Phase 5 is COMPLETE (2026-07-17).** All 9 steps shipped: the DM now emits
-`apply_condition` / `remove_condition` game_actions resolved via the real
-conditions engine, with results flowing as `CONDITION_APPLIED` GameEvents to
-inline `ConditionCard` components. Dual-state resolution (player via
-`_PlayerConditionState` adapter + combatant via Combatant object). 2811
-backend + 293 frontend tests green.
+**Phase 3.5a (Concentration Tracking) is COMPLETE (2026-07-17).** The DM's
+spells now actually start/end/break concentration with real Con saves, wired
+to the fully-built `concentration.py` engine. Unlike Phases 1-5, concentration
+is **reactive** — it changes as a side-effect of cast/condition/damage actions
+via coupling hooks in `_resolve_game_actions()`, plus one direct
+`end_concentration` action. A new player-damage path (damage action targeting
+`"player"`) reduces `character.current_hp` and triggers the concentration check.
+2853 backend + 325 frontend tests green.
 
-**The core DM Function Calling roadmap (Phases 1-5) is now complete.** All
-five phases shipped:
+**The full DM Function Calling roadmap (Phases 1-5 + 3.5a) is complete:**
 - ✅ Phase 1 — Dice + Check Prompts
 - ✅ Phase 2 — Combat Resolution
 - ✅ Phase 3 — Spell Casting
 - ✅ Phase 4 — Inventory Operations
 - ✅ Phase 5 — Condition Application
+- ✅ Phase 3.5a — Concentration Tracking
 
 **Remaining roadmap items (stretch / polish):**
-- Phase 3.5 (stretch) — AoE spell resolution, concentration tracking through
-  the DM pipeline
+- Phase 3.5b (stretch) — AoE multi-target spell resolution (`target_ids: [...]`,
+  per-target save rolls, multiple DAMAGE events, single slot consumption).
+  Concentration tracking through the DM pipeline is DONE.
 - UI polish — Dice tumble animation, HP-bar shake, collapsed-by-default for
   old events (vision items from the "Game Event UI Layer" design doc section)
 
@@ -690,7 +774,9 @@ Until the next green-light, the dev agent should:
 - Keep the full suite green (`uv run pytest`, `npm test`)
 - Watch for README/PROGRESS drift and sync them
 - Pick up any quick fixes / content registry expansions if surfaced
-- Consider drafting the Phase 3.5 (AoE + concentration) implementation plan
+- Consider drafting the Phase 3.5b (AoE) implementation plan, or begin the UI
+  polish items (dice tumble animation, HP-bar shake, collapsed-by-default old
+  events)
 
 ---
 

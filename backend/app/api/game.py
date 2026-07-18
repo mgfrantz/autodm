@@ -42,6 +42,10 @@ from app.engine.dm_functions import (
     dm_use_item,
     dm_apply_condition,
     dm_remove_condition,
+    dm_start_concentration,
+    dm_end_concentration,
+    dm_check_concentration,
+    _norm_condition,
 )
 from app.engine.context import ContextManager, StorySummary, get_context_manager
 from app.engine.quests import (
@@ -206,6 +210,61 @@ _INVENTORY_ACTIONS = ("give_item", "remove_item", "equip_item", "use_item")
 # Condition game-action functions (Phase 5).
 _CONDITION_ACTIONS = ("apply_condition", "remove_condition")
 
+# Concentration game-action function (Phase 3.5).
+_CONCENTRATION_ACTION = "end_concentration"
+
+# Incapacitating conditions that break concentration (PHB p.203).
+_CONCENTRATION_BREAKING_CONDITIONS = frozenset(
+    {"stunned", "petrified", "paralyzed", "unconscious"}
+)
+
+
+def _get_concentration_state(game_state: dict[str, Any]):
+    """Return the player's active ConcentrationState, or None if not concentrating."""
+    data = game_state.get("concentration")
+    if not data or not isinstance(data, dict):
+        return None
+    from app.engine.concentration import ConcentrationState
+    state = ConcentrationState.from_dict(data)
+    return state if state.is_concentrating else None
+
+
+def _fire_concentration_check(
+    events: list,
+    game_state: dict[str, Any],
+    character,
+    conc_state,
+    damage_taken: int,
+) -> None:
+    """Roll a concentration check after the concentrating player takes damage.
+
+    Appends a ``concentration`` GameEvent (check_passed or check_failed) to
+    ``events``. On a failed check, clears ``game_state["concentration"]``.
+    Uses the real Constitution save from the concentration engine — the DM
+    never fabricates the outcome.
+    """
+    try:
+        con_score = int(getattr(character, "constitution", 10) or 10)
+        prof = proficiency_bonus(int(getattr(character, "level", 1) or 1))
+        con_proficient = False
+        try:
+            from app.engine.saving_throws import get_saving_throw_proficiencies
+            con_proficient = "constitution" in get_saving_throw_proficiencies(character)
+        except Exception:
+            pass
+        check_event = dm_check_concentration(
+            spell_name=conc_state.spell_name,
+            damage_taken=damage_taken,
+            con_score=con_score,
+            proficiency_bonus=prof,
+            con_proficient=con_proficient,
+        )
+        events.append(check_event)
+        if check_event.data.get("operation") == "check_failed":
+            game_state.pop("concentration", None)
+    except Exception as e:
+        logger.error(f"Concentration check failed: {e}")
+
 
 class _PlayerConditionState:
     """Adapter bridging ``game_state`` conditions to the conditions engine.
@@ -302,6 +361,27 @@ def _conditions_for_dm(game_state: dict[str, Any], character: "Character | None"
     if not lines:
         return ""
     lines.append("Use apply_condition / remove_condition with these condition names.")
+    return "\n".join(lines)
+
+
+def _concentration_for_dm(game_state: dict[str, Any], character: "Character | None" = None) -> str:
+    """Build an active-concentration roster string for the DM context (Phase 3.5).
+
+    Shows the player caster's active concentration (spell name/id) so the DM
+    knows what's being maintained and can narrate it, emit end_concentration
+    when appropriate, or trigger concentration checks. Returns an empty string
+    when the player is not concentrating.
+    """
+    state = _get_concentration_state(game_state)
+    if state is None:
+        return ""
+    name = character.name if character else "Player"
+    lines = [
+        "PLAYER_CONCENTRATION:",
+        f"  - {state.spell_name} (id: {state.spell_id}) — {name} is concentrating",
+        "Concentration starts/breaks automatically on cast/damage/incapacitation.",
+        "Use end_concentration ONLY when the player voluntarily drops or the spell ends naturally.",
+    ]
     return "\n".join(lines)
 
 
@@ -459,14 +539,43 @@ def _resolve_game_actions(
                     disadvantage=disadvantage,
                 ))
             elif func == "damage":
-                if encounter is None:
-                    logger.warning("Skipping damage action: no encounter loaded")
-                    continue
                 target_id = args.get("target_id")
                 amount = args.get("amount", 0)
                 damage_type = args.get("damage_type", "slashing")
                 if not target_id:
                     logger.warning("Skipping damage action: missing target_id")
+                    continue
+
+                # Phase 3.5: player-damage path. A damage action targeting
+                # "player" applies damage directly to character.current_hp
+                # (the player is not an encounter combatant). This also fires
+                # a concentration check if the player is concentrating.
+                if target_id == "player":
+                    if character is None:
+                        logger.warning("Skipping player damage: no character")
+                        continue
+                    before = int(character.current_hp or 0)
+                    new_hp = max(0, before - int(amount))
+                    character.current_hp = new_hp
+                    pname = character.name or "Player"
+                    events.append(GameEvent.damage(
+                        label=f"💥 {pname} takes {amount} {damage_type} damage",
+                        target=pname,
+                        amount=int(amount),
+                        damage_type=damage_type,
+                        target_remaining_hp=new_hp,
+                        target_max_hp=int(character.max_hp or new_hp),
+                    ))
+                    # Concentration check if the player is concentrating.
+                    conc_state = _get_concentration_state(game_state)
+                    if conc_state is not None and int(amount) > 0:
+                        _fire_concentration_check(
+                            events, game_state, character, conc_state, int(amount)
+                        )
+                    continue
+
+                if encounter is None:
+                    logger.warning("Skipping damage action: no encounter loaded")
                     continue
                 events.append(dm_apply_damage(
                     encounter=encounter,
@@ -611,6 +720,32 @@ def _resolve_game_actions(
                         target_remaining_hp=target_combatant.current_hp,
                         target_max_hp=target_combatant.max_hp,
                     ))
+
+                # Phase 3.5: concentration tracking. A successful cast of a
+                # concentration spell starts concentration, auto-ending any
+                # previous concentration (PHB p.203).
+                if (
+                    looked_up is not None
+                    and getattr(looked_up, "concentration", False)
+                    and spell_event.data.get("success")
+                ):
+                    from app.engine.concentration import ConcentrationState
+                    prev = _get_concentration_state(game_state)
+                    if prev is not None:
+                        events.append(dm_end_concentration(
+                            spell_name=prev.spell_name,
+                            reason=f"Replaced by {looked_up.name}",
+                        ))
+                    spell_event.data["concentration_started"] = True
+                    events.append(dm_start_concentration(
+                        spell_name=looked_up.name,
+                        spell_id=looked_up.id,
+                    ))
+                    game_state["concentration"] = ConcentrationState(
+                        spell_name=looked_up.name,
+                        spell_id=looked_up.id,
+                        is_concentrating=True,
+                    ).to_dict()
             elif func in _INVENTORY_ACTIONS:
                 # Phase 4: inventory operations resolved via the real engine.
                 if character is None:
@@ -733,6 +868,41 @@ def _resolve_game_actions(
                 if target_type == "player":
                     game_state["conditions"] = list(cond_target.conditions)
                     game_state["condition_durations"] = dict(cond_target.condition_durations)
+
+                    # Phase 3.5: an incapacitating condition applied to the
+                    # concentrating player breaks concentration (PHB p.203).
+                    if (
+                        func == "apply_condition"
+                        and event.data.get("success")
+                        and _norm_condition(cond) in _CONCENTRATION_BREAKING_CONDITIONS
+                    ):
+                        conc_state = _get_concentration_state(game_state)
+                        if conc_state is not None:
+                            events.append(GameEvent.concentration(
+                                label=f"💥 Concentration broken on {conc_state.spell_name}",
+                                operation="broken",
+                                spell_name=conc_state.spell_name,
+                                spell_id=conc_state.spell_id,
+                                reason=f"Incapacitated by {_norm_condition(cond)}",
+                            ))
+                            game_state.pop("concentration", None)
+            elif func == _CONCENTRATION_ACTION:
+                # Phase 3.5: the DM/player voluntarily ends concentration.
+                conc_state = _get_concentration_state(game_state)
+                if conc_state is None:
+                    events.append(GameEvent.concentration(
+                        label="🛑 No concentration to end",
+                        operation="ended",
+                        success=False,
+                        message="The player is not concentrating on any spell.",
+                    ))
+                else:
+                    reason = args.get("reason", "Concentration ended")
+                    events.append(dm_end_concentration(
+                        spell_name=conc_state.spell_name,
+                        reason=reason,
+                    ))
+                    game_state.pop("concentration", None)
             else:
                 logger.warning(f"Unknown game_action function: {func}")
         except Exception as e:
@@ -1380,6 +1550,7 @@ Boss: {_boss_for_dm(game_state)}
 {_available_spells_for_dm(character)}
 {_inventory_for_dm(character)}
 {_conditions_for_dm(game_state, character)}
+{_concentration_for_dm(game_state, character)}
 """
 
     user_prompt = f"""{ENCOUNTER_PROMPT.format(
@@ -1498,7 +1669,8 @@ Boss: {_boss_for_dm(game_state)}
 {_available_spells_for_dm(character)}
 {_inventory_for_dm(character)}
 {_conditions_for_dm(game_state, character)}
-        """
+{_concentration_for_dm(game_state, character)}
+"""
 
         user_prompt = f"""{ENCOUNTER_PROMPT.format(
             location=game_state.get("location", "Unknown"),

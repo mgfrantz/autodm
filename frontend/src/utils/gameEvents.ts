@@ -191,6 +191,13 @@ export function summarizeEvent(event: GameEvent): string {
       d.operation, d.condition, d.target, d.duration, d.success, d.message,
     )
   }
+  if (event.type === 'concentration') {
+    const d = event.data
+    return concentrationSummary(
+      d.operation, d.spell_name, d.reason, d.damage_taken,
+      d.concentration_dc, d.roll_total, d.success, d.message,
+    )
+  }
   return event.label
 }
 
@@ -553,4 +560,78 @@ export function conditionSummary(
     return `${icon} ${tgt} no longer ${cond}`;
   }
   return `${icon} ${tgt} is now ${cond}${durStr}`;
+}
+
+// === Concentration (Phase 3.5) ===
+
+/**
+ * Accent colours for a concentration event, themed by operation.
+ * started = indigo (arcane focus), broken = red (disruption),
+ * ended = stone (neutral), check_passed = green (held),
+ * check_failed = amber (lost).
+ */
+export function concentrationColor(operation: string | undefined): { text: string; bg: string; border: string } {
+  switch ((operation ?? '').toLowerCase()) {
+    case 'started':
+      return { text: 'text-indigo-300', bg: 'bg-indigo-900/30', border: 'border-indigo-700/50' };
+    case 'broken':
+      return { text: 'text-rose-300', bg: 'bg-rose-900/30', border: 'border-rose-700/50' };
+    case 'check_passed':
+      return { text: 'text-emerald-300', bg: 'bg-emerald-900/30', border: 'border-emerald-700/50' };
+    case 'check_failed':
+      return { text: 'text-amber-300', bg: 'bg-amber-900/30', border: 'border-amber-700/50' };
+    case 'ended':
+    default:
+      return { text: 'text-stone-300', bg: 'bg-stone-900/30', border: 'border-stone-700/50' };
+  }
+}
+
+/**
+ * Emoji icon for a concentration event operation.
+ */
+export function concentrationIcon(operation: string | undefined): string {
+  switch ((operation ?? '').toLowerCase()) {
+    case 'started':       return '🧠';
+    case 'broken':        return '💥';
+    case 'ended':         return '🛑';
+    case 'check_passed':  return '✅';
+    case 'check_failed':  return '⚠️';
+    default:              return '🧠';
+  }
+}
+
+/**
+ * Generate a one-line summary for a concentration event.
+ */
+export function concentrationSummary(
+  operation: string | undefined,
+  spellName: string | undefined,
+  reason: string | undefined,
+  damageTaken: number | null | undefined,
+  concentrationDc: number | null | undefined,
+  rollTotal: number | null | undefined,
+  success: boolean | null | undefined,
+  message: string | undefined,
+): string {
+  const spell = spellName ?? 'spell';
+  const op = (operation ?? 'ended').toLowerCase();
+
+  if (success === false) {
+    return `${spell}: ${message ?? 'failed'}`;
+  }
+
+  switch (op) {
+    case 'started':
+      return `🧠 Now concentrating on ${spell}`;
+    case 'broken':
+      return `💥 Concentration broken on ${spell}${reason ? ` — ${reason}` : ''}`;
+    case 'ended':
+      return `🛑 Concentration ended on ${spell}${reason ? ` — ${reason}` : ''}`;
+    case 'check_passed':
+      return `✅ Concentration held on ${spell} (Con save ${rollTotal ?? '?'} vs DC ${concentrationDc ?? '?'}${damageTaken ? `, ${damageTaken} dmg` : ''})`;
+    case 'check_failed':
+      return `⚠️ Concentration lost on ${spell} (Con save ${rollTotal ?? '?'} vs DC ${concentrationDc ?? '?'}${damageTaken ? `, ${damageTaken} dmg` : ''})`;
+    default:
+      return `🧠 Concentration: ${spell}`;
+  }
 }
