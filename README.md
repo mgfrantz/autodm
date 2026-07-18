@@ -272,7 +272,7 @@ The game implements comprehensive DnD 5e mechanics:
 
 **Version:** 0.1.0 (MVP + Advanced Features Complete)
 
-**Test Suite:** 2891 backend tests passing + 393 frontend tests passing = **3284 total**, 0 failures ✅
+**Test Suite:** 2902 backend tests passing + 393 frontend tests passing = **3295 total**, 0 failures ✅
 
 **Core Features:** ✅ All MVP features implemented ✅ Advanced features complete ✅ DSPy migration complete ✅ AI features (images, TTS with local support) operational ✅ Local TTS via mlx-audio (Kokoro) complete
 

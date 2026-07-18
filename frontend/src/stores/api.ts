@@ -121,6 +121,11 @@ export const listGames = async () => {
   return res.data;
 };
 
+export const deleteGame = async (gameId: number) => {
+  const res = await API.delete(`/game/${gameId}`);
+  return res.data;
+};
+
 // === Streaming (Server-Sent Events) ===
 
 /** A single SSE event parsed from the streaming endpoints. */

@@ -2003,12 +2003,45 @@ def resolve_check(game_id: int, check: CheckRequest, db: Session = Depends(get_d
     return event.to_dict()
 
 
+def _save_is_orphaned(save: GameSave) -> bool:
+    """Return True if a GameSave references a missing Character or World.
+
+    A GameSave requires both a character and a world (both FKs are NOT NULL),
+    but if either parent row was deleted without cascading — e.g. via raw SQL,
+    a partial DB reset, or a legacy ``db.delete(character)`` before the
+    relationship cascade was added — the FKs become dangling and
+    ``save.character`` / ``save.world`` resolve to ``None``. Any endpoint that
+    dereferences them (``save.character.name``) would then raise
+    ``AttributeError`` and return a 500. Callers should treat orphaned saves as
+    unplayable and either skip or explicitly error on them.
+    """
+    return save.character is None or save.world is None
+
+
 @router.get("/{game_id}/state")
 def get_game_state(game_id: int, db: Session = Depends(get_db)):
     """Get the current game state including story log."""
     save = db.query(GameSave).filter(GameSave.id == game_id).first()
     if not save:
         raise HTTPException(status_code=404, detail="Game not found")
+    if _save_is_orphaned(save):
+        # The character/world this save depends on no longer exist. The save is
+        # unrecoverable — surface a clear error (410 Gone) instead of crashing
+        # with a 500 from a NoneType dereference, and point the caller at the
+        # delete endpoint so they can clean it up.
+        missing = []
+        if save.character is None:
+            missing.append("character")
+        if save.world is None:
+            missing.append("world")
+        raise HTTPException(
+            status_code=410,
+            detail=(
+                "This game is corrupted and cannot be loaded — its "
+                f"{', '.join(missing)} no longer exist. "
+                f"Delete it via DELETE /game/{game_id} to remove it."
+            ),
+        )
 
     return {
         "game_id": save.id,
@@ -2036,17 +2069,48 @@ def get_game_state(game_id: int, db: Session = Depends(get_db)):
     }
 
 
+@router.delete("/{game_id}")
+def delete_game(game_id: int, db: Session = Depends(get_db)):
+    """Delete a game (live GameSave) and all of its named save snapshots.
+
+    Deleting the GameSave cascades to its ``SaveSlot`` rows. This also works on
+    *orphaned* saves (whose character/world rows are already gone): we delete by
+    the save's own identity, so the dangling FKs are irrelevant. This is the
+    recovery path for corrupted/orphaned games surfaced by ``list_games`` /
+    ``get_game_state``.
+    """
+    save = db.query(GameSave).filter(GameSave.id == game_id).first()
+    if not save:
+        raise HTTPException(status_code=404, detail="Game not found")
+    db.delete(save)
+    db.commit()
+    return {"status": "deleted", "id": game_id}
+
+
 @router.get("/")
 def list_games(db: Session = Depends(get_db)):
-    """List all saved games."""
+    """List all saved games.
+
+    Orphaned saves — whose character or world row has been deleted — are
+    skipped (with a warning log) so a corrupted save never crashes the
+    "continue game" menu. They remain in the DB and can be cleaned up via
+    ``DELETE /game/{id}``.
+    """
     saves = db.query(GameSave).order_by(GameSave.updated_at.desc()).all()
-    return [
-        {
+    playable = []
+    for s in saves:
+        if _save_is_orphaned(s):
+            logger.warning(
+                "Skipping orphaned GameSave id=%s (%r) — missing character/world; "
+                "delete it via DELETE /game/%s to clean up.",
+                s.id, s.name, s.id,
+            )
+            continue
+        playable.append({
             "id": s.id,
             "name": s.name,
             "character_name": s.character.name,
             "world_name": s.world.name,
             "updated_at": s.updated_at.isoformat() if s.updated_at else None,
-        }
-        for s in saves
-    ]
+        })
+    return playable

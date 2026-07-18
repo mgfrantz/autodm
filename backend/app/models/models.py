@@ -89,7 +89,13 @@ class Character(Base):
     created_at = Column(DateTime, default=utcnow)
 
     # Relationship
-    saves = relationship("GameSave", back_populates="character")
+    # ``cascade="all, delete-orphan"`` ensures that deleting a Character also
+    # removes its GameSaves (a save is meaningless without its character).
+    # Without this, ``DELETE /characters/{id}`` would leave orphaned GameSave
+    # rows whose ``character_id`` points to a now-missing row — which then
+    # crashes ``list_games`` / ``get_game_state`` when they dereference
+    # ``save.character``. SaveSlots cascade from GameSave (see below).
+    saves = relationship("GameSave", back_populates="character", cascade="all, delete-orphan")
 
     @property
     def primary_class(self) -> str:
@@ -173,7 +179,9 @@ class World(Base):
     created_at = Column(DateTime, default=utcnow)
 
     # Relationship
-    world_saves = relationship("GameSave", back_populates="world")
+    # ``cascade="all, delete-orphan"``: deleting a World removes its GameSaves
+    # (a save cannot exist without its world — ``world_id`` is NOT NULL).
+    world_saves = relationship("GameSave", back_populates="world", cascade="all, delete-orphan")
 
 
 class GameSave(Base):
