@@ -40,8 +40,15 @@ describe('useDiceTumble', () => {
     const { result } = renderHook(() =>
       useDiceTumble(15, { sides: 20, durationMs: 0, animate: true }),
     )
-    await waitFor(() => expect(result.current.value).toBe(15))
-    expect(result.current.isTumbling).toBe(false)
+    // Wait on the settle flag, not the value: the initial flicker frame sets
+    // `value` to a random face, and ~1/20 of the time that random value
+    // equals the final value (15). Waiting on `value` would resolve against
+    // that pre-settle render where `isTumbling` is still true (a real flake
+    // under full-suite rAF load). `isTumbling` only flips to false in the
+    // same batched tick that commits the final value, so it is the correct
+    // synchronization point.
+    await waitFor(() => expect(result.current.isTumbling).toBe(false))
+    expect(result.current.value).toBe(15)
   })
 })
 
@@ -72,7 +79,9 @@ describe('useDiceTumbleRolls', () => {
     const { result } = renderHook(() =>
       useDiceTumbleRolls([12, 18], { sides: 20, durationMs: 0, animate: true }),
     )
-    await waitFor(() => expect(result.current.rolls).toEqual([12, 18]))
-    expect(result.current.isTumbling).toBe(false)
+    // See the single-value test above: wait on the settle flag, not the
+    // (random) initial flicker values, to avoid a pre-settle resolution race.
+    await waitFor(() => expect(result.current.isTumbling).toBe(false))
+    expect(result.current.rolls).toEqual([12, 18])
   })
 })
