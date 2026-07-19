@@ -1,7 +1,7 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3273 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (170 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
+## TEST SUITE FULLY GREEN (3277 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (170 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
 
 ## ✅ COMPLETED: Enemy CR-Correction — 5 Iconic MM Monsters Moved to Canonical CR
 
@@ -61,6 +61,67 @@ cr=9, Young Red Dragon cr=4). Because their HP is also non-canonical it is
 ambiguous whether they are intended MM monsters or deliberate weaker variants,
 so they were **left untouched** pending a dedicated dragon-stat audit. The 5
 fixed here were the clear cases (canonical AC/HP, wrong CR only).
+
+---
+
+## ✅ COMPLETED: Young Gold Dragon AC Correction + Dragon Stat-Block Audit
+
+Followed up on the **known follow-up** flagged by the previous run: *"the dragon
+block (CR ≤ 10) contains several canonical-named dragons whose CR and HP do not
+match MM… left untouched pending a dedicated dragon-stat audit."* This run
+executed that audit — cross-referenced **every canonical-named dragon in the
+low-CR block (CR ≤ 10)** against the Monster Manual — and applied the one
+**unambiguous, zero-risk** correction.
+
+### What changed
+- **`backend/app/engine/encounters.py`** — `Young Gold Dragon` AC **18 → 19**.
+  Its CR (10) and HP (178) were **already MM-canonical**; only AC was off by
+  one (canonical 19, MM p. Young Metallic Dragons). This is the **inverse** of
+  the 5 CR-corrections already shipped (those had canonical AC/HP + wrong CR;
+  this has canonical CR/HP + wrong AC). After this fix the Young Gold Dragon
+  stat block is **fully MM-canonical**. CR 10 is untouched (the dragon stays in
+  its CR band; no encounter-builder, XP, or difficulty math is affected).
+
+### Audit findings (why only one fix)
+Applying the **same strict criterion as the previous run** (canonical AC +
+canonical HP, only one field wrong), only Young Gold qualified. The other
+canonical-named low-CR dragons are **deliberate weaker variants** — their HP is
+tuned below the MM canonical value (e.g. Adult Green HP 178 vs canonical 207),
+the same tuning convention the registry already uses for the high-tier Adult
+dragons (Adult Blue 243 vs canonical 225, Adult Red 297 vs canonical 256, etc.
+— all canonical CR + canonical AC + tuned HP). Tuned HP does not indicate a
+data-entry bug; it indicates intentional balance tuning.
+
+| Dragon | File | Canonical MM | Verdict |
+|--------|------|--------------|---------|
+| Young Gold Dragon | cr10, AC**18**, hp178 | cr10, AC**19**, hp178 | ✅ **FIXED** (AC 18→19) |
+| Adult Brass Dragon | cr8, AC19, hp172 | cr13, AC18, hp172 | ⚠️ HP canonical, CR wrong (8→13) — strongest remaining candidate, deferred (AC also off by 1, judgment call) |
+| Young Copper Dragon | cr8, AC16, hp119 | cr7, AC17, hp115 | borderline (all fields off by ~1) — left as variant |
+| Young Red Dragon | cr4, AC18, hp75 | cr10, AC18, hp178 | weakened variant (Wyrmling-tier hp) |
+| Young Blue Dragon | cr6, AC18, hp110 | cr9, AC19, hp152 | weakened variant (Young Brass-tier hp) |
+| Adult Green Dragon | cr9, AC19, hp178 | cr15, AC18, hp207 | weakened variant (tuned hp < canonical) |
+| Ancient Bronze Dragon | cr9, AC22, hp212 | cr22, AC22, hp444 | weakened variant (Adult-tier hp) |
+| Adult Copper Dragon | cr10, AC17, hp212 | cr17, AC18, hp184 | variant (tuned hp > canonical) |
+| Copper Dragon Wyrmling | cr10, AC17, hp135 | cr1, AC15, hp22 | pure homebrew (CR-10 "wyrmling") |
+| Baby White Dragon | cr6, AC17, hp99 | (n/a — non-canonical name) | intentional variant |
+
+### Files changed
+- **`backend/app/engine/encounters.py`** — 1-line AC fix (Young Gold Dragon 18→19).
+- **`backend/tests/test_enemy_cr_correction.py`** (+4 tests) — new
+  `TestYoungGoldDragonCanonicalAC` class: AC-is-canonical-19 guard, CR-unchanged
+  guard, HP-unchanged guard, still-in-CR-10-band guard.
+
+### Verification
+- ✅ `uv run pytest` — **3277 backend tests passing** (+4), 0 failures
+- ✅ `npm test` — 393 frontend tests passing (no frontend changes)
+
+### Known follow-up (next dragon audit pass, if desired)
+**Adult Brass Dragon** is the strongest remaining candidate: its HP (172) is
+already MM-canonical, but its CR (8) is clearly wrong (canonical 13) and its AC
+is off by one (19 vs canonical 18). Moving it to CR 13 would mirror the 5
+canonical-CR corrections already shipped, but the off-by-one AC makes it a
+judgment call (the strict "canonical AC + canonical HP" bar is not met). Left
+untouched pending explicit direction.
 
 ---
 
@@ -1591,7 +1652,7 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**3273 backend + 393 frontend tests, 0 failures.**
+**3277 backend + 393 frontend tests, 0 failures.**
 (Post-roadmap backend additions: +89 high-tier enemy registry expansion
 (CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8 spell roster
 completion (18/18 each), +55 iconic PHB level-1 spell expansion (16 spells,

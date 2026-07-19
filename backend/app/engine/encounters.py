@@ -695,7 +695,7 @@ COMMON_ENEMIES = {
     "Stone Giant": EnemyTemplate(name="Stone Giant", cr=9, armor_class=17, hp=126, attack_bonus=10),
 
     # CR 10 (5900 XP)
-    "Young Gold Dragon": EnemyTemplate(name="Young Gold Dragon", cr=10, armor_class=18, hp=178, attack_bonus=10),
+    "Young Gold Dragon": EnemyTemplate(name="Young Gold Dragon", cr=10, armor_class=19, hp=178, attack_bonus=10),
     "Adult Copper Dragon": EnemyTemplate(name="Adult Copper Dragon", cr=10, armor_class=17, hp=212, attack_bonus=11),
     "Babau": EnemyTemplate(name="Babau", cr=10, armor_class=16, hp=82, attack_bonus=7),
     "Barbed Devil": EnemyTemplate(name="Barbed Devil", cr=10, armor_class=15, hp=110, attack_bonus=6),

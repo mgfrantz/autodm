@@ -225,6 +225,35 @@ class TestLichRegistryConsistency:
         assert enc_lich.armor_class == leg_lich.armor_class == 17
 
 
+class TestYoungGoldDragonCanonicalAC:
+    """Young Gold Dragon had canonical CR (10) and canonical HP (178) but its
+    AC was off by one (18 instead of the MM-canonical 19, MM p. Young Metallic
+    Dragons). This is the inverse of the CR-correction pattern above: canonical
+    CR + canonical HP + wrong AC. AC corrected to 19 so the stat block is now
+    fully MM-canonical. CR 10 is untouched (the dragon stays in its CR band)."""
+
+    def test_ac_is_canonical_19(self):
+        yg = get_enemy_template("Young Gold Dragon")
+        assert yg is not None
+        assert yg.armor_class == 19, (
+            f"Young Gold Dragon AC must be MM-canonical 19, got {yg.armor_class}"
+        )
+
+    def test_cr_unchanged_canonical_10(self):
+        yg = get_enemy_template("Young Gold Dragon")
+        assert yg is not None
+        assert yg.cr == 10
+
+    def test_hp_unchanged_canonical_178(self):
+        yg = get_enemy_template("Young Gold Dragon")
+        assert yg is not None
+        assert yg.hp == 178
+
+    def test_still_in_cr10_band(self):
+        names = {m.name for m in get_enemies_by_cr(10)}
+        assert "Young Gold Dragon" in names
+
+
 class TestRegistryIntegrityPreserved:
     """The correction moved entries, it did not add or remove any."""
 

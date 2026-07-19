@@ -1,94 +1,77 @@
-# Dev Agent Report — DM Function Calling Cross-Phase Polish (Player as AoE Target)
+# Dev Agent Report — Young Gold Dragon AC Correction + Dragon Stat-Block Audit
 
-**Date:** 2026-07-18
-**Run type:** Scheduled dev-agent cron (hourly)
-**Status:** ✅ Complete — feature shipped, suite green, pushed to develop
+**Run:** scheduled cron (dev agent)
+**Date:** 2026-07-19
+**Branch:** develop
+**Run type:** Maintenance (DM Function Calling roadmap COMPLETE)
+**Status:** ✅ Complete — data-correctness fix shipped, suite green, pushed to develop
 
 ---
 
 ## Summary
 
-The DM Function Calling roadmap was already complete (Phases 1–5, 3.5a, 3.5b,
-UI polish). The post-roadmap NEXT SESSION DIRECTIVE flagged one concrete
-**cross-phase polish** item: *"concentration checks triggered by AoE spell
-damage on the player."* This run closes that item.
+The DM Function Calling roadmap is **fully complete** (all phases shipped). The
+standing post-roadmap directive is: *keep the suite green, watch for
+README/PROGRESS drift, and pick up quick fixes / content-registry expansions
+that surface.* This run picked up the **known follow-up** explicitly deferred
+by the previous run — the **dragon stat-block audit** — and closed the one
+**unambiguous, zero-risk** data-correctness finding it contained.
 
-**The gap:** the `cast_spell_aoe` game-action pipeline only resolved targets
-that were encounter combatants. The literal `"player"` target_id was silently
-dropped (logged "not in roster; skipping"), so:
-- the player could never take AoE damage through the multi-target path, and
-- no concentration check fired on such damage.
+Suite health on entry: **3273 backend + 393 frontend, 0 failures** (verified
+at the start of this run, 8.14s). No regressions on exit.
 
-This was **inconsistent** with the plain `damage` action, which already routes
-`target_id == "player"` → `character.current_hp` and fires concentration checks.
+## What shipped
 
-**The fix:** `"player"` is now a valid entry in `cast_spell_aoe`'s
-`target_ids`. The player's save is rolled with their *real* save proficiency,
-damage routes to `character.current_hp` (not a combatant), and a real
-concentration check fires when the player is concentrating — identical to the
-plain `damage` action's player path.
+### Young Gold Dragon AC correction (MM-canonical)
+`Young Gold Dragon` had **canonical CR (10) and canonical HP (178)** but its AC
+was off by one (**18** instead of the MM-canonical **19**, MM p. Young Metallic
+Dragons). AC corrected 18 → 19. This is the **inverse** of the 5 CR-corrections
+shipped in the previous run (those had canonical AC/HP + wrong CR; this has
+canonical CR/HP + wrong AC). The stat block is now **fully MM-canonical**.
+
+CR 10 is untouched → the dragon stays in its CR band → no encounter-builder,
+XP, or difficulty math is affected. Zero risk.
+
+### Dragon stat-block audit (full)
+Cross-referenced **every canonical-named dragon in the low-CR block (CR ≤ 10)**
+against the Monster Manual. Applied the **same strict criterion as the previous
+run** (canonical AC + canonical HP, only one field wrong). Only Young Gold
+qualified. The rest are **deliberate weaker/homebrew variants** — their HP is
+tuned away from canonical (Adult Green 178 vs 207, Young Red 75 vs 178, etc.),
+the same tuning convention the registry already uses for the high-tier Adult
+dragons (Adult Blue 243 vs canonical 225, Adult Red 297 vs canonical 256).
+
+Full audit table is in PROGRESS.md. Strongest remaining candidate (not touched):
+**Adult Brass Dragon** (HP canonical 172, but CR wrong 8→13 and AC off by one)
+— deferred as a judgment call (the strict bar isn't met because AC is also off).
 
 ## Files changed
-
-### Backend (feature)
-- **`backend/app/api/game.py`**
-  - New `_character_save_total(character, save_ability)` helper — companion to
-    `_combatant_save_total`, but uses the character's real save proficiency
-    (`calculate_save_bonus`: ability mod + proficiency bonus when proficient),
-    not monsters' ability-mod-only approximation. Defensive fallback on error.
-  - `cast_spell_aoe` resolution branch: `"player"` is now a valid target_id.
-    Builds a per-target spec from `_character_save_total` and tracks it with a
-    parallel `is_player_target` flag. On a successful cast, player damage
-    routes to `character.current_hp` and fires `_fire_concentration_check` when
-    the player is concentrating. Mixed targets (player + combatants) resolve
-    correctly; the `is_player` flag disambiguates even when the player shares a
-    name with a player-side combatant.
-- **`backend/app/llm/dspy_signatures.py`** — `DMActionableNarration` docstring
-  now tells the DM `"player"` is valid in `cast_spell_aoe`'s `target_ids` for
-  blast-radius coverage (enemy AoE, trap, own miscast).
-
-### Tests (+5 backend)
-- **`backend/tests/test_spell_aoe_events_api.py`** — new
-  `TestPlayerAsAoeTarget` class:
-  1. player fails save → full damage + HP reduced on Character (28→8)
-  2. player makes save → half damage + `made_save`/`half_damage` flags
-  3. player concentrating + AoE damage → concentration check event fires
-  4. mixed targets (player + goblin) → both damaged via correct paths
-     (Character HP + encounter combatant HP)
-  5. streaming endpoint routes player AoE damage too
-
-### Docs
-- **`PROGRESS.md`** — test count 3187→3192; new "✅ COMPLETED: Cross-Phase
-  Polish" section; NEXT SESSION DIRECTIVE marks the item DONE.
-- **`README.md`** — test count 3187→3192 (3580→3585 total); new entry in
-  Recently Completed.
-- **`docs/DM_FUNCTION_CALLING_RESEARCH.md`** — status header notes the
-  cross-phase polish is IMPLEMENTED.
-
-## Why no frontend changes
-The player-AoE-damage path emits a standard `damage` GameEvent (rendered by the
-existing `DamageCard`) and the concentration check emits a `concentration`
-GameEvent (rendered by `ConcentrationCard`). Both inline cards handle the new
-event flow unchanged.
+- `backend/app/engine/encounters.py` — 1-line AC fix (Young Gold Dragon 18→19)
+- `backend/tests/test_enemy_cr_correction.py` — +4 tests, new
+  `TestYoungGoldDragonCanonicalAC` class (AC canonical, CR unchanged, HP
+  unchanged, still-in-CR-10-band)
+- `PROGRESS.md` — new ✅ COMPLETED section (full audit table + reasoning),
+  status-line test count 3273→3277, directive banner 3273→3277
+- `README.md` — test-count sync (3273→3277, 3666→3670 total)
 
 ## Verification
-- ✅ `uv run pytest` — **3192 backend tests passing** (was 3187, +5), 0 failures
-- ✅ `npm test` — **393 frontend tests passing** (unchanged, no FE changes)
-- ✅ `npx tsc --noEmit` — clean
-- ✅ Registry drift check — all counts match README/PROGRESS (170 spells, 135
-  enemies, 53 feats, 47 tools, 29 subclasses, 18 backgrounds/mounts/languages,
-  14 traps, 9 alignments, 6 legendary, 3 adventures); zero duplicate names/ids.
+- ✅ `uv run pytest` — **3277 backend tests passing** (+4), 0 failures (8.09s)
+- ✅ `npm test` — **393 frontend tests passing** (28 files), no frontend changes
+- ✅ `git pull origin develop` — already up to date, no merge conflicts
+- ✅ README/PROGRESS drift check — test counts synced; enemy count unchanged (135)
 
-## Commit
-`feat: DM function calling cross-phase polish — player as AoE target`
+## Test counts
+- Backend: **3273 → 3277** (+4 Young Gold guard tests)
+- Frontend: **393** (unchanged)
+- Total: **3670**
 
-## Next run
-The roadmap remains complete. The NEXT SESSION DIRECTIVE's remaining open items
-(needing Mike's green-light before implementation):
-- **Story State (Phase 6)** — `set_story_flag` / `offer_quest` as explicit
-  game_actions (we already have quest detection + game flags via DSPy).
-- **Cross-phase polish (remaining)** — advantage/disadvantage on AoE saves.
-- **Hardening** — any edge cases surfaced by playtesting.
+## What the next run should pick up
+The post-roadmap maintenance directive still holds (keep suite green, watch for
+drift, pick up quick fixes). The only **deferred** dragon-audit candidate is
+**Adult Brass Dragon** (canonical HP 172, wrong CR 8→canonical 13, AC off by
+one 19→18) — moving it would mirror the 5 CR-corrections but is a judgment call
+because the AC is also non-canonical. Recommend waiting for explicit Mike
+direction before touching it (the strict "canonical AC + canonical HP" bar is
+not met).
 
-Standing tasks: keep the suite green, watch for README/PROGRESS drift, pick up
-quick fixes / content registry expansions if surfaced.
+No other TODO/FIXME/XXX/HACK markers in the backend. No content-count drift.
