@@ -1,7 +1,133 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3736 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (270 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+## TEST SUITE FULLY GREEN (3795 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (286 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+
+## ✅ COMPLETED: PHB Level-4 Spell Completion (14 → 30, catalogue 270 → 286; FULL PHB COVERAGE)
+
+This run **completed the level-4 tier** of the catalogue-wide "PHB completeness"
+effort. Levels 1, 2, 3, 6, 7/8/9 were already PHB-complete; **level 4 was the
+thinnest remaining leveled tier relative to the Player's Handbook** (was 14; PHB
+has 30). This run registers **all 16 missing PHB 4th-level spells** so **every
+Player's Handbook 4th-level spell is now registered** (level 4: 14 → 30). The
+spell catalogue now stands at **286 spells**, and **eight of the ten iconic
+PHB spell tiers (1, 2, 3, 4, 6, 7, 8, 9) are now PHB-complete**.
+
+### The 16 additions (grouped by resolution path)
+- **Save-spell with damage:** Wall of Fire (Dex, 5d8 fire, concentration,
+  +1d8/slot upcast — the iconic evoker's wall), Sickening Radiance (Con, 4d10
+  radiant, concentration, +1d10/slot upcast, exhaustion-on-fail — the
+  radiation hazard).
+- **Save-debuff (no damage):** Compulsion (Wis, concentration — enchantment
+  forced movement of up to 12 creatures), Otiluke's Resilient Sphere (Dex,
+  concentration — encase target in an impenetrable shimmering sphere).
+- **Utility / buff / ritual (12 spells):** Arcane Eye (concentration, 1-min
+  cast — scrying sensor), Conjure Minor Elementals (concentration summon),
+  Control Water (concentration — four modes: flood/part/redirect/whirlpool),
+  Divination (ritual — cleric's "ask your god a question"), Fabricate
+  (10-min cast — transmute raw materials into finished goods), Giant Insect
+  (concentration — transform insects to giant form), Guardian of Faith
+  (8-hour, **NO concentration** — 20 radiant / 60-cap guardian field, modeled
+  effect-in-description), Hallucinatory Terrain (24-hour, **NO concentration**
+  — Investigation check to discern), Leomund's Secret Chest (ritual — hide/recall
+  a chest on the Ethereal Plane), Locate Creature (concentration — the upgraded
+  Locate Object), Mordenkainen's Faithful Hound (8-hour, **NO concentration** —
+  invisible watchdog), Stone Shape (instantaneous transmutation).
+
+### Correct-mechanics decisions (PHB-canonical)
+- Wall of Fire and Sickening Radiance use the standard `save_ability` +
+  `damage_dice_*` + `at_higher_levels_dice` path (the same one Ice Storm /
+  Blight already use). Both upcast (+1d8 and +1d10 per slot respectively, per
+  PHB p.284 / p.277).
+- Compulsion / Otiluke's Resilient Sphere carry a `save_ability` but no
+  `damage_dice_*`, so `resolve_spell_effect()` resolves them via the
+  made_save path while the multi-mode effects (forced movement, encasing/restrain)
+  live in the description — the same convention already established by Hold
+  Person, Banishment, Confusion, Compulsion's cousins at lower levels.
+- **No-concentration signatures preserved per PHB:** Guardian of Faith
+  (8-hour), Hallucinatory Terrain (24-hour), Mordenkainen's Faithful Hound
+  (8-hour). These are set-and-endure guardians/illusions, not maintained
+  effects — the canonical PHB exception mirrored by Daylight/Tongues/Tiny-Hut.
+- **Effect-in-description convention** for the two spells whose mechanics
+  don't fit the dice model: Guardian of Faith (flat 20 radiant, no save, 60-damage
+  cap — modeled as a no-dice utility spell with the effect documented) and
+  Mordenkainen's Faithful Hound (set guardian with a bite effect documented).
+  This mirrors how Spiritual Weapon's caster-dependent mod, Hunter's Mark's
+  rider, and Guardian-of-Faith's flat damage are handled elsewhere — the
+  engine records them faithfully without forcing an incorrect dice expression.
+- Concentration flag set on Wall of Fire, Sickening Radiance, Compulsion,
+  Otiluke's Resilient Sphere, Arcane Eye, Conjure Minor Elementals, Control
+  Water, Giant Insect, Locate Creature. Correctly **not** set on Divination
+  (ritual), Fabricate (instantaneous), Guardian of Faith (8-hour), Hallucinatory
+  Terrain (24-hour), Leomund's Secret Chest (ritual), Mordenkainen's Faithful
+  Hound (8-hour), Stone Shape (instantaneous).
+- Ritual flag set on the two rituals in the batch: Divination, Leomund's
+  Secret Chest (per PHB).
+- Long casting times preserved on the signature out-of-combat spells: Arcane
+  Eye (1 min — scrying sensor), Fabricate (10 min — crafting), Hallucinatory
+  Terrain (10 min — terrain illusion). These are PHB signatures and the engine
+  records them faithfully.
+- Schools are canonical PHB throughout: Wall of Fire = evocation, Sickening
+  Radiance = evocation, Compulsion = enchantment, Otiluke's Resilient Sphere =
+  evocation, Arcane Eye = divination, Conjure Minor Elementals = conjuration,
+  Control Water = transmutation, Divination = divination, Fabricate =
+  transmutation, Giant Insect = transmutation, Guardian of Faith = conjuration,
+  Hallucinatory Terrain = illusion, Leomund's Secret Chest = conjuration,
+  Locate Creature = divination, Mordenkainen's Faithful Hound = conjuration,
+  Stone Shape = transmutation.
+
+### Bonus: eliminated a latent flaky test (Flame Blade / Spiritual Weapon)
+While verifying the full suite, `test_flame_blade_attack_hits_and_misses`
+failed once and passed in isolation — a latent flaky attack-roll test in
+`test_spell_level2_expansion.py`. Root cause: the test asserted damage within
+a single-roll range (3-18 for 3d6) but a **natural-20 crit** doubles damage
+(up to 36), breaking the bound. Applied the established `_force_d20` monkeypatch
+pattern (already used by Vampiric Touch / Mordenkainen's Sword / Inflict
+Wounds) to force a deterministic non-crit hit and miss. Also hardened
+`test_spiritual_weapon_attack_resolves` (same latent crit-flake on its 1-8
+range). **The full suite is now stable across 3 consecutive runs** (was
+intermittently red).
+
+### Files changed
+- **`backend/app/engine/spells.py`** — 16 new `register_spell(Spell(...))`
+  entries in the level-4 block (after Freedom of Movement, before the Level 5
+  section), grouped by resolution path with a section comment mirroring the
+  level-2/3 completion blocks.
+- **`backend/tests/test_spell_level2_expansion.py`** — added the `_force_d20`
+  helper to `TestNewSpellResolution` and made `test_flame_blade_attack_hits_and_misses`
+  and `test_spiritual_weapon_attack_resolves` deterministic (force non-crit hit
+  + miss); removes the latent crit-flake. No new test count.
+- **`backend/tests/test_spell_level4_completion.py`** (NEW, 59 tests) —
+  registry distribution (total ≥286, level 4 ≥30, other-PHB-tier floor guards,
+  no-dup guards), parametrized registration-shape (name/level/school for all
+  16), per-spell mechanical correctness (save + dice + upcast + concentration
+  on Wall of Fire & Sickening Radiance; save ability + concentration + no-damage
+  on Compulsion & Otiluke's Resilient Sphere; concentration/ritual/casting-time/range/duration
+  flags on all 12 utility spells including Guardian-of-Faith's & Hallucinatory-Terrain's
+  & Mordenkainen's-Faithful-Hound's no-concentration signatures, Arcane Eye's
+  1-min cast, Fabricate's 10-min cast, Hallucinatory Terrain's 24-hour duration),
+  effect resolution (save-for-half for both damage spells, save-debuff path for
+  the two saves, "takes effect" path for all 12 utility spells), and upcasting
+  math (both the static `damage_dice_count + at_higher_levels_dice * levels`
+  identity and the real `roll_damage` rolls at base and upcast slots for Wall
+  of Fire +1d8 and Sickening Radiance +1d10).
+
+### Verification
+- ✅ `uv run pytest` — **3795 backend tests passing** (+59), 0 failures —
+  stable across 3 consecutive runs (flake eliminated)
+- ✅ `npm test` (frontend) — 393 tests passing, 0 failures (no frontend changes)
+- ✅ `npx tsc --noEmit` — clean
+- ✅ `npm run build` — clean (2.44s)
+
+### Spell tier snapshot after this run
+`{0:14, 1:53, 2:55, 3:39, 4:30, 5:13, 6:31, 7:18, 8:18, 9:15}` — **levels 1,
+2, 3, 4, 6, 7, 8, 9 are all PHB-complete** (eight of the ten tiers). The only
+remaining non-canonical counts are **level 5 (13, PHB ~20)** and the cantrip
+tier at level 0 (14, PHB ~40) — both optional curated selections, not gaps. A
+follow-up run could complete level 5 toward full PHB coverage (the last leveled
+tier with room to grow).
+
+---
 
 ## ✅ COMPLETED: PHB Level-3 Spell Completion (13 → 39, catalogue 244 → 270; FULL PHB COVERAGE)
 
@@ -2298,7 +2424,7 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅ + PHB SPELL TIERS 1/2/3/6/7/8/9 COMPLETE ✅
+## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅ + PHB SPELL TIERS 1/2/3/4/6/7/8/9 COMPLETE ✅
 
 **The full DM Function Calling roadmap is COMPLETE (2026-07-17).** Every
 phase — dice, combat, spells, inventory, conditions, concentration, AoE, and UI
@@ -2313,7 +2439,7 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**3736 backend + 393 frontend tests, 0 failures.**
+**3795 backend + 393 frontend tests, 0 failures.**
 (Post-roadmap content-registry additions: +89 high-tier enemy registry
 expansion (CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8 spell
 roster completion (18/18 each), +55 iconic PHB level-1 spell expansion (16
@@ -2350,12 +2476,20 @@ consider (draft a design doc if Mike green-lights any):
 - ~~**Content registry expansion — PHB level-3 completion (next candidate).**~~
   **DONE (2026-07-19)** — all 26 missing PHB 3rd-level spells landed this run,
   lifting level 3 from 13 → 39 (full PHB coverage) and the catalogue from
-  244 → 270. **All seven iconic PHB spell tiers (1, 2, 3, 6, 7, 8, 9) are now
-  PHB-complete.** The remaining non-canonical counts (cantrips at level 0, and
-  the curated subsets at levels 4–5) are intentional curated selections. A
-  follow-up run could either (a) expand level 4 (14, PHB ~26) or level 5 (13,
-  PHB ~20) toward PHB coverage, or (b) round out cantrips (level 0) toward
-  PHB's ~40 cantrips. Both are optional polish, not gaps.
+  244 → 270.
+- ~~**Content registry expansion — PHB level-4 completion.**~~ **DONE (2026-07-19)** —
+  all 16 missing PHB 4th-level spells landed (Wall of Fire, Sickening Radiance,
+  Compulsion, Otiluke's Resilient Sphere, Arcane Eye, Conjure Minor Elementals,
+  Control Water, Divination, Fabricate, Giant Insect, Guardian of Faith,
+  Hallucinatory Terrain, Leomund's Secret Chest, Locate Creature, Mordenkainen's
+  Faithful Hound, Stone Shape), lifting level 4 from 14 → 30 (full PHB coverage)
+  and the catalogue from 270 → 286. **Eight of the ten iconic PHB spell tiers
+  (1, 2, 3, 4, 6, 7, 8, 9) are now PHB-complete.** Also eliminated a latent
+  flaky attack-roll test (Flame Blade / Spiritual Weapon crit-flake) via the
+  `_force_d20` pattern. The remaining non-canonical counts are **level 5 (13,
+  PHB ~20)** — the last leveled tier with room to grow — and the cantrip tier
+  at level 0 (14, PHB ~40). Both are optional polish, not gaps. A follow-up run
+  could complete level 5 toward full PHB coverage.
 
 Until then, the dev agent should:
 - Keep the full suite green (`uv run pytest`, `npm test`)
