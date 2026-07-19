@@ -1066,6 +1066,349 @@ _register(Feat(
 ))
 
 
+# --- Tasha's Cauldron of Everything feats (TCoE p.79-91) --------------------
+# 14 canonical feats from Tasha's Cauldron of Everything. Most are "half-feats"
+# that grant a +1 to a chosen ability (the TCoE design philosophy: every feat
+# gives *some* ability bump). They expose ``ability_bonus_choices`` where
+# applicable and free-form ``combat_modifiers`` for the combat engine / DM.
+
+_register(Feat(
+    name="Chef",
+    description=(
+        "Increase your Constitution or Wisdom by 1. During a short or long "
+        "rest, you can produce treats that grant temporary hit points. When "
+        "you finish a long rest, you can end it early for one creature that "
+        "also finished the rest; that creature can spend a Hit Die to regain "
+        "hit points."
+    ),
+    ability_bonus_choices=["constitution", "wisdom"],
+    combat_modifiers={
+        "temp_hp_treats": {"during_rest": True, "refresh": "short_or_long_rest"},
+        "short_rest_share_hit_die": True,
+    },
+    notes=[
+        "craft treats during a rest that grant temporary hit points",
+        "end a long rest early to let an ally spend a Hit Die",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Crusher",
+    description=(
+        "Increase your Strength or Constitution by 1. Once per turn, when you "
+        "hit a creature with an attack that deals bludgeoning damage, you can "
+        "move it 5 feet to an unoccupied space, provided the target is no more "
+        "than one size larger than you. When you score a critical hit that "
+        "deals bludgeoning damage to a creature, attack rolls against that "
+        "creature have advantage until the start of your next turn."
+    ),
+    ability_bonus_choices=["strength", "constitution"],
+    combat_modifiers={
+        "bludgeoning_hit_push": {"feet": 5, "per_turn": 1, "size_limit": "one larger"},
+        "crit_advantage_vs_target": {"damage_type": "bludgeoning", "duration": "start of next turn"},
+    },
+    notes=[
+        "once per turn move target 5 ft on a bludgeoning hit",
+        "bludgeoning crit grants advantage on attacks vs that target",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Eldritch Adept",
+    description=(
+        "Studying occult lore, you learn one Eldritch Invocation option of "
+        "your choice from the warlock class. If the invocation has a "
+        "prerequisite of any kind, you can choose that invocation only if "
+        "you're a warlock and only if you meet the prerequisite. Whenever you "
+        "gain a level, you can replace the invocation with another one. "
+        "(Requires the ability to cast at least one spell.)"
+    ),
+    combat_modifiers={
+        "learn_eldritch_invocation": 1,
+        "change_on_level_up": True,
+        "prerequisite_lock": "warlock-only invocations require warlock levels",
+    },
+    prerequisite=FeatPrerequisite(requires_caster=True),
+    notes=["learn one Eldritch Invocation", "swap it whenever you gain a level"],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Fey Touched",
+    description=(
+        "Your exposure to the Feywild's magic has changed you. Increase your "
+        "Intelligence, Wisdom, or Charisma by 1. You learn the Misty Step "
+        "spell and one 1st-level spell of your choice from the divination or "
+        "enchantment school. You can cast each of these spells once without "
+        "expending a spell slot, and you regain the ability to do so when you "
+        "finish a long rest. Your spellcasting ability for these spells is the "
+        "ability increased by this feat."
+    ),
+    ability_bonus_choices=["intelligence", "wisdom", "charisma"],
+    combat_modifiers={
+        "learn_spell_fixed": {"name": "Misty Step", "level": 2, "casts_per_long_rest": 1},
+        "learn_spell_choice": {
+            "level": 1,
+            "school": ["divination", "enchantment"],
+            "casts_per_long_rest": 1,
+        },
+        "spellcasting_ability_choices": ["intelligence", "wisdom", "charisma"],
+    },
+    notes=[
+        "learn Misty Step (once per long rest, no slot)",
+        "learn a 1st-level divination or enchantment spell (once per long rest, no slot)",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Fighting Initiate",
+    description=(
+        "Your martial training has helped you develop a particular style of "
+        "fighting. You adopt a style of fighting as your specialty. Choose a "
+        "Fighting Style from the fighter class. You can't take the same "
+        "Fighting Style option more than once. Whenever you gain a level, you "
+        "can replace the style with a different one."
+    ),
+    combat_modifiers={
+        "learn_fighting_style": 1,
+        "style_choices": "fighter_list",
+        "change_on_level_up": True,
+    },
+    notes=[
+        "gain one Fighting Style from the fighter list",
+        "swap it whenever you gain a level",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Gunner",
+    description=(
+        "Increase your Dexterity by 1. You gain proficiency with firearms. "
+        "You ignore the loading property of firearms. Being within 5 feet of "
+        "a hostile creature doesn't impose disadvantage on your ranged attack "
+        "rolls with firearms."
+    ),
+    ability_bonus_choices=["dexterity"],
+    skill_proficiencies=["firearms"],
+    combat_modifiers={
+        "ignore_loading_property": {"weapons": "firearms"},
+        "ranged_no_disadvantage_in_melee": {"weapons": "firearms"},
+    },
+    notes=[
+        "proficiency with firearms",
+        "ignore the loading property of firearms",
+        "no disadvantage on ranged firearm attacks in melee",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Metamagic Adept",
+    description=(
+        "You've learned how to exert your will on your spells to alter how "
+        "they function. You learn two Metamagic options of your choice from "
+        "the sorcerer class. You gain 2 sorcery points to spend on these "
+        "options (refreshed when you finish a long rest). Whenever you gain a "
+        "level, you can replace one of your Metamagic options with another "
+        "one. (Requires sorcerer level 1+.)"
+    ),
+    combat_modifiers={
+        "learn_metamagic": 2,
+        "sorcery_points": {"amount": 2, "refresh": "long_rest"},
+        "change_one_on_level_up": True,
+    },
+    prerequisite=FeatPrerequisite(requires_class="sorcerer"),
+    notes=[
+        "learn 2 Metamagic options from the sorcerer list",
+        "gain 2 sorcery points (refresh on a long rest)",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Piercer",
+    description=(
+        "Increase your Strength, Dexterity, or Constitution by 1. Once per "
+        "turn, when you hit a creature with an attack that deals piercing "
+        "damage, you can reroll one of the attack's damage dice and use the "
+        "higher roll. When you score a critical hit that deals piercing "
+        "damage, you can roll one additional damage die when determining the "
+        "extra damage for a critical hit."
+    ),
+    ability_bonus_choices=["strength", "dexterity", "constitution"],
+    combat_modifiers={
+        "reroll_damage_die": {"per_turn": 1, "damage_type": "piercing", "use_higher": True},
+        "crit_extra_damage_die": {"damage_type": "piercing"},
+    },
+    notes=[
+        "once per turn reroll a piercing damage die, keep higher",
+        "piercing critical hits add one extra damage die",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Poisoner",
+    description=(
+        "You can prepare and deliver deadly poisons, gaining the following "
+        "benefits: you can apply poison to a weapon or piece of ammunition as "
+        "a bonus action instead of an action. Once per turn, when you cause "
+        "a creature to take poison damage, you can also deal 2d8 poison "
+        "damage to that creature. When you make a damage roll for the poison "
+        "you applied with this feat, the poison's damage is 2d8. The DC for "
+        "the saving throw against the poison is 8 + your proficiency bonus + "
+        "your Intelligence modifier."
+    ),
+    combat_modifiers={
+        "apply_poison_bonus_action": True,
+        "bonus_poison_damage": {"dice": "2d8", "damage_type": "poison", "per_turn": 1},
+        "poison_save_dc": "8 + prof + int_mod",
+    },
+    notes=[
+        "apply poison as a bonus action",
+        "2d8 poison damage once per turn (DC 8 + prof + Int)",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Shadow Touched",
+    description=(
+        "Your exposure to the Shadowfell's magic has changed you. Increase "
+        "your Intelligence, Wisdom, or Charisma by 1. You learn the "
+        "Invisibility spell and one 1st-level spell of your choice from the "
+        "illusion or necromancy school. You can cast each of these spells "
+        "once without expending a spell slot, and you regain the ability to "
+        "do so when you finish a long rest. Your spellcasting ability for "
+        "these spells is the ability increased by this feat."
+    ),
+    ability_bonus_choices=["intelligence", "wisdom", "charisma"],
+    combat_modifiers={
+        "learn_spell_fixed": {"name": "Invisibility", "level": 2, "casts_per_long_rest": 1},
+        "learn_spell_choice": {
+            "level": 1,
+            "school": ["illusion", "necromancy"],
+            "casts_per_long_rest": 1,
+        },
+        "spellcasting_ability_choices": ["intelligence", "wisdom", "charisma"],
+    },
+    notes=[
+        "learn Invisibility (once per long rest, no slot)",
+        "learn a 1st-level illusion or necromancy spell (once per long rest, no slot)",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Skill Expert",
+    description=(
+        "You have honed one ability. Choose one ability. Increase that "
+        "ability by 1. You gain proficiency in one skill of your choice, and "
+        "you gain expertise with that skill, which means your proficiency "
+        "bonus is doubled for any ability check you make with it. The skill "
+        "you choose must be one that isn't already benefiting from a feature, "
+        "such as Expertise, that doubles your proficiency bonus."
+    ),
+    ability_bonus_choices=list(VALID_ABILITIES),
+    skill_proficiencies=["1 skill (player choice)"],
+    combat_modifiers={
+        "expertise": {"count": 1, "applies_to": "chosen skill", "double_proficiency": True},
+    },
+    notes=[
+        "+1 to one ability, proficiency in one skill",
+        "expertise (double proficiency) in that skill",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Slasher",
+    description=(
+        "Increase your Strength or Dexterity by 1. Once per turn, when you "
+        "hit a creature with an attack that deals slashing damage, you can "
+        "reduce the speed of that creature by 10 feet until the start of "
+        "your next turn. When you score a critical hit that deals slashing "
+        "damage to a creature, you grievously wound it; until the start of "
+        "your next turn, the target has disadvantage on all attack rolls."
+    ),
+    ability_bonus_choices=["strength", "dexterity"],
+    combat_modifiers={
+        "slashing_hit_speed_reduction": {"feet": 10, "per_turn": 1, "damage_type": "slashing", "duration": "start of next turn"},
+        "crit_target_disadvantage": {"damage_type": "slashing", "duration": "start of next turn"},
+    },
+    notes=[
+        "once per turn reduce target speed 10 ft on a slashing hit",
+        "slashing crit gives the target disadvantage on attack rolls",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Telekinetic",
+    description=(
+        "You learn to move things with your mind. Increase your Intelligence, "
+        "Wisdom, or Charisma by 1. You learn the Mage Hand cantrip, which "
+        "doesn't require verbal or somatic components for you, and it can be "
+        "cast as a bonus action. As a bonus action, you can try to "
+        "telekinetically shove one creature you can see within 30 feet of "
+        "you. The target must succeed on a Strength saving throw (DC 8 + "
+        "your proficiency bonus + the ability modifier of the ability "
+        "increased by this feat) or be moved 5 feet toward or away from you."
+    ),
+    ability_bonus_choices=["intelligence", "wisdom", "charisma"],
+    combat_modifiers={
+        "learn_cantrip_fixed": {"name": "Mage Hand", "no_verbal": True, "no_somatic": True, "bonus_action_cast": True},
+        "telekinetic_shove": {
+            "action": "bonus",
+            "range_ft": 30,
+            "save": "strength",
+            "dc": "8 + prof + ability_mod",
+            "push_pull_ft": 5,
+        },
+    },
+    notes=[
+        "learn Mage Hand (no verbal/somatic, bonus action)",
+        "bonus-action shove: push or pull a creature 5 ft (Str save)",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+_register(Feat(
+    name="Telepathic",
+    description=(
+        "You awaken the ability to mentally connect with others. Increase "
+        "your Intelligence, Wisdom, or Charisma by 1. You can speak "
+        "telepathically to any creature you can see within 60 feet of you. "
+        "Your telepathic utterances are in a language you know, and the "
+        "creature understands you only if it knows that language. As a bonus "
+        "action, you can cast the Detect Thoughts spell, using the ability "
+        "increased by this feat. You can cast it this way a number of times "
+        "equal to your proficiency bonus, and you regain all expended uses "
+        "when you finish a long rest."
+    ),
+    ability_bonus_choices=["intelligence", "wisdom", "charisma"],
+    combat_modifiers={
+        "telepathy": {"range_ft": 60, "shared_language_only": True},
+        "cast_detect_thoughts": {
+            "level": 2,
+            "action": "bonus",
+            "uses": "proficiency_bonus",
+            "refresh": "long_rest",
+            "dc": "8 + prof + ability_mod",
+        },
+    },
+    notes=[
+        "speak telepathically to creatures within 60 ft (shared language)",
+        "bonus-action Detect Thoughts (proficiency-bonus uses per long rest)",
+    ],
+    source="Tasha's Cauldron of Everything",
+))
+
+
 # --------------------------------------------------------------------------- #
 # Registry access                                                             #
 # --------------------------------------------------------------------------- #

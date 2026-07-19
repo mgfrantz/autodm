@@ -14,6 +14,7 @@ from app.engine.feats import (
     _has_armor_proficiency,
     ApplyFeatResult,
 )
+from app.engine.leveling import VALID_ABILITIES
 
 
 # --------------------------------------------------------------------------- #
@@ -439,9 +440,9 @@ def test_expanded_phb_feats_exist():
         assert name in names, f"Missing expanded PHB feat: {name}"
 
 
-def test_registry_has_at_least_50_feats():
-    """The expanded registry should have 50+ feats (was 23)."""
-    assert len(list_feats()) >= 50
+def test_registry_has_at_least_67_feats():
+    """The expanded registry should have 67+ feats (PHB + XGE + Tasha's)."""
+    assert len(list_feats()) >= 67
 
 
 def test_actor_feat():
@@ -755,3 +756,308 @@ def test_prerequisite_to_dict_includes_race():
     alert = get_feat("Alert")
     d2 = alert.to_dict()
     assert d2["prerequisite"] is None
+
+
+# --------------------------------------------------------------------------- #
+# Tasha's Cauldron of Everything feat tests                                    #
+# --------------------------------------------------------------------------- #
+
+_TASHAS_FEATS = [
+    "Chef", "Crusher", "Eldritch Adept", "Fey Touched", "Fighting Initiate",
+    "Gunner", "Metamagic Adept", "Piercer", "Poisoner", "Shadow Touched",
+    "Skill Expert", "Slasher", "Telekinetic", "Telepathic",
+]
+
+
+def test_tashas_feats_exist():
+    names = {f.name for f in list_feats()}
+    for name in _TASHAS_FEATS:
+        assert name in names, f"Missing Tasha's feat: {name}"
+
+
+def test_tashas_count_is_fourteen():
+    """Exactly 14 canonical Tasha's Cauldron of Everything feats registered."""
+    tashas = [f for f in list_feats() if f.source == "Tasha's Cauldron of Everything"]
+    assert len(tashas) == 14
+
+
+def test_tashas_feats_have_tashas_source():
+    for name in _TASHAS_FEATS:
+        feat = get_feat(name)
+        assert feat is not None, name
+        assert feat.source == "Tasha's Cauldron of Everything", f"{name}: {feat.source}"
+
+
+def test_tashas_feats_no_duplicates():
+    """Each Tasha's feat resolves to a distinct registry entry."""
+    seen = set()
+    for name in _TASHAS_FEATS:
+        feat = get_feat(name)
+        assert feat is not None, name
+        key = feat.name.lower()
+        assert key not in seen, f"Duplicate: {name}"
+        seen.add(key)
+
+
+# --- Half-feat ability choices -------------------------------------------------
+
+def test_tashas_half_feats_have_ability_choices():
+    """Tasha's half-feats must expose ability_bonus_choices."""
+    expected = {
+        "Chef": {"constitution", "wisdom"},
+        "Crusher": {"strength", "constitution"},
+        "Fey Touched": {"intelligence", "wisdom", "charisma"},
+        "Gunner": {"dexterity"},
+        "Piercer": {"strength", "dexterity", "constitution"},
+        "Shadow Touched": {"intelligence", "wisdom", "charisma"},
+        "Skill Expert": {"strength", "dexterity", "constitution",
+                          "intelligence", "wisdom", "charisma"},
+        "Slasher": {"strength", "dexterity"},
+        "Telekinetic": {"intelligence", "wisdom", "charisma"},
+        "Telepathic": {"intelligence", "wisdom", "charisma"},
+    }
+    for name, choices in expected.items():
+        feat = get_feat(name)
+        assert feat is not None, name
+        assert set(feat.ability_bonus_choices) == choices, (
+            f"{name}: expected {choices}, got {set(feat.ability_bonus_choices)}"
+        )
+
+
+def test_tashas_non_half_feats_have_no_ability_choice():
+    """Eldritch Adept, Fighting Initiate, Metamagic Adept, and Poisoner give no
+    ability bump (per Tasha's)."""
+    for name in ["Eldritch Adept", "Fighting Initiate", "Metamagic Adept", "Poisoner"]:
+        feat = get_feat(name)
+        assert feat is not None, name
+        assert feat.ability_bonus_choices == [], f"{name} should have no ability choice"
+        assert feat.ability_bonus == {}, f"{name} should have no fixed ability bonus"
+
+
+# --- Per-feat mechanical-correctness ------------------------------------------
+
+def test_chef_feat():
+    chef = get_feat("Chef")
+    assert chef is not None
+    assert chef.combat_modifiers["temp_hp_treats"]["during_rest"] is True
+    assert chef.combat_modifiers["short_rest_share_hit_die"] is True
+
+
+def test_crusher_feat():
+    crusher = get_feat("Crusher")
+    assert crusher is not None
+    assert crusher.combat_modifiers["bludgeoning_hit_push"]["feet"] == 5
+    assert crusher.combat_modifiers["bludgeoning_hit_push"]["per_turn"] == 1
+    assert crusher.combat_modifiers["crit_advantage_vs_target"]["damage_type"] == "bludgeoning"
+
+
+def test_eldritch_adept_feat():
+    ea = get_feat("Eldritch Adept")
+    assert ea is not None
+    assert ea.combat_modifiers["learn_eldritch_invocation"] == 1
+    assert ea.combat_modifiers["change_on_level_up"] is True
+
+
+def test_fey_touched_feat():
+    ft = get_feat("Fey Touched")
+    assert ft is not None
+    assert ft.combat_modifiers["learn_spell_fixed"]["name"] == "Misty Step"
+    assert ft.combat_modifiers["learn_spell_fixed"]["level"] == 2
+    assert ft.combat_modifiers["learn_spell_fixed"]["casts_per_long_rest"] == 1
+    assert "divination" in ft.combat_modifiers["learn_spell_choice"]["school"]
+    assert "enchantment" in ft.combat_modifiers["learn_spell_choice"]["school"]
+    assert ft.combat_modifiers["learn_spell_choice"]["level"] == 1
+
+
+def test_fighting_initiate_feat():
+    fi = get_feat("Fighting Initiate")
+    assert fi is not None
+    assert fi.combat_modifiers["learn_fighting_style"] == 1
+    assert fi.combat_modifiers["style_choices"] == "fighter_list"
+    assert fi.combat_modifiers["change_on_level_up"] is True
+
+
+def test_gunner_feat():
+    gunner = get_feat("Gunner")
+    assert gunner is not None
+    assert "firearms" in gunner.skill_proficiencies
+    assert gunner.combat_modifiers["ignore_loading_property"]["weapons"] == "firearms"
+    assert gunner.combat_modifiers["ranged_no_disadvantage_in_melee"]["weapons"] == "firearms"
+
+
+def test_metamagic_adept_feat():
+    ma = get_feat("Metamagic Adept")
+    assert ma is not None
+    assert ma.combat_modifiers["learn_metamagic"] == 2
+    assert ma.combat_modifiers["sorcery_points"]["amount"] == 2
+    assert ma.combat_modifiers["sorcery_points"]["refresh"] == "long_rest"
+    assert ma.combat_modifiers["change_one_on_level_up"] is True
+
+
+def test_piercer_feat():
+    piercer = get_feat("Piercer")
+    assert piercer is not None
+    assert piercer.combat_modifiers["reroll_damage_die"]["per_turn"] == 1
+    assert piercer.combat_modifiers["reroll_damage_die"]["damage_type"] == "piercing"
+    assert piercer.combat_modifiers["reroll_damage_die"]["use_higher"] is True
+    assert piercer.combat_modifiers["crit_extra_damage_die"]["damage_type"] == "piercing"
+
+
+def test_poisoner_feat():
+    poisoner = get_feat("Poisoner")
+    assert poisoner is not None
+    assert poisoner.combat_modifiers["apply_poison_bonus_action"] is True
+    assert poisoner.combat_modifiers["bonus_poison_damage"]["dice"] == "2d8"
+    assert poisoner.combat_modifiers["bonus_poison_damage"]["damage_type"] == "poison"
+    assert poisoner.combat_modifiers["bonus_poison_damage"]["per_turn"] == 1
+    assert poisoner.combat_modifiers["poison_save_dc"] == "8 + prof + int_mod"
+
+
+def test_shadow_touched_feat():
+    st = get_feat("Shadow Touched")
+    assert st is not None
+    assert st.combat_modifiers["learn_spell_fixed"]["name"] == "Invisibility"
+    assert st.combat_modifiers["learn_spell_fixed"]["level"] == 2
+    assert "illusion" in st.combat_modifiers["learn_spell_choice"]["school"]
+    assert "necromancy" in st.combat_modifiers["learn_spell_choice"]["school"]
+
+
+def test_skill_expert_feat():
+    se = get_feat("Skill Expert")
+    assert se is not None
+    assert se.combat_modifiers["expertise"]["count"] == 1
+    assert se.combat_modifiers["expertise"]["double_proficiency"] is True
+    assert any("skill" in p for p in se.skill_proficiencies)
+
+
+def test_slasher_feat():
+    slasher = get_feat("Slasher")
+    assert slasher is not None
+    assert slasher.combat_modifiers["slashing_hit_speed_reduction"]["feet"] == 10
+    assert slasher.combat_modifiers["slashing_hit_speed_reduction"]["per_turn"] == 1
+    assert slasher.combat_modifiers["slashing_hit_speed_reduction"]["damage_type"] == "slashing"
+    assert slasher.combat_modifiers["crit_target_disadvantage"]["damage_type"] == "slashing"
+
+
+def test_telekinetic_feat():
+    tk = get_feat("Telekinetic")
+    assert tk is not None
+    assert tk.combat_modifiers["learn_cantrip_fixed"]["name"] == "Mage Hand"
+    assert tk.combat_modifiers["learn_cantrip_fixed"]["no_verbal"] is True
+    assert tk.combat_modifiers["learn_cantrip_fixed"]["no_somatic"] is True
+    assert tk.combat_modifiers["telekinetic_shove"]["range_ft"] == 30
+    assert tk.combat_modifiers["telekinetic_shove"]["save"] == "strength"
+    assert tk.combat_modifiers["telekinetic_shove"]["push_pull_ft"] == 5
+
+
+def test_telepathic_feat():
+    tp = get_feat("Telepathic")
+    assert tp is not None
+    assert tp.combat_modifiers["telepathy"]["range_ft"] == 60
+    assert tp.combat_modifiers["telepathy"]["shared_language_only"] is True
+    assert tp.combat_modifiers["cast_detect_thoughts"]["level"] == 2
+    assert tp.combat_modifiers["cast_detect_thoughts"]["action"] == "bonus"
+    assert tp.combat_modifiers["cast_detect_thoughts"]["uses"] == "proficiency_bonus"
+    assert tp.combat_modifiers["cast_detect_thoughts"]["refresh"] == "long_rest"
+
+
+# --- Prerequisites -----------------------------------------------------------
+
+def test_eldritch_adept_requires_caster():
+    ea = get_feat("Eldritch Adept")
+    assert ea.prerequisite is not None
+    assert ea.prerequisite.requires_caster is True
+    # Wizard passes
+    assert check_prerequisites(
+        ea, {"intelligence": 12}, 4, {"wizard": 4}
+    ).met is True
+    # Fighter fails
+    result = check_prerequisites(ea, {"strength": 14}, 4, {"fighter": 4})
+    assert result.met is False
+    assert "spellcasting" in result.message.lower()
+
+
+def test_metamagic_adept_requires_sorcerer():
+    ma = get_feat("Metamagic Adept")
+    assert ma.prerequisite is not None
+    assert ma.prerequisite.requires_class == "sorcerer"
+    # Sorcerer passes
+    assert check_prerequisites(
+        ma, {"charisma": 14}, 4, {"sorcerer": 4}
+    ).met is True
+    # Wizard fails (caster, but not sorcerer)
+    result = check_prerequisites(ma, {"intelligence": 14}, 4, {"wizard": 4})
+    assert result.met is False
+    assert "sorcerer" in result.message.lower()
+
+
+def test_tashas_no_prerequisite_feats_are_ungated():
+    """Feats with no prerequisite should be available to a level-1 character."""
+    ungated = [
+        "Chef", "Crusher", "Fey Touched", "Fighting Initiate", "Gunner",
+        "Piercer", "Poisoner", "Shadow Touched", "Skill Expert",
+        "Slasher", "Telekinetic", "Telepathic",
+    ]
+    for name in ungated:
+        feat = get_feat(name)
+        assert feat is not None, name
+        result = check_prerequisites(
+            feat,
+            ability_scores={a: 10 for a in VALID_ABILITIES},
+            level=1,
+            classes={"fighter": 1},
+        )
+        assert result.met is True, f"{name}: {result.message}"
+
+
+def test_tashas_feats_in_available_list():
+    """Ungated Tasha's feats should surface in list_available_feats."""
+    available = list_available_feats(
+        ability_scores={a: 10 for a in VALID_ABILITIES},
+        level=4,
+        classes={"fighter": 4},
+    )
+    names = {f.name for f in available}
+    # These ungated feats should all appear for a fighter
+    for name in ["Chef", "Crusher", "Fey Touched", "Fighting Initiate",
+                 "Gunner", "Piercer", "Poisoner", "Shadow Touched",
+                 "Skill Expert", "Slasher", "Telekinetic", "Telepathic"]:
+        assert name in names, f"{name} should be available to a fighter"
+    # Metamagic Adept requires sorcerer — should NOT appear for a fighter
+    assert "Metamagic Adept" not in names
+    # Eldritch Adept requires a caster — should NOT appear for a fighter
+    assert "Eldritch Adept" not in names
+
+
+def test_metamagic_adept_available_to_sorcerer():
+    available = list_available_feats(
+        ability_scores={"charisma": 14, "dexterity": 12},
+        level=4,
+        classes={"sorcerer": 4},
+    )
+    names = {f.name for f in available}
+    assert "Metamagic Adept" in names
+    assert "Eldritch Adept" in names  # sorcerer is a caster
+
+
+# --- to_dict serialization ----------------------------------------------------
+
+def test_tashas_feats_to_dict_shape():
+    for name in _TASHAS_FEATS:
+        feat = get_feat(name)
+        assert feat is not None, name
+        d = feat.to_dict()
+        assert d["name"] == name
+        assert d["source"] == "Tasha's Cauldron of Everything"
+        assert "description" in d
+        assert "combat_modifiers" in d
+        # prerequisite must serialize (None or dict)
+        assert d["prerequisite"] is None or isinstance(d["prerequisite"], dict)
+
+
+def test_tashas_feats_have_notes():
+    """Every Tasha's feat documents its effects in plain-language notes."""
+    for name in _TASHAS_FEATS:
+        feat = get_feat(name)
+        assert feat is not None, name
+        assert len(feat.notes) >= 1, f"{name} has no notes"
