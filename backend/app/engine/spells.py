@@ -1685,6 +1685,101 @@ register_spell(Spell("Freedom of Movement", 4, SpellSchool.ABJURATION,
     casting_time="1 action", range="touch", components="V, S, M",
     duration="1 hour"))
 
+# --- Level 4 PHB completion additions (14 -> 30, full Player's Handbook ----
+#   coverage). Grouped by resolution path, mirroring the level 1/2/3/6
+#   PHB-completeness expansion convention.
+
+# Save-spell with damage (+1d8/slot upcast)
+register_spell(Spell("Wall of Fire", 4, SpellSchool.EVOCATION,
+    description="A wall of fire appears; creatures in it or ending their turn "
+                "there take 5d8 fire (Dex save for half). One side deals damage.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=5, damage_dice_sides=8,
+    damage_type="fire", concentration=True, duration="up to 1 minute",
+    at_higher_levels_dice=1))
+register_spell(Spell("Sickening Radiance", 4, SpellSchool.EVOCATION,
+    description="Dim, sickly light fills a 30-foot sphere; failed Con save takes "
+                "4d10 radiant and one level of exhaustion, half damage on success.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    save_ability="con", damage_dice_count=4, damage_dice_sides=10,
+    damage_type="radiant", concentration=True, duration="up to 10 minutes",
+    at_higher_levels_dice=1))
+
+# Save-debuff (no damage)
+register_spell(Spell("Compulsion", 4, SpellSchool.ENCHANTMENT,
+    description="Up to 12 creatures you choose must use their movement on your "
+                "turn toward a direction you choose (Wis negates). Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Otiluke's Resilient Sphere", 4, SpellSchool.EVOCATION,
+    description="A shimmering sphere encloses the target (Dex negates); it is "
+                "restrained and protected from outside damage. Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    save_ability="dex", concentration=True, duration="up to 1 minute"))
+
+# Utility / buff / ritual (12 spells)
+register_spell(Spell("Arcane Eye", 4, SpellSchool.DIVINATION,
+    description="An invisible magical eye you can see through moves up to 30 ft "
+                "per turn, transmitting what it sees. Concentration.",
+    casting_time="1 minute", range="30 feet", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Conjure Minor Elementals", 4, SpellSchool.CONJURATION,
+    description="Summons elementals whose total CR matches the slot (CR 2 at "
+                "4th level) that obey your commands. Concentration.",
+    casting_time="1 action", range="90 feet", components="V, S",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Control Water", 4, SpellSchool.TRANSMUTATION,
+    description="Control standing water in a 100-foot cube: flood, part water, "
+                "redirect flow, or form a whirlpool. Concentration.",
+    casting_time="1 action", range="300 feet", components="V, S, M",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Divination", 4, SpellSchool.DIVINATION,
+    description="Your god answers a single question about an event up to seven "
+                "days away with a short, truthful reply. Ritual.",
+    casting_time="1 minute", range="self", components="V, S, M",
+    ritual=True, duration="instantaneous"))
+register_spell(Spell("Fabricate", 4, SpellSchool.TRANSMUTATION,
+    description="Convert raw material you can see into finished goods of the "
+                "same material (armor, weapons, structures) up to a large object.",
+    casting_time="10 minutes", range="120 feet", components="V, S",
+    duration="instantaneous"))
+register_spell(Spell("Giant Insect", 4, SpellSchool.TRANSMUTATION,
+    description="Transform centipedes, spiders, wasps, or scorpions within range "
+                "into giant versions that obey you. Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Guardian of Faith", 4, SpellSchool.CONJURATION,
+    description="A Large spectral guardian appears; hostile creatures within 10 "
+                "feet take 20 radiant damage (no save). It vanishes after dealing "
+                "60 damage. Lasts up to 8 hours.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    duration="8 hours"))
+register_spell(Spell("Hallucinatory Terrain", 4, SpellSchool.ILLUSION,
+    description="Make natural terrain look, sound, and smell like another kind "
+                "(bridge over a chasm, bog as meadow). Investigation to discern.",
+    casting_time="10 minutes", range="300 feet", components="V, S, M",
+    duration="24 hours"))
+register_spell(Spell("Leomund's Secret Chest", 4, SpellSchool.CONJURATION,
+    description="Hide a chest and its contents on the Ethereal Plane and recall "
+                "it with this spell. A replica serves as the focus. Ritual.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    ritual=True, duration="instantaneous"))
+register_spell(Spell("Locate Creature", 4, SpellSchool.DIVINATION,
+    description="Sense the direction to a specific creature or kind of creature "
+                "within 1,000 feet (described or blood/possessed item). Concentration.",
+    casting_time="1 action", range="self", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Mordenkainen's Faithful Hound", 4, SpellSchool.CONJURATION,
+    description="An invisible phantom watchdog guards a 30-foot area for 8 hours, "
+                "biting any hostile creature that enters. No concentration.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    duration="8 hours"))
+register_spell(Spell("Stone Shape", 4, SpellSchool.TRANSMUTATION,
+    description="Reshape a stone object (Medium or smaller) you touch into any "
+                "form you can imagine.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="instantaneous"))
+
 # --- Level 5 ---------------------------------------------------------------
 register_spell(Spell("Cone of Cold", 5, SpellSchool.EVOCATION,
     description="Freezing cold sprays from your hands. Dex save for half.",

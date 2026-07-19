@@ -337,6 +337,26 @@ class TestUtilityMechanics:
 # Effect resolution of the new spells
 # --------------------------------------------------------------------------- #
 class TestNewSpellResolution:
+    def _force_d20(self, monkeypatch, face: int):
+        """Patch the d20 used by resolve_spell_effect to a fixed die face.
+
+        ``resolve_spell_effect`` calls ``roll_d20(spell_attack)`` from the
+        spells module, so we patch the name as imported there to make attack
+        outcomes deterministic (avoids flaky natural-1 misses and natural-20
+        crits that would break the 3d6 damage-range assertion).
+        """
+        from app.engine import spells as spells_module
+        from app.engine.dice import RollResult
+
+        def _fixed(modifier: int = 0, advantage: bool = False,
+                   disadvantage: bool = False) -> RollResult:
+            return RollResult(
+                rolls=[face], modifier=modifier,
+                total=face + modifier, description=f"d20 {modifier:+d}",
+            )
+
+        monkeypatch.setattr(spells_module, "roll_d20", _fixed)
+
     def test_moonbeam_saves_and_fails(self):
         spell = _spell("Moonbeam")
         # Made save: half damage (2d10 is 2-20; half is 0-10).
@@ -356,18 +376,27 @@ class TestNewSpellResolution:
         assert effect.half_damage is False
         assert effect.damage_type == "radiant"
 
-    def test_flame_blade_attack_hits_and_misses(self):
+    def test_flame_blade_attack_hits_and_misses(self, monkeypatch):
         spell = _spell("Flame Blade")
+        # Force a deterministic non-crit hit (die 15, +6 = 21 vs AC 10): 3d6
+        # fire damage (3-18). Forcing the die avoids flaky natural-1 misses and
+        # natural-20 crits (a crit would double damage and break the range).
+        self._force_d20(monkeypatch, 15)
         effect = resolve_spell_effect(
             spell=spell, caster_level=5, proficiency_bonus=3,
             casting_mod=3, target_ac=10,
         )
-        # On a hit, 3-18 fire damage; on a miss, 0.
-        if effect.hit:
-            assert 3 <= effect.damage <= 18
-            assert effect.damage_type == "fire"
-        else:
-            assert effect.damage == 0
+        assert effect.hit is True
+        assert 3 <= effect.damage <= 18
+        assert effect.damage_type == "fire"
+        # Force a deterministic miss (die 2, +6 = 8 vs AC 30).
+        self._force_d20(monkeypatch, 2)
+        effect = resolve_spell_effect(
+            spell=spell, caster_level=5, proficiency_bonus=3,
+            casting_mod=3, target_ac=30,
+        )
+        assert effect.hit is False
+        assert effect.damage == 0
 
     def test_flame_blade_hit_requires_ac(self):
         spell = _spell("Flame Blade")
@@ -378,16 +407,19 @@ class TestNewSpellResolution:
                 casting_mod=3,
             )
 
-    def test_spiritual_weapon_attack_resolves(self):
+    def test_spiritual_weapon_attack_resolves(self, monkeypatch):
         spell = _spell("Spiritual Weapon")
+        # Force a deterministic non-crit hit (die 15, +6 = 21 vs AC 5): 1d8
+        # force damage (1-8). Forcing the die avoids flaky natural-20 crits
+        # that would double damage and break the 1-8 range.
+        self._force_d20(monkeypatch, 15)
         effect = resolve_spell_effect(
             spell=spell, caster_level=5, proficiency_bonus=3,
             casting_mod=3, target_ac=5,
         )
-        # AC 5 nearly guarantees a hit (only a nat 1 misses).
-        if effect.hit:
-            assert 1 <= effect.damage <= 8
-            assert effect.damage_type == "force"
+        assert effect.hit is True
+        assert 1 <= effect.damage <= 8
+        assert effect.damage_type == "force"
 
     def test_heat_metal_applies_direct_damage(self):
         spell = _spell("Heat Metal")
