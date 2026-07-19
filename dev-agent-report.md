@@ -1,90 +1,94 @@
-# Dev Agent Report — Iconic PHB Level-1 Spell Expansion (16 spells)
+# Dev Agent Report — DM Function Calling Cross-Phase Polish (Player as AoE Target)
 
-**Run:** scheduled dev-agent cron
 **Date:** 2026-07-18
-**Run type:** Maintenance + content-registry expansion (DM Function Calling roadmap complete)
-**Status:** ✅ COMPLETE — committed & pushed to develop
+**Run type:** Scheduled dev-agent cron (hourly)
+**Status:** ✅ Complete — feature shipped, suite green, pushed to develop
+
+---
 
 ## Summary
 
-The DM Function Calling roadmap was already complete. The NEXT SESSION
-DIRECTIVE said to keep the suite green, watch for doc drift, and pick up quick
-content-registry expansions when surfaced. This run did two things:
+The DM Function Calling roadmap was already complete (Phases 1–5, 3.5a, 3.5b,
+UI polish). The post-roadmap NEXT SESSION DIRECTIVE flagged one concrete
+**cross-phase polish** item: *"concentration checks triggered by AoE spell
+damage on the player."* This run closes that item.
 
-1. **README drift fix** (committed first as a clean checkpoint). The README's
-   test count (3078 backend) and "Recently Completed" list were stale relative
-   to PROGRESS.md (3132 backend, PHB level 7/8 spell work missing).
-2. **Iconic PHB level-1 spell expansion.** With the top three tiers (7/8/9) now
-   PHB-complete, the level-1 tier — the most-played tier — still sat at only 21
-   spells while PHB has ~36+. This run added **16 iconic PHB level-1 spells**
-   covering all five `resolve_spell_effect()` resolution paths, lifting the
-   level-1 tier from 21 → 37 and the full catalogue from 154 → 170 spells.
+**The gap:** the `cast_spell_aoe` game-action pipeline only resolved targets
+that were encounter combatants. The literal `"player"` target_id was silently
+dropped (logged "not in roster; skipping"), so:
+- the player could never take AoE damage through the multi-target path, and
+- no concentration check fired on such damage.
 
-## Content expansion — 16 iconic PHB level-1 spells
+This was **inconsistent** with the plain `damage` action, which already routes
+`target_id == "player"` → `character.current_hp` and fires concentration checks.
 
-Organised by `resolve_spell_effect()` path so every engine branch gained
-coverage:
-
-- **Attack-roll** — Inflict Wounds (3d10 necrotic), Ray of Sickness (2d8
-  poison; Con-save-vs-poisoned rider in description), Witch Bolt (1d12
-  lightning, concentration).
-- **Save-for-half damage** — Hellish Rebuke (2d10 fire, Dex save, reaction).
-- **Save-debuff (no damage)** — Tasha's Hideous Laughter (Wis save,
-  concentration), Sanctuary (Wis save, *no* concentration).
-- **Healing / temp-HP** — False Life (1d4+4 on the healing path, +5/level).
-- **Utility / buff (no dice)** — Alarm (ritual), Comprehend Languages
-  (ritual), Disguise Self, Find Familiar (ritual), Fog Cloud (concentration),
-  Identify (ritual), Longstrider, Protection from Evil and Good
-  (concentration), Speak with Animals (ritual, concentration).
-
-### Modeling decisions (consistent with existing registry conventions)
-- Attack-roll spells carry `requires_attack_roll` + canonical dice + `at_higher_levels_dice=1`.
-- Ray of Sickness's secondary save is a *rider* in the description (mirrors
-  Chromatic Orb / Guiding Bolt on-hit extras).
-- Save-debuff spells with no damage resolve via the made-save path
-  ("resolved (save vs DC)") — same as Entangle / Hold Person.
-- False Life uses the healing path (the engine grants HP via `healing_dice_*`);
-  temp-HP vs real-HP is a presentation detail in the description.
-- Utility spells carry no dice and resolve as "takes effect" (matches Mage
-  Armor / Shield / Sleep / the level-7/8 utility spells).
+**The fix:** `"player"` is now a valid entry in `cast_spell_aoe`'s
+`target_ids`. The player's save is rolled with their *real* save proficiency,
+damage routes to `character.current_hp` (not a combatant), and a real
+concentration check fires when the player is concentrating — identical to the
+plain `damage` action's player path.
 
 ## Files changed
-- `backend/app/engine/spells.py` — +16 `register_spell()` entries in the
-  Level-1 section (after Grease, before Level 2).
-- `backend/tests/test_spell_level1_expansion.py` (NEW) — **55 tests**:
-  registry distribution (total ≥170, level 1 ≥37, iconic-subset presence,
-  whole-registry no-duplicate-name guard), parametrized registration shape
-  (16 spells), stable-id round-trip + unique-key guard, per-spell mechanics,
-  and effect resolution across all five paths. **Attack-roll resolution tests
-  monkeypatch `roll_d20` for determinism** — a robustness improvement over the
-  prior level-7/8 completion tests, which relied on a lucky +10 attack bonus
-  to avoid flaky natural-1 misses.
-- `README.md` — test count (3078→3187 backend, 3471→3580 total), spell count
-  (154→170) in 4 spots, added the level-1 expansion to "Recently Completed",
-  and added the missing PHB level 7/8 entry to "Recently Completed".
-- `PROGRESS.md` — status line (test + spell counts), new "✅ COMPLETED: Iconic
-  PHB Level-1 Spell Expansion" section at the top, and the NEXT SESSION
-  DIRECTIVE cumulative note (+143 → +198 backend; 154 → 170 spells).
+
+### Backend (feature)
+- **`backend/app/api/game.py`**
+  - New `_character_save_total(character, save_ability)` helper — companion to
+    `_combatant_save_total`, but uses the character's real save proficiency
+    (`calculate_save_bonus`: ability mod + proficiency bonus when proficient),
+    not monsters' ability-mod-only approximation. Defensive fallback on error.
+  - `cast_spell_aoe` resolution branch: `"player"` is now a valid target_id.
+    Builds a per-target spec from `_character_save_total` and tracks it with a
+    parallel `is_player_target` flag. On a successful cast, player damage
+    routes to `character.current_hp` and fires `_fire_concentration_check` when
+    the player is concentrating. Mixed targets (player + combatants) resolve
+    correctly; the `is_player` flag disambiguates even when the player shares a
+    name with a player-side combatant.
+- **`backend/app/llm/dspy_signatures.py`** — `DMActionableNarration` docstring
+  now tells the DM `"player"` is valid in `cast_spell_aoe`'s `target_ids` for
+  blast-radius coverage (enemy AoE, trap, own miscast).
+
+### Tests (+5 backend)
+- **`backend/tests/test_spell_aoe_events_api.py`** — new
+  `TestPlayerAsAoeTarget` class:
+  1. player fails save → full damage + HP reduced on Character (28→8)
+  2. player makes save → half damage + `made_save`/`half_damage` flags
+  3. player concentrating + AoE damage → concentration check event fires
+  4. mixed targets (player + goblin) → both damaged via correct paths
+     (Character HP + encounter combatant HP)
+  5. streaming endpoint routes player AoE damage too
+
+### Docs
+- **`PROGRESS.md`** — test count 3187→3192; new "✅ COMPLETED: Cross-Phase
+  Polish" section; NEXT SESSION DIRECTIVE marks the item DONE.
+- **`README.md`** — test count 3187→3192 (3580→3585 total); new entry in
+  Recently Completed.
+- **`docs/DM_FUNCTION_CALLING_RESEARCH.md`** — status header notes the
+  cross-phase polish is IMPLEMENTED.
+
+## Why no frontend changes
+The player-AoE-damage path emits a standard `damage` GameEvent (rendered by the
+existing `DamageCard`) and the concentration check emits a `concentration`
+GameEvent (rendered by `ConcentrationCard`). Both inline cards handle the new
+event flow unchanged.
 
 ## Verification
-- ✅ `uv run pytest` — **3187 backend tests passing** (+55), 0 failures
-- ✅ `cd frontend && npx tsc --noEmit` — clean
-- ✅ `cd frontend && npm run build` — clean (✓ built in 2.40s)
-- ✅ `cd frontend && npm test` — 393 frontend tests passing
-- ✅ Registry audit: **170 spells** (levels `{0:14, 1:37, 2:16, 3:13, 4:14, 5:13, 6:12, 7:18, 8:18, 9:15}`), 135 enemies, **zero duplicate names/ids**
+- ✅ `uv run pytest` — **3192 backend tests passing** (was 3187, +5), 0 failures
+- ✅ `npm test` — **393 frontend tests passing** (unchanged, no FE changes)
+- ✅ `npx tsc --noEmit` — clean
+- ✅ Registry drift check — all counts match README/PROGRESS (170 spells, 135
+  enemies, 53 feats, 47 tools, 29 subclasses, 18 backgrounds/mounts/languages,
+  14 traps, 9 alignments, 6 legendary, 3 adventures); zero duplicate names/ids.
 
-## Commits
-1. `docs: sync README test count (3078→3132) + add PHB level 7&8 spell entry to Recently Completed`
-2. `feat: iconic PHB level-1 spell expansion (16 spells, 154→170) + README/PROGRESS sync`
+## Commit
+`feat: DM function calling cross-phase polish — player as AoE target`
 
-Both pushed to `develop`.
+## Next run
+The roadmap remains complete. The NEXT SESSION DIRECTIVE's remaining open items
+(needing Mike's green-light before implementation):
+- **Story State (Phase 6)** — `set_story_flag` / `offer_quest` as explicit
+  game_actions (we already have quest detection + game flags via DSPy).
+- **Cross-phase polish (remaining)** — advantage/disadvantage on AoE saves.
+- **Hardening** — any edge cases surfaced by playtesting.
 
-## What the next run should pick up
-The DM Function Calling roadmap remains complete. The level-1 tier is now
-37 spells (approaching PHB completeness); a few iconic level-1 spells remain
-unregistered (Color Spray, Create or Destroy Water, Expeditious Retreat,
-Feather Fall, Goodberry, Hail of Thorns, Jump, Purify Food and Drink, the
-three remaining Smite spells, Tenser's Floating Disk, Unseen Servant,
-plus several XGE level-1 spells). A follow-up run could finish the level-1
-PHB roster, or move to levels 2–6 (currently 12–16 each; "iconic" not
-"PHB-complete"). Suite is fully green; no outstanding drift.
+Standing tasks: keep the suite green, watch for README/PROGRESS drift, pick up
+quick fixes / content registry expansions if surfaced.

@@ -264,8 +264,11 @@ class DMActionableNarration(dspy.Signature):
         Args: {"spell_id": "fireball",
                "target_ids": ["goblin_1", "goblin_2", "goblin_3"],
                "slot_level": null}
-        target_ids is a LIST of combatant IDs from COMBATANT_ROSTER. Use
-        cast_spell_aoe for any spell whose description mentions an area
+        target_ids is a LIST of combatant IDs from COMBATANT_ROSTER. You may
+        also include "player" when the player is caught in the blast radius
+        (e.g. an enemy AoE, a trap, or the player's own miscast) — the backend
+        will damage the player and roll their concentration check if needed.
+        Use cast_spell_aoe for any spell whose description mentions an area
         (sphere, cone, line, radius, cylinder) or "each creature in". Use
         single-target cast_spell when only ONE creature is affected.
     - For INVENTORY operations:

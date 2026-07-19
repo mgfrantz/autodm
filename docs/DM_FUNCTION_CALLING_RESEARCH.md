@@ -7,6 +7,10 @@
 > Phase 5 IMPLEMENTED ✅ — condition application (apply_condition/remove_condition) is live
 > Phase 3.5 IMPLEMENTED ✅ — concentration tracking (reactive hooks + Con-save checks) is live
 > Phase 3.5b IMPLEMENTED ✅ — AoE multi-target spell resolution (cast_spell_aoe) is live
+> Cross-phase polish IMPLEMENTED ✅ — the player is now a valid `cast_spell_aoe`
+> target (`"player"` in `target_ids`); AoE damage routes to `character.current_hp`
+> and fires a real concentration check when the player is concentrating. Closes
+> the "concentration checks triggered by AoE spell damage on the player" item.
 > UI polish IMPLEMENTED ✅ — dice tumble (~480ms), HP-bar shake, collapsed-by-default old event cards are live (roadmap item #7)
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent

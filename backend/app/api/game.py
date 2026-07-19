@@ -173,6 +173,28 @@ def _combatant_save_total(combatant, save_ability: str | None) -> int:
     return roll_d20(modifier=ability_modifier(score)).total
 
 
+def _character_save_total(character, save_ability: str | None) -> int:
+    """Roll the player character's saving throw total for a given ability.
+
+    Companion to :func:`_combatant_save_total` for the player-as-AoE-target
+    case. Unlike monsters, the character tracks real save proficiency, so this
+    uses :func:`calculate_save_bonus` (ability mod + proficiency bonus when
+    proficient) and rolls ``d20 + bonus``. Falls back to a plain ability-mod
+    roll on any error so the AoE pipeline never crashes.
+    """
+    ability = (save_ability or "").lower()
+    if not ability:
+        return roll_d20(modifier=0).total
+    try:
+        from app.engine.saving_throws import calculate_save_bonus
+        bonus = calculate_save_bonus(ability, character)
+    except Exception:
+        col = _ABILITY_TO_COLUMN.get(ability)
+        score = getattr(character, col, 10) if col else 10
+        bonus = ability_modifier(score)
+    return roll_d20(modifier=bonus).total
+
+
 def _available_spells_for_dm(character: "Character") -> str:
     """Build an available-spells roster string for the DM context (casters only).
 
@@ -803,25 +825,48 @@ def _resolve_game_actions(
                     ))
                     continue
 
-                # Build per-target specs from the encounter combatants.
+                # Build per-target specs from the encounter combatants and/or
+                # the player. ``"player"`` is a valid target_id — the player is
+                # not an encounter combatant (their HP lives on the Character),
+                # so including them in target_ids lets the DM put the player in
+                # an AoE blast radius. Routed damage then triggers a real
+                # concentration check if the player is concentrating (cross-
+                # phase polish: AoE spell damage on the player).
                 target_specs: list[dict] = []
+                is_player_target: list[bool] = []  # parallel to target_specs
                 id_to_combatant: dict[str, "Combatant"] = {}
                 for c in encounter.combatants:
                     id_to_combatant[c.id] = c
+                from app.engine.spells import get_spell as _get_spell_aoe2
+                _looked_aoe = _get_spell_aoe2(_norm_spell_id(aoe_spell_id))
+                _save_ab = _looked_aoe.save_ability if _looked_aoe else None
                 for tid in target_ids:
+                    if tid == "player":
+                        if character is None:
+                            logger.warning(
+                                "cast_spell_aoe: 'player' target but no "
+                                "character available; skipping"
+                            )
+                            continue
+                        target_specs.append({
+                            "name": character.name or "Player",
+                            "target_save_total": _character_save_total(
+                                character, _save_ab
+                            ),
+                        })
+                        is_player_target.append(True)
+                        continue
                     comb = id_to_combatant.get(tid)
                     if comb is None:
                         logger.warning(
                             f"cast_spell_aoe: target_id '{tid}' not in roster; skipping"
                         )
                         continue
-                    from app.engine.spells import get_spell as _get_spell_aoe2
-                    _looked_aoe = _get_spell_aoe2(_norm_spell_id(aoe_spell_id))
-                    _save_ab = _looked_aoe.save_ability if _looked_aoe else None
                     target_specs.append({
                         "name": comb.name,
                         "target_save_total": _combatant_save_total(comb, _save_ab),
                     })
+                    is_player_target.append(False)
 
                 if not target_specs:
                     # No valid targets resolved — emit a failed summary.
@@ -858,13 +903,47 @@ def _resolve_game_actions(
                 # Apply per-target damage to the matching combatant and emit a
                 # DAMAGE event (with save outcome) for each. Reuse the Phase 2
                 # DamageCard; the optional made_save/half_damage fields surface
-                # the per-target save result.
+                # the per-target save result. Player targets (``"player"`` in
+                # target_ids) route to ``character.current_hp`` and trigger a
+                # concentration check — mirroring the plain ``damage`` action's
+                # player path. ``per_target`` preserves ``target_specs`` order,
+                # so it zips with the parallel ``is_player_target`` flags.
                 if summary_event.data.get("success"):
                     # Map target name → combatant for HP application. Names are
                     # unique enough within an encounter for this coupling.
                     name_to_combatant = {c.name: c for c in encounter.combatants}
-                    for res in per_target:
+                    for res, is_player in zip(per_target, is_player_target):
                         dmg = res.get("damage", 0) or 0
+                        if is_player:
+                            # Player target: damage applies to character HP
+                            # (not an encounter combatant) and triggers a
+                            # concentration check if concentrating.
+                            if character is None or dmg <= 0:
+                                continue
+                            before = int(character.current_hp or 0)
+                            new_hp = max(0, before - int(dmg))
+                            character.current_hp = new_hp
+                            pname = character.name or "Player"
+                            events.append(GameEvent.damage(
+                                label=(
+                                    f"💥 {pname} takes {dmg} "
+                                    f"{res.get('damage_type', '')} damage"
+                                ),
+                                target=pname,
+                                amount=int(dmg),
+                                damage_type=res.get("damage_type", ""),
+                                target_remaining_hp=new_hp,
+                                target_max_hp=int(character.max_hp or new_hp),
+                                made_save=res.get("made_save"),
+                                half_damage=res.get("half_damage"),
+                            ))
+                            conc_state = _get_concentration_state(game_state)
+                            if conc_state is not None:
+                                _fire_concentration_check(
+                                    events, game_state, character,
+                                    conc_state, int(dmg),
+                                )
+                            continue
                         if dmg <= 0:
                             continue
                         comb = name_to_combatant.get(res.get("name"))

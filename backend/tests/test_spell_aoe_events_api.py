@@ -410,3 +410,173 @@ class TestStreamingAoeSpellEvents:
             payload_types.append(ev.get("type"))
         assert "spell_cast" in payload_types
         assert payload_types.count("damage") == 2
+
+
+# ===========================================================================
+# Cross-phase polish: player as an AoE target (concentration coupling)
+# ===========================================================================
+#
+# "player" is a valid target_id in cast_spell_aoe — the player is not an
+# encounter combatant (HP lives on the Character), so routing their AoE damage
+# through character.current_hp and firing a concentration check mirrors the
+# plain `damage` action's player path. These tests verify that coupling.
+
+def _aoe_with_player(extra_targets=None):
+    """cast_spell_aoe action that includes the player in the blast radius."""
+    ids = ["player"]
+    if extra_targets:
+        ids.extend(extra_targets)
+    return [{
+        "function": "cast_spell_aoe", "label": "Fireball catches the hero",
+        "args": {"spell_id": "fireball", "target_ids": ids},
+    }]
+
+
+class TestPlayerAsAoeTarget:
+    """The player can be a valid AoE target; damage routes to character HP."""
+
+    def test_player_aoe_target_takes_full_damage(self, client, db_session):
+        """Player fails the save → full damage, HP reduced on the Character."""
+        char, _, save = _make_game_save_with_three_goblins(db_session)
+        with patch("app.engine.spells.Spell.roll_damage", return_value=20), \
+             patch("app.api.game.roll_d20") as mock_save:
+            from app.engine.dice import RollResult
+            # Player Dex save total 4 (< DC 15) → fail → full damage.
+            mock_save.return_value = RollResult(
+                rolls=[2], modifier=2, total=4, description="save")
+            with mock_action_llm("Caught in the blast!", _aoe_with_player()):
+                response = client.post(
+                    f"/api/game/{save.id}/action",
+                    json={"action": "The trap explodes!"},
+                )
+        assert response.status_code == 200
+        events = response.json()["game_events"]
+        # One AoE spell_cast summary + one damage event on the player.
+        assert sum(1 for e in events if e["type"] == "spell_cast") == 1
+        dmg = [e for e in events if e["type"] == "damage"]
+        assert len(dmg) == 1
+        assert dmg[0]["data"]["target"] == "Lyra"
+        assert dmg[0]["data"]["amount"] == 20
+        assert dmg[0]["data"]["made_save"] is False
+        # HP reduced on the Character (28 → 8), not a combatant.
+        db_session.expire_all()
+        refreshed = db_session.query(Character).filter(
+            Character.id == char.id).first()
+        assert int(refreshed.current_hp) == 8
+
+    def test_player_aoe_target_makes_save_half_damage(self, client, db_session):
+        """Player makes the save → half damage + made_save/half flags set."""
+        _, _, save = _make_game_save_with_three_goblins(db_session)
+        with patch("app.engine.spells.Spell.roll_damage", return_value=20), \
+             patch("app.api.game.roll_d20") as mock_save:
+            from app.engine.dice import RollResult
+            # Player Dex save total 20 (≥ DC 15) → save → half damage.
+            mock_save.return_value = RollResult(
+                rolls=[18], modifier=2, total=20, description="save")
+            with mock_action_llm("Dive!", _aoe_with_player()):
+                response = client.post(
+                    f"/api/game/{save.id}/action",
+                    json={"action": "I dive away."},
+                )
+        events = response.json()["game_events"]
+        dmg = [e for e in events if e["type"] == "damage"]
+        assert len(dmg) == 1
+        assert dmg[0]["data"]["amount"] == 10  # half of 20
+        assert dmg[0]["data"]["made_save"] is True
+        assert dmg[0]["data"]["half_damage"] is True
+
+    def test_player_aoe_damage_fires_concentration_check(
+        self, client, db_session
+    ):
+        """Player concentrating + AoE damage → a concentration check event."""
+        from app.engine.concentration import ConcentrationState
+
+        char, _, save = _make_game_save_with_three_goblins(db_session)
+        # Put the player in a concentrating state.
+        gs = json.loads(save.game_state)
+        gs["concentration"] = ConcentrationState(
+            spell_name="Bless", spell_id="bless", is_concentrating=True,
+        ).to_dict()
+        save.game_state = json.dumps(gs)
+        db_session.commit()
+
+        with patch("app.engine.spells.Spell.roll_damage", return_value=20), \
+             patch("app.api.game.roll_d20") as mock_save:
+            from app.engine.dice import RollResult
+            mock_save.return_value = RollResult(
+                rolls=[2], modifier=2, total=4, description="save")
+            with mock_action_llm("The blast hits you!", _aoe_with_player()):
+                response = client.post(
+                    f"/api/game/{save.id}/action",
+                    json={"action": "I'm caught!"},
+                )
+        assert response.status_code == 200
+        events = response.json()["game_events"]
+        # A concentration check event was emitted with the AoE damage amount.
+        checks = [
+            e for e in events
+            if e["type"] == "concentration"
+            and e["data"].get("operation") in ("check_passed", "check_failed")
+        ]
+        assert len(checks) == 1, [e.get("data") for e in events
+                                  if e["type"] == "concentration"]
+        assert checks[0]["data"]["damage_taken"] == 20
+
+    def test_player_and_combatant_mixed_aoe_targets(self, client, db_session):
+        """Player + goblin both targeted → both damaged via their own paths."""
+        char, _, save = _make_game_save_with_three_goblins(db_session)
+        action = _aoe_with_player(extra_targets=["goblin_1"])
+        with patch("app.engine.spells.Spell.roll_damage", return_value=20), \
+             patch("app.api.game.roll_d20") as mock_save:
+            from app.engine.dice import RollResult
+            # Both fail their saves (return_value applies to every roll).
+            mock_save.return_value = RollResult(
+                rolls=[2], modifier=2, total=4, description="save")
+            with mock_action_llm("Fireball!", action):
+                response = client.post(
+                    f"/api/game/{save.id}/action",
+                    json={"action": "I cast Fireball recklessly."},
+                )
+        assert response.status_code == 200
+        events = response.json()["game_events"]
+        summary = [e for e in events if e["type"] == "spell_cast"][0]
+        assert summary["data"]["success"] is True
+        assert summary["data"]["target_count"] == 2
+        # Two damage events: one player, one goblin.
+        dmg = [e["data"] for e in events if e["type"] == "damage"]
+        targets = {d["target"] for d in dmg}
+        assert targets == {"Lyra", "Goblin 1"}
+        # Player HP reduced on the Character.
+        db_session.expire_all()
+        refreshed = db_session.query(Character).filter(
+            Character.id == char.id).first()
+        assert int(refreshed.current_hp) == 8  # 28 - 20
+        # Goblin HP reduced in the persisted encounter.
+        gs = json.loads(
+            db_session.query(GameSave).filter(
+                GameSave.id == save.id).first().game_state
+        )
+        gobs = [c for c in gs["combat"]["combatants"] if c["id"] == "goblin_1"]
+        assert gobs and gobs[0]["current_hp"] == 2  # 22 - 20
+
+    def test_streaming_player_aoe_target_emits_damage(self, client, db_session):
+        """Streaming endpoint also routes player AoE damage correctly."""
+        char, _, save = _make_game_save_with_three_goblins(db_session)
+        with patch("app.engine.spells.Spell.roll_damage", return_value=16), \
+             patch("app.api.game.roll_d20") as mock_save:
+            from app.engine.dice import RollResult
+            mock_save.return_value = RollResult(
+                rolls=[2], modifier=2, total=4, description="save")
+            with mock_stream_llm("Boom!", _aoe_with_player()):
+                response = client.post(
+                    f"/api/game/{save.id}/action/stream",
+                    json={"action": "It explodes!"},
+                )
+        assert response.status_code == 200
+        events = _parse_sse(response.text)
+        game_events = [e for e in events if e.get("type") == "game_event"]
+        payloads = [ge.get("event", ge) for ge in game_events]
+        dmg = [p for p in payloads if p.get("type") == "damage"]
+        assert len(dmg) == 1
+        assert dmg[0]["data"]["target"] == "Lyra"
+        assert dmg[0]["data"]["amount"] == 16
