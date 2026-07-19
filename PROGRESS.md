@@ -1,7 +1,72 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3277 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (170 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
+## TEST SUITE FULLY GREEN (3332 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (186 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
+
+## ✅ COMPLETED: PHB Level-1 Spell Completion (16 spells → level 1 now PHB-complete)
+
+This run finished the **level-1 tier** of the catalogue-wide "PHB completeness"
+effort. Levels 7/8/9 were completed first, then the level-1 *expansion* (+16
+iconic spells), and this run adds the **remaining** iconic PHB level-1 spells
+that were still missing — so **every PHB level-1 spell is now registered**
+(level 1: 37 → 53). The spell catalogue now stands at **186 spells**.
+
+### The 16 additions (grouped by resolution path)
+- **Save-debuff (no damage):** Animal Friendship (Wis, 24h charm), Compelled Duel
+  (Wis, bonus-action concentration, paladin).
+- **Healing (consumable berries):** Goodberry — ten berries × 1 HP modelled as
+  10d1 = 10 total healing capacity (the per-berry-as-action mechanic is
+  described in text).
+- **Utility / buff / ritual:** Color Spray (6d10 hit-point budget, no save —
+  mirrors Sleep), Create or Destroy Water, Detect Evil and Good (concentration),
+  Detect Poison and Disease (ritual + concentration), Expeditious Retreat
+  (bonus-action concentration), Feather Fall (reaction), Heroism (touch
+  concentration — temp HP = spellcasting mod described, like Bless), Jump
+  (touch buff), Purify Food and Drink (ritual), Silent Image (concentration;
+  Investigation check described, not a save — mirrors Disguise Self), Tenser's
+  Floating Disk (ritual), Unseen Servant (ritual), Wrathful Smite (bonus-action
+  concentration; 1d6 psychic rider + Wis-save frightened described, like
+  Hunter's Mark/Hex).
+
+### Correct-mechanics decisions (PHB-canonical)
+- Color Spray, Goodberry, Heroism, Wrathful Smite, and Silent Image use the
+  "effects-in-description" convention already established by Sleep, Hunter's
+  Mark, Hex, Bless, and Disguise Self — they have non-standard resolution
+  (HP-threshold, consumable berries, per-turn temp-HP, weapon-hit rider,
+  Investigation check) that the engine doesn't reduce to a single roll, so the
+  dice/save are documented in the description rather than faked via the
+  damage/healing fields. The one exception is Goodberry, whose **total**
+  healing capacity (10 HP) is real and useful as a single roll.
+- Schools are canonical PHB (Animal Friendship = enchantment, Color Spray =
+  illusion, Compelled Duel = abjuration, Goodberry/Heroism/Jump/Feather Fall/
+  Expeditious Retreat/Create or Destroy Water/Purify Food and Drink =
+  transmutation, etc.).
+- Concentration + ritual flags set per PHB (Detect Poison and Disease is both;
+  Feather Fall is neither; Expeditious Retreat / Compelled Duel / Wrathful Smite
+  / Heroism / Silent Image / Detect Evil and Good are concentration).
+
+### Files changed
+- **`backend/app/engine/spells.py`** — 16 new `register_spell(...)` entries in
+  the level-1 block (after Witch Bolt, before the Level 2 section).
+- **`backend/tests/test_spell_level1_completion.py`** (NEW, 55 tests) — registry
+  distribution (total ≥186, level 1 ≥53, no-dup guards), parametrized
+  registration-shape (name/level/school for all 16), per-spell mechanical
+  correctness (save ability, concentration, ritual, dice, casting time, range,
+  duration), and effect resolution (save-debuff paths, Goodberry heals 10, all
+  utility/buff spells resolve cleanly via the "takes effect" path).
+
+### Verification
+- ✅ `uv run pytest` — **3332 backend tests passing** (+55), 0 failures
+- ✅ `npm test` — 393 frontend tests passing (no frontend changes)
+- ✅ `npx tsc --noEmit` — clean
+
+### Spell tier snapshot after this run
+`{0:14, 1:53, 2:16, 3:13, 4:14, 5:13, 6:12, 7:18, 8:18, 9:15}` — every tier is
+now ≥12, levels 7/8/9 are PHB-complete, and **level 1 is PHB-complete (53)**.
+The remaining non-canonical counts (levels 0, 2–6) are curated subsets, not
+exhaustive — room remains for future expansion if desired.
+
+---
 
 ## ✅ COMPLETED: Enemy CR-Correction — 5 Iconic MM Monsters Moved to Canonical CR
 
