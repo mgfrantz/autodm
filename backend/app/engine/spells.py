@@ -1354,6 +1354,276 @@ register_spell(Spell("Fear", 3, SpellSchool.ILLUSION,
     casting_time="1 action", range="self (30-foot cone)", components="V, S, M",
     save_ability="wis", concentration=True, duration="up to 1 minute"))
 
+# PHB level-3 completion (13 -> 39, full PHB coverage). Mirrors the level-1 /
+# level-2 / level-6 PHB-completeness expansions: damage spells use the standard
+# dice+save path, attack-roll spells use requires_attack_roll, save-debuff
+# spells carry a save_ability but no damage dice (effects documented in the
+# description), damage-zone spells use the auto-damage path (no save, no attack
+# roll — like Spike Growth / Wall of Thorns), and utility / buff / ritual spells
+# resolve cleanly via the "takes effect" path.
+# Save-spell with damage: Glyph of Warding (Dex, 5d8, +1d8/slot, 1-hour cast).
+# Save-debuff (no damage): Bestow Curse (Wis, touch), Slow (Wis, 40-ft cube),
+#   Sleet Storm (Dex, 40-ft cylinder).
+# Attack-roll: Vampiric Touch (melee spell attack, 3d6 necrotic, heal half,
+#   +1d6/slot).
+# Damage zone (auto-damage, no save): Wind Wall (3d8 bludgeoning wall).
+# Utility / buff / ritual (20 spells): Animate Dead (1-min cast, 24-hour
+#   undead), Beacon of Hope (concentration, advantage Wis/death saves + max
+#   heal), Clairvoyance (ritual + concentration, 10-min cast, sensor), Conjure
+#   Animals (concentration, summon beasts), Create Food and Water (instant),
+#   Crusader's Mantle (concentration, +1d4 radiant weapon aura), Daylight
+#   (1-hour, NO concentration), Elemental Weapon (concentration, +1 weapon /
+#   +1d4 element; +2/+3 at slot 5/7), Feign Death (ritual, 1-hour trance),
+#   Gaseous Form (concentration, 1-hour), Plant Growth (instant overgrowth),
+#   Protection from Energy (concentration, 1-hour, resist element), Remove
+#   Curse (instant), Sending (instant 25-word message), Speak with Dead
+#   (10-min cast, 5 questions), Speak with Plants (concentration, 10-min),
+#   Tiny Hut (ritual, 1-min cast, 8-hour dome, NO concentration), Tongues
+#   (1-hour, understand all languages, NO concentration), Water Breathing
+#   (ritual, 24-hour, NO concentration), Water Walk (ritual, 1-hour, NO
+#   concentration).
+register_spell(Spell("Glyph of Warding", 3, SpellSchool.ABJURATION,
+    description="When you cast this spell, you inscribe a glyph that later unleashes a magical effect. "
+                "You decide what triggers the glyph when you cast the spell. Once the glyph is triggered, "
+                "the spell ends. You choose either an explosive glyph or a spell glyph. Explosive glyph: "
+                "each creature in the area must make a Dexterity saving throw. A creature takes 5d8 acid, "
+                "cold, fire, lightning, or thunder damage on a failed saving throw (your choice when you "
+                "cast the glyph), or half as much on a successful one. Spell glyph: you can store a "
+                "prepared spell of 3rd level or lower by casting it as part of creating the glyph. The "
+                "casting time of 1 hour reflects the careful inscription — this is a trap, not a combat "
+                "spell. Upcasting adds 1d8 explosive damage per slot level above 3rd.",
+    casting_time="1 hour", range="touch", components="V, S, M",
+    save_ability="dex", damage_dice_count=5, damage_dice_sides=8,
+    damage_type="acid", duration="until dispelled or triggered",
+    at_higher_levels_dice=1))
+register_spell(Spell("Bestow Curse", 3, SpellSchool.NECROMANCY,
+    description="You touch a creature, and that creature must succeed on a Wisdom saving throw or become "
+                "cursed for the duration. When you cast this spell, choose the nature of the curse from "
+                "the following options: the target has disadvantage on ability checks and saving throws "
+                "tied to one ability score you choose; the target has disadvantage on attack rolls "
+                "against you; the target must use its action each turn to do nothing; or you create a "
+                "custom effect. A remove curse spell ends it. Concentration. At slot 4 the duration "
+                "extends to 8 hours; at slot 5 it lasts 24 hours with no concentration required.",
+    casting_time="1 action", range="touch", components="V, S",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Slow", 3, SpellSchool.TRANSMUTATION,
+    description="You alter time around up to six creatures of your choice in a 40-foot cube within range. "
+                "Each target must succeed on a Wisdom saving throw. For the duration, a target's speed "
+                "is halved, it takes a -2 penalty to AC and Dexterity saving throws, and it can't use "
+                "reactions. On its turn, it can use either an action or a bonus action, not both. "
+                "Regardless of abilities or magic items, it can't make more than one melee or ranged "
+                "attack during its turn. If the creature attempts to cast a spell with a casting time of "
+                "1 action, roll a d20; on an 11 or higher the spell doesn't take effect until the "
+                "creature's next turn. Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Sleet Storm", 3, SpellSchool.CONJURATION,
+    description="Until the spell ends, freezing rain and sleet fall in a 20-foot-tall cylinder with a "
+                "40-foot radius centered on a point you choose within range. The area is difficult "
+                "terrain, and each creature in the area when it is cast must succeed on a Dexterity "
+                "saving throw or have its speed reduced to 0 until the start of its next turn. A creature "
+                "that enters the area or ends its turn there must also succeed on a Dexterity saving "
+                "throw or fall prone. The precipitation also extinguishes unprotected flames in the area. "
+                "Concentration.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    save_ability="dex", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Vampiric Touch", 3, SpellSchool.NECROMANCY,
+    description="The touch of your shadow-wreathed hand can siphon life force from others. When you cast "
+                "the spell, make a melee spell attack against a creature within your reach. On a hit, the "
+                "target takes 3d6 necrotic damage, and you regain hit points equal to half the amount of "
+                "necrotic damage dealt. Until the spell ends, you can make the attack again on each of "
+                "your turns as an action. Upcasting adds 1d6 necrotic damage per slot level above 3rd. "
+                "Concentration.",
+    casting_time="1 action", range="self", components="V, S",
+    requires_attack_roll=True, damage_dice_count=3, damage_dice_sides=6,
+    damage_type="necrotic", concentration=True, duration="up to 1 minute",
+    at_higher_levels_dice=1))
+register_spell(Spell("Wind Wall", 3, SpellSchool.EVOCATION,
+    description="A wall of strong wind rises from the ground at a point you choose within range. You can "
+                "make the wall up to 50 feet long, 15 feet high, and 1 foot thick. You can shape the wall "
+                "in any way you choose so long as it makes one continuous path along the ground. The wall "
+                "remains for the spell's duration. Each creature that makes a ranged weapon attack "
+                "through the wall has disadvantage on the attack roll. Each creature that moves into the "
+                "wall for the first time on a turn or starts its turn there takes 3d8 bludgeoning damage. "
+                "The wind extinguishes unprotected flames in the area. Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    damage_dice_count=3, damage_dice_sides=8, damage_type="bludgeoning",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Animate Dead", 3, SpellSchool.NECROMANCY,
+    description="This spell creates an undead servant. Choose a pile of bones or a corpse of a Medium or "
+                "Small humanoid within range. Your spell imbues the target with a foul mimicry of life, "
+                "raising it as an undead creature. The target becomes a skeleton if you chose bones or a "
+                "zombie if you chose a corpse. On each of your turns, you can use a bonus action to "
+                "mentally command the creature if it is within 60 feet of you. The creature is under your "
+                "control for 24 hours, after which it stops obeying any command. The casting time of 1 "
+                "minute reflects the ritual animation. For each slot level above 3rd, you animate or "
+                "reassert control over two additional undead.",
+    casting_time="1 minute", range="10 feet", components="V, S, M",
+    duration="instantaneous"))
+register_spell(Spell("Beacon of Hope", 3, SpellSchool.ABJURATION,
+    description="This spell bestows hope and vitality. Choose any number of creatures within range. For "
+                "the duration, each target has advantage on Wisdom saving throws and death saving throws, "
+                "and regains the maximum number of hit points possible from any healing. Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Clairvoyance", 3, SpellSchool.DIVINATION,
+    description="You create an invisible sensor within range in a location familiar to you (a place you "
+                "have visited or seen before) or in an obvious location that is unfamiliar to you. The "
+                "sensor remains in place for the duration, and it can't be attacked or otherwise "
+                "interacted with. When you cast the spell, you choose seeing or hearing. You can use your "
+                "action to change the mode. The casting time of 10 minutes reflects the ritual scrying. "
+                "Concentration. Ritual.",
+    casting_time="10 minutes", range="1 mile", components="V, S, M",
+    ritual=True, concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Conjure Animals", 3, SpellSchool.CONJURATION,
+    description="You summon fey spirits that take the form of animals and appear in unoccupied spaces "
+                "that you can see within range. Choose one of the following options: one beast of "
+                "challenge rating 2 or lower, two beasts of challenge rating 1 or lower, four beasts of "
+                "challenge rating 1/2 or lower, or eight beasts of challenge rating 1/4 or lower. The "
+                "beasts are friendly to you and your companions. They obey any verbal commands that you "
+                "issue to them. For each slot level above 3rd, the CR or number of beasts increases. "
+                "Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Create Food and Water", 3, SpellSchool.CONJURATION,
+    description="You create 45 pounds of food and 30 gallons of water on the ground or in containers "
+                "within range, enough to sustain up to fifteen humanoids or five steeds for 24 hours. "
+                "The food is bland but nourishing, and spoils if uneaten after 24 hours. The water is "
+                "clean and doesn't go bad.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    duration="instantaneous"))
+register_spell(Spell("Crusader's Mantle", 3, SpellSchool.ABJURATION,
+    description="Holy power radiates from you in an aura with a 30-foot radius, awakening boldness in "
+                "friendly creatures. Until the spell ends, the aura moves with you, centered on you. "
+                "While in the aura, each nonhostile creature in the aura (including you) deals an extra "
+                "1d4 radiant damage when it hits with a weapon attack. Paladin signature spell. "
+                "Concentration.",
+    casting_time="1 action", range="self", components="V, S",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Daylight", 3, SpellSchool.EVOCATION,
+    description="A 60-foot-radius sphere of light spreads out from a point you choose within range. The "
+                "sphere is bright light and sheds dim light for an additional 60 feet. If the point you "
+                "choose is on an object you are holding or one that isn't being worn or carried, the "
+                "light shines from the object and moves with it. Completely covering the affected object "
+                "with an opaque object blocks the light. If any of this spell's area overlaps with an "
+                "area of darkness created by a spell of 3rd level or lower, the spell that created the "
+                "darkness is dispelled. Daylight lasts 1 hour with no concentration required.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    duration="1 hour"))
+register_spell(Spell("Elemental Weapon", 3, SpellSchool.TRANSMUTATION,
+    description="A nonmagical weapon you touch becomes a magic weapon. Choose one of the following "
+                "damage types: acid, cold, fire, lightning, or thunder. For the duration, the weapon "
+                "has a +1 bonus to attack rolls and deals an extra 1d4 damage of the chosen type when "
+                "it hits. At slot 5 the bonus becomes +2 and the extra damage 2d4; at slot 7 it becomes "
+                "+3 and 3d4. Concentration.",
+    casting_time="1 action", range="touch", components="V, S",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Feign Death", 3, SpellSchool.NECROMANCY,
+    description="You touch a willing creature and put it into a cataleptic state that is indistinguishable "
+                "from death. For the spell's duration, or until you use an action to touch the target and "
+                "dismiss the spell, the target appears dead to all outward inspection and to spells used "
+                "to determine status. The target is blinded and incapacitated, and its speed drops to 0. "
+                "The target has resistance to all damage except psychic. The target can hear everything "
+                "around it. The casting time of 1 minute reflects the ritual trance. Ritual.",
+    casting_time="1 minute", range="touch", components="V, S, M",
+    ritual=True, duration="1 hour"))
+register_spell(Spell("Gaseous Form", 3, SpellSchool.TRANSMUTATION,
+    description="You transform a willing creature you touch, along with everything it's wearing and "
+                "carrying, into a misty cloud for the duration. While in this form, the target's only "
+                "method of movement is a flying speed of 10 feet. The target can enter and occupy the "
+                "space of another creature. The target has resistance to nonmagical damage, and it has "
+                "advantage on Strength, Dexterity, and Constitution saving throws. The target can pass "
+                "through small holes, narrow openings, and mere cracks. The target can't fall and "
+                "remains suspended in the air. Concentration.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Plant Growth", 3, SpellSchool.TRANSMUTATION,
+    description="This spell channels vitality into plants within a specific area. There are two possible "
+                "uses. In the combat-relevant mode (1 action), all normal plants in a 100-foot radius "
+                "centered on a point within range become thick and overgrown; the area becomes difficult "
+                "terrain that lasts for the duration. In the overland mode (8 hours), you enrich the "
+                "land so all plants in a half-mile radius centered on a point within range become "
+                "enriched for 1 year, yielding twice the normal amount of harvested food. The overgrowth "
+                "of the combat mode persists for 1 year unless cleared.",
+    casting_time="1 action", range="150 feet", components="V, S",
+    duration="instantaneous"))
+register_spell(Spell("Protection from Energy", 3, SpellSchool.ABJURATION,
+    description="For the duration, the willing creature you touch has resistance to one damage type of "
+                "your choice: acid, cold, fire, lightning, or thunder. When you cast the spell, choose "
+                "the damage type. Concentration.",
+    casting_time="1 action", range="touch", components="V, S",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Remove Curse", 3, SpellSchool.ABJURATION,
+    description="At your touch, all curses affecting one creature or object end. If the object is a "
+                "cursed magic item, its curse remains, but the spell breaks its owner's attunement to "
+                "the object so it can be removed or discarded.",
+    casting_time="1 action", range="touch", components="V, S",
+    duration="instantaneous"))
+register_spell(Spell("Sending", 3, SpellSchool.EVOCATION,
+    description="You send a short message of twenty-five words or less to a creature with which you are "
+                "familiar. The creature hears the message in its mind, recognizes you as the sender if "
+                "it knows you, and can answer in a like manner immediately. The spell enables a creature "
+                "with an Intelligence score of at least 1 to understand the meaning of your words. The "
+                "message is instantaneous and crosses any distance, even to another plane of existence, "
+                "though there is a 5 percent chance the message doesn't arrive to a target on another "
+                "plane.",
+    casting_time="1 action", range="unlimited", components="V, S, M",
+    duration="instantaneous"))
+register_spell(Spell("Speak with Dead", 3, SpellSchool.NECROMANCY,
+    description="You grant the semblance of life and intelligence to a corpse of your choice within range, "
+                "allowing it to answer the questions you pose. The corpse must still have a mouth and "
+                "can't be undead. The spell fails if the corpse was the target of this spell within the "
+                "last 10 days. Until the spell ends, you can ask the corpse up to five questions. The "
+                "corpse knows only what it knew in life, including the languages it knew. Answers are "
+                "usually brief, cryptic, or repetitive, and the corpse is under no compulsion to offer a "
+                "truthful answer. The casting time of 10 minutes reflects the ritual questioning.",
+    casting_time="10 minutes", range="10 feet", components="V, S, M",
+    duration="instantaneous"))
+register_spell(Spell("Speak with Plants", 3, SpellSchool.TRANSMUTATION,
+    description="You imbue plants within 30 feet of you with limited sentience and animation, giving them "
+                "the ability to communicate with you and follow your simple commands. You can question "
+                "plants about events in the spell's area within the past day, gaining information about "
+                "creatures that have passed, weather, and other circumstances. You can also turn "
+                "difficult terrain caused by plant growth into ordinary terrain, or vice versa. Plants "
+                "might be able to perform minor tasks for you. Concentration.",
+    casting_time="1 action", range="self (30-foot radius)", components="V, S",
+    concentration=True, duration="10 minutes"))
+register_spell(Spell("Tiny Hut", 3, SpellSchool.ABJURATION,
+    description="A 10-foot-radius immobile dome of force springs into existence around and above you and "
+                "remains stationary for the duration. The spell ends if you leave its area. Nine "
+                "creatures of Medium size or smaller can fit inside the dome with you. The spell fails if "
+                "its area includes a larger creature or more than nine creatures. Creatures and objects "
+                "within the dome when you cast this spell can move through it freely. All other creatures "
+                "and objects are barred from passing through it. Spells and other magical effects can't "
+                "extend through the dome or be cast through it. The atmosphere inside the space is "
+                "comfortable and dry, regardless of the weather outside. The casting time of 1 minute "
+                "reflects the ritual casting. Tiny Hut lasts 8 hours with no concentration required. "
+                "Ritual.",
+    casting_time="1 minute", range="self", components="V, S, M",
+    ritual=True, duration="8 hours"))
+register_spell(Spell("Tongues", 3, SpellSchool.DIVINATION,
+    description="This spell grants the creature you touch the ability to understand any spoken language "
+                "it hears for the duration. Moreover, when the target speaks, any creature that knows at "
+                "least one language and can hear the target understands what it says. Tongues lasts 1 "
+                "hour with no concentration required.",
+    casting_time="1 action", range="touch", components="V, M",
+    duration="1 hour"))
+register_spell(Spell("Water Breathing", 3, SpellSchool.TRANSMUTATION,
+    description="This spell grants up to ten willing creatures of your choice within range the ability to "
+                "breathe underwater until the spell ends. Affected creatures also retain their normal "
+                "mode of respiration. Water Breathing lasts 24 hours with no concentration required. "
+                "Ritual.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    ritual=True, duration="24 hours"))
+register_spell(Spell("Water Walk", 3, SpellSchool.TRANSMUTATION,
+    description="This spell grants the ability to move across any liquid surface as though it were solid "
+                "ground. Up to ten willing creatures you can see within range gain this ability for the "
+                "duration. Affected creatures can also choose to descend beneath the surface of the "
+                "liquid. The spell ends for a creature if that creature falls more than 10 feet into the "
+                "liquid. Water Walk lasts 1 hour with no concentration required. Ritual.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    ritual=True, duration="1 hour"))
+
 # --- Level 4 ---------------------------------------------------------------
 register_spell(Spell("Polymorph", 4, SpellSchool.TRANSMUTATION,
     description="Transform a creature into a beast. Con save to resist.",
