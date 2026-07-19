@@ -364,9 +364,32 @@ class TestUtilityCantripMechanics:
 # Effect resolution — attack-roll cantrips resolve via the engine
 # --------------------------------------------------------------------------- #
 class TestEffectResolution:
-    def test_produce_flame_attacks_hit_and_miss(self):
+    def _force_d20(self, monkeypatch, face: int):
+        """Patch the d20 used by resolve_spell_effect to a fixed die face.
+
+        ``resolve_spell_effect`` calls ``roll_d20(spell_attack)`` from the
+        spells module, so we patch the name as imported there to make attack
+        outcomes deterministic (avoids flaky natural-1 misses and natural-20
+        crits that would break the damage-range assertions).
+        """
+        from app.engine import spells as spells_module
+        from app.engine.dice import RollResult
+
+        def _fixed(modifier: int = 0, advantage: bool = False,
+                   disadvantage: bool = False) -> RollResult:
+            return RollResult(
+                rolls=[face], modifier=modifier,
+                total=face + modifier, description=f"d20 {modifier:+d}",
+            )
+
+        monkeypatch.setattr(spells_module, "roll_d20", _fixed)
+
+    def test_produce_flame_attacks_hit_and_miss(self, monkeypatch):
         spell = _spell("Produce Flame")
-        # Generous attack bonus vs low AC = reliable hit.
+        # Force a deterministic non-crit hit (die 15, +7 = 22 vs AC 10): 1d8
+        # fire damage (1-8). Forcing the die avoids flaky natural-1 misses and
+        # natural-20 crits (a crit would double damage and break the range).
+        self._force_d20(monkeypatch, 15)
         hit = resolve_spell_effect(
             spell=spell, caster_level=1, proficiency_bonus=2,
             casting_mod=5, target_ac=10,
@@ -374,7 +397,9 @@ class TestEffectResolution:
         assert hit.hit is True
         assert hit.damage >= 1   # 1d8 fire
         assert hit.damage_type == "fire"
-        # Impossibly high AC with low bonus = reliable miss.
+        # Force a deterministic miss (die 2, +0 = 2 vs AC 35): not a natural
+        # 1, but well below AC.
+        self._force_d20(monkeypatch, 2)
         miss = resolve_spell_effect(
             spell=spell, caster_level=1, proficiency_bonus=2,
             casting_mod=0, target_ac=35,
@@ -410,8 +435,12 @@ class TestEffectResolution:
         high = spell.roll_damage(caster_level=17)
         assert 4 <= high <= 32
 
-    def test_thorn_whip_attacks_hit_and_miss(self):
+    def test_thorn_whip_attacks_hit_and_miss(self, monkeypatch):
         spell = _spell("Thorn Whip")
+        # Force a deterministic non-crit hit (die 15, +7 = 22 vs AC 10): 1d6
+        # piercing damage (1-6). Forcing the die avoids flaky natural-1 misses
+        # and natural-20 crits.
+        self._force_d20(monkeypatch, 15)
         hit = resolve_spell_effect(
             spell=spell, caster_level=1, proficiency_bonus=2,
             casting_mod=5, target_ac=10,
@@ -419,6 +448,8 @@ class TestEffectResolution:
         assert hit.hit is True
         assert hit.damage >= 1   # 1d6 piercing
         assert hit.damage_type == "piercing"
+        # Force a deterministic miss (die 2, +0 = 2 vs AC 35).
+        self._force_d20(monkeypatch, 2)
         miss = resolve_spell_effect(
             spell=spell, caster_level=1, proficiency_bonus=2,
             casting_mod=0, target_ac=35,

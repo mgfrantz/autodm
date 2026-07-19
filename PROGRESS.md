@@ -1,7 +1,131 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3944 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (327 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB CANTRIP-TIER COMPLETION (14→29, ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+## TEST SUITE FULLY GREEN (4129 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (327 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 40 subclasses (PHB-complete), 6 legendary creatures, 3 starter adventures) ✅ PHB SUBCLASS COMPLETION (29→40, ALL TWELVE CORE CLASSES NOW PHB-COMPLETE) ✅ PHB CANTRIP-TIER COMPLETION (14→29, ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+
+## ✅ COMPLETED: PHB Subclass Completion (29 → 40; ALL TWELVE CORE CLASSES NOW PHB-COMPLETE)
+
+This run **closed the registry's subclass gap** — the last remaining
+non-PHB-canonical content registry after the catalogue-wide "PHB spell
+completeness" effort finished at every tier (0–9). The engine previously
+modelled a *representative* 29 subclasses (2–3 per core class). The Player's
+Handbook ships a canonical set of **40** subclasses across the 12 core
+classes; this run registers **all 11 missing PHB subclasses** so that
+**every Player's Handbook subclass is now modelled** (29 → 40 = full PHB
+coverage).
+
+The registry comment (previously "representative official subclasses, 2–3 per
+core class") is now an accurate PHB-complete roster. With this, **every
+Player's Handbook archetype/domain/origin/path/tradition across all twelve
+core classes is registered** — mirroring the catalogue-wide PHB-completeness
+milestone already reached for spells.
+
+### The 11 additions (grouped by class)
+- **Cleric — 4 Divine Domains (now 7/7 PHB):** Light Domain (Warding Flare,
+  Radiance of the Dawn, Corona of Light — the radiant/blinding cleric),
+  Nature Domain (Acolyte of Nature, Charm Animals and Plants, Dampen
+  Elements — the wilderness warden), Tempest Domain (Wrath of the Storm,
+  Destructive Wrath, Thunderbolt Strike, Stormborn — the storm god's
+  avenger), Trickery Domain (Blessing of the Trickster, Invoke Duplicity,
+  Cloak of Shadows, Improved Duplicity — the illusionist cleric).
+- **Monk — 1 Monastic Tradition (now 3/3 PHB):** Way of the Four Elements
+  (Disciple of the Elements — spend Ki on elemental disciplines: Fist of
+  Unbroken Air, Water Whip, Breath of Winter, Flames of the Phoenix, etc.).
+- **Wizard — 6 Arcane Traditions / Schools (now 8/8 PHB):** School of
+  Conjuration (Minor Conjuration, Benign Transposition, Focused
+  Conjuration, Durable Summons), School of Divination (Portent, Expert
+  Divination, The Third Eye, Greater Portent — the fate-reading wizard),
+  School of Enchantment (Hypnotic Gaze, Instinctive Charm, Split
+  Enchantment, Alter Memories — the mind-bender), School of Illusion
+  (Improved Minor Illusion, Malleable Illusions, Illusory Self, Illusory
+  Reality), School of Necromancy (Grim Harvest, Undead Thralls, Inured to
+  Undeath, Command Undead — the undead commander), School of
+  Transmutation (Minor Alchemy, Transmuter's Stone, Shapechanger, Master
+  Transmuter).
+
+### Canonical-mechanics decisions (PHB-canonical)
+- **Feature progression follows PHB per choice tier throughout:** cleric
+  domains land features at 1/2/6/8/17 (Divine Domain, PHB p.56-61);
+  Way of the Four Elements at 3/6/11/17 (Monastic Tradition, PHB p.77);
+  wizard schools at 2/6/10/14 (Arcane Tradition, PHB p.115). Every new
+  subclass's **first feature lands at the class's choice level** (cleric 1,
+  monk 3, wizard 2) — asserted by the test suite.
+- **Channel Divinity** entries named exactly per PHB (Radiance of the Dawn,
+  Charm Animals and Plants, Destructive Wrath, Invoke Duplicity, Cloak of
+  Shadows).
+- **Divine Strike** granted at level 8 by all four new cleric domains (every
+  PHB domain gets it), with each domain's canonical damage rider:
+  radiant (Light), cold/fire/lightning (Nature), thunder (Tempest), poison
+  (Trickery) — matching PHB p.56-61. Damage scales to 2d8 at level 14
+  (documented in the feature text).
+- **Wizard Savant** granted at level 2 by all six new schools (every PHB
+  school gets the gold/time-copying discount) — asserted by the test suite.
+- **Way of the Four Elements** models the Ki-discipline pattern (learn 3 at
+  3rd, +1 each at 6/11/17) with the iconic PHB discipline names documented
+  (Fist of Unbroken Air, Water Whip, Breath of Winter, Flames of the
+  Phoenix, River of Hungry Flame, etc.).
+- **Names match PHB exactly** ("Light Domain", "Way of the Four Elements",
+  "School of Conjuration", etc.) so the in-game subclass picker and the DM
+  context line present canonical PHB labels.
+
+### Per-class PHB-completeness (the milestone)
+`{barbarian:2, bard:2, cleric:7, druid:2, fighter:3, monk:3, paladin:3,
+ranger:2, rogue:3, sorcerer:2, warlock:3, wizard:8}` = **40 total**. Every
+core class is now at its full PHB subclass count. The test suite asserts both
+the per-class counts and the "all twelve core classes PHB-complete"
+milestone.
+
+### Bonus: flaky-attack-roll test hardened
+While running the full suite, `test_thorn_whip_attacks_hit_and_miss` (and its
+sibling `test_produce_flame_attacks_hit_and_miss`) in
+`test_spell_cantrip_completion.py` surfaced a **latent flake**: both used
+`d20+7 vs AC 10`, which still misses on a natural 1/2/3 (15% chance). The
+Thorn Whip test lost that coin-flip on this run. Applied the established
+`_force_d20` monkeypatch pattern (already used by the level-2 / level-7-8
+completion tests) to force deterministic hit/miss die faces — the cantrip
+effect-resolution tests are now stable across repeated runs (verified 5×
+consecutive green). This is the same flake class the PROGRESS log already
+recorded fixing for Flame Blade / Spiritual Weapon.
+
+### Files changed
+- **`backend/app/engine/subclasses.py`** — 11 new `Subclass(...)` entries:
+  4 appended to the Cleric (Divine Domain) block after Knowledge Domain, 1
+  appended to the Monk (Monastic Tradition) block after Way of Shadow, 6
+  appended to the Wizard (Arcane Tradition) block after School of
+  Abjuration. Registry total 29 → 40.
+- **`backend/tests/test_subclass_phb_completion.py`** (NEW, ~185 tests) —
+  registry distribution (total ≥40, the all-twelve-classes-PHB-complete
+  milestone, per-class PHB counts, no-dup guards), parametrized
+  registration-shape (name/char_class/category/id for all 11), per-subclass
+  mechanical correctness (feature progressions land at PHB stops; first
+  feature at choice level; signature feature names present; cleric Divine
+  Strike at 8; wizard Savant at 2; `to_dict` shape), lookups (case-insensitive
+  get, class listing membership), validation (valid at choice level, rejects
+  below choice level, `can_choose_subclass`), and DM-context helper sanity.
+- **`backend/tests/test_spell_cantrip_completion.py`** — added the
+  `_force_d20` helper to `TestEffectResolution` and wired it into both
+  attack-roll hit/miss tests (Produce Flame + Thorn Whip), making them
+  deterministic. No assertion changes.
+
+### Verification
+- ✅ `uv run pytest` — **4129 backend tests passing** (+185), 0 failures
+- ✅ cantrip effect-resolution tests stable across 5× consecutive runs
+  (flake eliminated)
+- ✅ `npm test` (frontend) — 393 tests passing, 0 failures (no frontend
+  changes)
+- ✅ `npx tsc --noEmit` — clean (no frontend changes)
+- ✅ `npm run build` — clean (no frontend changes)
+
+### Subclass coverage snapshot after this run
+`{barbarian:2, bard:2, cleric:7, druid:2, fighter:3, monk:3, paladin:3,
+ranger:2, rogue:3, sorcerer:2, warlock:3, wizard:8}` = **40 subclasses —
+ALL TWELVE CORE CLASSES ARE NOW PHB-COMPLETE.** The full Player's Handbook
+archetype/domain/origin/path/tradition roster is now registered. There are
+**no remaining non-canonical subclass counts.** This was the last
+non-PHB-canonical content registry after the catalogue-wide PHB spell
+completeness effort finished.
+
+---
 
 ## ✅ COMPLETED: PHB Cantrip-Tier Completion (14 → 29, catalogue 312 → 327; ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE)
 

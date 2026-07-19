@@ -267,6 +267,105 @@ SUBCLASS_REGISTRY: list[Subclass] = [
             17: "Visions of the Past — glean history from objects and locations",
         },
     ),
+    Subclass(
+        id="light-domain",
+        name="Light Domain",
+        char_class="cleric",
+        category="Divine Domain",
+        description=(
+            "Clerics of gods of light — sun, dawn, truth — who banish "
+            "darkness and illuminate the way with radiant fire."
+        ),
+        features={
+            1: "Warding Flare — reaction to impose disadvantage on an "
+               "attack against you (Wis mod/long); light, fire, and "
+               "radiant cantrips; burning hands and faerie fire domain "
+               "spells",
+            2: "Channel Divinity: Radiance of the Dawn — dispel magical "
+               "darkness within 30 ft and deal 2d10 + cleric level radiant "
+               "damage to foes",
+            6: "Improved Flare — use Warding Flare to protect allies "
+               "within 30 ft of you",
+            8: "Divine Strike — weapon attacks deal an extra 1d8 radiant "
+               "damage (2d8 at level 14)",
+            17: "Corona of Light — emanate bright sunlight for 1 minute; "
+               "enemies have disadvantage on saves against your fire and "
+               "radiant spells",
+        },
+    ),
+    Subclass(
+        id="nature-domain",
+        name="Nature Domain",
+        char_class="cleric",
+        category="Divine Domain",
+        description=(
+            "Clerics who guard sacred groves and untamed wilds, "
+            "channeling the wrath and bounty of the natural world."
+        ),
+        features={
+            1: "Acolyte of Nature — learn a druid cantrip and gain "
+               "proficiency in one skill (Animal Handling, Nature, or "
+               "Survival); heavy armor; animal friendship and speak with "
+               "animals domain spells",
+            2: "Channel Divinity: Charm Animals and Plants — charm beasts "
+               "and plant creatures within 30 ft for 1 minute",
+            6: "Dampen Elements — reaction to grant resistance to acid, "
+               "cold, fire, lightning, or thunder damage to a creature "
+               "within 30 ft",
+            8: "Divine Strike — weapon attacks deal an extra 1d8 cold, "
+               "fire, or lightning damage (your choice; 2d8 at level 14)",
+            17: "Master of Nature — creatures you have charmed gain no "
+               "saving throw against your commands",
+        },
+    ),
+    Subclass(
+        id="tempest-domain",
+        name="Tempest Domain",
+        char_class="cleric",
+        category="Divine Domain",
+        description=(
+            "Clerics of storm and sea gods whose righteous wrath crashes "
+            "down like thunder upon the wicked."
+        ),
+        features={
+            1: "Wrath of the Storm — reaction to deal 2d8 lightning or "
+               "thunder damage when hit by a melee attack (Wis mod/long); "
+               "martial weapons and heavy armor; fog cloud and "
+               "thunderwave domain spells",
+            2: "Channel Divinity: Destructive Wrath — maximize the damage "
+               "of a lightning or thunder roll (instead of rolling it)",
+            6: "Thunderbolt Strike — when you deal lightning damage to a "
+               "Large or smaller creature, push it 10 ft away",
+            8: "Divine Strike — weapon attacks deal an extra 1d8 thunder "
+               "damage (2d8 at level 14)",
+            17: "Stormborn — gain a flying speed equal to your walking "
+               "speed while outdoors",
+        },
+    ),
+    Subclass(
+        id="trickery-domain",
+        name="Trickery Domain",
+        char_class="cleric",
+        category="Divine Domain",
+        description=(
+            "Clerics of gods of mischief and deception who trade in "
+            "illusions, secrets, and the art of the confidence game."
+        ),
+        features={
+            1: "Blessing of the Trickster — touch a creature to grant "
+               "advantage on Stealth checks (action); charm person and "
+               "disguise self domain spells",
+            2: "Channel Divinity: Invoke Duplicity — create an illusory "
+               "duplicate of yourself; cast spells as if from its space "
+               "and gain advantage when it is within 5 ft of a foe",
+            6: "Channel Divinity: Cloak of Shadows — become invisible "
+               "until the end of your next turn",
+            8: "Divine Strike — weapon attacks deal an extra 1d8 poison "
+               "damage (2d8 at level 14)",
+            17: "Improved Duplicity — create up to four illusory "
+               "duplicates at once (each moves and mimics you)",
+        },
+    ),
 
     # ---- Druid (Druid Circle, level 2) ------------------------------------ #
     Subclass(
@@ -409,6 +508,29 @@ SUBCLASS_REGISTRY: list[Subclass] = [
                "spending 1 Ki",
             17: "Opportunist — reaction to make a melee attack against a "
                "creature hit by an ally",
+        },
+    ),
+    Subclass(
+        id="four-elements",
+        name="Way of the Four Elements",
+        char_class="monk",
+        category="Monastic Tradition",
+        description=(
+            "Monks who channel the raw power of the elements — earth, "
+            "air, fire, and water — through disciplined mastery of Ki."
+        ),
+        features={
+            3: "Disciple of the Elements — learn three elemental "
+               "disciplines (including Elemental Attunement) that let you "
+               "spend Ki to shape the elements (Fist of Unbroken Air, "
+               "Fist of Four Thunders, Rush of the Gale Spirits, etc.)",
+            6: "Learn one additional elemental discipline; many "
+               "disciplines cost less Ki to use",
+            11: "Learn one additional elemental discipline of your choice "
+               "(Water Whip, Clench of the North Wind, Gong of the Summit)",
+            17: "Learn one additional elemental discipline of your choice "
+               "(Breath of Winter, Eternal Mountain Defense, Flames of the "
+               "Phoenix, Mist Stance, River of Hungry Flame)",
         },
     ),
 
@@ -722,6 +844,148 @@ SUBCLASS_REGISTRY: list[Subclass] = [
                "checks made as part of abjuration spells",
             14: "Spell Resistance — advantage on saves against spells and "
                "resistance to spell damage",
+        },
+    ),
+    Subclass(
+        id="conjuration",
+        name="School of Conjuration",
+        char_class="wizard",
+        category="Arcane Tradition",
+        description=(
+            "Wizards who specialize in conjuration — the art of "
+            "transporting creatures and objects across space and even "
+            "the planes of existence."
+        ),
+        features={
+            2: "Savant — halve the gold/time to copy conjuration spells; "
+               "Minor Conjuration — create a tiny, weightless object in "
+               "your hand or an unoccupied space within 10 ft",
+            6: "Benign Transposition — after you cast a conjuration spell "
+               "of 1st level or higher, teleport up to 30 ft or swap "
+               "places with an ally within 30 ft (once per turn)",
+            10: "Focused Conjuration — concentration on a conjuration spell "
+               "cannot be broken by you taking damage",
+            14: "Durable Summons — any creature you summon or create gains "
+               "+30 temporary HP",
+        },
+    ),
+    Subclass(
+        id="divination",
+        name="School of Divination",
+        char_class="wizard",
+        category="Arcane Tradition",
+        description=(
+            "Wizards who glimpse beyond the veil of time, reading the "
+            "threads of fate to see what is yet to come."
+        ),
+        features={
+            2: "Savant — halve the gold/time to copy divination spells; "
+               "Portent — after a long rest, roll two d20 'foretelling "
+               "dice' and use each once to replace any attack roll, saving "
+               "throw, or ability check",
+            6: "Expert Divination — when you cast a divination spell of "
+               "2nd level or higher using a spell slot, regain a spent "
+               "slot of a lower level",
+            10: "The Third Eye — spend an action to gain one benefit "
+               "(darkvision 60 ft, ethereal sight 60 ft, greater "
+               "comprehension, or see invisibility) for 10 minutes",
+            14: "Greater Portent — roll three foretelling dice instead of "
+               "two",
+        },
+    ),
+    Subclass(
+        id="enchantment",
+        name="School of Enchantment",
+        char_class="wizard",
+        category="Arcane Tradition",
+        description=(
+            "Wizards who bend minds and charm hearts, weaving subtle "
+            "influence over the thoughts and wills of others."
+        ),
+        features={
+            2: "Savant — halve the gold/time to copy enchantment spells; "
+               "Hypnotic Gaze — action to charm and incapacitate a "
+               "creature within 5 ft (save vs your spell save)",
+            6: "Instinctive Charm — reaction to divert a melee attack "
+               "against you onto another creature within 30 ft (no repeat "
+               "against the same attacker until your next rest)",
+            10: "Split Enchantment — your enchantment spells of 2nd level "
+               "or higher can target one additional creature",
+            14: "Alter Memories — a creature charmed by you for 5+ minutes "
+               "forgets being charmed; you may modify its memory of that "
+               "time",
+        },
+    ),
+    Subclass(
+        id="illusion",
+        name="School of Illusion",
+        char_class="wizard",
+        category="Arcane Tradition",
+        description=(
+            "Wizards who weave phantasms and mirages, blurring the line "
+            "between what is real and what merely seems to be."
+        ),
+        features={
+            2: "Savant — halve the gold/time to copy illusion spells; "
+               "Improved Minor Illusion — know minor illusion and can "
+               "create both its sound and image at once",
+            6: "Malleable Illusions — use an action to change the nature "
+               "of an illusion spell you cast and are concentrating on",
+            10: "Illusory Self — reaction to cause an attack that hits "
+               "you to miss instead (once per short rest)",
+            14: "Illusory Reality — make one object in your illusion real "
+               "for 1 minute (it cannot deal damage or heal)",
+        },
+    ),
+    Subclass(
+        id="necromancy",
+        name="School of Necromancy",
+        char_class="wizard",
+        category="Arcane Tradition",
+        description=(
+            "Wizards who study the forces of life and death, commanding "
+            "the undead and siphoning vital essence."
+        ),
+        features={
+            2: "Savant — halve the gold/time to copy necromancy spells; "
+               "Grim Harvest — once per turn when you kill a creature with "
+               "a spell, regain HP equal to 3× the spell level (3× the "
+               "level + 2 for necromancy spells)",
+            6: "Undead Thralls — learn animate dead; when you cast it you "
+               "raise one additional undead; your undead gain HP equal to "
+               "your wizard level",
+            10: "Inured to Undeath — resistance to necrotic damage, and "
+               "your HP maximum cannot be reduced",
+            14: "Command Undead — use an action to attempt to seize "
+               "control of an undead within 60 ft (target makes a Charisma "
+               "save vs your spell save)",
+        },
+    ),
+    Subclass(
+        id="transmutation",
+        name="School of Transmutation",
+        char_class="wizard",
+        category="Arcane Tradition",
+        description=(
+            "Wizards who alter the nature of matter and energy, "
+            "reshaping the physical world to their will."
+        ),
+        features={
+            2: "Savant — halve the gold/time to copy transmutation spells; "
+               "Minor Alchemy — transform a cubic foot of wood, stone, "
+               "iron, copper, or silver into another of those materials "
+               "(10 minutes per cubic foot)",
+            6: "Transmuter's Stone — spend 8 hours creating a stone "
+               "granting one benefit (darkvision 60 ft, +10 speed, an "
+               "extra language, or resistance to one damage type); change "
+               "the benefit when you cast a transmutation spell of 1st "
+               "level or higher",
+            10: "Shapechanger — cast polymorph on yourself without "
+               "expending a spell slot or requiring components (once per "
+               "short rest)",
+            14: "Master Transmuter — consume the Transmuter's Stone in a "
+               "10-minute ritual to apply greater restoration, remove "
+               "curse, panacea, raise dead, or restore youth",
         },
     ),
 ]
