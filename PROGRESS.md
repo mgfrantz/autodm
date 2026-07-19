@@ -1,7 +1,127 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3577 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (225 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+## TEST SUITE FULLY GREEN (3645 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (244 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+
+## ✅ COMPLETED: PHB Level-2 Spell Completion (36 → 55, catalogue 225 → 244; FULL PHB COVERAGE)
+
+This run **finished the level-2 tier** of the catalogue-wide "PHB completeness"
+effort. After the level-2 *expansion* (16 → 36) landed last run, level 2 was
+the only non-PHB-complete tier remaining. This run registers the **final 19
+PHB 2nd-level spells** so **every Player's Handbook level-2 spell is now
+registered** (level 2: 36 → 55). The spell catalogue now stands at **244
+spells**, and **all of levels 1, 2, 6, 7, 8, 9 are PHB-complete**.
+
+### The 19 additions (grouped by resolution path)
+- **Save-spell with damage:** Cordon of Arrows (Dex, 1d6 piercing,
+  concentration, +1d6/slot upcast — the ranger's trap-style ammunition
+  circle).
+- **Save-debuff (no damage):** Gust of Wind (Str, push 15 ft, concentration
+  — the iconic evoker's wind line), Enthrall (Wis, **NO concentration** —
+  PHB signature distraction spell), Zone of Truth (Cha, can't lie,
+  concentration — the iconic interrogation enchantment).
+- **Healing:** Prayer of Healing (2d8 + spellcasting mod to up to 6
+  creatures, **10-minute cast**, +1d8/slot upcast — Cleric signature
+  out-of-combat party heal).
+- **Utility / buff / ritual (14):** Alter Self (concentration, three modes
+  — Aquatic Adaptation / Change Appearance / Natural Weapons), Animal
+  Messenger (ritual, 24-hour — druid/ranger courier), Arcane Lock (permanent
+  — abjuration lock on door/chest), Beast Sense (ritual **and**
+  concentration — the rare overlap), Continual Flame (permanent flame —
+  evocation, ruby dust consumed), Find Steed (10-minute cast — Paladin
+  signature summon), Find Traps (instantaneous divination — senses trap
+  presence), Gentle Repose (ritual, 10-day — necromancy corpse preservation),
+  Locate Object (concentration, 10-minute — divination dowsing), Magic Mouth
+  (ritual, 1-minute cast — programmed illusion trigger), Magic Weapon
+  (concentration, +1 weapon / +2 at slot 6 / +3 at slot 8), Protection from
+  Poison (1-hour, **no concentration** — ends poison + resistance), Rope
+  Trick (concentration, 1-hour — extradimensional hidey-hole), Warding Bond
+  (1-hour bond, **NO concentration** — PHB signature, paired platinum rings,
+  Cleric signature).
+
+### Correct-mechanics decisions (PHB-canonical)
+- Cordon of Arrows uses the standard `damage_dice_count` + `save_ability` +
+  `damage_type` + `at_higher_levels_dice` path that Moonbeam / Cone of Cold
+  / Cloudkill already use; +1d6/slot upcast per PHB p.228.
+- Gust of Wind / Enthrall / Zone of Truth carry a `save_ability` but no
+  `damage_dice_*`, so `resolve_spell_effect()` resolves them via the
+  made_save path while the multi-mode effects (push 15 ft, distraction,
+  can't-lie) live in the description — the same convention already
+  established by Hold Person, Blindness/Deafness, Suggestion, Crown of
+  Madness, and Calm Emotions.
+- **Enthrall's no-concentration flag is PHB-canonical** (PHB p.238 — it is
+  the signature 2nd-level distraction spell whose 1-minute duration simply
+  elapses without concentration). **Warding Bond's no-concentration flag is
+  also PHB-canonical** (PHB p.287 — the 1-hour bond persists until ended by
+  HP / separation / recast, not by concentration). **Protection from
+  Poison's no-concentration 1-hour duration is PHB-canonical** (PHB p.270).
+  Beast Sense is the rare **ritual + concentration** overlap (PHB p.217).
+- Prayer of Healing uses `healing_dice_count=2` / `healing_dice_sides=8`
+  with `healing_bonus=0` — the +spellcasting modifier is caster-dependent
+  and lives in the description, mirroring how Cure Wounds / Spiritual Weapon
+  / Hunter's Mark handle caster-dependent bonuses (the engine doesn't know
+  the caster's mod at registration time). The **10-minute casting time** is
+  preserved as-is (the signature reason it can't be cast mid-combat — PHB
+  p.267). +1d8/slot upcast.
+- Long casting times preserved on the three signature out-of-combat spells:
+  Find Steed (10 min — summon ritual), Prayer of Healing (10 min — communal
+  prayer), Magic Mouth (1 min — ritual enchantment). These are PHB
+  signatures and the engine records them faithfully.
+- Ritual flag set on the only four rituals in the batch: Animal Messenger,
+  Beast Sense, Gentle Repose, Magic Mouth (per PHB p.209/217/245/257).
+- Concentration flag set on Cordon of Arrows, Gust of Wind, Zone of Truth,
+  Alter Self, Beast Sense, Locate Object, Magic Weapon, Rope Trick.
+  Correctly **not** set on Enthrall (signature), Arcane Lock (permanent),
+  Continual Flame (permanent), Find Steed (instantaneous summon), Find Traps
+  (instantaneous), Gentle Repose (10-day ritual), Magic Mouth (until
+  dispelled ritual), Protection from Poison (1-hour no-concentration),
+  Warding Bond (1-hour no-concentration signature).
+- Schools are canonical PHB throughout: Cordon of Arrows = transmutation,
+  Gust of Wind = evocation, Enthrall = enchantment, Zone of Truth =
+  enchantment, Prayer of Healing = evocation, Alter Self = transmutation,
+  Animal Messenger = enchantment, Arcane Lock = abjuration, Beast Sense =
+  divination, Continual Flame = evocation, Find Steed = conjuration, Find
+  Traps = divination, Gentle Repose = necromancy, Locate Object =
+  divination, Magic Mouth = illusion, Magic Weapon = transmutation,
+  Protection from Poison = abjuration, Rope Trick = transmutation,
+  Warding Bond = abjuration.
+
+### Files changed
+- **`backend/app/engine/spells.py`** — 19 new `register_spell(...)` entries
+  in the level-2 block (after Pass Without Trace, before the Level 3
+  section), grouped by resolution path with a section comment.
+- **`backend/tests/test_spell_level2_completion.py`** (NEW, 68 tests) —
+  registry distribution (total ≥244, level 2 ≥55, other-PHB-tier floor
+  guards, no-dup guards), parametrized registration-shape (name/level/school
+  for all 19), per-spell mechanical correctness (damage dice + save +
+  concentration + upcast on Cordon of Arrows; save ability + concentration +
+  no-damage on the three save-debuff spells; healing dice + upcast +
+  10-minute cast on Prayer of Healing; concentration / ritual / casting-time
+  / range / duration flags on all 14 utility spells including Enthrall's
+  no-concentration, Beast Sense's ritual+concentration overlap, Arcane
+  Lock's permanent, Find Steed's 10-minute cast, Magic Mouth's 1-minute
+  ritual, Protection from Poison's 1-hour no-concentration, and Warding
+  Bond's 1-hour no-concentration), effect resolution (damage + save for
+  Cordon of Arrows, save-debuff path for the three saves, healing for Prayer
+  of Healing, "takes effect" path for all 14 utility spells), and upcasting
+  math (both the static `damage_dice_count + at_higher_levels_dice * levels`
+  identity and the real `roll_damage` / `roll_healing` rolls at base and
+  upcast slots, growing by the configured `at_higher_levels_dice` per slot
+  level).
+
+### Verification
+- ✅ `uv run pytest` — **3645 backend tests passing** (+68), 0 failures
+- ✅ No frontend changes (no `npm test` / `tsc` deltas)
+
+### Spell tier snapshot after this run
+`{0:14, 1:53, 2:55, 3:13, 4:14, 5:13, 6:31, 7:18, 8:18, 9:15}` — **levels 1,
+2, 6, 7, 8, 9 are all PHB-complete** (six of the ten tiers). The remaining
+non-canonical counts (cantrips at level 0, and the curated subsets at levels
+3–5) are intentional curated selections, not exhaustive — room remains for
+future expansion if desired. The catalogue-wide "PHB completeness" effort at
+the iconic tiers (1, 2, 6, 7, 8, 9) is now **complete**.
+
+---
 
 ## ✅ COMPLETED: PHB Level-2 Spell Expansion (16 → 36, catalogue 205 → 225)
 
@@ -2038,9 +2158,9 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅
+## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅ + PHB SPELL TIERS 1/2/6/7/8/9 COMPLETE ✅
 
-**The full DM Function Calling roadmap is now COMPLETE (2026-07-17).** Every
+**The full DM Function Calling roadmap is COMPLETE (2026-07-17).** Every
 phase — dice, combat, spells, inventory, conditions, concentration, AoE, and UI
 polish — is implemented, tested, and shipped:
 
@@ -2053,15 +2173,16 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**3277 backend + 393 frontend tests, 0 failures.**
-(Post-roadmap backend additions: +89 high-tier enemy registry expansion
-(CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8 spell roster
-completion (18/18 each), +55 iconic PHB level-1 spell expansion (16 spells,
-all five resolution paths, lifting the catalogue to 170 spells), +5
-player-as-AoE-target polish, +22 condition/exhaustion-aware spell-save polish,
-and +59 enemy CR-correction tests moving 5 iconic MM monsters to canonical CR
-— see the ✅ Enemy CR-Correction section near the top. No new game_actions;
-content registry expansion, dedup, and stat-block correctness fixes only.)
+**3645 backend + 393 frontend tests, 0 failures.**
+(Post-roadmap content-registry additions: +89 high-tier enemy registry
+expansion (CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8 spell
+roster completion (18/18 each), +55 iconic PHB level-1 spell expansion (16
+spells, all five resolution paths), +5 player-as-AoE-target polish, +22
+condition/exhaustion-aware spell-save polish, +59 enemy CR-correction tests
+moving 5 iconic MM monsters to canonical CR, +73 PHB level-2 spell expansion
+(16→36), and +68 PHB level-2 spell completion (36→55, full PHB coverage). No
+new game_actions; content registry expansion, dedup, and stat-block
+correctness fixes only.)
 
 The DM is now a full tool-calling agent: it emits structured `game_actions`
 (dice, attacks, damage, spells, AoE spells, loot, conditions, concentration)
@@ -2085,15 +2206,15 @@ consider (draft a design doc if Mike green-lights any):
   disadvantage (mirrors `engine.saving_throws`). Also fixed a latent bug where
   combatants always saved at +0. +22 backend tests (3214 total).
 - Hardening — any edge cases surfaced by playtesting
-- **Content registry expansion — PHB level-2 completion (next candidate).** The
-  level-2 tier was expanded 16 → 36 this run (catalogue 205 → 225). PHB has ~54
-  level-2 spells, so ~18 remain for a follow-up **completion** run (e.g. Alter
-  Self, Arcane Lock, Beast Sense, Continual Flame, Find Steed, Gentle Repose,
-  Gust of Wind, Locate Object, Magic Mouth, Magic Weapon, Prayer of Healing,
-  Protection from Poison, Rope Trick, Warding Bond, Zone of Truth, etc.). After
-  that, levels 0 (cantrips) and 3–5 are the remaining curated subsets. This is
-  the established PHB-completeness expansion pattern (levels 1, 6, 7, 8, 9 are
-  already PHB-complete).
+- ~~**Content registry expansion — PHB level-2 completion (next candidate).**~~
+  **DONE (2026-07-19)** — the final 19 PHB 2nd-level spells landed this run,
+  lifting level 2 from 36 → 55 (full PHB coverage) and the catalogue from
+  225 → 244. **All six iconic PHB spell tiers (1, 2, 6, 7, 8, 9) are now
+  PHB-complete.** The remaining non-canonical counts (cantrips at level 0, and
+  the curated subsets at levels 3–5) are intentional curated selections. A
+  follow-up run could either (a) expand level 3–5 toward PHB coverage, or
+  (b) round out cantrips (level 0) toward PHB's ~40 cantrips. Both are
+  optional polish, not gaps.
 
 Until then, the dev agent should:
 - Keep the full suite green (`uv run pytest`, `npm test`)
