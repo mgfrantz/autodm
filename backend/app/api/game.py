@@ -160,20 +160,74 @@ def _caster_modifier_for_character(character: "Character", spellbook) -> int:
         return 0
 
 
+def _roll_save_total(
+    bonus: int,
+    save_ability: str | None,
+    conditions: list[str] | None,
+    exhaustion: int = 0,
+) -> int:
+    """Roll a save total honouring auto-fail and disadvantage (PHB p.290-292).
+
+    Mirrors the rule logic in :mod:`app.engine.saving_throws`
+    (:func:`check_save_auto_fail` / :func:`check_save_disadvantage`) so the
+    DM-resolved spell-save paths (single-target + AoE) stay consistent with the
+    coded engine — they previously rolled a plain d20 and ignored these PHB
+    modifiers.
+
+    - **Auto-fail** (paralyzed/petrified/unconscious on Strength/Dexterity
+      saves) → returns ``0``, which fails against any real spell DC (≥ 8).
+    - **Disadvantage** (Restrained → Dexterity; Exhaustion level 3+ → all)
+      → rolls 2d20 and keeps the lower.
+    - Otherwise a straight ``d20 + bonus``.
+    """
+    ability_raw = (save_ability or "").lower()
+    # Normalise short ("dex") and full ("dexterity") forms to the full name —
+    # the rule helpers (check_save_auto_fail / check_save_disadvantage) compare
+    # against full ability names, and Combatant/Character expose full-name
+    # attributes (``.dexterity`` etc.). ``_ABILITY_TO_COLUMN`` maps short→full.
+    ability = _ABILITY_TO_COLUMN.get(ability_raw, ability_raw)
+    conds_lower = [str(c).lower() for c in (conditions or []) if c]
+    try:
+        from app.engine.saving_throws import (
+            check_save_auto_fail,
+            check_save_disadvantage,
+        )
+    except Exception:  # defensive — never crash the save pipeline
+        return roll_d20(modifier=bonus).total
+    if ability and check_save_auto_fail(ability, conds_lower):
+        return 0
+    disadv = bool(
+        ability and check_save_disadvantage(ability, conds_lower, exhaustion)
+    )
+    return roll_d20(modifier=bonus, advantage=False, disadvantage=disadv).total
+
+
 def _combatant_save_total(combatant, save_ability: str | None) -> int:
     """Roll a combatant's saving throw total for a given ability.
 
     Combatants reliably track Strength and Dexterity; other abilities default
     to a score of 10 (modifier 0) and no save proficiency, which is a
-    reasonable approximation for most monsters. Returns ``d20 + modifier``.
+    reasonable approximation for most monsters. Returns ``d20 + modifier``,
+    now respecting the combatant's own ``.conditions`` and ``.exhaustion``
+    (paralyzed/petrified/unconscious auto-fail Str/Dex saves; Restrained
+    imposes Dex-save disadvantage; Exhaustion 3+ imposes all-save
+    disadvantage — PHB p.290-292).
     """
-    ability = (save_ability or "").lower()
-    col = _ABILITY_TO_COLUMN.get(ability)
-    score = getattr(combatant, col, 10) if col else 10
-    return roll_d20(modifier=ability_modifier(score)).total
+    ability_raw = (save_ability or "").lower()
+    ability = _ABILITY_TO_COLUMN.get(ability_raw, ability_raw)
+    score = getattr(combatant, ability, 10)
+    bonus = ability_modifier(score)
+    conditions = getattr(combatant, "conditions", None) or []
+    exhaustion = int(getattr(combatant, "exhaustion", 0) or 0)
+    return _roll_save_total(bonus, ability, conditions, exhaustion)
 
 
-def _character_save_total(character, save_ability: str | None) -> int:
+def _character_save_total(
+    character,
+    save_ability: str | None,
+    conditions: list[str] | None = None,
+    exhaustion: int = 0,
+) -> int:
     """Roll the player character's saving throw total for a given ability.
 
     Companion to :func:`_combatant_save_total` for the player-as-AoE-target
@@ -181,18 +235,26 @@ def _character_save_total(character, save_ability: str | None) -> int:
     uses :func:`calculate_save_bonus` (ability mod + proficiency bonus when
     proficient) and rolls ``d20 + bonus``. Falls back to a plain ability-mod
     roll on any error so the AoE pipeline never crashes.
+
+    The player's active ``conditions`` (from ``game_state["conditions"]``) and
+    ``exhaustion`` (from ``game_state["exhaustion"]``) are honoured — a
+    restrained player has disadvantage on Dexterity saves, an exhausted (3+)
+    player has disadvantage on all saves, and a paralyzed/petrified/unconscious
+    player auto-fails Str/Dex saves (PHB p.290-292).
     """
-    ability = (save_ability or "").lower()
-    if not ability:
+    ability_raw = (save_ability or "").lower()
+    if not ability_raw:
         return roll_d20(modifier=0).total
+    ability = _ABILITY_TO_COLUMN.get(ability_raw, ability_raw)
     try:
         from app.engine.saving_throws import calculate_save_bonus
         bonus = calculate_save_bonus(ability, character)
     except Exception:
-        col = _ABILITY_TO_COLUMN.get(ability)
-        score = getattr(character, col, 10) if col else 10
+        score = getattr(character, ability, 10)
         bonus = ability_modifier(score)
-    return roll_d20(modifier=bonus).total
+    return _roll_save_total(
+        bonus, ability, conditions or [], int(exhaustion or 0)
+    )
 
 
 def _available_spells_for_dm(character: "Character") -> str:
@@ -851,7 +913,9 @@ def _resolve_game_actions(
                         target_specs.append({
                             "name": character.name or "Player",
                             "target_save_total": _character_save_total(
-                                character, _save_ab
+                                character, _save_ab,
+                                conditions=game_state.get("conditions", []) or [],
+                                exhaustion=game_state.get("exhaustion", 0) or 0,
                             ),
                         })
                         is_player_target.append(True)

@@ -1,7 +1,72 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3192 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (170 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMING ✅ CONDITION RESOLUTION IN GAME ACTIONS ✅ DUAL-STATE CONDITION RESOLUTION (PLAYER + COMBATANT) ✅ CONDITIONS ROSTER IN DM PROMPT ✅ CONCENTRATION TRACKING IN DM PIPELINE ✅ CON-SAVE CONCENTRATION CHECKS ✅ AUTO-END CONCENTRATION ON REPLACEMENT ✅ INCAPACITATION BREAKS CONCENTRATION ✅ PLAYER DAMAGE PATH ✅ AOE SPELL CAST GAME EVENTS ✅ DM-CALLABLE AOE SPELL FUNCTIONS (dm_cast_spell_aoe) ✅ SPELLBOOK.PREPARE_CAST (SLOT-ONLY) ✅ RESOLVE_SPELL_AOE_TARGET (PER-TARGET SAVE) ✅ SPELLCASTCARD AOE MODE ✅ DAMAGECARD SAVE-OUTCOME BADGE ✅ ONE SLOT / ONE DAMAGE ROLL / N SAVES ✅
+## TEST SUITE FULLY GREEN (3214 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (170 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
+
+## ✅ COMPLETED: DM Function Calling — Cross-Phase Polish (Condition/Exhaustion-Aware AoE & Spell Saves)
+
+Closed the **last remaining cross-phase polish item** flagged in the
+post-roadmap NEXT SESSION DIRECTIVE: **"advantage/disadvantage on AoE saves."**
+The DM-resolved spell-save paths (`_combatant_save_total` /
+`_character_save_total`) previously rolled a **plain d20** and ignored the PHB
+save modifiers that the coded `saving_throws` engine already implements — so a
+paralyzed creature caught in a Fireball could "make" its Dex save, a restrained
+creature had no Dex-save disadvantage, and an exhausted (3+) creature had no
+all-save disadvantage. This was inconsistent with the engine's own
+`roll_saving_throw`, which honours all three.
+
+### What changed
+- **`backend/app/api/game.py`** — new `_roll_save_total(bonus, save_ability,
+  conditions, exhaustion)` helper mirrors `engine.saving_throws.check_save_auto_fail`
+  / `check_save_disadvantage` (single source of truth for these rules):
+  - **Auto-fail** — paralyzed / petrified / unconscious creatures auto-fail
+    Strength & Dexterity saves (PHB p.290-292) → returns `0` (fails any real
+    spell DC ≥ 8).
+  - **Disadvantage** — Restrained → Dex-save disadvantage; Exhaustion level 3+
+    → all-save disadvantage (PHB p.291).
+  - **Ability normalization** — spells store `save_ability` as the short form
+    (`"dex"`), but the rule helpers + Combatant/Character attributes use the
+    full form (`"dexterity"`). The helpers now normalize via
+    `_ABILITY_TO_COLUMN.get(raw, raw)`, which also fixes a **latent bug**: the
+    combatant save bonus was always `+0` because the old lookup
+    `_ABILITY_TO_COLUMN.get("dexterity")` returned `None` (the dict keys are
+    short). Combatants now save at their real ability modifier.
+- `_combatant_save_total` now reads the combatant's own `.conditions` /
+  `.exhaustion` (self-contained — no caller changes needed; both the
+  single-target `cast_spell` and AoE `cast_spell_aoe` paths benefit).
+- `_character_save_total` gained optional `conditions` / `exhaustion` params;
+  the AoE call site now threads `game_state["conditions"]` /
+  `game_state["exhaustion"]` so a restrained/exhausted/paralyzed player's AoE
+  save is resolved correctly.
+
+### Why no frontend changes
+Save outcomes still flow as the existing `damage` / `spell_cast` GameEvents
+(already rendered by `DamageCard` / `SpellCastCard`); the `made_save` /
+`half_damage` flags carry the new correct values unchanged.
+
+### Tests (+22 backend)
+`backend/tests/test_spell_save_conditions.py` (NEW):
+- `TestRollSaveTotalRuleLogic` (11) — pure rule logic: auto-fail
+  (paralyzed/petrified/unconscious, Str/Dex only; Con save rolls normally),
+  disadvantage (restrained→Dex; exhaustion 3+→all; exhaustion 2→none),
+  backward-compat (no conditions), case-insensitivity, no-save-ability edge.
+- `TestCombatantSaveTotalThreading` (4) — reads combatant's own
+  conditions/exhaustion; clean combatant saves at correct ability modifier.
+- `TestCharacterSaveTotalThreading` (4) — threads conditions/exhaustion params.
+- `TestAoeSaveConditionsEndToEnd` (3) — paralyzed goblin auto-fails AoE save
+  (full damage despite a mocked-high roll, contrasted with a clean goblin that
+  saves for half); restrained + exhausted players roll their AoE saves at
+  disadvantage (verified via `roll_d20` call kwargs). Note: a *paralyzed player*
+  cannot be tested via the AoE API because the player is always the caster and a
+  paralyzed creature can't cast verbal-component spells — that path is covered
+  by the unit test instead.
+
+### Verification
+- ✅ `uv run pytest` — **3214 backend tests passing** (+22), 0 failures
+- ✅ `npm test` — 393 frontend tests passing (no frontend changes)
+- ✅ `npx tsc --noEmit` — clean
+
+---
 
 ## ✅ COMPLETED: DM Function Calling — Cross-Phase Polish (Player as AoE Target)
 
@@ -1487,7 +1552,13 @@ consider (draft a design doc if Mike green-lights any):
 - Cross-phase polish — ~~concentration checks triggered by AoE spell damage on
   the *player*~~ **DONE** (the player is now a valid `cast_spell_aoe` target;
   damage routes to `character.current_hp` and fires a real concentration check).
-  Remaining: advantage/disadvantage on AoE saves, etc.
+  ~~Remaining: advantage/disadvantage on AoE saves, etc.~~ **DONE** — the
+  DM-resolved spell-save paths (`_combatant_save_total` /
+  `_character_save_total`) now honour PHB save modifiers via a new
+  `_roll_save_total` helper: paralyzed/petrified/unconscious creatures auto-fail
+  Str/Dex saves, Restrained → Dex-save disadvantage, Exhaustion 3+ → all-save
+  disadvantage (mirrors `engine.saving_throws`). Also fixed a latent bug where
+  combatants always saved at +0. +22 backend tests (3214 total).
 - Hardening — any edge cases surfaced by playtesting
 
 Until then, the dev agent should:

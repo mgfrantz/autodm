@@ -11,6 +11,14 @@
 > target (`"player"` in `target_ids`); AoE damage routes to `character.current_hp`
 > and fires a real concentration check when the player is concentrating. Closes
 > the "concentration checks triggered by AoE spell damage on the player" item.
+> Cross-phase polish IMPLEMENTED ✅ — the DM-resolved spell-save paths
+> (`_combatant_save_total` / `_character_save_total`) now honour PHB save
+> modifiers via a new `_roll_save_total` helper that mirrors
+> `engine.saving_throws`: paralyzed/petrified/unconscious creatures auto-fail
+> Str/Dex saves, Restrained → Dex-save disadvantage, Exhaustion 3+ → all-save
+> disadvantage. Closes the "advantage/disadvantage on AoE saves" item. Also
+> fixed a latent bug where combatants always saved at +0 (ability-name
+> normalization). +22 backend tests (3214 total).
 > UI polish IMPLEMENTED ✅ — dice tumble (~480ms), HP-bar shake, collapsed-by-default old event cards are live (roadmap item #7)
 > **Created:** 2025-07-13
 > **Theme:** Evolve the DM LLM from a pure narrator into a tool-calling agent
