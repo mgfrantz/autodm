@@ -878,6 +878,204 @@ register_spell(Spell("Enhance Ability", 2, SpellSchool.TRANSMUTATION,
     casting_time="1 action", range="touch", components="V, S",
     concentration=True, duration="up to 1 hour"))
 
+# Additional iconic PHB level-2 spells (expanding the tier toward PHB coverage).
+# Mirrors the level-1 / level-6 PHB-completeness expansions: damage spells use
+# the standard dice+save path, attack-roll spells use requires_attack_roll, and
+# save-debuff / utility / buff / ritual spells resolve cleanly via the
+# "takes effect" or save-only paths.
+# Damage / save-for-half: Moonbeam (Con, 2d10 radiant, +1d10/slot).
+# Attack-roll: Flame Blade (3d6 fire melee spell attack, +1d6/slot),
+#   Spiritual Weapon (1d8 force + spellcasting mod, +1d8/slot).
+# Direct damage (no attack roll, no save): Heat Metal (2d8 fire, +1d8/slot),
+#   Spike Growth (2d4 piercing zone).
+# Save-spell with damage: Phantasmal Force (Int save, 1d6 psychic).
+register_spell(Spell("Moonbeam", 2, SpellSchool.EVOCATION,
+    description="A silvery beam of pale light shines down in a 5-foot-radius, 40-foot-high "
+                "cylinder centered on a point within range. Until the spell ends, dim light "
+                "fills the cylinder. When a creature enters the spell's area for the first time "
+                "on a turn or starts its turn there, it is engulfed in phantom flames that cause "
+                "it to take 2d10 radiant damage on a failed Constitution save, or half as much on "
+                "a successful one. A shapechanger makes its save with disadvantage. Upcasting adds "
+                "1d10 per slot level above 2nd. Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="con", damage_dice_count=2, damage_dice_sides=10,
+    damage_type="radiant", concentration=True, duration="up to 1 minute",
+    at_higher_levels_dice=1))
+register_spell(Spell("Flame Blade", 2, SpellSchool.EVOCATION,
+    description="You evoke a fiery blade in your free hand. The blade is similar in size and "
+                "shape to a scimitar, and it lasts for the duration. If you let go of the blade, "
+                "it disappears, but you can evoke the blade again as a bonus action. You can use "
+                "your action to make a melee spell attack with the fiery blade. On a hit, the "
+                "target takes 3d6 fire damage. Upcasting adds 1d6 per slot level above 2nd. "
+                "Concentration.",
+    casting_time="1 bonus action", range="self", components="V, S, M",
+    requires_attack_roll=True, damage_dice_count=3, damage_dice_sides=6,
+    damage_type="fire", concentration=True, duration="up to 10 minutes",
+    at_higher_levels_dice=1))
+register_spell(Spell("Spiritual Weapon", 2, SpellSchool.EVOCATION,
+    description="You create a floating, spectral weapon within range that lasts for the duration "
+                "or until you cast this spell again. When you cast the spell, you can make a melee "
+                "spell attack against a creature within 5 feet of the weapon. On a hit, the target "
+                "takes force damage equal to 1d8 + your spellcasting ability modifier. As a bonus "
+                "action on your turn, you can move the weapon up to 20 feet and repeat the attack "
+                "against a creature within 5 feet of it. No concentration required. Upcasting adds "
+                "1d8 per slot level above 2nd.",
+    casting_time="1 bonus action", range="60 feet", components="V, S",
+    requires_attack_roll=True, damage_dice_count=1, damage_dice_sides=8,
+    damage_type="force", duration="1 minute", at_higher_levels_dice=1))
+register_spell(Spell("Heat Metal", 2, SpellSchool.TRANSMUTATION,
+    description="Choose a manufactured metal object within range that you can see, such as a metal "
+                "weapon or a suit of metal armor. The object glows red-hot. Any creature in "
+                "physical contact with the object takes 2d8 fire damage when you cast the spell. "
+                "Until the spell ends, you can use a bonus action on each of your subsequent turns "
+                "to deal this damage again, and the creature must use its reaction (if available) "
+                "to drop the object if it can. If the creature is wearing the object and chooses "
+                "not to drop it, it has disadvantage on attack rolls and ability checks until the "
+                "spell ends. Upcasting adds 1d8 per slot level above 2nd. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    damage_dice_count=2, damage_dice_sides=8, damage_type="fire",
+    concentration=True, duration="up to 1 minute", at_higher_levels_dice=1))
+register_spell(Spell("Spike Growth", 2, SpellSchool.TRANSMUTATION,
+    description="The ground in a 20-foot radius centered on a point within range twists and sprouts "
+                "hard spikes and thorns. The area becomes difficult terrain for the duration. When "
+                "a creature moves into or within the area for the first time on a turn or starts its "
+                "turn there, it takes 2d4 piercing damage. The transformation is camouflaged to "
+                "look natural; a creature that can't see the area at the time the spell is cast must "
+                "make a Wisdom (Perception) check against your spell save DC to recognize it as "
+                "dangerous before entering. Concentration.",
+    casting_time="1 action", range="150 feet", components="V, S, M",
+    damage_dice_count=2, damage_dice_sides=4, damage_type="piercing",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Phantasmal Force", 2, SpellSchool.ILLUSION,
+    description="You craft an illusion that takes root in the mind of a creature you can see within "
+                "range. The target must make an Intelligence saving throw. On a failed save, you "
+                "create a phantasmal object, creature, or other visible phenomenon that is no "
+                "larger than a 10-foot cube and perceivable only to the target for the duration. "
+                "The phantasm includes sound, temperature, and other stimuli. While affected by the "
+                "spell, the creature treats the phantasm as if it were real and rationalizes any "
+                "illogical outcomes. The target can use its action to examine the phantasm with an "
+                "Intelligence (Investigation) check against your spell save DC; if successful, the "
+                "target realizes it is an illusion and the spell ends. While affected, the target "
+                "takes 1d6 psychic damage per turn if subject to an attack or effect from the "
+                "phantasm. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="int", damage_dice_count=1, damage_dice_sides=6,
+    damage_type="psychic", concentration=True, duration="up to 1 minute"))
+# Save-debuff (no damage) — effects documented in the description
+register_spell(Spell("Crown of Madness", 2, SpellSchool.ENCHANTMENT,
+    description="One humanoid of your choice that you can see within range must make a Wisdom saving "
+                "throw. On a failed save, the target is charmed by you for the duration. While "
+                "charmed, you have a psychic link with the target; you must use your action on each "
+                "of your turns to keep the target under your control, issuing it a command to attack "
+                "a creature other than itself that you choose. The target makes its first such "
+                "attack before you issue the command on your next turn. Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Calm Emotions", 2, SpellSchool.ENCHANTMENT,
+    description="You attempt to suppress strong emotions in a group of people. Each humanoid in a "
+                "20-foot-radius sphere centered on a point you choose must make a Charisma saving "
+                "throw; on a failed save, choose one of the following effects for the duration: "
+                "suppress any effect causing a target to be charmed or frightened (the effect is "
+                "merely suppressed, not ended), or suppress any feeling of hostility toward other "
+                "creatures. An affected target's attitude toward others shifts from hostile to "
+                "indifferent. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="cha", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Enlarge/Reduce", 2, SpellSchool.TRANSMUTATION,
+    description="You cause one creature or object you can see within range to grow larger or smaller "
+                "for the duration. The target must make a Constitution saving throw. On a failed "
+                "save, choose either: Enlarge — the target's size doubles, its weight multiplies by "
+                "eight, it has advantage on Strength checks and saves, and its weapons deal an extra "
+                "1d4 damage; or Reduce — the target's size halves, its weight multiplies by "
+                "one-eighth, it has disadvantage on Strength checks and saves, and its weapons deal "
+                "1d4 less damage. Concentration.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    save_ability="con", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Levitate", 2, SpellSchool.TRANSMUTATION,
+    description="One creature or object of your choice that you can see within range rises vertically, "
+                "up to 20 feet, and remains suspended for the duration. The target can be another "
+                "willing creature, or an object that isn't being worn or carried. An unwilling "
+                "creature must make a Constitution saving throw. On a failed save, the spell levitates "
+                "the target, and you can use your action to move it up or down 20 feet; the target "
+                "can move only by pushing or pulling against a fixed object or surface within reach. "
+                "Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="con", concentration=True, duration="up to 1 minute"))
+# Utility / buff / ritual — resolve via the "takes effect" path
+register_spell(Spell("Darkness", 2, SpellSchool.EVOCATION,
+    description="Magical darkness spreads from a point you choose within range to fill a 15-foot-radius "
+                "sphere for the duration. The darkness spreads around corners. A creature with "
+                "darkvision can't see through this darkness, and nonmagical light can't illuminate "
+                "it. If the point you choose is on an object you are holding or one that isn't being "
+                "worn or carried, the darkness emanates from the object and moves with it. Completely "
+                "covering the source with an opaque object blocks the darkness. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, M",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Silence", 2, SpellSchool.ILLUSION,
+    description="For the duration, no sound can be created within or pass through a 20-foot-radius "
+                "sphere centered on a point you choose within range. Any creature or object entirely "
+                "inside the sphere is immune to thunder damage, and creatures are deafened when "
+                "entirely inside it. Casting a spell that includes a verbal component is impossible "
+                "there. Ritual.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    ritual=True, duration="10 minutes"))
+register_spell(Spell("Blur", 2, SpellSchool.ILLUSION,
+    description="Your body becomes blurred, shifting and wavering to all who can see you. For the "
+                "duration, any creature has disadvantage on attack rolls against you. An attacker is "
+                "immune to this effect if it doesn't rely on sight or if it can see through "
+                "illusions. Concentration.",
+    casting_time="1 action", range="self", components="V",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Barkskin", 2, SpellSchool.TRANSMUTATION,
+    description="You touch a willing creature. Until the spell ends, the target's skin has a rough, "
+                "bark-like appearance, and the target's AC can't be less than 16, regardless of "
+                "what kind of armor it is wearing. Concentration.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Detect Thoughts", 2, SpellSchool.DIVINATION,
+    description="For the duration, you can read the thoughts of certain creatures. When you cast the "
+                "spell and as your action on each turn until the spell ends, you can focus your mind "
+                "on any one creature you can see within 30 feet. You initially learn the surface "
+                "thoughts of the creature. You can probe deeper as an action, forcing the target to "
+                "make a Wisdom saving throw; on a failure you gain insight into its reasoning, "
+                "emotional state, and something it cares greatly about. Concentration.",
+    casting_time="1 action", range="self", components="V, S, M",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("See Invisibility", 2, SpellSchool.DIVINATION,
+    description="For the duration, you see invisible creatures and objects as if they were visible, "
+                "and you can see into the Ethereal Plane. Ethereal creatures and objects appear "
+                "ghostly and translucent.",
+    casting_time="1 action", range="self", components="V, S, M",
+    duration="1 hour"))
+register_spell(Spell("Darkvision", 2, SpellSchool.TRANSMUTATION,
+    description="You touch a willing creature to grant it the ability to see in the dark. For the "
+                "duration, that creature has darkvision out to a range of 60 feet. Ritual.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    ritual=True, duration="8 hours"))
+register_spell(Spell("Knock", 2, SpellSchool.TRANSMUTATION,
+    description="Choose an object that you can see within range. The spell can open the target if it "
+                "is locked, held, or barred by a mundane or magical means. When you cast the spell, "
+                "you must choose one of two effects: one lock or bar is unlocked or unbarred, or one "
+                "stuck or held object is released. The sound of a loud knock emanates from the "
+                "target audible up to 300 feet away.",
+    casting_time="1 action", range="60 feet", components="V",
+    duration="instantaneous"))
+register_spell(Spell("Augury", 2, SpellSchool.DIVINATION,
+    description="By casting gem-inlaid sticks, rolling dragon bones, or drawing mystic marks on "
+                "parchment, you receive an omen about the results of a specific course of action "
+                "that you plan to take within the next 30 minutes. The DM chooses from weal (good "
+                "result), woe (bad result), weal and woe (both), or nothing (neither). Ritual.",
+    casting_time="1 minute", range="self", components="V, S, M",
+    ritual=True, duration="instantaneous"))
+register_spell(Spell("Pass Without Trace", 2, SpellSchool.ABJURATION,
+    description="A veil of shadows and silence radiates from you, masking you and your companions "
+                "from detection. For the duration, each creature you choose within 30 feet of you "
+                "(including you) has a +10 bonus to Dexterity (Stealth) checks and can't be tracked "
+                "except by magical means. A bonus that high can be attributed only to the aid of a "
+                "supernatural force. Concentration.",
+    casting_time="1 action", range="self", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+
 # --- Level 3 ---------------------------------------------------------------
 register_spell(Spell("Fireball", 3, SpellSchool.EVOCATION,
     description="A bright streak flashes to a point and explodes. Dex save.",
