@@ -627,7 +627,6 @@ COMMON_ENEMIES = {
             dt_mod.resist("fire").to_dict(),
         ],
     ),
-    "Behir": EnemyTemplate(name="Behir", cr=6, armor_class=17, hp=168, attack_bonus=7),
     "Dire Troll": EnemyTemplate(name="Dire Troll", cr=6, armor_class=15, hp=84, attack_bonus=7),
     "Drider": EnemyTemplate(name="Drider", cr=6, armor_class=16, hp=71, attack_bonus=7),
     "Earth Elemental": EnemyTemplate(name="Earth Elemental", cr=6, armor_class=17, hp=126, attack_bonus=8),
@@ -710,6 +709,25 @@ COMMON_ENEMIES = {
     # CR 11 (7200 XP)
     "Dao": EnemyTemplate(name="Dao", cr=11, armor_class=18, hp=120, attack_bonus=9),
     "Gynosphinx": EnemyTemplate(name="Gynosphinx", cr=11, armor_class=17, hp=136, attack_bonus=8),
+    # Behir previously misfiled at cr=6 (MM p.25 canonical CR 11). Its AC (17)
+    # and HP (168) were already MM-canonical; only the CR was wrong, so the CR 11
+    # band was missing an iconic monster while CR 6 was over-populated. Same
+    # correction pattern as the 5 CR-corrections already shipped (canonical AC +
+    # canonical HP, only CR wrong). No damage immunities in MM.
+    "Behir": EnemyTemplate(name="Behir", cr=11, armor_class=17, hp=168, attack_bonus=7),
+    # Remorhaz (MM p.249) — arctic monstrosity; immune to cold (its body heat
+    # melts ice, but its hide is cold-resistant). Canonical CR 11.
+    "Remorhaz": EnemyTemplate(
+        name="Remorhaz",
+        cr=11,
+        armor_class=19,
+        hp=162,
+        attack_bonus=7,
+        damage_modifiers=[dt_mod.immune("cold").to_dict()],
+    ),
+    # Roc (MM p.247) — Gargantuan bird of prey. Canonical CR 11, no damage
+    # immunities. The largest mundane flier in the Monster Manual.
+    "Roc": EnemyTemplate(name="Roc", cr=11, armor_class=16, hp=149, attack_bonus=7),
 
     # CR 12 (8400 XP)
     "Erinyes": EnemyTemplate(
@@ -718,6 +736,16 @@ COMMON_ENEMIES = {
         armor_class=18,
         hp=153,
         attack_bonus=9,
+        damage_modifiers=[dt_mod.resist_nonmagical_bps().to_dict()],
+    ),
+    # Arcanaloth (Yugoloth, MM p.308) — fiendish sorcerer-scholar. Canonical
+    # CR 12. Yugoloths resist nonmagical BPS (MM "Invulnerable" trait group).
+    "Arcanaloth": EnemyTemplate(
+        name="Arcanaloth",
+        cr=12,
+        armor_class=19,
+        hp=104,
+        attack_bonus=7,
         damage_modifiers=[dt_mod.resist_nonmagical_bps().to_dict()],
     ),
 
@@ -743,6 +771,17 @@ COMMON_ENEMIES = {
             dt_mod.immune("poison").to_dict(),
             dt_mod.resist_nonmagical_bps().to_dict(),
         ],
+    ),
+    # Adult White Dragon (MM p.101) — canonical CR 13. The chromatic dragon of
+    # cold regions; immune to cold (its breath element), matching the existing
+    # Adult Black/Blue/Red/Gold/Silver convention (single breath-element immunity).
+    "Adult White Dragon": EnemyTemplate(
+        name="Adult White Dragon",
+        cr=13,
+        armor_class=18,
+        hp=184,
+        attack_bonus=7,
+        damage_modifiers=[dt_mod.immune("cold").to_dict()],
     ),
 
     # CR 14 (11500 XP) — iconic canonical monsters that were previously misfiled
@@ -797,6 +836,17 @@ COMMON_ENEMIES = {
             dt_mod.immune("necrotic").to_dict(),
             dt_mod.immune("poison").to_dict(),
         ],
+    ),
+    # Adult Bronze Dragon (MM p.108) — canonical CR 15. Metallic dragon of
+    # coastal waters; immune to lightning (breath weapon). Bronze and Green are
+    # the two canonical CR 15 dragons; both now present.
+    "Adult Bronze Dragon": EnemyTemplate(
+        name="Adult Bronze Dragon",
+        cr=15,
+        armor_class=19,
+        hp=212,
+        attack_bonus=8,
+        damage_modifiers=[dt_mod.immune("lightning").to_dict()],
     ),
 
     # CR 16 (15000 XP)
@@ -886,6 +936,21 @@ COMMON_ENEMIES = {
             dt_mod.immune("poison").to_dict(),
         ],
     ),
+    # Solar (MM p.18) — canonical CR 21. The mightiest angel; low HP for the tier
+    # (142) is canonical (defensive offsets: 150 ft fly, legendary resistances,
+    # innate Healing Word, Slaying Longbow). Immune to radiant + poison per the
+    # Angel trait (MM p.6). Mirrors the Lich's "canonical AC/HP at CR 21" shape.
+    "Solar": EnemyTemplate(
+        name="Solar",
+        cr=21,
+        armor_class=21,
+        hp=142,
+        attack_bonus=13,
+        damage_modifiers=[
+            dt_mod.immune("radiant").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
+    ),
 
     # CR 22 (41000 XP)
     "Ancient Red Dragon": EnemyTemplate(
@@ -895,6 +960,55 @@ COMMON_ENEMIES = {
         hp=546,
         attack_bonus=17,
         damage_modifiers=[dt_mod.immune("fire").to_dict()],
+    ),
+    # Ancient Green Dragon (MM p.93) — canonical CR 22. The chromatic dragon of
+    # forests & poison; immune to poison (its breath element). Joins Ancient Red
+    # at CR 22; both canonical metallic & chromatic ancient variants now present
+    # at every tier 13+.
+    "Ancient Green Dragon": EnemyTemplate(
+        name="Ancient Green Dragon",
+        cr=22,
+        armor_class=21,
+        hp=385,
+        attack_bonus=14,
+        damage_modifiers=[dt_mod.immune("poison").to_dict()],
+    ),
+
+    # CR 23 (50000 XP) — previously the largest empty band between Ancient Red
+    # (CR 22) and Ancient Gold (CR 24). Now populated with four canonical MM
+    # titans: the two remaining ancient chromatic/metallic top-tier dragons, an
+    # Empyrean, and (implicitly) the Kraken (left for a future content pass —
+    # its stat block has unusual multi-attack resolution not yet modelled).
+    # Ancient Blue Dragon (MM p.86) — immune to lightning (breath element).
+    "Ancient Blue Dragon": EnemyTemplate(
+        name="Ancient Blue Dragon",
+        cr=23,
+        armor_class=22,
+        hp=367,
+        attack_bonus=14,
+        damage_modifiers=[dt_mod.immune("lightning").to_dict()],
+    ),
+    # Ancient Silver Dragon (MM p.117) — immune to cold (breath element). The
+    # highest-HP metallic ancient dragon in the MM (487).
+    "Ancient Silver Dragon": EnemyTemplate(
+        name="Ancient Silver Dragon",
+        cr=23,
+        armor_class=23,
+        hp=487,
+        attack_bonus=15,
+        damage_modifiers=[dt_mod.immune("cold").to_dict()],
+    ),
+    # Empyrean (MM p.130) — canonical CR 23 titan. Low HP for the tier (188) is
+    # canonical — defensive offsets are Magic Resistance + legendary resistances
+    # + innate spellcasting (Heal, Greater Restoration). Resistant to nonmagical
+    # BPS per MM. Children of the gods.
+    "Empyrean": EnemyTemplate(
+        name="Empyrean",
+        cr=23,
+        armor_class=22,
+        hp=188,
+        attack_bonus=14,
+        damage_modifiers=[dt_mod.resist_nonmagical_bps().to_dict()],
     ),
 
     # CR 24 (62000 XP)

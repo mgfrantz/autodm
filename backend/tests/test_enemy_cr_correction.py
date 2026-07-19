@@ -255,11 +255,20 @@ class TestYoungGoldDragonCanonicalAC:
 
 
 class TestRegistryIntegrityPreserved:
-    """The correction moved entries, it did not add or remove any."""
+    """The correction moved entries, it did not add or remove any.
 
-    def test_total_count_unchanged(self):
-        # 135 before and after — no entries lost to a key collision.
-        assert len(COMMON_ENEMIES) == 135
+    (Later runs expanded the registry — the high-tier gap-fill added 10 new
+    canonical MM monsters, bringing the total from 135 to 145. That expansion
+    is covered by ``test_enemy_high_tier_expansion.py``; this guard just
+    ensures the original 5 CR-corrections didn't silently drop anything via a
+    key collision.)
+    """
+
+    def test_total_count_at_least_135(self):
+        # The original CR-correction preserved all 135 entries. Later
+        # expansions (high-tier gap-fill) grew the registry beyond that, so we
+        # assert a floor rather than equality.
+        assert len(COMMON_ENEMIES) >= 135
 
     def test_no_duplicate_names(self):
         names = list_enemy_templates()
