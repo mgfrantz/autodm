@@ -285,9 +285,30 @@ class TestLevel8Mechanics:
 # Effect resolution of the new spells
 # --------------------------------------------------------------------------- #
 class TestNewSpellResolution:
-    def test_mordenkainens_sword_attack_roll_hits_and_misses(self):
+    def _force_d20(self, monkeypatch, face: int):
+        """Patch the d20 used by resolve_spell_effect to a fixed die face.
+
+        ``resolve_spell_effect`` calls ``roll_d20(spell_attack)`` from the
+        spells module, so we patch the name as imported there to make attack
+        outcomes deterministic (avoids flaky natural-1 / low-roll misses).
+        This mirrors the helper in test_spell_level1_expansion.py.
+        """
+        from app.engine import spells as spells_module
+        from app.engine.dice import RollResult
+
+        def _fixed(modifier: int = 0, advantage: bool = False,
+                   disadvantage: bool = False) -> RollResult:
+            return RollResult(
+                rolls=[face], modifier=modifier,
+                total=face + modifier, description=f"d20 {modifier:+d}",
+            )
+
+        monkeypatch.setattr(spells_module, "roll_d20", _fixed)
+
+    def test_mordenkainens_sword_attack_roll_hits_and_misses(self, monkeypatch):
         spell = _spell("Mordenkainen's Sword")
-        # Hit: a low-AC target is struck for 3d10 (3-30) force.
+        # Hit (die 15, +10 = 25 vs AC 10): 3d10 (3-30) force.
+        self._force_d20(monkeypatch, 15)
         effect = resolve_spell_effect(
             spell=spell, caster_level=15, proficiency_bonus=5,
             casting_mod=5, target_ac=10,
@@ -295,13 +316,14 @@ class TestNewSpellResolution:
         assert effect.hit is True
         assert effect.damage_type == "force"
         assert 3 <= effect.damage <= 30
-        # Miss: a very high-AC target avoids the blade.
+        # Miss (die 2, +5 = 7 vs AC 30): not a natural 1/20, below AC -> miss.
+        self._force_d20(monkeypatch, 2)
         effect = resolve_spell_effect(
             spell=spell, caster_level=15, proficiency_bonus=5,
             casting_mod=0, target_ac=30,
         )
-        # Even with a poor attack bonus the natural 20 path can hit, so we only
-        # assert the description reports an attack was rolled.
+        assert effect.hit is False
+        assert effect.damage == 0
         assert effect.rolled_attack is not None
 
     def test_symbol_resolves_as_save_debuff(self):
