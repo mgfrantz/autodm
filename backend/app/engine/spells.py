@@ -1838,6 +1838,249 @@ register_spell(Spell("Wall of Force", 5, SpellSchool.EVOCATION,
     casting_time="1 action", range="120 feet", components="V, S, M",
     concentration=True, duration="up to 10 minutes"))
 
+# --- Level 5 additions — PHB completeness (13 → 39; catalogue 286 → 312) -----
+# All 26 missing PHB 5th-level spells, grouped by resolution path. With this
+# block every one of the ten leveled tiers (1-9) reaches full Player's Handbook
+# coverage. Mirrors the level-1/2/3/4/6/7/8/9 PHB-completeness batches.
+
+# Save-spell with damage -----------------------------------------------------
+# Destructive Wave (PHB p.154) — Con save, 5d8 thunder + knocked prone; the
+# secondary 5d8 radiant rider is documented (single-dice-type engine model);
+# +1d8 thunder per slot above 5th.
+register_spell(Spell("Destructive Wave", 5, SpellSchool.EVOCATION,
+    description="Divine energy ripples out from you. Each creature within 10 feet "
+                "must make a Constitution save. On a failed save a creature takes "
+                "5d8 thunder damage plus 5d8 radiant damage and is knocked prone; "
+                "on a successful one it takes half as much. (+1d8 thunder per slot "
+                "above 5th; the radiant rider is documented, not modeled.)",
+    casting_time="1 action", range="self (10-foot radius)", components="V",
+    save_ability="con", damage_dice_count=5, damage_dice_sides=8,
+    damage_type="thunder", at_higher_levels_dice=1))
+# Conjure Volley (PHB p.69) — Dex save, 8d8 piercing, 40-foot cone; +1d8/slot.
+register_spell(Spell("Conjure Volley", 5, SpellSchool.CONJURATION,
+    description="You fire a piece of nonmagical ammunition or hurl a thrown "
+                "weapon into the air and it multiplies into a volley that rains "
+                "down in a 40-foot cone. Each creature in the area makes a "
+                "Dexterity save, taking 8d8 piercing damage on a failed save or "
+                "half as much on a successful one. (+1d8 per slot above 5th.)",
+    casting_time="1 action", range="self (40-foot cone)", components="V, S, M",
+    material_description="one piece of ammunition or a thrown weapon",
+    save_ability="dex", damage_dice_count=8, damage_dice_sides=8,
+    damage_type="piercing", at_higher_levels_dice=1))
+
+# Save-debuff (save, no damage) ----------------------------------------------
+# Contagion (PHB p.129) — Con save on cast; the multi-save disease sequence is
+# documented (the engine resolves the single on-cast save, like Bestow Curse).
+register_spell(Spell("Contagion", 5, SpellSchool.NECROMANCY,
+    description="You touch a creature, afflicting it with a magical disease. The "
+                "target must succeed on a Constitution save or be poisoned; after "
+                "three failed saves while poisoned it contracts one of several "
+                "crippling diseases (blinding sickness, filth fever, flesh rot, "
+                "mindfire, seizure, or slimy doom) for 7 days. (Engine models the "
+                "on-cast Con save; the multi-save disease sequence is documented.)",
+    casting_time="1 action", range="touch", components="V, S",
+    save_ability="con", duration="7 days"))
+register_spell(Spell("Modify Memory", 5, SpellSchool.ENCHANTMENT,
+    description="You attempt to reshape a creature's memories. One creature you "
+                "can see must make a Wisdom save; on a failure you may eliminate "
+                "up to 24 hours of memory, implant a false memory, or make it "
+                "forget an event, while it is charmed by you for the duration. "
+                "The modified memory fades over time.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Telekinesis", 5, SpellSchool.TRANSMUTATION,
+    description="You gain the ability to move or manipulate creatures and objects "
+                "by thought. On your turn you can move a Huge or smaller creature "
+                "or object (Str save to resist), push it, or attempt to grapple a "
+                "creature using your spellcasting ability in place of Strength.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="str", concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Planar Binding", 5, SpellSchool.ABJURATION,
+    description="With an hour-long ritual you bind a celestial, elemental, fey, "
+                "or fiend within range to your service. The target makes a "
+                "Charisma save; on a failure it serves you for the duration, "
+                "obeying your commands to the best of its ability. (Upcasting "
+                "extends the duration: 10 days at slot 6, 30 at 7, 180 at 8, a "
+                "year and a day at 9.)",
+    casting_time="1 hour", range="60 feet", components="V, S, M",
+    material_description="a jewel worth at least 1000 gp, which the spell consumes",
+    save_ability="cha", concentration=True, duration="24 hours"))
+register_spell(Spell("Geas", 5, SpellSchool.ENCHANTMENT,
+    description="You place a magical command on a creature that you can see within "
+                "range, forcing it to carry out or refrain from some activity. The "
+                "target makes a Wisdom save; on a failure it is charmed by you for "
+                "the duration and takes 5d10 psychic damage each time it acts "
+                "against your instructions. (30-day duration, no concentration; the "
+                "psychic rider is documented.)",
+    casting_time="1 minute", range="60 feet", components="V",
+    save_ability="wis", duration="30 days"))
+register_spell(Spell("Seeming", 5, SpellSchool.TRANSMUTATION,
+    description="You change the appearance of any number of creatures that you can "
+                "see within range (Charisma save to resist). You give each a new "
+                "illusory appearance — clothing, armor, weapons, or features — that "
+                "holds for the duration; nothing physical actually changes.",
+    casting_time="1 action", range="30 feet", components="V, S",
+    save_ability="cha", duration="8 hours"))
+
+# Utility / buff / ritual ----------------------------------------------------
+register_spell(Spell("Awaken", 5, SpellSchool.TRANSMUTATION,
+    description="After eight hours of ritual, you awaken a Beast or plant you "
+                "touch, granting it human-like sentience, an Intelligence of 10, "
+                "the ability to speak one language you know, and free will. The "
+                "effect is instantaneous and permanent.",
+    casting_time="8 hours", range="touch", components="V, S, M",
+    material_description="an agate worth at least 1000 gp, which the spell consumes"))
+register_spell(Spell("Banishing Smite", 5, SpellSchool.ABJURATION,
+    description="The next time you hit a creature with a weapon attack before this "
+                "spell ends, your weapon deals an extra 5d10 force damage, and if "
+                "the target has 50 hit points or fewer after taking this damage it "
+                "is banished to its home plane. (Concentration smite; the damage "
+                "and banish rider are documented, not modeled on cast.)",
+    casting_time="1 bonus action", range="self", components="V",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Circle of Power", 5, SpellSchool.ABJURATION,
+    description="Divine energy radiates from you in a 30-foot radius. Each "
+                "creature of your choice that you can see in the area has "
+                "advantage on saving throws against spells and other magical "
+                "effects for the duration.",
+    casting_time="1 action", range="self (30-foot radius)", components="V",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Commune", 5, SpellSchool.DIVINATION,
+    description="You contact your deity or a divine proxy and ask up to three "
+                "questions that can be answered with a yes or a no. You must ask "
+                "before the spell ends and receive truthful answers. (Divination "
+                "ritual.)",
+    casting_time="1 minute", range="self", components="V, S, M",
+    material_description="incense and a vial of holy water or a phylactery worth at least 500 gp",
+    ritual=True, duration="1 minute"))
+register_spell(Spell("Commune with Nature", 5, SpellSchool.DIVINATION,
+    description="You become one with nature, gaining knowledge of the surrounding "
+                "territory out to 3 miles (1 mile underground). You learn the "
+                "terrain, bodies of water, prevalent plant life, powerful minerals, "
+                "the presence of peoples, and mighty fey, elementals, aberrations, "
+                "or undead. (Divination ritual.)",
+    casting_time="1 minute", range="self (3-mile radius)", components="V, S",
+    ritual=True))
+register_spell(Spell("Conjure Elemental", 5, SpellSchool.CONJURATION,
+    description="You call forth an elemental servant — air, earth, fire, or water "
+                "(CR 5 or lower at base level) — which appears in an unoccupied "
+                "space in range and obeys your commands. It vanishes when the spell "
+                "ends or its hit points reach 0; if concentration ends early the "
+                "elemental turns hostile. (Upcasting raises the maximum CR.)",
+    casting_time="1 minute", range="90 feet", components="V, S, M",
+    material_description="burning incense for air, soft clay for earth, sulfur and phosphorus for fire, or water and sand for water, which the spell consumes",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Contact Other Plane", 5, SpellSchool.DIVINATION,
+    description="You mentally contact a demigod, the spirit of a long-dead sage, "
+                "or some other mysterious entity and may ask up to five questions "
+                "that receive one-word answers. You must make a DC 15 Wisdom save; "
+                "on a failure you take 6d6 psychic damage and are insane until your "
+                "next long rest (you cannot cast spells or take reactions). "
+                "(Divination ritual; the caster's self-risk is documented, not "
+                "modeled.)",
+    casting_time="1 minute", range="self", components="V",
+    ritual=True))
+register_spell(Spell("Creation", 5, SpellSchool.ILLUSION,
+    description="You pull wisps of shadow material from the Shadowfell to create a "
+                "nonliving object of vegetable matter within range — soft goods, "
+                "rope, wood, or even a mineral object. The created object's "
+                "duration depends on its material (vegetable matter lasts longest; "
+                "minerals last mere minutes). Larger objects require higher slots.",
+    casting_time="1 minute", range="30 feet", components="V, S, M",
+    material_description="a tiny piece of matter of the same type as the item you plan to create"))
+register_spell(Spell("Dispel Evil and Good", 5, SpellSchool.ABJURATION,
+    description="Shimmering energy surrounds you, granting protection against "
+                "celestials, elementals, fey, fiends, and undead: you have "
+                "advantage on saves against their spells and abilities and they "
+                "have disadvantage on attacks against you. As an action you may end "
+                "the spell to break enchantment on yourself, dismiss one such "
+                "creature to its home plane, or end one effect causing you to be "
+                "charmed, frightened, or possessed.",
+    casting_time="1 action", range="self", components="V, S, M",
+    material_description="holy water or powdered silver and iron",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Dream", 5, SpellSchool.ILLUSION,
+    description="You or a willing creature you touch enters a trance and projects "
+                "a messenger into the dreams of a creature you know. The messenger "
+                "delivers a message of any length and may converse with the "
+                "sleeping target, who remembers it perfectly on waking. The "
+                "nightmare option deals 3d6 psychic damage and prevents rest. "
+                "(Range: special — the target can be on any plane.)",
+    casting_time="1 minute", range="special", components="V, S, M",
+    material_description="a handful of sand, a few drops of ink, and a pen, plus rose petals or a cricket",
+    concentration=True, duration="10 minutes"))
+register_spell(Spell("Hallow", 5, SpellSchool.EVOCATION,
+    description="You bless an area around a fixed point you touch, creating a "
+                "60-foot-radius sanctuary suffused with divine power for as long as "
+                "it remains undisrupted. You may bind one secondary effect to the "
+                "hallowed ground (Courage, Darkness, Daylight, Energy Protection, "
+                "Energy Suppression, Extradimensional Interference, Fog, Sounds, "
+                "or Tongues). Celestials, elementals, fey, fiends, and undead "
+                "cannot enter without an invitation.",
+    casting_time="24 hours", range="touch", components="V, S, M",
+    material_description="herbs, oils, and incense worth at least 1000 gp, which the spell consumes"))
+register_spell(Spell("Legend Lore", 5, SpellSchool.DIVINATION,
+    description="You name or describe a person, place, or object and bring to mind "
+                "a brief summary of the significant lore about it — its history, "
+                "mythic properties, secrets, and the like. The more information you "
+                "already possess, the more precise and detailed the lore.",
+    casting_time="10 minutes", range="self", components="V, S, M",
+    material_description="incense worth 250 gp that is consumed, plus four ivory strips worth 50 gp each"))
+register_spell(Spell("Passwall", 5, SpellSchool.TRANSMUTATION,
+    description="A passage appears at a point on a wooden, plaster, or stone "
+                "surface you choose within range, large enough for Medium "
+                "creatures to walk through single file. The passage does not "
+                "compromise the structure's integrity and closes after the "
+                "duration, sealing anything inside.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    material_description="a pinch of sesame seeds",
+    duration="1 hour"))
+register_spell(Spell("Raise Dead", 5, SpellSchool.NECROMANCY,
+    description="You return a dead creature you touch to life, provided it has "
+                "been dead no longer than ten days and its body is mostly intact. "
+                "It returns with 1 hit point and is incapacitated, regaining "
+                "function over 1d4 days; for a week its attacks, ability checks, "
+                "and saving throws are reduced. Cannot restore missing body parts "
+                "or revive undead.",
+    casting_time="1 hour", range="touch", components="V, S, M",
+    material_description="a diamond worth at least 500 gp, which the spell consumes"))
+register_spell(Spell("Reincarnate", 5, SpellSchool.TRANSMUTATION,
+    description="You touch a dead humanoid or a piece of one that has been dead no "
+                "longer than ten days. The spell forms a new adult body for it and "
+                "calls the soul to return — if willing. The creature returns in a "
+                "randomly-determined new race (rolled on the Reincarnation table), "
+                "keeping its personality and class but gaining the new race's "
+                "traits.",
+    casting_time="1 hour", range="touch", components="V, S, M",
+    material_description="rare oils and unguents worth at least 1000 gp, which the spell consumes"))
+register_spell(Spell("Swift Quiver", 5, SpellSchool.TRANSMUTATION,
+    description="You transmute your quiver so it produces an endless supply of "
+                "nonmagical ammunition. While the spell lasts, on each of your "
+                "turns you may use a bonus action to make two attacks with a weapon "
+                "that uses ammunition from the quiver, in addition to your normal "
+                "action.",
+    casting_time="1 bonus action", range="touch", components="V, S, M",
+    material_description="a quiver containing at least one piece of ammunition",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Teleportation Circle", 5, SpellSchool.CONJURATION,
+    description="You draw a 10-foot circle on the ground, linking it to a "
+                "permanent teleportation circle whose sigil sequence you know. Any "
+                "creature inside the circle when you finish casting is transported "
+                "to the destination circle. Mishaps are possible if the sequence is "
+                "unfamiliar; permanent circles exist in major temples, guildhalls, "
+                "and towers.",
+    casting_time="1 minute", range="10 feet", components="V, M",
+    material_description="rare chalks and inks worth at least 50 gp each, which the spell consumes",
+    duration="1 round"))
+register_spell(Spell("Tree Stride", 5, SpellSchool.CONJURATION,
+    description="You enter a living tree within range and instantly teleport to "
+                "another tree of the same kind within 500 feet. You may continue "
+                "moving from tree to tree on subsequent turns (spending 5 feet of "
+                "movement each time) until the spell ends. The trees must be living "
+                "and Large or larger.",
+    casting_time="1 action", range="self", components="V, S",
+    concentration=True, duration="up to 1 minute"))
+
 # --- Level 6 ---------------------------------------------------------------
 register_spell(Spell("Disintegrate", 6, SpellSchool.TRANSMUTATION,
     description="Thin green ray reduces target to dust. Dex save.",
