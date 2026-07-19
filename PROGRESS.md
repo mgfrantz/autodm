@@ -1,7 +1,139 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3795 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (286 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+## TEST SUITE FULLY GREEN (3884 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (312 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+
+## ✅ COMPLETED: PHB Level-5 Spell Completion (13 → 39, catalogue 286 → 312; ALL TEN LEVELED TIERS NOW PHB-COMPLETE)
+
+This run **completed the level-5 tier** — the last leveled tier with room to
+grow — of the catalogue-wide "PHB completeness" effort. Levels 1, 2, 3, 4,
+6, 7/8/9 were already PHB-complete; **level 5 was the thinnest remaining
+leveled tier relative to the Player's Handbook** (was 13; PHB has ~39). This
+run registers **all 26 missing PHB 5th-level spells** so **every Player's
+Handbook 5th-level spell is now registered** (level 5: 13 → 39). The spell
+catalogue now stands at **312 spells**, and — the catalogue-wide milestone —
+**ALL TEN LEVERED TIERS (levels 1–9) are now PHB-complete**. The only
+remaining non-canonical count is the **cantrip tier at level 0 (14, PHB
+~40)**, an optional curated selection rather than a gap.
+
+### The 26 additions (grouped by resolution path)
+- **Save-spell with damage:** Destructive Wave (Con, 5d8 thunder + knocked
+  prone, +1d8/slot — the iconic Paladin shockwave; its +5d8 radiant rider and
+  prone are documented because the single-dice-type engine model carries only
+  the thunder portion), Conjure Volley (Dex, 8d8 piercing, 40-foot cone,
+  +1d8/slot — the Ranger/Paladin ammunition-spray).
+- **Save-debuff (no damage):** Contagion (Con, touch, 7-day disease — the
+  necromancy affliction; the multi-save disease sequence is documented like
+  Bestow Curse), Modify Memory (Wis, concentration, 1-min — charm + memory
+  edit), Telekinesis (Str, concentration, 10-min — push/grapple by thought),
+  Planar Binding (Cha, concentration, **1-hour cast**, 24-hour bind — bind a
+  celestial/elemental/fey/fiend), Geas (Wis, **no concentration**, 30-day —
+  the 5d10 psychic rider is documented), Seeming (Cha, **no concentration**,
+  8-hour disguise up to 10 creatures).
+- **Utility / buff / ritual (18 spells):** Awaken (transmutation, **8-hour
+  cast**, 1000gp agate — awaken a beast/plant), Banishing Smite (concentration
+  abjuration smite — 5d10 force + banish-on-low-HP, effect-in-description),
+  Circle of Power (concentration abjuration — advantage-vs-spells aura for
+  you+allies), Commune (ritual divination — 3 yes/no questions to your deity),
+  Commune with Nature (ritual divination — 3-mile terrain/nature knowledge),
+  Conjure Elemental (concentration conjuration summon), Contact Other Plane
+  (ritual divination — the caster's DC-15 Wis self-save + 6d6 self-psychic is
+  documented as effect-in-description, since it is self-risk not target
+  damage), Creation (**illusion** — quasi-real Shadowfell matter, 1-min cast),
+  Dispel Evil and Good (concentration abjuration — aegis vs celestials/fiends/
+  undead + dismissal/break-enchantment modes), Dream (**illusion**, 10-min
+  concentration — dream messaging), Hallow (**evocation**, **24-hour cast** —
+  60-foot sanctuary), Legend Lore (divination, 10-min cast — lore about a
+  named thing), Passwall (transmutation — 1-hour passage through wood/stone),
+  Raise Dead (necromancy, 1-hour cast, 500gp diamond — resurrect within 10
+  days), Reincarnate (transmutation, 1-hour cast, 1000gp oils — resurrect in a
+  new random race), Swift Quiver (concentration transmutation — bonus-action
+  double fire), Teleportation Circle (conjuration, 1-min cast — teleport to a
+  known permanent circle), Tree Stride (concentration conjuration — tree-to-
+  tree teleport).
+
+### Correct-mechanics decisions (PHB-canonical)
+- Destructive Wave and Conjure Volley use the standard `save_ability` +
+  `damage_dice_*` + `at_higher_levels_dice` path (+1d8/slot per PHB p.154 /
+  p.69). For Destructive Wave, the engine carries the **5d8 thunder** portion
+  and documents the secondary **5d8 radiant** rider + knock-prone (the
+  single-damage-type model mirrors how other dual-type / multi-mode spells are
+  handled elsewhere in the registry).
+- Contagion / Modify Memory / Telekinesis / Planar Binding / Geas / Seeming
+  carry a `save_ability` but no `damage_dice_*`, so `resolve_spell_effect()`
+  resolves them via the made_save path while the disease sequence, memory edit,
+  grapple, binding, psychic rider, and disguise live in the description — the
+  same convention already established by Hold Person, Bestow Curse, Slow,
+  Banishment, and their cousins.
+- **Contact Other Plane's self-risk is documented, not dice-modeled** — the
+  spell's DC-15 Wis save + 6d6 psychic damage applies to the *caster*, not a
+  target, so routing it through the target-save path would mislabel it. This
+  mirrors the established effect-in-description convention for caster-dependent
+  or unusual-resolution spells.
+- **Concentration flags** set on Modify Memory, Telekinesis, Planar Binding,
+  Banishing Smite, Circle of Power, Conjure Elemental, Dispel Evil and Good,
+  Dream, Swift Quiver, Tree Stride (10 spells). Correctly **not** set on
+  Contagion (7-day disease endures), Geas (30-day), Seeming (8-hour), Destructive
+  Wave / Conjure Volley (instantaneous), and all the rituals/utility.
+- **Ritual flags** set on the three rituals in the batch: Commune, Commune
+  with Nature, Contact Other Plane (per PHB).
+- **Long casting times** preserved on the signature out-of-combat spells:
+  Awaken (8 hours), Planar Binding (1 hour), Hallow (24 hours), Raise Dead &
+  Reincarnate (1 hour), Commune/Commune with Nature/Conjure Elemental/
+  Contact Other Plane/Legend Lore/Creation (1–10 min), Dream & Teleportation
+  Circle (1 min). These are PHB signatures and the engine records them
+  faithfully.
+- **Schools are canonical PHB throughout:** Destructive Wave = evocation,
+  Conjure Volley = conjuration, Contagion = necromancy, Modify Memory =
+  enchantment, Telekinesis = transmutation, Planar Binding = abjuration,
+  Geas = enchantment, Seeming = transmutation, Awaken = transmutation,
+  Banishing Smite = abjuration, Circle of Power = abjuration, Commune =
+  divination, Commune with Nature = divination, Conjure Elemental =
+  conjuration, Contact Other Plane = divination, Creation = **illusion**
+  (quasi-real shadow material, per PHB), Dispel Evil and Good = abjuration,
+  Dream = **illusion**, Hallow = **evocation**, Legend Lore = divination,
+  Passwall = transmutation, Raise Dead = necromancy, Reincarnate =
+  transmutation, Swift Quiver = transmutation, Teleportation Circle =
+  conjuration, Tree Stride = conjuration.
+
+### Files changed
+- **`backend/app/engine/spells.py`** — 26 new `register_spell(Spell(...))`
+  entries in the level-5 block (after the original 13 level-5 spells, before
+  the Level 6 section), grouped by resolution path with a section comment
+  mirroring the level-2/3/4 completion blocks.
+- **`backend/tests/test_spell_level5_completion.py`** (NEW, 89 tests) —
+  registry distribution (total ≥312, level 5 ≥39, **all-ten-leveled-tiers-
+  PHB-complete milestone assertion**, no-dup guards), parametrized
+  registration-shape (name/level/school for all 26), per-spell mechanical
+  correctness (Destructive Wave + Conjure Volley dice/save/upcast/concentration
+  + Destructive Wave's radiant/prone-in-description; Contagion/Modify Memory/
+  Telekinesis/Planar Binding/Geas/Seeming save + concentration + duration
+  + Geas's 5d10-in-description; all 18 utility spells' concentration/ritual/
+  cast-time/range/duration flags including Awaken's 8-hour cast, Planar
+  Binding's 1-hour cast, Hallow's 24-hour cast, Contact Other Plane's
+  self-risk-in-description, Creation's illusion school, Dream's illusion
+  school + special range), effect resolution (save-for-half for both damage
+  spells, save-debuff path for all six saves, "takes effect" path for all 18
+  utility spells), and upcasting math (both the static
+  `damage_dice_count + at_higher_levels_dice * levels` identity and the real
+  `roll_damage` rolls at base and upcast slots for Destructive Wave +1d8 and
+  Conjure Volley +1d8).
+
+### Verification
+- ✅ `uv run pytest` — **3884 backend tests passing** (+89), 0 failures
+- ✅ `npm test` (frontend) — 393 tests passing, 0 failures (no frontend changes)
+- ✅ `npx tsc --noEmit` — clean
+- ✅ `npm run build` — clean (2.35s)
+
+### Spell tier snapshot after this run
+`{0:14, 1:53, 2:55, 3:39, 4:30, 5:39, 6:31, 7:18, 8:18, 9:15}` — **ALL TEN
+LEVELED TIERS (1, 2, 3, 4, 5, 6, 7, 8, 9) are now PHB-complete.** The
+catalogue-wide "PHB completeness" effort is complete at every leveled tier.
+The only remaining non-canonical count is the **cantrip tier at level 0 (14,
+PHB ~40)** — an optional curated selection, not a gap. The full Player's
+Handbook leveled spell roster is now registered.
+
+---
 
 ## ✅ COMPLETED: PHB Level-4 Spell Completion (14 → 30, catalogue 270 → 286; FULL PHB COVERAGE)
 
@@ -2424,7 +2556,7 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅ + PHB SPELL TIERS 1/2/3/4/6/7/8/9 COMPLETE ✅
+## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅ + ALL TEN PHB SPELL TIERS (1–9) COMPLETE ✅
 
 **The full DM Function Calling roadmap is COMPLETE (2026-07-17).** Every
 phase — dice, combat, spells, inventory, conditions, concentration, AoE, and UI
@@ -2439,17 +2571,19 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**3795 backend + 393 frontend tests, 0 failures.**
+**3884 backend + 393 frontend tests, 0 failures.**
 (Post-roadmap content-registry additions: +89 high-tier enemy registry
 expansion (CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8 spell
 roster completion (18/18 each), +55 iconic PHB level-1 spell expansion (16
 spells, all five resolution paths), +5 player-as-AoE-target polish, +22
 condition/exhaustion-aware spell-save polish, +59 enemy CR-correction tests
 moving 5 iconic MM monsters to canonical CR, +73 PHB level-2 spell expansion
-(16→36), +68 PHB level-2 spell completion (36→55, full PHB coverage), and +91
-PHB level-3 spell completion (13→39, full PHB coverage). No
-new game_actions; content registry expansion, dedup, and stat-block
-correctness fixes only.)
+(16→36), +68 PHB level-2 spell completion (36→55, full PHB coverage), +91
+PHB level-3 spell completion (13→39, full PHB coverage), +59 PHB level-4
+spell completion (14→30, full PHB coverage), and +89 PHB level-5 spell
+completion (13→39, full PHB coverage — **completing all ten leveled
+tiers 1–9**). No new game_actions; content registry expansion, dedup, and
+stat-block correctness fixes only.)
 
 The DM is now a full tool-calling agent: it emits structured `game_actions`
 (dice, attacks, damage, spells, AoE spells, loot, conditions, concentration)
@@ -2484,12 +2618,22 @@ consider (draft a design doc if Mike green-lights any):
   Hallucinatory Terrain, Leomund's Secret Chest, Locate Creature, Mordenkainen's
   Faithful Hound, Stone Shape), lifting level 4 from 14 → 30 (full PHB coverage)
   and the catalogue from 270 → 286. **Eight of the ten iconic PHB spell tiers
-  (1, 2, 3, 4, 6, 7, 8, 9) are now PHB-complete.** Also eliminated a latent
+  (1, 2, 3, 4, 6, 7, 8, 9) were now PHB-complete.** Also eliminated a latent
   flaky attack-roll test (Flame Blade / Spiritual Weapon crit-flake) via the
-  `_force_d20` pattern. The remaining non-canonical counts are **level 5 (13,
-  PHB ~20)** — the last leveled tier with room to grow — and the cantrip tier
-  at level 0 (14, PHB ~40). Both are optional polish, not gaps. A follow-up run
-  could complete level 5 toward full PHB coverage.
+  `_force_d20` pattern.
+- ~~**Content registry expansion — PHB level-5 completion.**~~ **DONE (2026-07-19)** —
+  all 26 missing PHB 5th-level spells landed (Destructive Wave, Conjure
+  Volley, Contagion, Modify Memory, Telekinesis, Planar Binding, Geas, Seeming,
+  Awaken, Banishing Smite, Circle of Power, Commune, Commune with Nature,
+  Conjure Elemental, Contact Other Plane, Creation, Dispel Evil and Good,
+  Dream, Hallow, Legend Lore, Passwall, Raise Dead, Reincarnate, Swift Quiver,
+  Teleportation Circle, Tree Stride), lifting level 5 from 13 → 39 (full PHB
+  coverage) and the catalogue from 286 → 312. **ALL TEN LEVERED TIERS
+  (1, 2, 3, 4, 5, 6, 7, 8, 9) are now PHB-complete** — the catalogue-wide
+  "PHB completeness" effort is finished at every leveled tier. The full
+  Player's Handbook leveled spell roster is now registered. The only remaining
+  non-canonical count is the **cantrip tier at level 0 (14, PHB ~40)** — an
+  optional curated selection, not a gap.
 
 Until then, the dev agent should:
 - Keep the full suite green (`uv run pytest`, `npm test`)
