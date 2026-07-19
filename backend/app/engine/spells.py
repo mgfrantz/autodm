@@ -701,6 +701,116 @@ register_spell(Spell("Witch Bolt", 1, SpellSchool.EVOCATION,
     damage_type="lightning", concentration=True, duration="up to 1 minute",
     at_higher_levels_dice=1))
 
+# Additional iconic PHB level-1 spells (completing the tier to PHB coverage).
+# Save-debuff (no damage): Animal Friendship, Compelled Duel.
+# Healing (consumable berries): Goodberry.
+# Utility / buff / ritual: Color Spray, Create or Destroy Water, Detect Evil and
+# Good, Detect Poison and Disease, Expeditious Retreat, Feather Fall, Heroism,
+# Jump, Purify Food and Drink, Silent Image, Tenser's Floating Disk,
+# Unseen Servant, Wrathful Smite.
+register_spell(Spell("Animal Friendship", 1, SpellSchool.ENCHANTMENT,
+    description="Convince a beast you mean it no harm. A target beast (Intelligence 3 or lower) "
+                "must make a Wisdom save or be charmed by you for the duration. ",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    save_ability="wis", duration="24 hours"))
+register_spell(Spell("Color Spray", 1, SpellSchool.ILLUSION,
+    description="A dazzling cone of flashing colored light springs from your hand. Roll 6d10 — "
+                "the total is how many hit points of creatures this spell can affect. Creatures "
+                "in a 15-foot cone are affected in ascending hit-point order: each becomes "
+                "unconscious and blinded until the end of your next turn. No saving throw (the "
+                "6d10 sets the hit-point budget). Upcasting adds 2d10 to the budget per slot "
+                "level above 1st.",
+    casting_time="1 action", range="self (15-foot cone)", components="V, S, M",
+    duration="1 round"))
+register_spell(Spell("Compelled Duel", 1, SpellSchool.ABJURATION,
+    description="Compel a creature into a duel. The target must make a Wisdom save or be drawn "
+                "to you, gaining disadvantage on attack rolls against creatures other than you, "
+                "and it must make a Wisdom save to move more than 30 feet away from you. "
+                "Concentration, up to 1 minute.",
+    casting_time="1 bonus action", range="30 feet", components="V",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Create or Destroy Water", 1, SpellSchool.TRANSMUTATION,
+    description="You either create or destroy water. Create: up to 10 gallons of clean water "
+                "appears in an open container, or it falls as rain in a 30-foot cube. Destroy: "
+                "up to 10 gallons of water in a 30-foot cube vanishes. Upcasting adds 10 gallons "
+                "per slot level above 1st.",
+    casting_time="1 action", range="30 feet", components="V, S, M"))
+register_spell(Spell("Detect Evil and Good", 1, SpellSchool.DIVINATION,
+    description="For the duration you sense the presence of aberrations, celestials, elementals, "
+                "feys, fiends, and undead within 30 feet, and can identify consecrated or "
+                "desecrated ground. Concentration, up to 10 minutes.",
+    casting_time="1 action", range="self", components="V, S",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Detect Poison and Disease", 1, SpellSchool.DIVINATION,
+    description="For the duration you sense the presence and location of poisons, venomous "
+                "creatures, and diseases within 30 feet. Ritual; concentration, up to 10 minutes.",
+    casting_time="1 action", range="self", components="V, S, M",
+    ritual=True, concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Expeditious Retreat", 1, SpellSchool.TRANSMUTATION,
+    description="This spell allows you to move at an incredible pace. You can take the Dash "
+                "action as a bonus action for the duration. Concentration, up to 10 minutes.",
+    casting_time="1 bonus action", range="self", components="V, S",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Feather Fall", 1, SpellSchool.TRANSMUTATION,
+    description="Choose up to five falling creatures within range. Their rate of descent slows "
+                "to 60 feet per round, and they take no falling damage and land on their feet. "
+                "Duration 1 minute.",
+    casting_time="1 reaction", range="60 feet", components="V",
+    duration="1 minute"))
+register_spell(Spell("Goodberry", 1, SpellSchool.TRANSMUTATION,
+    description="Up to ten berries appear in your hand, infused with magic for 24 hours. A "
+                "creature can use its action to eat one berry to restore 1 hit point; the berry "
+                "also provides enough nourishment to sustain a creature for one day. Eating all "
+                "ten berries restores 10 hit points total.",
+    casting_time="1 action", range="self", components="V, S, M",
+    healing_dice_count=10, healing_dice_sides=1, healing_bonus=0,
+    duration="24 hours"))
+register_spell(Spell("Heroism", 1, SpellSchool.ENCHANTMENT,
+    description="A willing creature you touch is imbued with bravery. Until the spell ends, the "
+                "creature is immune to being frightened and gains temporary hit points equal to "
+                "your spellcasting ability modifier at the start of each of its turns. "
+                "Concentration, up to 1 minute.",
+    casting_time="1 action", range="touch", components="V, S",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Jump", 1, SpellSchool.TRANSMUTATION,
+    description="Touch a creature. For the duration, the target's jump distance is tripled. "
+                "Duration 1 minute.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="1 minute"))
+register_spell(Spell("Purify Food and Drink", 1, SpellSchool.TRANSMUTATION,
+    description="All nonmagical food and drink within a 5-foot-radius sphere centered on a point "
+                "within range is purified and freed of poison and disease. Ritual.",
+    casting_time="1 action", range="10 feet", components="V, S",
+    ritual=True))
+register_spell(Spell("Silent Image", 1, SpellSchool.ILLUSION,
+    description="You create the image of an object, creature, or other visible phenomenon that "
+                "is no larger than a 15-foot cube. It is purely visual. A creature that uses its "
+                "action to examine the image can determine it is an illusion with a successful "
+                "Intelligence (Investigation) check against your spell save DC. Concentration, "
+                "up to 10 minutes.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Tenser's Floating Disk", 1, SpellSchool.CONJURATION,
+    description="A circular plane of force, 3 feet in diameter, floats 3 feet above the ground "
+                "and follows you, carrying up to 500 pounds at your speed. The disk vanishes "
+                "when the spell ends, dropping anything it carried. Ritual, 1 hour.",
+    casting_time="1 action", range="10 feet", components="V, S, M",
+    ritual=True, duration="1 hour"))
+register_spell(Spell("Unseen Servant", 1, SpellSchool.CONJURATION,
+    description="An invisible, mindless, shapeless force appears that performs simple tasks at "
+                "your command — fetching, cleaning, holding items. It can't attack. It drops "
+                "anything it holds when it moves more than 60 feet from you. Ritual, 1 hour.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    ritual=True, duration="1 hour"))
+register_spell(Spell("Wrathful Smite", 1, SpellSchool.EVOCATION,
+    description="The next time you hit with a melee weapon attack during this spell's duration, "
+                "your attack deals an extra 1d6 psychic damage, and the target must succeed on "
+                "a Wisdom save or become frightened of you until the spell ends. As an action, "
+                "a frightened creature can make a Wisdom check against your spell save DC to "
+                "steady itself and end the effect. Concentration, up to 1 minute.",
+    casting_time="1 bonus action", range="self", components="V",
+    concentration=True, duration="up to 1 minute"))
+
 # --- Level 2 ---------------------------------------------------------------
 register_spell(Spell("Scorching Ray", 2, SpellSchool.EVOCATION,
     description="Rays of fire blast targets. Multiple ranged attacks.",
