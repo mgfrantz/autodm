@@ -519,6 +519,124 @@ register_spell(Spell("Mind Sliver", 0, SpellSchool.ENCHANTMENT,
     save_ability="int", damage_dice_count=1, damage_dice_sides=6,
     damage_type="psychic"))
 
+# Additional iconic PHB cantrips — PHB CANTRIP-TIER COMPLETION. Closes the
+# catalogue's last remaining tier gap: every Player's Handbook cantrip is now
+# registered (level 0: 14 -> 29). With all ten leveled tiers (1-9) already
+# PHB-complete, this completes the PHB spell catalogue at EVERY tier (0-9).
+# The 15 additions cover all three cantrip resolution paths:
+# - Attack-roll cantrips (Produce Flame, Thorn Whip): damage scales
+#   automatically via cantrip_dice_multiplier at caster levels 5/11/17.
+# - Utility / buff cantrips (13 spells): no dice modelled; effects documented
+#   per PHB. Concentration set only where PHB specifies (Dancing Lights,
+#   Guidance, Resistance, True Strike).
+#
+# Attack-roll cantrips (damage, with automatic cantrip scaling at 5/11/17):
+register_spell(Spell("Produce Flame", 0, SpellSchool.CONJURATION,
+    description="A flickering flame appears in your hand; it sheds bright light in "
+                "a 10-foot radius and dim light for 10 feet more. You may hurl it as "
+                "a ranged spell attack (thrown 30 feet) for 1d8 fire damage. The "
+                "flame harms nothing else and goes out if you cast it again or dismiss "
+                "it as an action.",
+    casting_time="1 action", range="self (thrown 30 feet)", components="V, S",
+    requires_attack_roll=True, damage_dice_count=1, damage_dice_sides=8,
+    damage_type="fire"))
+register_spell(Spell("Thorn Whip", 0, SpellSchool.TRANSMUTATION,
+    description="A vine-like whip of thorns lashes out at a creature. Melee spell "
+                "attack for 1d6 piercing damage; if the target is Large or smaller, "
+                "you pull it up to 10 feet closer to you.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    material_description="the stem of a plant with thorns",
+    requires_attack_roll=True, damage_dice_count=1, damage_dice_sides=6,
+    damage_type="piercing"))
+
+# Utility / buff cantrips (no damage; effects documented per PHB):
+register_spell(Spell("Blade Ward", 0, SpellSchool.ABJURATION,
+    description="You extend your hand and trace a warding sigil. Until the end of "
+                "your next turn, you have resistance against bludgeoning, piercing, "
+                "and slashing damage from weapon attacks.",
+    casting_time="1 action", range="self", components="V, S",
+    duration="1 round"))
+register_spell(Spell("Dancing Lights", 0, SpellSchool.EVOCATION,
+    description="You create up to four torch-sized lights within range that hover in "
+                "the air, appear as glowing humanoid shapes, or mark Medium or smaller "
+                "creatures. You can move them up to 60 feet as a bonus action. A light "
+                "goes out if it leaves range. Concentration, up to 1 minute.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    material_description="a bit of phosphorus or wychwood, or a glowworm",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Druidcraft", 0, SpellSchool.TRANSMUTATION,
+    description="Whispering to the spirits of nature, you create one of several minor "
+                "effects: instantly light or snuff a candle, torch, or small campfire; "
+                "predict the next day's weather; cause a blossom to sprout on a plant; "
+                "or create a harmless sensory effect of leaves rustling.",
+    casting_time="1 action", range="30 feet", components="V, S"))
+register_spell(Spell("Friends", 0, SpellSchool.ENCHANTMENT,
+    description="For the duration, your Charisma checks against one creature of your "
+                "choice have advantage. When the spell ends, the creature realizes you "
+                "used magic to influence its mood and becomes hostile toward you.",
+    casting_time="1 action", range="self", components="S, M",
+    material_description="a small amount of makeup applied to the face as this spell is cast",
+    duration="1 minute"))
+register_spell(Spell("Guidance", 0, SpellSchool.DIVINATION,
+    description="You touch one willing creature. Once before the spell ends, the "
+                "target can roll 1d4 and add the number rolled to one ability check "
+                "of its choice. Concentration, up to 1 minute.",
+    casting_time="1 action", range="touch", components="V, S",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Mending", 0, SpellSchool.TRANSMUTATION,
+    description="You repair a single break or tear in an object (such as a broken key, "
+                "a torn cloak, or a leaking wineskin) no larger than 1 inch in any "
+                "dimension, leaving no trace of the former damage.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    material_description="two lodestones"))
+register_spell(Spell("Message", 0, SpellSchool.TRANSMUTATION,
+    description="You point toward a creature within range and whisper a message that "
+                "only it can hear; the target may whisper a reply that only you hear. "
+                "The spell travels around (but not through) solid objects.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    material_description="a short piece of copper wire"))
+register_spell(Spell("Prestidigitation", 0, SpellSchool.TRANSMUTATION,
+    description="You create a minor magical effect: an instantaneous harmless sensory "
+                "effect; light or snuff a candle/torch/small campfire; clean or soil "
+                "an object no larger than 1 cubic foot; chill, warm, or flavor 1 cubic "
+                "foot of nonliving material for 1 hour; or color, mark, or soil a "
+                "small object for 1 hour.",
+    casting_time="1 action", range="10 feet", components="V, S",
+    duration="up to 1 hour"))
+register_spell(Spell("Resistance", 0, SpellSchool.ABJURATION,
+    description="You touch one willing creature. Once before the spell ends, the "
+                "target can roll 1d4 and add the number rolled to one saving throw "
+                "of its choice. Concentration, up to 1 minute.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    material_description="a miniature cloak",
+    concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Shillelagh", 0, SpellSchool.TRANSMUTATION,
+    description="The wood of a club or quarterstaff you are holding is imbued with "
+                "nature's power. For 1 minute the weapon becomes magical; you use your "
+                "spellcasting ability for its attack and damage rolls; and its damage "
+                "die becomes a d8 (d10 if wielded two-handed). The spell ends if you "
+                "cast it again or let go of the weapon.",
+    casting_time="1 bonus action", range="touch", components="V, S, M",
+    material_description="mistletoe, a shamrock leaf, and a club or quarterstaff",
+    duration="1 minute"))
+register_spell(Spell("Spare the Dying", 0, SpellSchool.NECROMANCY,
+    description="You touch a living creature that has 0 hit points. The creature "
+                "becomes stable. This spell has no effect on undead or constructs.",
+    casting_time="1 action", range="touch", components="V, S"))
+register_spell(Spell("Thaumaturgy", 0, SpellSchool.TRANSMUTATION,
+    description="You manifest a minor sign of supernatural power: your voice is thrice "
+                "as loud for 1 minute; you cause flames to flicker, brighten, dim, or "
+                "change color; you cause harmless tremors; you create an instantaneous "
+                "sound; or you instantaneously open or close an unlocked door/window.",
+    casting_time="1 action", range="30 feet", components="V",
+    duration="up to 1 minute"))
+register_spell(Spell("True Strike", 0, SpellSchool.DIVINATION,
+    description="You extend your hand and point a finger at a target within range. "
+                "Your next attack roll against that target before the end of your next "
+                "turn has advantage. Concentration, up to 1 round.",
+    casting_time="1 action", range="30 feet", components="S",
+    concentration=True, duration="1 round"))
+
 # --- Level 1 ---------------------------------------------------------------
 register_spell(Spell("Magic Missile", 1, SpellSchool.EVOCATION,
     description="Three darts of force hit their targets. Always hits; no save.",

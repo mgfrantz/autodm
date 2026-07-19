@@ -1,7 +1,111 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3884 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (312 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+## TEST SUITE FULLY GREEN (3944 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (327 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB CANTRIP-TIER COMPLETION (14→29, ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+
+## ✅ COMPLETED: PHB Cantrip-Tier Completion (14 → 29, catalogue 312 → 327; ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE)
+
+This run **completed the cantrip tier (level 0)** — the **last remaining tier
+of the catalogue-wide "PHB completeness" effort.** After all ten *leveled*
+tiers (1–9) reached PHB coverage, the cantrip tier was the only non-canonical
+count left (was 14; PHB has 27). This run registers **all 15 missing PHB
+cantrips** so **every Player's Handbook cantrip is now registered**
+(level 0: 14 → 29 = 27 PHB + Toll the Dead [XGE] + Mind Sliver [Tasha's]).
+With this, **ALL ELEVEN TIERS (cantrips + levels 1–9) are now PHB-complete**
+— the catalogue-wide "PHB completeness" effort is finished at *every* tier.
+The full Player's Handbook spell roster — cantrips through level 9 — is now
+registered. The spell catalogue now stands at **327 spells**.
+
+### The 15 additions (grouped by resolution path)
+- **Attack-roll cantrip (damage, scales at 5/11/17):** Produce Flame
+  (conjuration, 1d8 fire, thrown 30 ft — the druid's hand-flame that doubles
+  as a light source and a ranged attack), Thorn Whip (transmutation, 1d6
+  piercing, 30 ft melee spell attack, pulls target up to 10 ft closer — the
+  druid's signature positioning tool).
+- **Utility / buff cantrip (no dice modelled; effects documented per PHB):
+  Blade Ward (abjuration, self — resistance to bludgeoning/piercing/slashing
+  weapon damage for 1 round, NOT concentration), Dancing Lights (evocation,
+  concentration, 120 ft — four movable torch-lights), Druidcraft
+  (transmutation — minor nature sensory effects, weather prediction),
+  Friends (enchantment, self, NOT concentration — Charisma-check advantage
+  with the post-spell hostility rider), Guidance (divination, concentration,
+  touch — +1d4 to one ability check), Mending (transmutation, touch,
+  M: two lodestones — repair a ≤1-inch break), Message (transmutation,
+  120 ft, M: copper wire — whispered point-to-point message),
+  Prestidigitation (transmutation, 10 ft — minor magical effects),
+  Resistance (abjuration, concentration, touch, M: miniature cloak — +1d4
+  to one saving throw), Shillelagh (transmutation, bonus action, touch,
+  M: mistletoe/shamrock/club-staff — weapon buff: use spellcasting ability,
+  damage die becomes d8/d10), Spare the Dying (necromancy, touch — stabilize
+  a 0-HP creature), Thaumaturgy (transmutation, 30 ft, V-only — minor
+  clerical miracle), True Strike (divination, concentration, 30 ft, S-only —
+  next attack roll has advantage).
+
+### Correct-mechanics decisions (PHB-canonical)
+- **Produce Flame and Thorn Whip use the attack-roll path** with damage dice
+  (1d8 fire / 1d6 piercing). Cantrip scaling is **automatic** — the engine's
+  `cantrip_dice_multiplier` multiplies the base dice at caster levels 5/11/17
+  (1d8 → 2d8 → 3d8 → 4d8 for Produce Flame; 1d6 → 4d6 for Thorn Whip). No
+  `at_higher_levels_dice` is set (cantrips don't upcast). The Produce Flame
+  light radius and the Thorn Whip 10-foot pull rider are documented
+  (effect-in-description), mirroring the established convention.
+- **Concentration flags** set on exactly the four PHB-concentration cantrips:
+  Dancing Lights, Guidance, Resistance, True Strike. Correctly **not** set on
+  Blade Ward (1 round, no concentration), Friends (1 min), Prestidigitation
+  (1 hr), Shillelagh (1 min), Thaumaturgy (1 min) — all PHB-canonical.
+- **No rituals** — no PHB cantrip is a ritual (none flagged).
+- **Material components** documented where PHB specifies them: Thorn Whip
+  (plant stem with thorns), Dancing Lights (phosphorus/wychwood/glowworm),
+  Friends (makeup), Mending (two lodestones), Message (copper wire),
+  Resistance (miniature cloak), Shillelagh (mistletoe + shamrock leaf + club
+  or quarterstaff).
+- **Casting times faithful to PHB throughout:** Shillelagh = 1 bonus action
+  (the only bonus-action cantrip in the batch); all others = 1 action.
+- **Schools are canonical PHB throughout:** Produce Flame = conjuration,
+  Thorn Whip = transmutation, Blade Ward = abjuration, Dancing Lights =
+  evocation, Druidcraft = transmutation, Friends = enchantment, Guidance =
+  divination, Mending = transmutation, Message = transmutation,
+  Prestidigitation = transmutation, Resistance = abjuration, Shillelagh =
+  transmutation, Spare the Dying = necromancy, Thaumaturgy = transmutation,
+  True Strike = divination.
+- **Friends' range is `self`** per PHB (a self-range spell that grants
+  advantage on Charisma checks toward a creature of your choice); the
+  post-spell hostility is the documented trade-off, not a mechanical save.
+
+### Files changed
+- **`backend/app/engine/spells.py`** — 15 new `register_spell(Spell(...))`
+  entries appended to the cantrip block (after the original 14 cantrips,
+  before the Level 1 section), grouped by resolution path with a section
+  comment mirroring the level-2/3/4/5 completion blocks.
+- **`backend/tests/test_spell_cantrip_completion.py`** (NEW, 60 tests) —
+  registry distribution (total ≥327, level 0 ≥29, **all-eleven-tiers-
+  PHB-complete milestone assertion**, no-dup guards), parametrized
+  registration-shape (name/level/school for all 15), per-spell mechanical
+  correctness (Produce Flame + Thorn Whip dice/attack-roll/scaling/range/
+  material; all 13 utility cantrips' concentration/range/duration/material/
+  casting-time flags including the four concentration cantrips, Shillelagh's
+  bonus-action + d8/d10-in-description, Friends' hostile-rider,
+  Guidance/Resistance's +1d4 riders), effect resolution (Produce Flame +
+  Thorn Whip hit/miss/produce-flame-crit, cantrip-tier scaling for both
+  damage cantrips, utility "takes effect" for all 13), and cantrip scaling
+  math (`cantrip_dice_multiplier` identity + the static `damage_dice_count *
+  multiplier` identity + real `roll_damage` growth across caster levels
+  1/5/11/17 for both damage cantrips).
+
+### Verification
+- ✅ `uv run pytest` — **3944 backend tests passing** (+60), 0 failures
+- ✅ `npm test` (frontend) — 393 tests passing, 0 failures (no frontend changes)
+- ✅ `npx tsc --noEmit` — clean (no frontend changes)
+- ✅ `npm run build` — clean (no frontend changes)
+
+### Spell tier snapshot after this run
+`{0:29, 1:53, 2:55, 3:39, 4:30, 5:39, 6:31, 7:18, 8:18, 9:15}` — **ALL
+ELEVEN TIERS (0, 1, 2, 3, 4, 5, 6, 7, 8, 9) are now PHB-complete.** The
+catalogue-wide "PHB completeness" effort is finished at every tier. The full
+Player's Handbook spell roster — cantrips through level 9 — is now
+registered. There are **no remaining non-canonical spell counts**.
+
+---
 
 ## ✅ COMPLETED: PHB Level-5 Spell Completion (13 → 39, catalogue 286 → 312; ALL TEN LEVELED TIERS NOW PHB-COMPLETE)
 
@@ -2556,7 +2660,7 @@ and the real DB is no longer mutated by tests.
 
 ---
 
-## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅ + ALL TEN PHB SPELL TIERS (1–9) COMPLETE ✅
+## ⚡ NEXT SESSION DIRECTIVE: DM FUNCTION CALLING ROADMAP COMPLETE ✅ + ALL ELEVEN PHB SPELL TIERS (0–9) COMPLETE ✅
 
 **The full DM Function Calling roadmap is COMPLETE (2026-07-17).** Every
 phase — dice, combat, spells, inventory, conditions, concentration, AoE, and UI
@@ -2571,7 +2675,7 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**3884 backend + 393 frontend tests, 0 failures.**
+**3944 backend + 393 frontend tests, 0 failures.**
 (Post-roadmap content-registry additions: +89 high-tier enemy registry
 expansion (CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8 spell
 roster completion (18/18 each), +55 iconic PHB level-1 spell expansion (16
@@ -2632,10 +2736,19 @@ consider (draft a design doc if Mike green-lights any):
   (1, 2, 3, 4, 5, 6, 7, 8, 9) are now PHB-complete** — the catalogue-wide
   "PHB completeness" effort is finished at every leveled tier. The full
   Player's Handbook leveled spell roster is now registered. The only remaining
-  non-canonical count is the **cantrip tier at level 0 (14, PHB ~40)** — an
-  optional curated selection, not a gap.
+  non-canonical count ~~is the **cantrip tier at level 0 (14, PHB ~40)** — an
+  optional curated selection, not a gap.~~ **DONE (2026-07-19)** — all 15
+  missing PHB cantrips landed (Produce Flame, Thorn Whip, Blade Ward, Dancing
+  Lights, Druidcraft, Friends, Guidance, Mending, Message, Prestidigitation,
+  Resistance, Shillelagh, Spare the Dying, Thaumaturgy, True Strike), lifting
+  level 0 from 14 → 29 (full PHB coverage: 27 PHB + Toll the Dead + Mind
+  Sliver) and the catalogue from 312 → 327. **ALL ELEVEN TIERS (0–9) are now
+  PHB-complete** — the catalogue-wide "PHB completeness" effort is finished
+  at EVERY tier. The full Player's Handbook spell roster — cantrips through
+  level 9 — is now registered. **There are no remaining non-canonical spell
+  counts.**
 
-Until then, the dev agent should:
+Until the next staged feature is green-lit, the dev agent should:
 - Keep the full suite green (`uv run pytest`, `npm test`)
 - Watch for README/PROGRESS drift and sync them
 - Pick up any quick fixes / content registry expansions if surfaced
