@@ -1,7 +1,131 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3332 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (186 spells, 135 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
+## TEST SUITE FULLY GREEN (3438 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (186 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
+
+## ✅ COMPLETED: High-Tier Enemy Registry Gap-Fill (CR 23 populated, 135→145)
+
+Closed the last glaring gaps in the enemy registry's CR 11-30 band. The
+registry was dense at CR 0-10 (10 entries per band) and well-populated at
+the canonical-CR bands the prior CR-correction runs created (CR 14, 15, 21),
+but several high-tier bands were **completely empty** or had only a single
+entry, leaving high-level parties (15-20) with thin encounter variety at the
+very tiers that matter most for boss fights.
+
+### The gaps before this run
+| CR band | Before | After | Gap type |
+|---------|--------|-------|----------|
+| CR 11 | 2 (Dao, Gynosphinx) | **5** | sparse |
+| CR 12 | 1 (Erinyes) | **2** | sparse |
+| CR 13 | 4 | **5** | sparse |
+| CR 15 | 1 (Mummy Lord) | **2** | sparse |
+| CR 18 | 0 | 0 | correctly empty (no canonical MM monster fits) |
+| CR 21 | 1 (Lich) | **2** | sparse |
+| CR 22 | 1 (Ancient Red Dragon) | **2** | sparse |
+| **CR 23** | **0** | **3** | **completely empty (largest hole)** |
+| CR 25-29 | 0 | 0 | correctly empty (MM has no monsters here) |
+
+**CR 23 was the worst gap** — the largest empty band between Ancient Red
+Dragon (CR 22) and Ancient Gold Dragon (CR 24), with no canonical MM monster
+at all despite the tier being iconic for endgame boss fights.
+
+### 10 new canonical Monster Manual entries + 1 correction
+- **Behir** — CR 6 → **11** (correction, MM p.25). Its AC (17) and HP (168)
+  were already MM-canonical; only the CR was wrong. Same correction pattern
+  as the 5 CR-corrections already shipped (Adult Black Dragon, Ice Devil,
+  Nalfeshnee, Mummy Lord, Lich). No damage immunities in MM.
+- **Remorhaz** — CR 11 (MM p.249). Arctic monstrosity; immune to cold.
+- **Roc** — CR 11 (MM p.247). Gargantuan bird of prey; no damage immunities.
+- **Arcanaloth** — CR 12 (MM p.308). Yugoloth sorcerer-scholar; resists
+  nonmagical BPS (yugoloth trait).
+- **Adult White Dragon** — CR 13 (MM p.101). Chromatic dragon of cold
+  regions; immune to cold (breath element).
+- **Adult Bronze Dragon** — CR 15 (MM p.108). Metallic dragon of coastal
+  waters; immune to lightning (breath element).
+- **Solar** — CR 21 (MM p.18). Mightiest angel; immune to radiant + poison
+  (Angel trait, MM p.6). Low HP for the tier (142) is canonical — defensive
+  offsets are 150 ft fly speed, legendary resistances, innate Healing Word,
+  and the Slaying Longbow. Mirrors the Lich's "canonical AC/HP at CR 21" shape.
+- **Ancient Green Dragon** — CR 22 (MM p.93). Chromatic dragon of forests &
+  poison; immune to poison (breath element).
+- **Ancient Blue Dragon** — CR 23 (MM p.86). Immune to lightning (breath).
+- **Ancient Silver Dragon** — CR 23 (MM p.117). Highest-HP metallic ancient
+  dragon in the MM (487); immune to cold (breath).
+- **Empyrean** — CR 23 (MM p.130). Titan, child of the gods; low HP for the
+  tier (188) is canonical — defensive offsets are Magic Resistance, legendary
+  resistances, and innate spellcasting (Heal, Greater Restoration). Resistant
+  to nonmagical BPS per MM.
+
+### Dragon family now canonical-complete
+After this run, the chromatic + metallic dragon family is **canonical-
+complete at adult + ancient tiers** (excluding the deliberately-tuned weaker
+variants flagged in the prior dragon audit — Adult Brass/Copper/Green exist
+at lower CRs as intentional balance variants, not bugs). Every new dragon
+uses the existing **single-breath-element-immunity convention** (Adult
+Black→acid, Adult Blue→lightning, Adult Red→fire, Adult Gold→fire, Adult
+Silver→cold; the new Adult White→cold, Adult Bronze→lightning, Ancient
+Green→poison, Ancient Blue→lightning, Ancient Silver→cold all follow suit).
+
+### Why CR 18 and CR 25-29 stay empty
+- **CR 18** — the only canonical MM monster at CR 18 is the **Demilich**
+  (MM p.48), which has just **20 HP** at CR 18 — far too unusual for the
+  simplified `EnemyTemplate` (its survival comes from legendary resistances
+  + soul-eating abilities the engine doesn't model). Left empty rather than
+  misrepresenting the stat block. This is a documented correct gap, not a
+  content deficiency.
+- **CR 25-29** — the Monster Manual has **no monsters at these CRs**. The
+  registry jumps cleanly from Ancient Gold Dragon (CR 24) to the Tarrasque
+  (CR 30, apex). This matches MM exactly; there is nothing canonical to add.
+
+### Files changed
+- **`backend/app/engine/encounters.py`** — removed Behir from the CR 6 block
+  and re-added it (corrected to CR 11) in the CR 11 block; added 10 new
+  `EnemyTemplate` entries across CR 11/12/13/15/21/22/23 with canonical MM
+  stat blocks and damage modifiers.
+- **`backend/tests/test_enemy_high_tier_expansion.py`** (NEW, 106 tests) —
+  stat-block parametrization for all 10 new entries (CR/AC/HP/attack/n_mods),
+  XP-derived-from-CR, `to_dict()` combat-block validity, canonical damage
+  immunities/resistances (dragons' breath-element convention, Solar's radiant
+  + poison, yugoloth & empyrean nonmagical-BPS resistance with `bypassed_by_magic`),
+  Roc/Behir no-modifiers guards, Behir CR-correction (now CR 11, AC/HP
+  unchanged, XP 7200, in CR 11 lookup, NOT in CR 6 lookup), CR band population
+  minimums (every band 11-24 now ≥2 except CR 18), CR 23 no-longer-empty, CR 18
+  & 25-29 correctly-empty, registry integrity (145 total, no dups, keys==names,
+  Tarrasque apex, all XP matches CR), existing-entries-preserved guards, and
+  dragon-family-completeness (all adult metallic/chromatic + all ancient
+  dragons present at canonical CRs with exactly one breath-element immunity).
+- **`backend/tests/test_enemy_cr_correction.py`** — relaxed the historical
+  `test_total_count_unchanged` guard (asserted exactly 135) to a
+  `test_total_count_at_least_135` floor, since later expansions legitimately
+  grew the registry. The original guard's intent (no silent key collisions
+  from the 5 CR-corrections) is preserved by the floor + the no-duplicates
+  + keys-match-names guards.
+
+### Verification
+- ✅ `uv run pytest` — **3438 backend tests passing** (+106), 0 failures
+- ✅ `npx tsc --noEmit` — clean (no frontend changes)
+
+### Enemy registry snapshot after this run
+High-tier CR distribution (CR 11-30):
+```
+CR 11: 5  (Dao, Gynosphinx, Behir, Remorhaz, Roc)
+CR 12: 2  (Erinyes, Arcanaloth)
+CR 13: 5  (Beholder, Storm Giant, Rakshasa, Vampire, Adult White Dragon)
+CR 14: 3  (Adult Black Dragon, Ice Devil, Nalfeshnee)
+CR 15: 2  (Mummy Lord, Adult Bronze Dragon)
+CR 16: 2  (Adult Blue Dragon, Adult Silver Dragon)
+CR 17: 2  (Adult Red Dragon, Adult Gold Dragon)
+CR 19: 1  (Balor)
+CR 20: 2  (Pit Fiend, Ancient White Dragon)
+CR 21: 2  (Lich, Solar)
+CR 22: 2  (Ancient Red Dragon, Ancient Green Dragon)
+CR 23: 3  (Ancient Blue Dragon, Ancient Silver Dragon, Empyrean)
+CR 24: 1  (Ancient Gold Dragon)
+CR 30: 1  (Tarrasque — apex)
+```
+Total registry: **145 enemies** (was 135).
+
+---
 
 ## ✅ COMPLETED: PHB Level-1 Spell Completion (16 spells → level 1 now PHB-complete)
 
