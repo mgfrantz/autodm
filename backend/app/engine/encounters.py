@@ -646,7 +646,6 @@ COMMON_ENEMIES = {
     "Gargoyle Protector": EnemyTemplate(name="Gargoyle Protector", cr=6, armor_class=15, hp=110, attack_bonus=6),
 
     # CR 7 (2900 XP)
-    "Adult Black Dragon": EnemyTemplate(name="Adult Black Dragon", cr=7, armor_class=19, hp=147, attack_bonus=10),
     "Bodak": EnemyTemplate(name="Bodak", cr=7, armor_class=16, hp=72, attack_bonus=8),
     "Bone Devil": EnemyTemplate(name="Bone Devil", cr=7, armor_class=19, hp=100, attack_bonus=8),
     "Couatl": EnemyTemplate(name="Couatl", cr=7, armor_class=19, hp=97, attack_bonus=8),
@@ -677,7 +676,6 @@ COMMON_ENEMIES = {
     "Devourer": EnemyTemplate(name="Devourer", cr=8, armor_class=16, hp=141, attack_bonus=10),
     "Glabrezu": EnemyTemplate(name="Glabrezu", cr=8, armor_class=16, hp=157, attack_bonus=9),
     "Hezrou": EnemyTemplate(name="Hezrou", cr=8, armor_class=19, hp=136, attack_bonus=7),
-    "Ice Devil": EnemyTemplate(name="Ice Devil", cr=8, armor_class=18, hp=180, attack_bonus=8),
     "Medusa": EnemyTemplate(name="Medusa", cr=8, armor_class=15, hp=127, attack_bonus=5),
     "Minotaur King": EnemyTemplate(name="Minotaur King", cr=8, armor_class=18, hp=161, attack_bonus=9),
     "Shadow Demon": EnemyTemplate(name="Shadow Demon", cr=8, armor_class=16, hp=66, attack_bonus=7),
@@ -703,10 +701,7 @@ COMMON_ENEMIES = {
     "Barbed Devil": EnemyTemplate(name="Barbed Devil", cr=10, armor_class=15, hp=110, attack_bonus=6),
     "Copper Dragon Wyrmling": EnemyTemplate(name="Copper Dragon Wyrmling", cr=10, armor_class=17, hp=135, attack_bonus=9),
     "Kraken Spawn": EnemyTemplate(name="Kraken Spawn", cr=10, armor_class=18, hp=157, attack_bonus=10),
-    "Lich": EnemyTemplate(name="Lich", cr=10, armor_class=17, hp=135, attack_bonus=10),
     "Marilith": EnemyTemplate(name="Marilith", cr=10, armor_class=18, hp=189, attack_bonus=9),
-    "Mummy Lord": EnemyTemplate(name="Mummy Lord", cr=10, armor_class=17, hp=97, attack_bonus=7),
-    "Nalfeshnee": EnemyTemplate(name="Nalfeshnee", cr=10, armor_class=18, hp=212, attack_bonus=10),
 
     # CR 11-30 (7200 XP and up — high-tier solo threats for parties 15-20).
     # Fills the registry's previously empty CR 11-30 band. CRs follow the
@@ -747,6 +742,60 @@ COMMON_ENEMIES = {
             dt_mod.immune("necrotic").to_dict(),
             dt_mod.immune("poison").to_dict(),
             dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
+
+    # CR 14 (11500 XP) — iconic canonical monsters that were previously misfiled
+    # at lower CRs (Adult Black Dragon cr=7, Ice Devil cr=8, Nalfeshnee cr=10).
+    # Their AC already matched MM canonical; the CR (and HP for Adult Black
+    # Dragon / Nalfeshnee) was wrong, so xp_value, get_enemies_by_cr(14), and
+    # encounter-difficulty math were all off and the CR 14 band was empty.
+    # Corrected to MM canonical CR 14 (MM p.88 / p.80 / p.56). Canonical
+    # damage immunities added (each chromatic dragon is immune to its breath
+    # element; devils/demons to fire/cold/poison per MM).
+    "Adult Black Dragon": EnemyTemplate(
+        name="Adult Black Dragon",
+        cr=14,
+        armor_class=19,
+        hp=195,
+        attack_bonus=10,
+        damage_modifiers=[dt_mod.immune("acid").to_dict()],
+    ),
+    "Ice Devil": EnemyTemplate(
+        name="Ice Devil",
+        cr=14,
+        armor_class=18,
+        hp=180,
+        attack_bonus=8,
+        damage_modifiers=[
+            dt_mod.immune("cold").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
+    ),
+    "Nalfeshnee": EnemyTemplate(
+        name="Nalfeshnee",
+        cr=14,
+        armor_class=18,
+        hp=184,
+        attack_bonus=10,
+        damage_modifiers=[
+            dt_mod.immune("fire").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
+    ),
+
+    # CR 15 (13000 XP) — Mummy Lord previously misfiled at cr=10. AC/HP were
+    # already MM-canonical; CR corrected to 15 (MM p.227). Canonical undead
+    # immunities (necrotic + poison) added for consistency.
+    "Mummy Lord": EnemyTemplate(
+        name="Mummy Lord",
+        cr=15,
+        armor_class=17,
+        hp=97,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.immune("necrotic").to_dict(),
+            dt_mod.immune("poison").to_dict(),
         ],
     ),
 
@@ -819,6 +868,23 @@ COMMON_ENEMIES = {
         hp=333,
         attack_bonus=14,
         damage_modifiers=[dt_mod.immune("cold").to_dict()],
+    ),
+
+    # CR 21 (33000 XP) — Lich previously misfiled at cr=10. AC (17) and HP
+    # (135) were already MM-canonical; only the CR was wrong. This also
+    # resolves an inconsistency with engine/legendary.py, whose Lich boss
+    # entry ("master necromancer") is already CR 21 — both registries now
+    # agree. Canonical undead immunities (necrotic + poison) added (MM p.202).
+    "Lich": EnemyTemplate(
+        name="Lich",
+        cr=21,
+        armor_class=17,
+        hp=135,
+        attack_bonus=10,
+        damage_modifiers=[
+            dt_mod.immune("necrotic").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
     ),
 
     # CR 22 (41000 XP)
