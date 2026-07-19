@@ -1113,6 +1113,95 @@ register_spell(Spell("Wall of Ice", 6, SpellSchool.EVOCATION,
     save_ability="dex", damage_dice_count=10, damage_dice_sides=6,
     damage_type="cold", concentration=True, duration="up to 10 minutes"))
 
+# Level 6 PHB completion — 19 iconic spells rounding the tier to 31/31
+# (every Player's Handbook 6th-level spell now registered). Mirrors the level
+# 1 / 7 / 8 / 9 PHB-completion runs: damage spells use the standard dice+save
+# path, save-debuff spells use save-ability-with-effects-in-description, and
+# utility/buff spells resolve cleanly via the "takes effect" path.
+# Damage / save-for-half
+register_spell(Spell("Blade Barrier", 6, SpellSchool.EVOCATION,
+    description="A wall of blades forms in a 100-ft line; creatures in the wall when it appears or ending their turn there take 6d10 slashing (Dex save for half). Concentration.",
+    casting_time="1 action", range="90 feet", components="V, S",
+    save_ability="dex", damage_dice_count=6, damage_dice_sides=10,
+    damage_type="slashing", concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Otiluke's Freezing Sphere", 6, SpellSchool.EVOCATION,
+    description="A frigid globe bursts on impact; creatures in a 60-ft radius sphere take 10d6 cold damage (Dex save for half). Upcast adds 1d6 per slot level.",
+    casting_time="1 action", range="300 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=10, damage_dice_sides=6,
+    damage_type="cold", at_higher_levels_dice=1))
+register_spell(Spell("Wall of Thorns", 6, SpellSchool.CONJURATION,
+    description="A wall of tough, tangled brush bristling with daggers-like thorns forms on the ground; a creature inside the wall or that enters it takes 7d8 slashing damage (Dex save for half). Upcast adds 1d8 per slot level. Concentration.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=7, damage_dice_sides=8,
+    damage_type="slashing", concentration=True, at_higher_levels_dice=1,
+    duration="up to 10 minutes"))
+# Save-debuff (no damage) — effects documented in the description
+register_spell(Spell("Eyebite", 6, SpellSchool.NECROMANCY,
+    description="Your eyes become an inky void; for the duration, as an action on each of your turns you can target one creature within 60 ft that you can see — it must make a Wisdom save or suffer one of three effects of your choice: Asleep (falls unconscious, wakes on damage or an action to shake them), Sickened (poisoned), or Panicked (frightened and must use its action to Dash away from you). Concentration.",
+    casting_time="1 action", range="self", components="V, S",
+    save_ability="wis", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Magic Jar", 6, SpellSchool.NECROMANCY,
+    description="Your body falls unconscious and your soul moves into a tiny container within range. While in the jar you can sense surroundings and, as an action, project your soul to try to possess a humanoid within 100 ft — the target must make a Charisma save or be possessed (you control its body; your body remains unconscious). You can return to the jar (or your body if within 100 ft) as an action. If the container is destroyed when your soul is not in it, you die; if your body is destroyed, you can possess targets indefinitely but cannot return to your original body.",
+    casting_time="1 minute", range="self (100 feet)", components="V, S, M",
+    save_ability="cha", duration="until dispelled"))
+register_spell(Spell("Mass Suggestion", 6, SpellSchool.ENCHANTMENT,
+    description="You suggest a course of activity (limited to a sentence or two) to up to twelve creatures you can see within range; targets that fail a Wisdom save pursue the suggested course as best they can. The suggestion must sound reasonable; failing that, the spell ends for that target. Upcasting extends the duration (1 day at 7th, 10 days at 8th, 30 days at 9th, a year and a day at 10th+). Concentration.",
+    casting_time="1 action", range="60 feet", components="V, M",
+    save_ability="wis", concentration=True, duration="up to 24 hours"))
+# Utility / buff / ritual / summon — resolve via the "takes effect" path
+register_spell(Spell("Arcane Gate", 6, SpellSchool.CONJURATION,
+    description="You create two linked portals, each a 10-ft circle, anywhere within range; a creature or object entering one portal exits the other. The portals persist for the duration. Concentration.",
+    casting_time="1 action", range="500 feet", components="V, S",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Conjure Fey", 6, SpellSchool.CONJURATION,
+    description="You summon a fey creature of challenge rating 6 or lower (your choice), which appears in an unoccupied space within range and is friendly to you and your companions. It obeys your verbal commands and vanishes when it drops to 0 HP or when the spell ends. Upcasting summons a single fey of higher CR or multiple lower-CR fey. Concentration.",
+    casting_time="1 action", range="90 feet", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Contingency", 6, SpellSchool.EVOCATION,
+    description="Choose a spell of 5th level or lower that you can cast, with a casting time of 1 action, that targets you. You cast that spell as part of casting contingency, specifying a triggering condition. The chosen spell takes effect when the trigger occurs; contingency then ends. You can have only one contingency active at a time.",
+    casting_time="10 minutes", range="self", components="V, S, M",
+    duration="10 days"))
+register_spell(Spell("Create Undead", 6, SpellSchool.NECROMANCY,
+    description="You can cast this spell only at night. You raise up to three ghouls (your choice of one or more) from corpses or remains within range; they are under your control for the duration and obey your commands. Upcasting animates additional or stronger undead (ghasts at 8th level, wights at 9th).",
+    casting_time="1 minute", range="10 feet", components="V, S, M",
+    duration="instantaneous"))
+register_spell(Spell("Drawmij's Instant Summons", 6, SpellSchool.CONJURATION,
+    description="You touch an object weighing 10 pounds or less that can be carried. The spell leaves an arcane mark on it (invisible to others) and for the next month you can use an action to speak a command word and summon it to your hand from anywhere on the same plane, unless it is being held or carried by another creature (you learn who holds it). Ritual.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    ritual=True, duration="1 month"))
+register_spell(Spell("Find the Path", 6, SpellSchool.DIVINATION,
+    description="You describe or name a location that you have previously visited, or a well-known landmark, and the spell grants you knowledge of the most direct, shortest route to it by the most efficient means of travel. The spell ends when you arrive or the duration expires. Concentration.",
+    casting_time="1 minute", range="self", components="V, S, M",
+    concentration=True, duration="until discharged"))
+register_spell(Spell("Guards and Wards", 6, SpellSchool.ABJURATION,
+    description="You ward a multi-story structure (up to 2,500 sq ft per floor, up to 5 floors) with a web of protective magic: corridors fill with fog, doors become magical (arcane lock + the door appears as a plain wall), a stairwell reverses direction, a study fills with a fire-themed illusion, and a wraith-like image challenges intruders. Each effect lasts for the duration.",
+    casting_time="10 minutes", range="touch", components="V, S, M",
+    duration="24 hours"))
+register_spell(Spell("Move Earth", 6, SpellSchool.TRANSMUTATION,
+    description="Choose an area of terrain no larger than 40 feet on a side within range. You can reshape dirt (but not solid rock or ice) into any shape — excavate a trench, raise a rampart, form a 20-ft-deep pit, etc. The changes occur gradually over the casting time. A creature in the area when the spell is cast can move out of the way.",
+    casting_time="2 hours", range="120 feet", components="V, S, M",
+    duration="instantaneous"))
+register_spell(Spell("Planar Ally", 6, SpellSchool.CONJURATION,
+    description="You utter a divine plea to a power of your choice, requesting the aid of a celestial, elemental, or fiend (your choice). The entity appears within range and bargains with you for service in exchange for payment; if you reach terms, it serves for the agreed task and duration (up to days). The being returns to its home plane when the task is done or the bargain is broken.",
+    casting_time="10 minutes", range="60 feet", components="V, S",
+    duration="instantaneous"))
+register_spell(Spell("Programmed Illusion", 6, SpellSchool.ILLUSION,
+    description="You create the illusion of an object, creature, or other visible phenomenon up to a 30-ft cube, performing a script you design (no longer than 10 minutes). The illusion triggers when a creature you specify enters the area; that creature perceives it as real (an Investigation check against your spell save DC reveals it as an illusion). The illusion vanishes when no creature is in the area, then resets to trigger again.",
+    casting_time="1 action", range="120 feet", components="V, S, M",
+    duration="until dispelled"))
+register_spell(Spell("Transport via Plants", 6, SpellSchool.CONJURATION,
+    description="You create a magical link between a Large or larger inanimate plant within range and another plant (of any size) on the same plane of existence that you have seen or touched within the last 24 hours. Any creature can step into the first plant and exit through the second; the portal closes after the spell ends.",
+    casting_time="1 action", range="10 feet", components="V, S",
+    duration="1 round"))
+register_spell(Spell("Wind Walk", 6, SpellSchool.TRANSMUTATION,
+    description="You and up to ten willing creatures you can see within range transform into a cloud of mist and gain a flying speed of 300 feet for the duration. You can change back to your normal form as an action, ending the spell for those who do; while in cloud form you have resistance to nonmagical weapon damage and advantage on Strength, Dexterity, and Constitution saves. Reverting to normal form takes 6 seconds (1 round).",
+    casting_time="1 minute", range="30 feet", components="V, S, M",
+    duration="up to 8 hours"))
+register_spell(Spell("Word of Recall", 6, SpellSchool.CONJURATION,
+    description="You and up to five willing creatures within 5 feet of you instantly teleport to a designated sanctuary you have previously prepared for this spell (typically a temple or stronghold attuned to your deity). The teleportation is error-free; arriving creatures appear in the nearest unoccupied space to the sanctuary's mark.",
+    casting_time="1 action", range="5 feet", components="V",
+    duration="instantaneous"))
+
 # --- Level 7 ---------------------------------------------------------------
 register_spell(Spell("Finger of Death", 7, SpellSchool.NECROMANCY,
     description="Necrotic energy kills instantly if reduced to 0 HP.",

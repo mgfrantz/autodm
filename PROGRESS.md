@@ -1,7 +1,96 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (3438 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (186 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ AC RECALC ON EQUIP ✅ HP HEAL ON USE_ITEM ✅ INVENTORY ROSTER IN DM PROMPT ✅ CONDITION GAME EVENTS ✅ DM-CALLABLE CONDITION FUNCTIONS (apply/remove) ✅ CONDITION CARD COMPONENT ✅ CONDITION SEVERITY COLOR THEMIN... [truncated]
+## TEST SUITE FULLY GREEN (3504 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (205 spells, 145 enemies, 53 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 29 subclasses, 6 legendary creatures, 3 starter adventures) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+
+## ✅ COMPLETED: PHB Level-6 Spell Completion (12 spells → level 6 now PHB-complete)
+
+This run finished the **level-6 tier** of the catalogue-wide "PHB completeness"
+effort. Levels 7/8/9, level 1, the high-tier enemy registry, and the 5
+CR-corrections had all landed; **level 6 was the thinnest remaining tier
+relative to the Player's Handbook** (was 12; PHB has 31). This run registers
+all 19 missing PHB 6th-level spells so **every PHB level-6 spell is now
+registered** (level 6: 12 → 31). The spell catalogue now stands at **205 spells**.
+
+### The 19 additions (grouped by resolution path)
+- **Damage / save-for-half:** Blade Barrier (6d10 slashing, Dex, concentration,
+  wall of blades), Otiluke's Freezing Sphere (10d6 cold, Dex, +1d6/slot
+  upcast), Wall of Thorns (7d8 slashing, Dex, +1d8/slot upcast, concentration).
+- **Save-debuff (no damage):** Eyebite (Wis, concentration — Asleep / Sickened /
+  Panicked modes documented), Magic Jar (Cha — possession attempt), Mass
+  Suggestion (Wis, concentration — up to 12 targets).
+- **Utility / buff / ritual / summon:** Arcane Gate (concentration portal pair),
+  Conjure Fey (concentration summon), Contingency (10-day delayed trigger),
+  Create Undead (no-concentration summon), Drawmij's Instant Summons (ritual —
+  mark-and-recall an object), Find the Path (concentration divination), Guards
+  and Wards (24-hour multi-ward), Move Earth (iconic 2-hour casting time),
+  Planar Ally (bargained summon), Programmed Illusion (triggered illusion —
+  Investigation check, not a save), Transport via Plants (plant-gate),
+  Wind Walk (party mist-form, 300 ft fly), Word of Recall (sanctuary teleport).
+
+### Correct-mechanics decisions (PHB-canonical)
+- Damage spells use the standard `damage_dice_count` + `save_ability` +
+  `damage_type` + `at_higher_levels_dice` path that Cone of Cold / Ice Storm /
+  Cloudkill already use; Otiluke's Freezing Sphere and Wall of Thorns upcast
+  (`+1d6/slot` and `+1d8/slot` respectively), Blade Barrier does not (PHB p.218).
+- Save-debuff spells (Eyebite, Magic Jar, Mass Suggestion) follow the
+  "save-ability-with-effects-in-description" convention already established by
+  Symbol, Divine Word, Hold Person, Holy Aura, and Antipathy/Sympathy — they
+  carry a `save_ability` but no `damage_dice_*`, so `resolve_spell_effect()`
+  resolves them via the made_save path while the multi-mode effects
+  (Eyebite's three modes, Magic Jar's possession mechanic, Mass Suggestion's
+  duration scaling) live in the description. Magic Jar's `Cha` save and
+  Eyebite's `Wis` save are canonical PHB.
+- Utility spells resolve cleanly via the "takes effect" path; ritual flag set
+  only on Drawmij's Instant Summons (the only new ritual); concentration flag
+  set on Arcane Gate, Blade Barrier, Conjure Fey, Eyebite, Find the Path, Mass
+  Suggestion, Wall of Thorns (per PHB p.225-238).
+- Schools are canonical PHB (Arcane Gate = conjuration, Blade Barrier =
+  evocation, Conjure Fey = conjuration, Contingency = evocation, Create Undead
+  = necromancy, Drawmij's Instant Summons = conjuration, Eyebite = necromancy,
+  Find the Path = divination, Guards and Wards = abjuration, Magic Jar =
+  necromancy, Mass Suggestion = enchantment, Move Earth = transmutation,
+  Otiluke's Freezing Sphere = evocation, Planar Ally = conjuration, Programmed
+  Illusion = illusion, Transport via Plants = conjuration, Wall of Thorns =
+  conjuration, Wind Walk = transmutation, Word of Recall = conjuration).
+- Move Earth's **2-hour casting time** is preserved as-is (it's the longest
+  cast in the catalogue and a recognizable PHB signature for the spell).
+- Contingency's **10-day duration** without concentration is preserved — it is
+  the canonical PHB exception (the stored spell is "released" by a trigger,
+  not maintained by concentration).
+
+### Files changed
+- **`backend/app/engine/spells.py`** — 19 new `register_spell(...)` entries in
+  the level-6 block (after Wall of Ice, before the Level 7 section), grouped by
+  resolution path with a section comment.
+- **`backend/tests/test_spell_level6_completion.py`** (NEW, 66 tests) —
+  registry distribution (total ≥205, level 6 ≥31, no-dup guards), parametrized
+  registration-shape (name/level/school for all 19), per-spell mechanical
+  correctness (damage dice + save + concentration + upcasting on the three
+  damage spells; save ability + concentration + no-damage on the three
+  save-debuff spells; casting time / duration / range / ritual-flag /
+  concentration-flag on all 13 utility spells including Move Earth's 2-hour
+  cast and Contingency's 10-day duration), effect resolution (damage range +
+  save outcome for the damage spells, made_save for the save-debuff spells,
+  "takes effect" path for all 13 utility spells), and upcasting math (dice
+  count grows by the configured `at_higher_levels_dice` per slot level).
+
+### Verification
+- ✅ `uv run pytest` — **3504 backend tests passing** (+66), 0 failures
+- ✅ `npm test` — 393 frontend tests passing (no frontend changes)
+- ✅ `npx tsc --noEmit` — clean
+- ✅ `npm run build` — clean (2.42s)
+
+### Spell tier snapshot after this run
+`{0:14, 1:53, 2:16, 3:13, 4:14, 5:13, 6:31, 7:18, 8:18, 9:15}` — every tier
+is now ≥13, **levels 1, 6, 7, 8, 9 are PHB-complete**. The remaining non-
+canonical counts (levels 0, 2–5) are curated subsets, not exhaustive — room
+remains for future expansion if desired. Level 6 (31) is now the **second-
+densest tier** behind level 1 (53), reflecting PHB's own weight at the level
+where wizard/sorcerer/cleric spell lists all hit their signature spells
+(Disintegrate, Heal, Chain Lightning, Word of Recall, Heroes' Feast).
+
+---
 
 ## ✅ COMPLETED: High-Tier Enemy Registry Gap-Fill (CR 23 populated, 135→145)
 
