@@ -1076,6 +1076,224 @@ register_spell(Spell("Pass Without Trace", 2, SpellSchool.ABJURATION,
     casting_time="1 action", range="self", components="V, S, M",
     concentration=True, duration="up to 1 hour"))
 
+# PHB level-2 completion (36 -> 55, full PHB coverage). Mirrors the level-1 /
+# level-6 / level-7-8-9 PHB-completeness expansions: damage spells use the
+# standard dice+save path, healing spells use healing_dice_count, save-debuff
+# spells carry a save_ability but no damage dice (effects documented in the
+# description), and utility / buff / ritual spells resolve cleanly via the
+# "takes effect" path.
+# Save-spell with damage: Cordon of Arrows (Dex, 1d6 piercing, +1d6/slot).
+# Save-debuff (no damage): Gust of Wind (Str, push), Enthrall (Wis, NO
+#   concentration — PHB signature), Zone of Truth (Cha, can't lie).
+# Healing: Prayer of Healing (2d8+mod to up to 6 creatures, +1d8/slot,
+#   10-minute cast, Cleric).
+# Utility / buff / ritual (19 spells): Alter Self (concentration, three
+#   modes), Animal Messenger (ritual, 24-hour), Arcane Lock (permanent),
+#   Beast Sense (ritual + concentration), Continual Flame (permanent flame),
+#   Find Steed (10-minute cast, summon mount, Paladin), Find Traps
+#   (instantaneous divination), Gentle Repose (ritual, 10-day), Locate Object
+#   (concentration), Magic Mouth (ritual, 1-minute cast, programmed illusion),
+#   Magic Weapon (concentration, +1 weapon), Protection from Poison (1-hour,
+#   no concentration), Rope Trick (concentration, extradimensional space),
+#   Warding Bond (1-hour bond, NO concentration — PHB signature).
+register_spell(Spell("Cordon of Arrows", 2, SpellSchool.TRANSMUTATION,
+    description="You plant four pieces of nonmagical ammunition — arrows or crossbow bolts — in "
+                "the ground within range and lay them in the shape of a 5-foot-radius circle "
+                "centered on a point within range. Until the spell ends, the ammunition turns "
+                "into arrows that fire at each creature that enters or starts its turn within the "
+                "circle. A creature takes 1d6 piercing damage for each arrow that hits it. The "
+                "ammunition is destroyed when the spell ends. Upcasting adds 1d6 damage per slot "
+                "level above 2nd. Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="dex", damage_dice_count=1, damage_dice_sides=6,
+    damage_type="piercing", concentration=True, duration="up to 1 minute",
+    at_higher_levels_dice=1))
+register_spell(Spell("Gust of Wind", 2, SpellSchool.EVOCATION,
+    description="A line of strong wind 60 feet long and 10 feet wide blasts from you in a "
+                "direction you choose for the spell's duration. Each creature that starts its turn "
+                "in the line must succeed on a Strength saving throw or be pushed 15 feet away "
+                "from you in a direction following the line. Any creature in the line must spend "
+                "2 feet of movement for every 1 foot it moves when moving closer to you. The gust "
+                "dispels unsecured objects weighing up to 10 pounds that are in its path and "
+                "extinguishes open flames. Concentration.",
+    casting_time="1 action", range="self (60-foot line)", components="V, S, M",
+    save_ability="str", concentration=True, duration="up to 1 minute"))
+register_spell(Spell("Enthrall", 2, SpellSchool.ENCHANTMENT,
+    description="You weave a compelling string of words, distracting a creature you can see within "
+                "range. Each creature within 10 feet of the target that can hear you and understand "
+                "you must make a Wisdom saving throw. On a failed save, the creature is distracted "
+                "and has disadvantage on Wisdom (Perception) checks; the creature is also unable "
+                "to hear anything beyond 10 feet away. This spell has no concentration "
+                "requirement — its 1-minute duration simply elapses. Creatures that can't be "
+                "charmed are immune.",
+    casting_time="1 action", range="60 feet", components="V, S",
+    save_ability="wis", duration="1 minute"))
+register_spell(Spell("Zone of Truth", 2, SpellSchool.ENCHANTMENT,
+    description="You create a magical zone that guards against deception in a 15-foot-radius sphere "
+                "centered on a point of your choice within range. Until the spell ends, a creature "
+                "that enters the spell's area for the first time on a turn or starts its turn there "
+                "must make a Charisma saving throw. On a failed save, a creature can't speak a "
+                "deliberate lie while in the zone. You know whether each creature succeeds or "
+                "fails. An affected creature is aware of the spell and can thus avoid answering "
+                "questions to which it would normally respond with lies — but it may be evasive. "
+                "Concentration.",
+    casting_time="1 action", range="60 feet", components="V, S, M",
+    save_ability="cha", concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Prayer of Healing", 2, SpellSchool.EVOCATION,
+    description="Up to six creatures of your choice that you can see within range each regain hit "
+                "points equal to 2d8 + your spellcasting ability modifier. This spell has no "
+                "effect on undead or constructs. The casting time is unusually long (10 minutes) "
+                "because it is spoken as a communal prayer — it cannot be cast in the heat of "
+                "combat. Upcasting heals 1d8 more per slot level above 2nd.",
+    casting_time="10 minutes", range="30 feet", components="V, S",
+    healing_dice_count=2, healing_dice_sides=8, healing_bonus=0,
+    duration="instantaneous", at_higher_levels_dice=1))
+register_spell(Spell("Alter Self", 2, SpellSchool.TRANSMUTATION,
+    description="You assume a different form. When you cast the spell, choose one of the following "
+                "options, the effects of which last for the duration: Aquatic Adaptation (you "
+                "grow gills and gain a swimming speed equal to your walking speed, and you can "
+                "breathe underwater), Change Appearance (you transform your appearance, including "
+                "clothing, armor, weapons, height, weight, and facial features; you can't appear "
+                "as a creature of a different size, and your statistics stay the same), or "
+                "Natural Weapons (your unarmed strikes deal 1d6 + your Strength modifier "
+                "bludgeoning, piercing, or slashing damage — chosen when you cast — and are "
+                "magical). Concentration.",
+    casting_time="1 action", range="self", components="V, S",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Animal Messenger", 2, SpellSchool.ENCHANTMENT,
+    description="By means of this ritual, you choose a Tiny beast you can see within range. The "
+                "target must be a Beast of Challenge Rating 0. For the duration, the beast "
+                "becomes charmed by you and remains within 5 feet of you while you set it its "
+                "task: deliver a message of twenty-five words or fewer to a specific, "
+                "well-known creature, place, or object you describe. The beast travels toward "
+                "the location for the duration, taking the most direct route. When the beast "
+                "arrives, it delivers your message, then returns to rejoin you. Ritual.",
+    casting_time="1 action", range="30 feet", components="V, S, M",
+    ritual=True, duration="24 hours"))
+register_spell(Spell("Arcane Lock", 2, SpellSchool.ABJURATION,
+    description="You touch a closed door, window, gate, chest, or other entryway, and it becomes "
+                "locked for the duration. You and the creatures you designate when you cast this "
+                "spell can open the object normally. You can also set a password that, when spoken "
+                "within 5 feet of the object, suppresses this spell for 1 minute. Otherwise, it is "
+                "impassable until it is broken or the spell is dispelled or suppressed. Casting "
+                "knock on the object suppresses arcane lock for 10 minutes. While affected by this "
+                "spell, the object is more difficult to break or force open; the DC to break it or "
+                "pick any locks on it increases by 10. The material (gold dust worth at least 25 "
+                "gp) is consumed by the spell, and the effect is permanent until dispelled.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="instantaneous"))
+register_spell(Spell("Beast Sense", 2, SpellSchool.DIVINATION,
+    description="You touch a willing beast. For the duration of the spell, you can use your action "
+                "to see through the beast's eyes and hear what it hears, and continue to do so "
+                "until you use your action to return to your normal senses. While perceiving "
+                "through the beast's senses, you gain the benefits of any special senses that the "
+                "beast has. Concentration. Ritual.",
+    casting_time="1 action", range="touch", components="V, S",
+    ritual=True, concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Continual Flame", 2, SpellSchool.EVOCATION,
+    description="A flame, equivalent in brightness to a torch, springs forth from an object that "
+                "you touch. The effect looks like a regular flame, but it creates no heat and "
+                "doesn't use oxygen. A continual flame can be covered or hidden but not smothered "
+                "or quenched. The ruby dust (worth at least 50 gp) is consumed by the spell, and "
+                "the flame is permanent until dispelled.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="instantaneous"))
+register_spell(Spell("Find Steed", 2, SpellSchool.CONJURATION,
+    description="You summon a spirit that assumes the form of an unusually intelligent, strong, "
+                "and loyal steed, creating a long-lasting bond with it. Appearing in an "
+                "unoccupied space within range, the steed takes on a form that you choose: a "
+                "warhorse, a pony, a camel, an elk, or a mastiff. Your DM might allow other "
+                "animals to be summoned as steeds. The steed has the statistics of the chosen "
+                "form, though its type is celestial, fey, or fiend (your choice). While mounted on "
+                "your steed, you make any saving throw triggered by an effect that targets only "
+                "you or only your steed with advantage. The steed shares your alignment and "
+                "understands your languages. When you cast a spell with a range of self, it can "
+                "also affect the steed if the steed is within 5 feet of you. The casting time of "
+                "10 minutes reflects the ritual summoning. Paladin signature spell. The steed "
+                "remains until dismissed or reduced to 0 hit points.",
+    casting_time="10 minutes", range="30 feet", components="V, S",
+    duration="instantaneous"))
+register_spell(Spell("Find Traps", 2, SpellSchool.DIVINATION,
+    description="You sense the presence of any trap within range that is within line of sight. A "
+                "trap, for the purpose of this spell, includes anything designed to harm you or "
+                "others, such as a pit trap, an arrow trap, a falling-block mechanism, a tripwire "
+                "that releases poisonous gas, or any other similar hazard. The spell does not "
+                "reveal the trap's exact nature or location, only its presence. Natural hazards "
+                "and the unpredictable results of spellcasting (such as the area targeted by a "
+                "summoned creature) are not detected.",
+    casting_time="1 action", range="120 feet", components="V, S",
+    duration="instantaneous"))
+register_spell(Spell("Gentle Repose", 2, SpellSchool.NECROMANCY,
+    description="You touch a corpse or other remains. For the duration, the target is protected "
+                "from decay. This spell also extends the time limit on raising the target from "
+                "the dead, since days spent under the influence of this spell don't count against "
+                "the time limit of spells such as raise dead. The spell also effectively extends "
+                "the time limit on revivify. The spell has no effect on undead. Ritual.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    ritual=True, duration="10 days"))
+register_spell(Spell("Locate Object", 2, SpellSchool.DIVINATION,
+    description="Describe or name an object that is familiar to you. You sense the direction to "
+                "the object's location, as long as that object is within 1,000 feet of you. If the "
+                "object is in motion, you know the direction of its movement. The spell can find "
+                "an object you have seen (even in a painting or through a description), or the "
+                "nearest object of a particular kind (such as a particular kind of apparel, "
+                "jewelry, furniture, vehicle, or weapon). The spell is blocked by even a thin "
+                "sheet of lead, and it cannot find objects underwater. Concentration.",
+    casting_time="1 action", range="self", components="V, S, M",
+    concentration=True, duration="up to 10 minutes"))
+register_spell(Spell("Magic Mouth", 2, SpellSchool.ILLUSION,
+    description="You implant a message within an object in range, a message that is uttered when "
+                "a trigger condition is met. Choose an object that you can see and that isn't "
+                "being worn or carried by another creature. Then speak the message, which must be "
+                "25 words or fewer, including the trigger condition. The trigger can be a general "
+                "event (\"when a creature steps on this plate\") or specific (\"when a human in "
+                "leather armor steps on this plate\"). When the trigger occurs, a magical mouth "
+                "appears on the object and utters the message in your voice at the same volume "
+                "you spoke. The casting time of 1 minute reflects the ritual enchantment. Ritual. "
+                "The enchantment persists until dispelled.",
+    casting_time="1 minute", range="30 feet", components="V, S, M",
+    ritual=True, duration="until dispelled"))
+register_spell(Spell("Magic Weapon", 2, SpellSchool.TRANSMUTATION,
+    description="You touch a nonmagical weapon. Until the spell ends, that weapon becomes a magic "
+                "weapon with a +1 bonus to attack rolls and damage rolls. When cast at higher "
+                "levels, the bonus grows: +2 when cast with a 6th-level slot, +3 when cast with "
+                "an 8th-level slot. Concentration.",
+    casting_time="1 bonus action", range="touch", components="V, S",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Protection from Poison", 2, SpellSchool.ABJURATION,
+    description="You touch a creature. If it is poisoned, you neutralize the poison. If more than "
+                "one poison afflicts the creature, you neutralize one poison that you know is "
+                "present, or the one affecting it most severely. For the duration, the target has "
+                "advantage on saving throws against being poisoned, and it has resistance to "
+                "poison damage. The spell lasts 1 hour with no concentration required.",
+    casting_time="1 action", range="touch", components="V, S",
+    duration="1 hour"))
+register_spell(Spell("Rope Trick", 2, SpellSchool.TRANSMUTATION,
+    description="You touch a length of rope that is up to 60 feet long. One end of the rope then "
+                "rises into the air until the whole rope hangs perpendicular to the ground. At "
+                "the upper end of the rope, an invisible entrance opens to an extradimensional "
+                "space that lasts until the spell ends. The extradimensional space can be reached "
+                "by climbing to the top of the rope. The space can hold as many as eight Medium or "
+                "smaller creatures. Attacks and spells can't cross through the entrance into or "
+                "out of the extradimensional space, but those inside can see out through it as if "
+                "through a 3-foot-by-5-foot window centered on the rope. The spell ends if the "
+                "rope is destroyed or if any creature inside exits the space. Concentration.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    concentration=True, duration="up to 1 hour"))
+register_spell(Spell("Warding Bond", 2, SpellSchool.ABJURATION,
+    description="This spell wards a willing creature you touch and creates a mystic connection "
+                "between you and the target so that some of its wounds are transferred to you. "
+                "Until the spell ends, the target gains a +1 bonus to AC and saving throws, and "
+                "it has resistance to all damage. Each time it takes damage, you take the same "
+                "amount of damage. The spell ends if you drop to 0 hit points or if you and the "
+                "target become separated by more than 60 feet. The spell also ends if it is cast "
+                "again on either of the connected creatures. Warding Bond lasts 1 hour with no "
+                "concentration required — the bond persists until ended. The paired platinum rings "
+                "(worth at least 50 gp each) are worn by caster and target, and are not consumed. "
+                "Cleric signature spell.",
+    casting_time="1 action", range="touch", components="V, S, M",
+    duration="1 hour"))
+
 # --- Level 3 ---------------------------------------------------------------
 register_spell(Spell("Fireball", 3, SpellSchool.EVOCATION,
     description="A bright streak flashes to a point and explodes. Dex save.",
