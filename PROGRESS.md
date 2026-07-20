@@ -1,7 +1,98 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ TASHA'S CAULDRON FEAT EXPANSION (53→67) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (4323 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (327 spells, 169 enemies, 67 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 40 subclasses (PHB-complete), 6 legendary creatures, 3 starter adventures) ✅ TASHA'S CAULDRON FEAT EXPANSION (53→67, TCoE p.79-91) ✅ PHB SUBCLASS COMPLETION (29→40, ALL TWELVE CORE CLASSES NOW PHB-COMPLETE) ✅ ICONIC MM ENEMY REGISTRY GAP-FILL (145→169) ✅ PHB CANTRIP-TIER COMPLETION (14→29, ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK F...
+## TEST SUITE FULLY GREEN (4523 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (327 spells, 169 enemies, 67 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 32 traps, 40 subclasses (PHB-complete), 6 legendary creatures, 3 starter adventures) ✅ TASHA'S CAULDRON FEAT EXPANSION (53→67, TCoE p.79-91) ✅ PHB SUBCLASS COMPLETION (29→40, ALL TWELVE CORE CLASSES NOW PHB-COMPLETE) ✅ ICONIC MM ENEMY REGISTRY GAP-FILL (145→169) ✅ ICONIC TRAP REGISTRY EXPANSION (14→32) ✅ PHB CANTRIP-TIER COMPLETION (14→29, ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK F...
+
+## ✅ COMPLETED: Iconic Trap Registry Expansion (14 → 32)
+
+This run closed the trap registry's **iconic-trap gap** — the last content
+registry that was still modelled at only its bare sample size. The catalogue
+was already PHB-complete for spells (all 11 tiers 0–9), subclasses (all twelve
+core classes), feats (PHB + XGE + TCoE), and canonical-complete for the dragon
+family and the iconic Monster Manual monsters — but the trap registry modelled
+only the **14 DMG Chapter 5 sample traps**. Many of the most-played iconic
+traps were absent (Spiked Pit, Arrow Trap, Crushing Wall, Falling Block, Spear
+Trap, Ceiling Spikes, Explosive Rune, Lightning Trap, Acid Spray, Freezing
+Trap, Wailing Trap, Web Trap, etc.). This run registers **18 canonical /
+iconic traps** inline into their proper type sections (mechanical + magical),
+lifting the registry from **14 → 32**.
+
+A secondary win: the `TrapEffectType.SUMMON` and `TrapEffectType.TELEKINESIS`
+enums were previously **declared but exercised by zero traps** in the registry
+(only `trigger_trap` referenced them in its resolution branch). The new
+`summoning_trap` and `telekinesis_trap` are the first registry entries to use
+these effect types, closing an engine-coverage gap — every `TrapEffectType`
+value is now backed by at least one registry entry.
+
+### The 18 additions (grouped by type)
+- **Mechanical traps (10):** Spiked Pit (DMG p.122 pit-with-spikes — 1d6 fall +
+  1d10 piercing, no save), Arrow Trap (2d10 piercing, Dex DC 15 half), Crushing
+  Wall (8d10 bludgeoning, Str DC 20 half — DEADLY), Falling Block (4d10
+  bludgeoning, Dex DC 15 half), Falling Portcullis (2d10 slashing + restrained,
+  XGtE-style), Weak Floor (1d6 bludgeoning fall), Spear Trap (3d8 piercing, Dex
+  DC 15 half), Tripwire Crossbow (1d10 piercing, Dex DC 13 negate — SETBACK),
+  Ceiling Spikes (3d10 piercing, Dex DC 15 half), Spinning Blade (3d6 slashing
+  + prone, distinct from the pendulum Swinging Blade).
+- **Magical traps (8):** Explosive Rune (6d6 fire, Dex DC 15 half), Lightning
+  Trap (8d6 lightning, Dex DC 15 half), Acid Spray Trap (4d6 acid, Dex DC 13
+  half), Freezing Trap (4d6 cold + restrained, Con DC 15), Wailing Trap (8d8
+  thunder + deafened, Con DC 18 — DEADLY), Web Trap (restrained, Dex DC 13 —
+  SETBACK), **Summoning Trap (SUMMON effect type — DEADLY)**, **Telekinesis
+  Trap (TELEKINESIS effect type)**.
+
+### Canonical-mechanics decisions (DMG ch.5)
+- **Severity bands follow DMG guidance throughout:** setback (DC 10–11, light
+  damage), dangerous (DC 12–19, moderate, save-for-half), deadly (DC 18–20+,
+  heavy). Asserted by the test suite via band-consistency checks.
+- **Damage scales with severity** — setbacks cap ~1d10/2d10, dangerous traps
+  reach 4d10/6d6/8d6, deadly traps hit 8d8 thunder / 8d10 bludgeoning
+  (matching the Sphere of Annihilation's 10d10 deadly tier). Asserted.
+- **Save results are canonical** (`half` / `none` / `full`); every DAMAGE
+  effect has a valid `<n>d<s>` dice expression. Asserted parametrically.
+- **Two previously-unused effect types are now exercised:** `SUMMON`
+  (summoning_trap) and `TELEKINESIS` (telekinesis_trap) — both resolve through
+  the existing `trigger_trap` narrative branch without crashing, asserted by
+  engine-integration tests.
+
+### Files changed
+- **`backend/app/engine/traps.py`** — 18 new `Trap(...)` entries inserted inline
+  into their type sections (10 mechanical before the magical-section comment, 8
+  magical at the end of `TRAP_REGISTRY`). Registry total 14 → 32.
+- **`backend/tests/test_trap_iconic_expansion.py`** — **NEW** test module
+  (200 tests): per-entry canonical stat-block check (18), required-fields
+  check (18), id-lookup (18), DMG severity-band consistency for detection DC
+  (18), disarm DC (18), and damage-dice scale (18), SUMMON/TELEKINESIS
+  effect-type coverage, damage-dice validity + canonical save-results
+  (parametrized over the whole registry), mechanical/magical/severity coverage
+  floors, per-entry serialization round-trips (trap + instance, 36),
+  `trigger_trap` engine integration (per-entry triggered + name-in-narrative
+  36, disarmed-no-trigger, summon/telekinesis effect-description, deterministic
+  damage on failed/half save), registry-total == 32, unique IDs, sorted IDs,
+  registry floor > 14, and all 14 pre-expansion DMG sample traps still present.
+- **`README.md`** + **`PROGRESS.md`** — synced counts (14→32 traps,
+  4323→4523 backend tests, 4716→4916 total) + new changelog/status entries.
+
+### Verification
+- ✅ `uv run pytest` — **4523 backend tests passing** (+200), 0 failures
+- ✅ `npm test` (frontend) — **393 tests passing** (unchanged; no frontend
+  files touched this run — verified green at session start and no frontend
+  code depends on the backend trap registry)
+- ✅ `TRAP_REGISTRY` now contains 32 traps (mechanical ≥ 20, magical ≥ 12,
+  every severity band ≥ 3)
+- ✅ Every `TrapEffectType` value (DAMAGE / CONDITION / TELEPORT / SUMMON /
+  TELEKINESIS) is now exercised by at least one registry entry
+
+### Trap registry snapshot after this run
+- **32 total traps** (was 14) across both types and all three severity bands.
+- The iconic-trap gap is closed: the most-used DMG/XGtE mechanical traps
+  (pits-with-spikes, arrow/spear/ceiling-spike volleys, crushing walls,
+  falling blocks/portcullises, spinning blades) and the iconic magical traps
+  (explosive/lightning/acid/freezing runes, wailing skulls, web, summoning
+  circles, telekinesis) are all registered. The remaining catalogue is
+  PHB/canonical-complete across spells, subclasses, feats, enemies, and now
+  traps.
+
+---
 
 ## ✅ COMPLETED: Iconic Monster Manual Enemy Registry Gap-Fill (145 → 169)
 
