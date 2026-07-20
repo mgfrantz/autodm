@@ -472,6 +472,9 @@ COMMON_ENEMIES = {
     "Skeleton Warrior": EnemyTemplate(name="Skeleton Warrior", cr=1/2, armor_class=13, hp=20, attack_bonus=4),
     "Swarm of Bats": EnemyTemplate(name="Swarm of Bats", cr=1/2, armor_class=12, hp=22, attack_bonus=4),
     "Swarm of Rats": EnemyTemplate(name="Swarm of Rats", cr=1/2, armor_class=12, hp=18, attack_bonus=4),
+    # Orc (MM p.246) & Gnoll (MM p.163) — iconic humanoid staples; were glaring registry gaps.
+    "Orc": EnemyTemplate(name="Orc", cr=1/2, armor_class=13, hp=15, attack_bonus=5),
+    "Gnoll": EnemyTemplate(name="Gnoll", cr=1/2, armor_class=15, hp=22, attack_bonus=4),
 
     # CR 1 (200 XP)
     "Bugbear": EnemyTemplate(name="Bugbear", cr=1, armor_class=16, hp=27, attack_bonus=4),
@@ -488,6 +491,26 @@ COMMON_ENEMIES = {
         hp=22,
         attack_bonus=3,
         damage_modifiers=[dt_mod.immune("poison").to_dict()],
+    ),
+    # Ghoul (MM p.148) & Specter (MM p.279) — iconic undead staples.
+    "Ghoul": EnemyTemplate(
+        name="Ghoul",
+        cr=1,
+        armor_class=12,
+        hp=12,
+        attack_bonus=2,
+        damage_modifiers=[dt_mod.immune("poison").to_dict()],
+    ),
+    "Specter": EnemyTemplate(
+        name="Specter",
+        cr=1,
+        armor_class=12,
+        hp=22,
+        attack_bonus=4,
+        damage_modifiers=[
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
     ),
 
     # CR 2 (450 XP)
@@ -518,6 +541,16 @@ COMMON_ENEMIES = {
     "Pegasus": EnemyTemplate(name="Pegasus", cr=2, armor_class=12, hp=59, attack_bonus=5),
     "Phase Spider": EnemyTemplate(name="Phase Spider", cr=2, armor_class=15, hp=32, attack_bonus=4),
     "Saber-Toothed Tiger": EnemyTemplate(name="Saber-Toothed Tiger", cr=2, armor_class=12, hp=52, attack_bonus=6),
+    # Mimic (MM p.220) — iconic trap-monster; immune to acid. Griffon (MM p.174).
+    "Mimic": EnemyTemplate(
+        name="Mimic",
+        cr=2,
+        armor_class=12,
+        hp=58,
+        attack_bonus=5,
+        damage_modifiers=[dt_mod.immune("acid").to_dict()],
+    ),
+    "Griffon": EnemyTemplate(name="Griffon", cr=2, armor_class=12, hp=59, attack_bonus=5),
 
     # CR 3 (700 XP)
     "Werewolf": EnemyTemplate(
@@ -540,6 +573,19 @@ COMMON_ENEMIES = {
     "Gargoyle": EnemyTemplate(name="Gargoyle", cr=3, armor_class=15, hp=52, attack_bonus=4),
     "Grick": EnemyTemplate(name="Grick", cr=3, armor_class=14, hp=27, attack_bonus=4),
     "Giant Vulture": EnemyTemplate(name="Giant Vulture", cr=3, armor_class=10, hp=30, attack_bonus=5),
+    # Iconic CR 3 gap-fill: Displacer Beast (MM p.81), Manticore (MM p.213),
+    # Hell Hound (MM p.182, immune fire), Doppelganger (MM p.82).
+    "Displacer Beast": EnemyTemplate(name="Displacer Beast", cr=3, armor_class=13, hp=85, attack_bonus=6),
+    "Manticore": EnemyTemplate(name="Manticore", cr=3, armor_class=14, hp=68, attack_bonus=5),
+    "Hell Hound": EnemyTemplate(
+        name="Hell Hound",
+        cr=3,
+        armor_class=15,
+        hp=45,
+        attack_bonus=5,
+        damage_modifiers=[dt_mod.immune("fire").to_dict()],
+    ),
+    "Doppelganger": EnemyTemplate(name="Doppelganger", cr=3, armor_class=14, hp=52, attack_bonus=6),
 
     # CR 4 (1100 XP)
     "Young Red Dragon": EnemyTemplate(
@@ -578,6 +624,20 @@ COMMON_ENEMIES = {
         attack_bonus=7,
         damage_modifiers=[dt_mod.immune("poison").to_dict()],
     ),
+    # Banshee (MM p.23, undead) & Ettin (MM p.132, two-headed giant).
+    "Banshee": EnemyTemplate(
+        name="Banshee",
+        cr=4,
+        armor_class=12,
+        hp=58,
+        attack_bonus=6,
+        damage_modifiers=[
+            dt_mod.immune("necrotic").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
+    "Ettin": EnemyTemplate(name="Ettin", cr=4, armor_class=13, hp=85, attack_bonus=7),
 
     # CR 5 (1800 XP)
     "Hill Giant": EnemyTemplate(name="Hill Giant", cr=5, armor_class=13, hp=105, attack_bonus=8),
@@ -598,6 +658,45 @@ COMMON_ENEMIES = {
         damage_modifiers=[
             dt_mod.immune("poison").to_dict(),
             dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
+    # Iconic CR 5 gap-fill: Wraith (MM p.302, undead), Unicorn (MM p.293),
+    # Water Elemental (MM p.125, immune poison / resist acid), Flesh Golem (MM p.169).
+    "Wraith": EnemyTemplate(
+        name="Wraith",
+        cr=5,
+        armor_class=13,
+        hp=67,
+        attack_bonus=6,
+        damage_modifiers=[
+            dt_mod.immune("cold").to_dict(),
+            dt_mod.immune("necrotic").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist_nonmagical_bps().to_dict(),
+        ],
+    ),
+    "Unicorn": EnemyTemplate(name="Unicorn", cr=5, armor_class=12, hp=67, attack_bonus=7),
+    "Water Elemental": EnemyTemplate(
+        name="Water Elemental",
+        cr=5,
+        armor_class=14,
+        hp=114,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.resist("acid").to_dict(),
+        ],
+    ),
+    "Flesh Golem": EnemyTemplate(
+        name="Flesh Golem",
+        cr=5,
+        armor_class=9,
+        hp=93,
+        attack_bonus=7,
+        damage_modifiers=[
+            dt_mod.immune_nonmagical_bps().to_dict(),
+            dt_mod.immune("lightning").to_dict(),
+            dt_mod.immune("poison").to_dict(),
         ],
     ),
 
@@ -643,6 +742,8 @@ COMMON_ENEMIES = {
         ],
     ),
     "Gargoyle Protector": EnemyTemplate(name="Gargoyle Protector", cr=6, armor_class=15, hp=110, attack_bonus=6),
+    # Wyvern (MM p.303) — iconic dragon-kin; venomous stinger. No damage immunities.
+    "Wyvern": EnemyTemplate(name="Wyvern", cr=6, armor_class=13, hp=110, attack_bonus=7),
 
     # CR 7 (2900 XP)
     "Bodak": EnemyTemplate(name="Bodak", cr=7, armor_class=16, hp=72, attack_bonus=8),
@@ -669,6 +770,8 @@ COMMON_ENEMIES = {
         ],
     ),
     "Giant Octopus": EnemyTemplate(name="Giant Octopus", cr=7, armor_class=11, hp=52, attack_bonus=6),
+    # Mind Flayer / Illithid (MM p.221) — iconic aberration; was a glaring registry gap.
+    "Mind Flayer": EnemyTemplate(name="Mind Flayer", cr=7, armor_class=15, hp=71, attack_bonus=7),
 
     # CR 8 (3900 XP)
     "Adult Brass Dragon": EnemyTemplate(name="Adult Brass Dragon", cr=8, armor_class=19, hp=172, attack_bonus=10),
@@ -692,6 +795,20 @@ COMMON_ENEMIES = {
     "Giant Skeleton Lord": EnemyTemplate(name="Giant Skeleton Lord", cr=9, armor_class=15, hp=135, attack_bonus=9),
     "Hydra": EnemyTemplate(name="Hydra", cr=9, armor_class=15, hp=119, attack_bonus=8),
     "Stone Giant": EnemyTemplate(name="Stone Giant", cr=9, armor_class=17, hp=126, attack_bonus=10),
+    # Clay Golem (MM p.168, construct) & Treant (MM p.289, plant) — iconic CR 9 gap-fill.
+    "Clay Golem": EnemyTemplate(
+        name="Clay Golem",
+        cr=9,
+        armor_class=14,
+        hp=133,
+        attack_bonus=9,
+        damage_modifiers=[
+            dt_mod.immune_nonmagical_bps().to_dict(),
+            dt_mod.immune("acid").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
+    ),
+    "Treant": EnemyTemplate(name="Treant", cr=9, armor_class=13, hp=138, attack_bonus=10),
 
     # CR 10 (5900 XP)
     "Young Gold Dragon": EnemyTemplate(name="Young Gold Dragon", cr=10, armor_class=19, hp=178, attack_bonus=10),
@@ -701,6 +818,20 @@ COMMON_ENEMIES = {
     "Copper Dragon Wyrmling": EnemyTemplate(name="Copper Dragon Wyrmling", cr=10, armor_class=17, hp=135, attack_bonus=9),
     "Kraken Spawn": EnemyTemplate(name="Kraken Spawn", cr=10, armor_class=18, hp=157, attack_bonus=10),
     "Marilith": EnemyTemplate(name="Marilith", cr=10, armor_class=18, hp=189, attack_bonus=9),
+    # Aboleth (MM p.13, iconic aberration) & Stone Golem (MM p.170, construct).
+    "Aboleth": EnemyTemplate(name="Aboleth", cr=10, armor_class=17, hp=135, attack_bonus=9),
+    "Stone Golem": EnemyTemplate(
+        name="Stone Golem",
+        cr=10,
+        armor_class=17,
+        hp=178,
+        attack_bonus=10,
+        damage_modifiers=[
+            dt_mod.immune_nonmagical_bps().to_dict(),
+            dt_mod.immune("poison").to_dict(),
+            dt_mod.immune("psychic").to_dict(),
+        ],
+    ),
 
     # CR 11-30 (7200 XP and up — high-tier solo threats for parties 15-20).
     # Fills the registry's previously empty CR 11-30 band. CRs follow the
@@ -848,6 +979,8 @@ COMMON_ENEMIES = {
         attack_bonus=8,
         damage_modifiers=[dt_mod.immune("lightning").to_dict()],
     ),
+    # Purple Worm (MM p.255) — iconic Gargantuan monstrosity; fills a notable CR 15 gap.
+    "Purple Worm": EnemyTemplate(name="Purple Worm", cr=15, armor_class=18, hp=247, attack_bonus=14),
 
     # CR 16 (15000 XP)
     "Adult Blue Dragon": EnemyTemplate(
@@ -865,6 +998,19 @@ COMMON_ENEMIES = {
         hp=290,
         attack_bonus=12,
         damage_modifiers=[dt_mod.immune("cold").to_dict()],
+    ),
+    # Iron Golem (MM p.170) — apex construct; completes the golem family (Flesh/Clay/Stone/Iron).
+    "Iron Golem": EnemyTemplate(
+        name="Iron Golem",
+        cr=16,
+        armor_class=19,
+        hp=210,
+        attack_bonus=12,
+        damage_modifiers=[
+            dt_mod.immune_nonmagical_bps().to_dict(),
+            dt_mod.immune("fire").to_dict(),
+            dt_mod.immune("poison").to_dict(),
+        ],
     ),
 
     # CR 17 (18000 XP)

@@ -307,11 +307,12 @@ class TestCRBandPopulation:
 class TestRegistryIntegrity:
     """Whole-registry sanity guards (no regressions from the expansion)."""
 
-    def test_registry_total_count_is_145(self):
-        """Was 135 before; +10 new entries (Behir was moved, not added)."""
-        assert len(COMMON_ENEMIES) == 145, (
-            f"Registry has {len(COMMON_ENEMIES)} entries; expected 145 "
-            "(was 135, +10 new, Behir moved not added)"
+    def test_registry_total_count_is_169(self):
+        """Was 135 before; +10 new entries (Behir was moved, not added) -> 145.
+        A later iconic-MM expansion added 24 more -> 169."""
+        assert len(COMMON_ENEMIES) == 169, (
+            f"Registry has {len(COMMON_ENEMIES)} entries; expected 169 "
+            "(was 135, +10 high-tier, Behir moved not added; +24 iconic-MM)"
         )
 
     def test_no_duplicate_names(self):
