@@ -61,7 +61,7 @@ The DM doesn't just narrate — it calls real game engine functions. Results flo
 - **9 Alignments** — DnD 5e alignments
 - **18 Language Systems** — Language families for communication mechanics
 - **18 Mounts/Vehicles** — Mounts and vehicles for overland travel
-- **14 Traps** — Trap and hazard mechanics
+- **32 Traps** — Mechanical and magical trap/hazard mechanics (DMG ch.5 sample traps + iconic MM/XGtE traps: Spiked Pit, Arrow Trap, Crushing Wall, Explosive Rune, Lightning Trap, Summoning Trap, Telekinesis Trap, etc.)
 - **40 Subclasses** — Full PHB subclass coverage across all twelve core classes (PHB-complete): 7 Cleric domains, 8 Wizard schools, 3 each for Fighter/Monk/Paladin/Rogue/Warlock, 2 each for Barbarian/Bard/Druid/Ranger/Sorcerer
 - **6 Legendary Creatures** — Legendary actions and lair actions (MM p.11)
 - **3 Starter Adventures** — Curated one-shot worlds playable without an LLM key (Cursed Mines of Emberdeep, Whispering Moor, Shattered Spires)
