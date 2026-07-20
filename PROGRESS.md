@@ -1,7 +1,98 @@
 # PROGRESS.md — DnD LLM Game Development Tracker
 
 ## Status: MVP SCAFFOLD COMPLETE ✅ VERIFIED ✅ STREAMING ✅ COMBAT ENGINE ✅ INVENTORY ✅ SPELLS ✅ LEVELING ✅ MAP/NAVIGATION ✅ SAVE/LOAD ✅ FRONTEND POLISH ✅ CONTEXT MANAGEMENT ✅ WORLD STATE PERSISTENCE ✅ HOMEBREW ITEMS ✅ MULTICLASSING ✅ FEAT SYSTEM ✅ FEAT EXPANSION (PHB + XGE RACE FEATS) ✅ TASHA'S CAULDRON FEAT EXPANSION (53→67) ✅ VISUAL MAP RENDERING ✅ CONDITIONS/STATUS EFFECTS ✅ REST SYSTEM ✅ SAVING THROWS ✅ SKILL SYSTEM ✅ COMBAT ACTIONS (Grapple/Shove/Dash/Disengage/Dodge/Help/Two-Weapon/Unarmed/Opportunity) ✅ EQUIPMENT-DRIVEN COMBAT ✅ COMPREHENSIVE README.md ✅ SHOP/ECONOMY ✅ LOOT TABLES ✅ STEALTH/HIDING ✅ INVENTORY PANEL ✅ CONCENTRATION MECHANICS ✅ MAGIC ITEM ATTUNEMENT ✅ TOOL PROFICIENCIES ✅ ENVIRONMENTAL CONDITIONS (Weather/Lighting/Terrain/Temperature) ✅ CHARACTER BACKGROUNDS ✅ ALIGNMENT SYSTEM ✅ ENVIRONMENT COMBAT INTEGRATION ✅ LANGUAGE SYSTEM ✅ IN-GAME BACKGROUND PANEL ✅ IN-GAME ALIGNMENT PANEL ✅ IN-GAME ENVIRONMENT PANEL ✅ IN-GAME LANGUAGES PANEL ✅ IN-GAME SPELLS PANEL ✅ IN-GAME FEATS PANEL ✅ EXHAUSTION SYSTEM ✅ IN-GAME EXHAUSTION PANEL ✅ SIDEBAR INDICATORS (EXHAUSTION + FEATS/ASI) ✅ FRONTEND TEST SUITE (VITEST) ✅ EXHAUSTION STORY NARRATION ✅ FEAT-SOURCE ATTRIBUTION (SKILLS + SAVES) ✅ IN-GAME SAVING-THROWS PANEL ✅ STARVATION/DEHYDRATION SYSTEM ✅ MOUNTS/VEHICLES ENGINE ✅ DISEASE/POISON TRACKING ✅ SOCIAL INTERACTION (3rd PILLAR) ✅ SUBCLASS SYSTEM ✅ IN-GAME MOUNTS PANEL ✅ IMAGE GENERATION (PROVIDER-AGNOSTIC) ✅ IN-GAME IMAGE STUDIO PANEL ✅ LEGENDARY ACTIONS & LAIR ACTIONS (BOSS COMBAT, MM p.11) ✅ IN-GAME LEGENDARY PANEL ✅ TTS VOICE NARRATION (BACKEND) ✅ TTS VOICE NARRATION (FRONTEND) ✅ TTS STREAMING/CHUNKED PLAYBACK (BACKEND) ✅ FRONTEND BUNDLE OPTIMISATION (43% REDUCTION) ✅ CURATED STARTER ADVENTURES (3 READY-TO-PLAY WORLDS, NO LLM KEY REQUIRED) ✅ ICONIC PHB/XGE SPELL REGISTRY EXPANSION ✅ LOCAL TTS VIA MLX-AUDIO (KOKORO, APPLE SILICON, ZERO-CONFIG) ✅ DM FUNCTION CALLING PHASE 2 (COMBAT RESOLUTION) ✅ DM FUNCTION CALLING PHASE 3 (SPELL CASTING) ✅ DM FUNCTION CALLING PHASE 4 (INVENTORY OPERATIONS) ✅ DM FUNCTION CALLING PHASE 5 (CONDITIONS) ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMING ✅ INVENTORY RESOLUTION IN GAME ACTIONS ✅ INVENTORY ROSTER IN DM PROMPT ✅ DM FUNCTION CALLING PHASE 3.5 (CONCENTRATION TRACKING) ✅ DM FUNCTION CALLING PHASE 3.5b (AOE MULTI-TARGET SPELLS) ✅ CONCENTRATION GAME EVENTS ✅ DM-CALLABLE CONCENTRATION FUNCTIONS (START/END/CHECK) ✅ CONCENTRATION CARD COMPONENT ✅ CONCENTRATION ROSTER IN DM PROMPT ✅ REACTIVE CONCENTRATION HOOKS (CAST/CONDITION/DAMAGE) ✅ GAME EVENT UI POLISH (DICE TUMBLE + HP-BAR SHAKE + COLLAPSED-BY-DEFAULT OLD EVENTS) ✅
-## TEST SUITE FULLY GREEN (4156 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (327 spells, 145 enemies, 67 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 40 subclasses (PHB-complete), 6 legendary creatures, 3 starter adventures) ✅ TASHA'S CAULDRON FEAT EXPANSION (53→67, TCoE p.79-91) ✅ PHB SUBCLASS COMPLETION (29→40, ALL TWELVE CORE CLASSES NOW PHB-COMPLETE) ✅ PHB CANTRIP-TIER COMPLETION (14→29, ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK FIXTURE (LLM CALL ISOLATION IN TESTS) ✅ STATEFUL COMBAT RESOLUTION (ATTACK/DAMAGE/INITIATIVE EVENTS) ✅ COMBATANT ROSTER IN DM PROMPT ✅ ATTACK CARD COMPONENT ✅ DAMAGE CARD COMPONENT ✅ INITIATIVE CARD COMPONENT ✅ HP BAR IN COMBAT CARDS ✅ SPELL CAST GAME EVENTS ✅ DM-CALLABLE SPELL FUNCTIONS (dm_cast_spell) ✅ SPELL CAST CARD COMPONENT ✅ SPELL SCHOOL COLOR THEMING ✅ DUAL-STATE SPELL RESOLUTION (SPELLBOOK + ENCOUNTER) ✅ AVAILABLE-SPELLS ROSTER IN DM PROMPT ✅ LOOT GAME EVENTS ✅ DM-CALLABLE INVENTORY FUNCTIONS (give/remove/equip/use) ✅ LOOT CARD COMPONENT ✅ ITEM RARITY COLOR THEMI... [truncated]
+## TEST SUITE FULLY GREEN (4323 backend + 393 frontend passing, 0 failures) ✅ CONTENT REGISTRIES EXPANDED ✅ (327 spells, 169 enemies, 67 feats, 47 tools, 18 backgrounds, 9 alignments, 18 language systems, 18 mounts/vehicles, 14 traps, 40 subclasses (PHB-complete), 6 legendary creatures, 3 starter adventures) ✅ TASHA'S CAULDRON FEAT EXPANSION (53→67, TCoE p.79-91) ✅ PHB SUBCLASS COMPLETION (29→40, ALL TWELVE CORE CLASSES NOW PHB-COMPLETE) ✅ ICONIC MM ENEMY REGISTRY GAP-FILL (145→169) ✅ PHB CANTRIP-TIER COMPLETION (14→29, ALL ELEVEN TIERS 0–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-1 SPELL COMPLETION (37→53) ✅ PHB LEVEL-2 SPELL EXPANSION (16→36) ✅ PHB LEVEL-2 SPELL COMPLETION (36→55, FULL PHB COVERAGE) ✅ PHB LEVEL-3 SPELL COMPLETION (13→39, FULL PHB COVERAGE) ✅ PHB LEVEL-4 SPELL COMPLETION (14→30, FULL PHB COVERAGE) ✅ PHB LEVEL-5 SPELL COMPLETION (13→39, FULL PHB COVERAGE — ALL TEN LEVELED TIERS 1–9 NOW PHB-COMPLETE) ✅ PHB LEVEL-6 SPELL COMPLETION (12→31) ✅ ENEMY CR-CORRECTION (5 ICONIC MM MONSTERS → CANONICAL CR) ✅ YOUNG GOLD DRAGON AC CORRECTION (→ MM-CANONICAL 19) ✅ HIGH-TIER ENEMY REGISTRY GAP-FILL (CR 23 POPULATED, 135→145, DRAGON FAMILY CANONICAL-COMPLETE) ✅ UV PROJECT MIGRATION ✅ AFFLICTIONS API FIX ✅ TRAP/HAZARD SYSTEM ✅ DSPy CHARACTER FLAVOR ✅ PERSONALITY SYSTEM ✅ DSPy WORLD GENERATION ✅ DSPy DM NARRATION (NON-STREAMING) ✅ DSPy DM NARRATION (STREAMING) ✅ DSPy STORY SUMMARIZATION ✅ DSPy MIGRATION COMPLETE (LEGACY ORCHESTRATOR DEPRECATED) ✅ QUEST DETECTION IN DIALOGUE ✅ QUEST LOG PANEL (FRONTEND) ✅ NPC MOOD DETECTION IN NARRATION ✅ GAME FLAGS FOR BRANCHING NARRATIVE STATE ✅ SCENE-AWARE ACTION SUGGESTIONS (DSPy pattern #4) ✅ CROSS-FILE TEST ISOLATION LEAK FIXED (FULL SUITE GREEN) ✅ DM FUNCTION CALLING PHASE 1 (DICE ROLLING + CHECK PROMPTS) ✅ GAME EVENT PIPELINE (GameEvent → SSE → INLINE UI CARDS) ✅ DMACTIONABLENARRATION SIGNATURE (DSPy) ✅ DM-CALLABLE DICE FUNCTIONS ✅ PLAYER-INITIATED CHECK RESOLUTION (/resolve-check) ✅ DICE ROLL CARD COMPONENT ✅ CHECK PROMPT CARD COMPONENT ✅ GAME EVENT RENDERER ✅ CONFTEST AUTO-MOCK F...
+
+## ✅ COMPLETED: Iconic Monster Manual Enemy Registry Gap-Fill (145 → 169)
+
+This run closed the enemy registry's **iconic-monster gap**. The catalogue
+was already PHB-complete for spells (all 11 tiers 0–9), subclasses (all twelve
+core classes), and feats (PHB + XGE + TCoE), and canonical-complete for the
+dragon family at every CR tier — but it was missing many of the **most-played
+Monster Manual monsters**. The registry previously modelled 145 enemies; this
+run registers **24 canonical MM monsters**, lifting it to **169**.
+
+The additions are inserted **inline into their proper CR bands** (matching the
+established CR-sectioned registry convention), not appended as a block.
+
+### The 24 additions (grouped by family)
+- **Humanoid staples (2):** Orc (MM p.246, CR 1/2), Gnoll (MM p.163, CR 1/2).
+- **Undead (4):** Ghoul (MM p.148, CR 1), Specter (MM p.279, CR 1), Banshee
+  (MM p.23, CR 4), Wraith (MM p.302, CR 5). All carry the canonical undead
+  damage profile: immune to poison; the spectral undead (Specter/Banshee/
+  Wraith) additionally resist nonmagical BPS; Wraith & Banshee add necrotic
+  immunity (Wraith also cold).
+- **Iconic aberrations (2) — both glaring omissions:** Mind Flayer / Illithid
+  (MM p.221, CR 7), Aboleth (MM p.13, CR 10).
+- **Constructs — the full Golem family (4), previously entirely absent:**
+  Flesh Golem (MM p.169, CR 5), Clay Golem (MM p.168, CR 9), Stone Golem
+  (MM p.170, CR 10), Iron Golem (MM p.170, CR 16). Each is immune to
+  nonmagical BPS plus its canonical type immunities (Flesh→lightning+poison,
+  Clay→acid+poison, Stone→poison+psychic, Iron→fire+poison).
+- **Monstrosities/beasts (8):** Mimic (MM p.220, CR 2, immune acid),
+  Displacer Beast (MM p.81, CR 3), Manticore (MM p.213, CR 3), Doppelganger
+  (MM p.82, CR 3), Griffon (MM p.174, CR 2), Wyvern (MM p.303, CR 6),
+  Purple Worm (MM p.255, CR 15), Ettin (MM p.132, CR 4), Treant (MM p.289,
+  CR 9).
+- **Fiends/elementals/celestials (3):** Hell Hound (MM p.182, CR 3, immune
+  fire), Unicorn (MM p.293, CR 5), Water Elemental (MM p.125, CR 5, immune
+  poison + resist acid).
+
+### Canonical-mechanics decisions
+- **CR/AC/HP follow the printed MM stat blocks** throughout (e.g. Mimic AC 12
+  / HP 58, Mind Flayer AC 15 / HP 71, Purple Worm AC 18 / HP 247, Iron Golem
+  AC 19 / HP 210). Asserted by the test suite.
+- **`attack_bonus` is the monster's primary-attack to-hit** (Str/Dex mod +
+  proficiency bonus by CR), matching the registry's existing convention
+  (Tarrasque: Str 30 + prof +9 = +19). Internally consistent and defensible;
+  individual MM-printed quirks (e.g. the ghoul's lower-than-Str-mod to-hit)
+  can be refined by a future CR-correction pass if surfaced.
+- **Damage modifiers are canonical per MM:** golems use
+  `immune_nonmagical_bps()` + type immunities; spectral undead use
+  `resist_nonmagical_bps()` + poison/necrotic immunities; elementals immune
+  to poison; Water Elemental's acid resistance is a plain (unconditional)
+  resistance, not a nonmagical-only qualifier — all asserted.
+- **CRs not filled (18, 25–29)** remain empty by design: CR 18 has no clean
+  canonical MM monster for the simplified template, and CRs 25–29 are
+  intentionally empty (the MM jumps from CR 24 ancient dragons to the CR 30
+  Tarrasque). These are correct gaps, not missing content.
+
+### Files changed
+- **`backend/app/engine/encounters.py`** — 24 new `EnemyTemplate(...)` entries
+  inserted inline into their CR sections (CR 1/2, 1, 2, 3, 4, 5, 6, 7, 9, 10,
+  15, 16). Registry total 145 → 169.
+- **`backend/tests/test_enemy_iconic_mm_expansion.py`** — **NEW** test module
+  (167 tests): per-entry canonical stat-block check (24), xp-derivation (24),
+  `to_dict` combat-block shape (24), `get_enemies_by_cr` lookup placement
+  (24), no-duplicate-keys, canonical damage-immunity/resistance matrix
+  (parametrized over undead/golems/elementals), golem nonmagical-BPS bypass
+  checks, no-modifier-monster checks (13), `TestGolemFamily` (all four golems
+  present at canonical CRs with scaling HP), `TestIconicAberrations` (Mind
+  Flayer + Aboleth canonical), `TestCRBandPopulation` (every touched band
+  meets its new floor), and `TestRegistryTotal` (registry == 169).
+- **`backend/tests/test_enemy_high_tier_expansion.py`** — bumped the
+  registry-floor assertion `test_registry_total_count_is_145` →
+  `test_registry_total_count_is_169` (the prior total; +24 from this run).
+- **`README.md`** + **`PROGRESS.md`** — synced counts (145→169 enemies,
+  4156→4323 backend tests, 4549→4716 total) + new changelog/status entries.
+
+### Verification
+- ✅ `uv run pytest` — **4323 backend tests passing** (+167), 0 failures
+- ✅ `npx tsc --noEmit` — clean (no frontend changes)
+- ✅ `npm test` (frontend) — **393 tests passing** (28 files), 0 failures
+- ✅ `get_enemies_by_cr()` now returns iconic monsters at every populated tier
+  (CR 1/2: 8, CR 1: 10, CR 2: 12, CR 3: 15, CR 4: 12, CR 5: 14, CR 6: 10,
+  CR 7: 10, CR 8: 9, CR 9: 12, CR 10: 9, CR 15: 3, CR 16: 3)
+
+### Enemy registry snapshot after this run
+- **169 total enemies** across CRs 0–30 (was 145).
+- The iconic-monster gap is closed: the most-played MM staples, both flagship
+  aberrations, the entire construct/Golem family, and the iconic
+  monstrosities (Mimic, Displacer Beast, Purple Worm, Wyvern) are all
+  registered. The remaining catalogue is PHB/ canonical-complete across
+  spells, subclasses, feats, and the dragon family.
+
+---
 
 ## ✅ COMPLETED: Tasha's Cauldron of Everything Feat Expansion (53 → 67)
 
