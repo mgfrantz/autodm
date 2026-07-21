@@ -17,6 +17,9 @@ backend/tests/*.db
 frontend/node_modules/
 frontend/dist/
 
+# Dev agent ephemeral report (delivered via MEDIA: to Discord, not git history)
+dev-agent-report.md
+
 # OS
 .DS_Store
 
