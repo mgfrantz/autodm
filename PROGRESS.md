@@ -3077,7 +3077,7 @@ polish — is implemented, tested, and shipped:
 - ✅ Phase 3.5b — AoE Multi-Target Spell Resolution
 - ✅ UI Polish — Dice tumble + HP-bar shake + collapsed-by-default old events
 
-**3944 backend + 393 frontend tests, 0 failures.**
+**4523 backend + 393 frontend tests, 0 failures.**
 (Post-roadmap content-registry additions: +89 high-tier enemy registry
 expansion (CR 11-30) + Werewolf duplicate-key fix, +54 PHB level 7 & 8 spell
 roster completion (18/18 each), +55 iconic PHB level-1 spell expansion (16
