@@ -180,6 +180,16 @@ export default function GameView() {
     // stream (which would interleave into the live buffer) or double-add the
     // story log on reload.
     let ignore = false
+
+    // Reset all per-game state when the game ID changes. The Zustand store
+    // persists across component unmount/remount, so without this reset the
+    // story array from a previous game leaks into the new one — making a fresh
+    // campaign appear to "pick up from where another character left off."
+    setStory([])
+    setGameState(null)
+    setCombatState(null)
+    setStarted(false)
+
     const loadState = async () => {
       try {
         const state = await getGameState(gid)
@@ -194,7 +204,8 @@ export default function GameView() {
         if (state.story_log.length === 0 && !started) {
           handleStart()
         } else {
-          state.story_log.forEach((entry: StoryEntry) => addToStory(entry))
+          // Replace (not append) — the store was cleared above.
+          setStory(state.story_log as StoryEntry[])
         }
       } catch {
         setError('Failed to load game')

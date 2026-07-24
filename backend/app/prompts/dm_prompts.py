@@ -9,6 +9,12 @@ streaming ``stream_narration_dspy`` helper.
 
 # Encounter template — the per-action framing passed to the DM as the
 # situation to narrate (filled with live game state).
+#
+# NOTE: The DM must NOT fabricate dice results or check outcomes in the
+# narration. The backend resolves all checks via game_actions BEFORE the
+# narration is generated, and the actual results are appended to the
+# situation as "CHECK_RESULTS" — the DM should narrate the outcome
+# consistent with those results.
 ENCOUNTER_PROMPT = """\
 You are narrating the next beat of the adventure.
 
@@ -18,6 +24,8 @@ Recent events: {recent_events}
 
 The player's action: {player_action}
 
-Narrate the outcome. If the action requires a check, describe what happens and
-whether it succeeds or fails based on a d20 roll. If combat begins, set the scene.
+Narrate the outcome. If CHECK_RESULTS appear below, they have ALREADY been
+rolled by the backend — narrate the scene consistent with those results.
+If no CHECK_RESULTS appear, the action does not require a mechanical check;
+narrate the outcome directly.
 """

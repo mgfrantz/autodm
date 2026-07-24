@@ -1405,6 +1405,46 @@ def _generate_action_suggestions(
         return []
 
 
+def _format_check_results(game_events: list[GameEvent]) -> str:
+    """Format resolved game events as text for the narration prompt.
+
+    The DM narration is generated AFTER game actions are resolved, so the
+    narration can incorporate the actual dice results. This helper turns
+    dice_roll / check events into a concise text block appended to the
+    situation prompt.
+
+    Returns an empty string when there are no check-type events.
+    """
+    parts: list[str] = []
+    for event in game_events:
+        etype = getattr(event, "event_type", "") or ""
+        data = getattr(event, "data", {}) or {}
+        if etype == "dice_roll":
+            label = data.get("label", "Check")
+            roll = data.get("roll", "?")
+            modifier = data.get("modifier", 0)
+            total = data.get("total", "?")
+            dc = data.get("dc")
+            success = data.get("success")
+            mod_str = f"+{modifier}" if modifier and modifier > 0 else (str(modifier) if modifier else "")
+            dc_str = f" vs DC {dc}" if dc else ""
+            result_str = ""
+            if success is True:
+                result_str = " → SUCCESS"
+            elif success is False:
+                result_str = " → FAILURE"
+            parts.append(
+                f"  {label}: d20{mod_str} = {total}{dc_str}{result_str}"
+            )
+        elif etype == "check_prompt":
+            # check_prompt events are for the player to roll — skip since
+            # the backend already resolved them via dice_roll.
+            pass
+    if not parts:
+        return ""
+    return "CHECK_RESULTS (already rolled — narrate the outcome accordingly):\n" + "\n".join(parts)
+
+
 def _resolve_skill_check(
     action: str,
     character: Character,
@@ -1875,17 +1915,13 @@ Boss: {_boss_for_dm(game_state)}
     narration, game_actions = await _dm_actionable_narrate(situation=user_prompt)
     game_events, game_state = _resolve_game_actions(game_actions, game_state, character=character)
 
-    # Resolve skill check for structured mechanical outcomes
-    skill_check_resolution = _resolve_skill_check(
-        action=action.action,
-        character=character,
-        game_state=game_state,
-        recent_context=recent_context,
-    )
-
-    # Store resolution in game_state if successful
-    if skill_check_resolution:
-        game_state["skill_check_resolution"] = skill_check_resolution
+    # If checks were resolved, re-narrate with the actual results so the
+    # narrative reflects the dice outcome (not a fabricated one).
+    check_results = _format_check_results(game_events)
+    if check_results:
+        narration = await _dm_narrate(
+            situation=user_prompt + "\n\n" + check_results
+        )
 
     # Detect and update quests
     game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
@@ -1921,7 +1957,6 @@ Boss: {_boss_for_dm(game_state)}
         narration=narration,
         action_suggestions=action_suggestions,
         combat_active=game_state.get("in_combat", False),
-        skill_check_resolution=skill_check_resolution or {},
         game_events=[e.to_dict() for e in game_events],
     )
 
@@ -1991,24 +2026,41 @@ Boss: {_boss_for_dm(game_state)}
 
 {base_context}"""
 
-        combat_active = game_state.get("in_combat", False)
-
-        # Store summary data for later use in the async stream
-        summary_data = None
-        if summary:
-            summary_data = summary.to_dict()
-
-        # Store character and game_state for skill check resolution in stream
+        # Store character and game_state for use in the async stream
         stored_character = character
         stored_game_state = game_state
-        stored_recent_context = recent_context
     finally:
         db.close()
 
     async def event_stream():
+        # Local working copy of game_state for mutation during this turn.
+        # Using a separate name avoids Python's UnboundLocalError when
+        # reassigning a closure variable.
+        gs = stored_game_state
+
+        # ---- Phase 1: Pre-resolve game actions (determines checks) ----
+        # Determine and resolve game_actions BEFORE narration so the narrative
+        # can incorporate actual dice results. This replaces the old flow where
+        # narration was streamed first and game actions resolved after.
+        game_events: list[GameEvent] = []
+        try:
+            _, game_actions = await _dm_actionable_narrate(situation=user_prompt)
+            game_events, gs = _resolve_game_actions(
+                game_actions, gs, character=stored_character
+            )
+        except Exception as e:
+            logger.error(f"Pre-narration game action resolution failed: {e}")
+
+        # ---- Phase 2: Build augmented prompt with check results ----
+        check_results = _format_check_results(game_events)
+        narration_prompt = user_prompt
+        if check_results:
+            narration_prompt += "\n\n" + check_results
+
+        # ---- Phase 3: Stream narration (reflects check results) ----
         collected: list[str] = []
         try:
-            async for chunk in stream_narration_dspy(user_prompt=user_prompt):
+            async for chunk in stream_narration_dspy(user_prompt=narration_prompt):
                 collected.append(chunk)
                 yield _sse({"type": "chunk", "content": chunk})
         except Exception as exc:  # noqa: BLE001 - surface errors to the client
@@ -2016,21 +2068,9 @@ Boss: {_boss_for_dm(game_state)}
             return
 
         narration = "".join(collected)
-        action_suggestions: list[str] = []  # Initialize for use in done event
-        skill_check_resolution: dict[str, Any] = {}  # Initialize for use in done event
+        action_suggestions: list[str] = []
 
-        # Resolve skill check for structured mechanical outcomes
-        try:
-            skill_check_resolution = _resolve_skill_check(
-                action=action.action,
-                character=stored_character,
-                game_state=stored_game_state,
-                recent_context=stored_recent_context,
-            )
-        except Exception:
-            skill_check_resolution = {}
-
-        # Persist the exchange once streaming is complete.
+        # ---- Phase 4: Persist everything in one pass ----
         db = session_factory()
         try:
             save = db.query(GameSave).filter(GameSave.id == game_id).first()
@@ -2042,13 +2082,8 @@ Boss: {_boss_for_dm(game_state)}
                 save.story_log = json.dumps(log)
                 save.updated_at = utcnow()
 
-                # Load fresh game_state
-                game_state = json.loads(save.game_state)
-                stored_game_state = game_state  # Update for later use
-
-                # Store resolution in game_state if successful
-                if skill_check_resolution:
-                    game_state["skill_check_resolution"] = skill_check_resolution
+                # Use the game_state mutated by game_actions (Phase 1).
+                game_state = gs
 
                 # Detect and update quests
                 game_state, _info_revealed = _detect_and_update_quests(narration, game_state)
@@ -2063,6 +2098,14 @@ Boss: {_boss_for_dm(game_state)}
                 action_suggestions = _generate_action_suggestions(narration)
 
                 save.game_state = json.dumps(game_state)
+
+                # Persist character mutations from game actions (spells,
+                # inventory, HP, AC).
+                if stored_character is not None:
+                    save.character.spells = stored_character.spells
+                    save.character.inventory = stored_character.inventory
+                    save.character.current_hp = stored_character.current_hp
+                    save.character.armor_class = stored_character.armor_class
 
                 # Check if we need to summarize
                 local_summary = None
@@ -2080,44 +2123,14 @@ Boss: {_boss_for_dm(game_state)}
         finally:
             db.close()
 
-        # Resolve game actions (DM function calling Phase 1/2).
-        # The streaming path produces narration text via stream_narration_dspy;
-        # we make a separate non-streaming call to get structured game_actions.
-        game_events: list[GameEvent] = []
-        try:
-            _, game_actions = await _dm_actionable_narrate(situation=user_prompt)
-            game_events, stored_game_state = _resolve_game_actions(
-                game_actions, stored_game_state, character=stored_character
-            )
-        except Exception as e:
-            logger.error(f"Game action resolution failed: {e}")
+        # Refresh combat_active from the (possibly mutated) game_state.
+        final_combat_active = gs.get("in_combat", False)
 
-        # Persist updated game_state (combat mutations from DM function calls)
-        # and character.spells (slot consumption from DM spell casting).
-        db = session_factory()
-        try:
-            save = db.query(GameSave).filter(GameSave.id == game_id).first()
-            if save:
-                save.game_state = json.dumps(stored_game_state)
-                # Spell casting mutates stored_character.spells; copy it onto
-                # the session-attached character so the commit persists it.
-                # Inventory actions (Phase 4) mutate stored_character.inventory
-                # and may change current_hp (healing potion) / armor_class
-                # (equip) — copy those too.
-                if stored_character is not None:
-                    save.character.spells = stored_character.spells
-                    save.character.inventory = stored_character.inventory
-                    save.character.current_hp = stored_character.current_hp
-                    save.character.armor_class = stored_character.armor_class
-                db.commit()
-        finally:
-            db.close()
-
-        # Emit game_event SSE events before the done event.
+        # Emit game_event SSE events after narration.
         for event in game_events:
             yield _sse({"type": "game_event", "event": event.to_dict()})
 
-        yield _sse({"type": "done", "combat_active": combat_active, "action_suggestions": action_suggestions, "skill_check_resolution": skill_check_resolution, "game_events": [e.to_dict() for e in game_events]})
+        yield _sse({"type": "done", "combat_active": final_combat_active, "action_suggestions": action_suggestions, "game_events": [e.to_dict() for e in game_events]})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { listCharacters, listWorlds, listGames } from '../stores/api'
 import type { Character } from '../types'
+import { useNavigate } from 'react-router-dom'
 
 export default function HomeView() {
+  const navigate = useNavigate()
   const [characters, setCharacters] = useState<Character[]>([])
   const [_worlds, setWorlds] = useState<any[]>([])
   const [games, setGames] = useState<any[]>([])
@@ -49,16 +51,24 @@ export default function HomeView() {
           <h2 className="title-fantasy mb-4">Your Characters</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             {characters.map((c) => (
-              <div key={c.id} className="flex justify-between items-center bg-parchment-900/50 panel-hover rounded-lg p-3">
-                <div className="min-w-0">
-                  <span className="font-semibold text-parchment-200 truncate block">{c.name}</span>
-                  <span className="text-parchment-400 text-sm">
-                    Level {c.level} {c.race} {c.char_class}
-                  </span>
+              <div key={c.id} className="flex flex-col bg-parchment-900/50 panel-hover rounded-lg p-3">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="min-w-0">
+                    <span className="font-semibold text-parchment-200 truncate block">{c.name}</span>
+                    <span className="text-parchment-400 text-sm">
+                      Level {c.level} {c.race} {c.char_class}
+                    </span>
+                  </div>
+                  <div className="text-parchment-400 text-sm shrink-0 ml-2">
+                    HP: {c.current_hp}/{c.max_hp} | AC: {c.armor_class}
+                  </div>
                 </div>
-                <div className="text-parchment-400 text-sm shrink-0 ml-2">
-                  HP: {c.current_hp}/{c.max_hp} | AC: {c.armor_class}
-                </div>
+                <button
+                  onClick={() => navigate('/world/new', { state: { characterId: c.id } })}
+                  className="btn-secondary text-sm py-1.5 mt-1"
+                >
+                  📜 Start New Campaign
+                </button>
               </div>
             ))}
           </div>
